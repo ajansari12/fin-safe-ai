@@ -84,25 +84,19 @@ const Navbar = () => {
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link to="/dashboard" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Dashboard
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link to="/dashboard">Dashboard</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link to="/reports" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Reports
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link to="/reports">Reports</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link to="/ai-assistant" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    AI Assistant
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                  <Link to="/ai-assistant">AI Assistant</Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
