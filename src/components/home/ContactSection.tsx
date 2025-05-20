@@ -1,11 +1,12 @@
-
 import { EnvelopeClosedIcon, PhoneIcon } from "@radix-ui/react-icons";
 import ContactForm from "./ContactForm";
 import { Button } from "@/components/ui/button";
+import { DecorativeBg } from "@/components/ui/decorative-background";
 
 const ContactSection = () => {
   return (
-    <section className="py-24 bg-white dark:bg-slate-950">
+    <section className="py-24 bg-white dark:bg-slate-950 relative">
+      <DecorativeBg variant="dots" className="absolute inset-0 opacity-5" />
       <div className="section-container">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight mb-4">
