@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -529,89 +528,86 @@ export async function batchCompleteReviews(policyIds: string[]): Promise<number>
   }
 }
 
-// These functions require database tables that don't exist yet
-// Commenting them out until the database tables are created
+// Policy Review and Approval functions
+export async function createPolicyReview(review: Omit<PolicyReviewStatus, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyReviewStatus | null> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_reviews')
+      .insert(review)
+      .select('*')
+      .single();
 
-// New functions for policy approval management
-// export async function createPolicyReview(review: Omit<PolicyReviewStatus, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyReviewStatus | null> {
-//   try {
-//     const { data, error } = await supabase
-//       .from('governance_policy_reviews')
-//       .insert(review)
-//       .select('*')
-//       .single();
-// 
-//     if (error) {
-//       throw error;
-//     }
-// 
-//     toast.success("Review status recorded successfully");
-//     return data as PolicyReviewStatus;
-//   } catch (error) {
-//     console.error('Error creating policy review status:', error);
-//     toast.error("Failed to record review status");
-//     return null;
-//   }
-// }
+    if (error) {
+      throw error;
+    }
 
-// export async function getPolicyReviewsByPolicyId(policyId: string): Promise<PolicyReviewStatus[]> {
-//   try {
-//     const { data, error } = await supabase
-//       .from('governance_policy_reviews')
-//       .select('*')
-//       .eq('policy_id', policyId);
-// 
-//     if (error) {
-//       throw error;
-//     }
-// 
-//     return data as PolicyReviewStatus[] || [];
-//   } catch (error) {
-//     console.error(`Error fetching reviews for policy ${policyId}:`, error);
-//     toast.error("Failed to load policy reviews");
-//     return [];
-//   }
-// }
+    toast.success("Review status recorded successfully");
+    return data as PolicyReviewStatus;
+  } catch (error) {
+    console.error('Error creating policy review status:', error);
+    toast.error("Failed to record review status");
+    return null;
+  }
+}
 
-// export async function createPolicyApproval(approval: Omit<PolicyApproval, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyApproval | null> {
-//   try {
-//     const { data, error } = await supabase
-//       .from('governance_policy_approvals')
-//       .insert(approval)
-//       .select('*')
-//       .single();
-// 
-//     if (error) {
-//       throw error;
-//     }
-// 
-//     toast.success("Policy approval recorded successfully");
-//     return data as PolicyApproval;
-//   } catch (error) {
-//     console.error('Error recording policy approval:', error);
-//     toast.error("Failed to record policy approval");
-//     return null;
-//   }
-// }
+export async function getPolicyReviewsByPolicyId(policyId: string): Promise<PolicyReviewStatus[]> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_reviews')
+      .select('*')
+      .eq('policy_id', policyId);
 
-// export async function getPolicyApprovalsByPolicyId(policyId: string): Promise<PolicyApproval[]> {
-//   try {
-//     const { data, error } = await supabase
-//       .from('governance_policy_approvals')
-//       .select('*')
-//       .eq('policy_id', policyId);
-// 
-//     if (error) {
-//       throw error;
-//     }
-// 
-//     return data as PolicyApproval[] || [];
-//   } catch (error) {
-//     console.error(`Error fetching approvals for policy ${policyId}:`, error);
-//     toast.error("Failed to load policy approvals");
-//     return [];
-//   }
-// }
+    if (error) {
+      throw error;
+    }
+
+    return data as PolicyReviewStatus[] || [];
+  } catch (error) {
+    console.error(`Error fetching reviews for policy ${policyId}:`, error);
+    toast.error("Failed to load policy reviews");
+    return [];
+  }
+}
+
+export async function createPolicyApproval(approval: Omit<PolicyApproval, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyApproval | null> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_approvals')
+      .insert(approval)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    toast.success("Policy approval recorded successfully");
+    return data as PolicyApproval;
+  } catch (error) {
+    console.error('Error recording policy approval:', error);
+    toast.error("Failed to record policy approval");
+    return null;
+  }
+}
+
+export async function getPolicyApprovalsByPolicyId(policyId: string): Promise<PolicyApproval[]> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_approvals')
+      .select('*')
+      .eq('policy_id', policyId);
+
+    if (error) {
+      throw error;
+    }
+
+    return data as PolicyApproval[] || [];
+  } catch (error) {
+    console.error(`Error fetching approvals for policy ${policyId}:`, error);
+    toast.error("Failed to load policy approvals");
+    return [];
+  }
+}
 
 // Compliance metrics function
 export async function getComplianceMetricsByOrgId(orgId: string): Promise<ComplianceMetric[]> {
@@ -660,11 +656,20 @@ export async function getComplianceMetricsByOrgId(orgId: string): Promise<Compli
           // If no review schedule, it needs review
           policiesNeedingReview++;
         } else {
-          const nextReviewDate = new Date(policy.governance_review_schedule.next_review_date);
-          if (nextReviewDate < now) {
-            policiesNeedingReview++;
+          // Fix: Access the first element of the array if it's an array
+          const scheduleData = Array.isArray(policy.governance_review_schedule) 
+            ? policy.governance_review_schedule[0] 
+            : policy.governance_review_schedule;
+            
+          if (scheduleData && scheduleData.next_review_date) {
+            const nextReviewDate = new Date(scheduleData.next_review_date);
+            if (nextReviewDate < now) {
+              policiesNeedingReview++;
+            } else {
+              policiesUpToDate++;
+            }
           } else {
-            policiesUpToDate++;
+            policiesNeedingReview++;
           }
         }
       }
