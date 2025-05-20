@@ -58,7 +58,7 @@ const AIAssistant = () => {
             </div>
             
             <Button asChild size="lg" className="text-base">
-              <Link to="/ai-assistant">
+              <Link to="/auth/register">
                 Try the AI Assistant
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
