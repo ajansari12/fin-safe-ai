@@ -55,11 +55,9 @@ const queryClient = new QueryClient({
 const App = () => (
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <TooltipProvider>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
@@ -67,14 +65,14 @@ const App = () => (
               <Route path="/features" element={<Features />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/compliance" element={<Compliance />} />
-
+              
               {/* Auth Routes */}
               <Route path="/auth/login" element={<Login />} />
               <Route path="/auth/register" element={<Register />} />
               <Route path="/auth/verify" element={<Verify />} />
               <Route path="/auth/forgot-password" element={<ForgotPassword />} />
               <Route path="/auth/update-password" element={<UpdatePassword />} />
-
+              
               {/* Authenticated Routes */}
               <Route path="/dashboard" element={
                 <ProtectedRoute>
@@ -166,13 +164,15 @@ const App = () => (
                   <Support />
                 </ProtectedRoute>
               } />
-
+              
               {/* Catch-all Route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </AuthProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>
 );
