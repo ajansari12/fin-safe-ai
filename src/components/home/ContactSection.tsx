@@ -1,6 +1,7 @@
 
 import { EnvelopeClosedIcon, PhoneIcon } from "@radix-ui/react-icons";
 import ContactForm from "./ContactForm";
+import { Button } from "@/components/ui/button";
 
 const ContactSection = () => {
   return (
