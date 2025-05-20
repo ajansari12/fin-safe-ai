@@ -1,4 +1,6 @@
-import { EnvelopeClosedIcon, PhoneIcon } from "@radix-ui/react-icons";
+
+import { EnvelopeClosedIcon } from "@radix-ui/react-icons";
+import { Phone } from "lucide-react";
 import ContactForm from "./ContactForm";
 import { Button } from "@/components/ui/button";
 import { DecorativeBg } from "@/components/ui/decorative-background";
@@ -35,7 +37,7 @@ const ContactSection = () => {
                   </a>
                 </div>
                 <div className="flex items-center">
-                  <PhoneIcon className="h-5 w-5 mr-3 text-primary" />
+                  <Phone className="h-5 w-5 mr-3 text-primary" />
                   <a href="tel:+14165550123" className="text-muted-foreground hover:text-primary">
                     +1 (416) 555-0123
                   </a>
