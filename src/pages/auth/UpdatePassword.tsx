@@ -1,26 +1,38 @@
 
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { Shield } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Shield, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-const Register = () => {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+const UpdatePassword = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register } = useAuth();
+  const [hashPresent, setHashPresent] = useState(false);
+  const { updatePassword, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if we have the password reset hash in the URL
+    const hash = window.location.hash;
+    setHashPresent(hash.includes('type=recovery'));
+
+    // If no hash and no user, redirect to login
+    if (!hash.includes('type=recovery') && !user) {
+      navigate('/auth/login');
+    }
+  }, [navigate, user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!fullName || !email || !password || !confirmPassword) {
+    if (!password || !confirmPassword) {
       toast.error("All fields are required");
       return;
     }
@@ -37,9 +49,9 @@ const Register = () => {
     
     try {
       setIsSubmitting(true);
-      await register(email, password, fullName);
+      await updatePassword(password);
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("Password update error:", error);
       // Toast is handled in the AuthContext
     } finally {
       setIsSubmitting(false);
@@ -58,37 +70,18 @@ const Register = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+            <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center mt-4">Update your password</CardTitle>
             <CardDescription className="text-center">
-              Enter your information to get started
+              Enter a new password for your account
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="John Smith"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">New Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -99,7 +92,7 @@ const Register = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
                 <Input
                   id="confirm-password"
                   type="password"
@@ -110,15 +103,14 @@ const Register = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Creating account..." : "Create account"}
+                {isSubmitting ? "Updating password..." : "Update password"}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">
-              Already have an account?{" "}
               <Link to="/auth/login" className="text-primary hover:underline">
-                Sign in
+                Back to login
               </Link>
             </p>
           </CardFooter>
@@ -128,4 +120,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default UpdatePassword;

@@ -11,7 +11,7 @@ interface AuthenticatedLayoutProps {
 
 const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const { user, logout } = useAuth();
+  const { user, profile, logout } = useAuth();
   const location = useLocation();
 
   const toggleSidebar = () => {
@@ -127,7 +127,8 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
               {user && (
                 <div className="flex items-center space-x-4">
                   <span className="text-sm font-medium">
-                    {user.name} ({user.role})
+                    {profile?.full_name || user.email} 
+                    {profile?.role && <span className="ml-1 text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">({profile.role})</span>}
                   </span>
                   <Button variant="outline" size="sm" onClick={logout}>
                     Logout

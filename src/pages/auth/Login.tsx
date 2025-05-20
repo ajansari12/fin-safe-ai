@@ -1,29 +1,26 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
-  const { toast } = useToast();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
-      toast({
-        title: "Validation Error",
-        description: "Email and password are required",
-        variant: "destructive",
-      });
+      toast.error("Email and password are required");
       return;
     }
     
@@ -32,11 +29,7 @@ const Login = () => {
       await login(email, password);
     } catch (error) {
       console.error("Login error:", error);
-      toast({
-        title: "Authentication Failed",
-        description: "Invalid email or password",
-        variant: "destructive",
-      });
+      // Toast is handled in the AuthContext
     } finally {
       setIsSubmitting(false);
     }
@@ -61,10 +54,8 @@ const Login = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-1">
-                  Email address
-                </label>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
                 <Input
                   id="email"
                   type="email"
@@ -74,11 +65,9 @@ const Login = () => {
                   required
                 />
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="password" className="block text-sm font-medium">
-                    Password
-                  </label>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
                   <Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">
                     Forgot password?
                   </Link>

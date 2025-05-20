@@ -5,6 +5,8 @@ import { Shield, Mail, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Verify = () => {
   const { user } = useAuth();
@@ -36,7 +38,18 @@ const Verify = () => {
             </p>
             <p className="text-sm text-muted-foreground">
               Didn't receive an email? Check your spam folder or{" "}
-              <button className="text-primary hover:underline">
+              <button 
+                className="text-primary hover:underline"
+                onClick={() => {
+                  if (user?.email) {
+                    supabase.auth.resend({
+                      type: 'signup',
+                      email: user.email,
+                    });
+                    toast.success("Verification email resent!");
+                  }
+                }}
+              >
                 resend verification email
               </button>
             </p>
