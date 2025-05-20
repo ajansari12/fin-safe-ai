@@ -25,6 +25,7 @@ import UpdatePassword from "./pages/auth/UpdatePassword";
 import Dashboard from "./pages/Dashboard";
 import OrganizationSetup from "./pages/setup/OrganizationSetup";
 import GovernanceFramework from "./pages/GovernanceFramework";
+import FrameworkDetail from "./pages/governance/FrameworkDetail";
 import RiskAppetite from "./pages/RiskAppetite";
 import ImpactTolerances from "./pages/ImpactTolerances";
 import BusinessFunctions from "./pages/BusinessFunctions";
@@ -79,6 +80,11 @@ const App = () => (
             <Route path="/governance-framework" element={
               <ProtectedRoute>
                 <GovernanceFramework />
+              </ProtectedRoute>
+            } />
+            <Route path="/governance-framework/:frameworkId" element={
+              <ProtectedRoute>
+                <FrameworkDetail />
               </ProtectedRoute>
             } />
             <Route path="/risk-appetite" element={

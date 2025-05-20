@@ -1,11 +1,17 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAIAssistant } from "@/components/ai-assistant";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import FrameworksList from "@/components/governance/FrameworksList";
 
 const GovernanceFramework = () => {
   const { user } = useAuth();
+  const { setCurrentModule } = useAIAssistant();
+
+  useEffect(() => {
+    setCurrentModule("governance-framework");
+  }, []);
 
   return (
     <AuthenticatedLayout>
@@ -17,42 +23,8 @@ const GovernanceFramework = () => {
           </p>
         </div>
         
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Governance Structure</CardTitle>
-              <CardDescription>
-                Define roles, responsibilities, and reporting lines for operational resilience.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Content for governance structure will go here.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Board Oversight</CardTitle>
-              <CardDescription>
-                Document how the board oversees operational resilience activities.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Content for board oversight will go here.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Policy Framework</CardTitle>
-              <CardDescription>
-                Develop and maintain policies that support operational resilience.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Content for policy framework will go here.</p>
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          <FrameworksList />
         </div>
       </div>
     </AuthenticatedLayout>
