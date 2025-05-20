@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -528,86 +529,89 @@ export async function batchCompleteReviews(policyIds: string[]): Promise<number>
   }
 }
 
+// These functions require database tables that don't exist yet
+// Commenting them out until the database tables are created
+
 // New functions for policy approval management
-export async function createPolicyReview(review: Omit<PolicyReviewStatus, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyReviewStatus | null> {
-  try {
-    const { data, error } = await supabase
-      .from('governance_policy_reviews')
-      .insert(review)
-      .select('*')
-      .single();
+// export async function createPolicyReview(review: Omit<PolicyReviewStatus, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyReviewStatus | null> {
+//   try {
+//     const { data, error } = await supabase
+//       .from('governance_policy_reviews')
+//       .insert(review)
+//       .select('*')
+//       .single();
+// 
+//     if (error) {
+//       throw error;
+//     }
+// 
+//     toast.success("Review status recorded successfully");
+//     return data as PolicyReviewStatus;
+//   } catch (error) {
+//     console.error('Error creating policy review status:', error);
+//     toast.error("Failed to record review status");
+//     return null;
+//   }
+// }
 
-    if (error) {
-      throw error;
-    }
+// export async function getPolicyReviewsByPolicyId(policyId: string): Promise<PolicyReviewStatus[]> {
+//   try {
+//     const { data, error } = await supabase
+//       .from('governance_policy_reviews')
+//       .select('*')
+//       .eq('policy_id', policyId);
+// 
+//     if (error) {
+//       throw error;
+//     }
+// 
+//     return data as PolicyReviewStatus[] || [];
+//   } catch (error) {
+//     console.error(`Error fetching reviews for policy ${policyId}:`, error);
+//     toast.error("Failed to load policy reviews");
+//     return [];
+//   }
+// }
 
-    toast.success("Review status recorded successfully");
-    return data as PolicyReviewStatus;
-  } catch (error) {
-    console.error('Error creating policy review status:', error);
-    toast.error("Failed to record review status");
-    return null;
-  }
-}
+// export async function createPolicyApproval(approval: Omit<PolicyApproval, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyApproval | null> {
+//   try {
+//     const { data, error } = await supabase
+//       .from('governance_policy_approvals')
+//       .insert(approval)
+//       .select('*')
+//       .single();
+// 
+//     if (error) {
+//       throw error;
+//     }
+// 
+//     toast.success("Policy approval recorded successfully");
+//     return data as PolicyApproval;
+//   } catch (error) {
+//     console.error('Error recording policy approval:', error);
+//     toast.error("Failed to record policy approval");
+//     return null;
+//   }
+// }
 
-export async function getPolicyReviewsByPolicyId(policyId: string): Promise<PolicyReviewStatus[]> {
-  try {
-    const { data, error } = await supabase
-      .from('governance_policy_reviews')
-      .select('*')
-      .eq('policy_id', policyId);
-
-    if (error) {
-      throw error;
-    }
-
-    return data as PolicyReviewStatus[] || [];
-  } catch (error) {
-    console.error(`Error fetching reviews for policy ${policyId}:`, error);
-    toast.error("Failed to load policy reviews");
-    return [];
-  }
-}
-
-export async function createPolicyApproval(approval: Omit<PolicyApproval, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyApproval | null> {
-  try {
-    const { data, error } = await supabase
-      .from('governance_policy_approvals')
-      .insert(approval)
-      .select('*')
-      .single();
-
-    if (error) {
-      throw error;
-    }
-
-    toast.success("Policy approval recorded successfully");
-    return data as PolicyApproval;
-  } catch (error) {
-    console.error('Error recording policy approval:', error);
-    toast.error("Failed to record policy approval");
-    return null;
-  }
-}
-
-export async function getPolicyApprovalsByPolicyId(policyId: string): Promise<PolicyApproval[]> {
-  try {
-    const { data, error } = await supabase
-      .from('governance_policy_approvals')
-      .select('*')
-      .eq('policy_id', policyId);
-
-    if (error) {
-      throw error;
-    }
-
-    return data as PolicyApproval[] || [];
-  } catch (error) {
-    console.error(`Error fetching approvals for policy ${policyId}:`, error);
-    toast.error("Failed to load policy approvals");
-    return [];
-  }
-}
+// export async function getPolicyApprovalsByPolicyId(policyId: string): Promise<PolicyApproval[]> {
+//   try {
+//     const { data, error } = await supabase
+//       .from('governance_policy_approvals')
+//       .select('*')
+//       .eq('policy_id', policyId);
+// 
+//     if (error) {
+//       throw error;
+//     }
+// 
+//     return data as PolicyApproval[] || [];
+//   } catch (error) {
+//     console.error(`Error fetching approvals for policy ${policyId}:`, error);
+//     toast.error("Failed to load policy approvals");
+//     return [];
+//   }
+// }
 
 // Compliance metrics function
 export async function getComplianceMetricsByOrgId(orgId: string): Promise<ComplianceMetric[]> {
