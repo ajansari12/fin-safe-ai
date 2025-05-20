@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -7,7 +6,10 @@ import {
   GovernanceRole, 
   GovernancePolicy,
   GovernanceReviewSchedule,
-  GovernanceChangeLog
+  GovernanceChangeLog,
+  PolicyReviewStatus,
+  PolicyApproval,
+  ComplianceMetric
 } from "@/pages/governance/types";
 
 // Framework CRUD operations
@@ -382,7 +384,7 @@ export async function createReviewSchedule(schedule: Omit<GovernanceReviewSchedu
     }
 
     toast.success("Review schedule set successfully");
-    return data;
+    return data as GovernanceReviewSchedule;
   } catch (error) {
     console.error('Error creating review schedule:', error);
     toast.error("Failed to set review schedule");
@@ -402,7 +404,7 @@ export async function getReviewScheduleByPolicyId(policyId: string): Promise<Gov
       throw error;
     }
 
-    return data || null;
+    return data as GovernanceReviewSchedule || null;
   } catch (error) {
     console.error(`Error fetching review schedule for policy ${policyId}:`, error);
     toast.error("Failed to load review schedule");
@@ -424,7 +426,7 @@ export async function updateReviewSchedule(id: string, updates: Partial<Governan
     }
 
     toast.success("Review schedule updated successfully");
-    return data;
+    return data as GovernanceReviewSchedule;
   } catch (error) {
     console.error(`Error updating review schedule with ID ${id}:`, error);
     toast.error("Failed to update review schedule");
@@ -486,6 +488,199 @@ export async function completeReview(policyId: string, reviewId: string): Promis
   } catch (error) {
     console.error(`Error completing review for policy ${policyId}:`, error);
     toast.error("Failed to complete review");
+  }
+}
+
+// New function for batch policy review
+export async function batchCompleteReviews(policyIds: string[]): Promise<number> {
+  try {
+    let successCount = 0;
+
+    // Get all related review schedules 
+    const { data: schedules, error: schedulesError } = await supabase
+      .from('governance_review_schedule')
+      .select('id, policy_id')
+      .in('policy_id', policyIds);
+
+    if (schedulesError) {
+      throw schedulesError;
+    }
+    
+    // Process each policy and its review schedule
+    for (const schedule of schedules || []) {
+      try {
+        await completeReview(schedule.policy_id, schedule.id);
+        successCount++;
+      } catch (error) {
+        console.error(`Error completing review for policy ${schedule.policy_id}:`, error);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully completed ${successCount} policy reviews`);
+    }
+    
+    return successCount;
+  } catch (error) {
+    console.error('Error in batch review completion:', error);
+    toast.error("Failed to complete batch reviews");
+    return 0;
+  }
+}
+
+// New functions for policy approval management
+export async function createPolicyReview(review: Omit<PolicyReviewStatus, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyReviewStatus | null> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_reviews')
+      .insert(review)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    toast.success("Review status recorded successfully");
+    return data as PolicyReviewStatus;
+  } catch (error) {
+    console.error('Error creating policy review status:', error);
+    toast.error("Failed to record review status");
+    return null;
+  }
+}
+
+export async function getPolicyReviewsByPolicyId(policyId: string): Promise<PolicyReviewStatus[]> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_reviews')
+      .select('*')
+      .eq('policy_id', policyId);
+
+    if (error) {
+      throw error;
+    }
+
+    return data as PolicyReviewStatus[] || [];
+  } catch (error) {
+    console.error(`Error fetching reviews for policy ${policyId}:`, error);
+    toast.error("Failed to load policy reviews");
+    return [];
+  }
+}
+
+export async function createPolicyApproval(approval: Omit<PolicyApproval, 'id' | 'created_at' | 'updated_at'>): Promise<PolicyApproval | null> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_approvals')
+      .insert(approval)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    toast.success("Policy approval recorded successfully");
+    return data as PolicyApproval;
+  } catch (error) {
+    console.error('Error recording policy approval:', error);
+    toast.error("Failed to record policy approval");
+    return null;
+  }
+}
+
+export async function getPolicyApprovalsByPolicyId(policyId: string): Promise<PolicyApproval[]> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_approvals')
+      .select('*')
+      .eq('policy_id', policyId);
+
+    if (error) {
+      throw error;
+    }
+
+    return data as PolicyApproval[] || [];
+  } catch (error) {
+    console.error(`Error fetching approvals for policy ${policyId}:`, error);
+    toast.error("Failed to load policy approvals");
+    return [];
+  }
+}
+
+// Compliance metrics function
+export async function getComplianceMetricsByOrgId(orgId: string): Promise<ComplianceMetric[]> {
+  try {
+    const now = new Date();
+    
+    // Get all frameworks for this org
+    const { data: frameworks, error: frameworksError } = await supabase
+      .from('governance_frameworks')
+      .select('id, title')
+      .eq('org_id', orgId);
+      
+    if (frameworksError) {
+      throw frameworksError;
+    }
+    
+    const metrics: ComplianceMetric[] = [];
+    
+    // Calculate metrics for each framework
+    for (const framework of frameworks || []) {
+      // Get all policies for this framework
+      const { data: policies, error: policiesError } = await supabase
+        .from('governance_policies')
+        .select(`
+          id, 
+          status,
+          governance_review_schedule (
+            next_review_date
+          )
+        `)
+        .eq('framework_id', framework.id);
+        
+      if (policiesError) {
+        throw policiesError;
+      }
+      
+      const totalPolicies = policies?.length || 0;
+      const activePolicies = policies?.filter(p => p.status === 'active').length || 0;
+      
+      // Count policies needing review
+      let policiesNeedingReview = 0;
+      let policiesUpToDate = 0;
+      
+      for (const policy of policies || []) {
+        if (!policy.governance_review_schedule) {
+          // If no review schedule, it needs review
+          policiesNeedingReview++;
+        } else {
+          const nextReviewDate = new Date(policy.governance_review_schedule.next_review_date);
+          if (nextReviewDate < now) {
+            policiesNeedingReview++;
+          } else {
+            policiesUpToDate++;
+          }
+        }
+      }
+      
+      metrics.push({
+        framework_id: framework.id,
+        framework_title: framework.title,
+        total_policies: totalPolicies,
+        active_policies: activePolicies,
+        policies_needing_review: policiesNeedingReview,
+        policies_up_to_date: policiesUpToDate,
+        last_updated: new Date().toISOString()
+      });
+    }
+    
+    return metrics;
+  } catch (error) {
+    console.error(`Error calculating compliance metrics:`, error);
+    toast.error("Failed to load compliance metrics");
+    return [];
   }
 }
 

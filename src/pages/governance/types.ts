@@ -37,6 +37,7 @@ export interface GovernanceReviewSchedule {
   id: string;
   policy_id: string;
   review_frequency_months: number;
+  reminder_days_before?: number; // Added for customizable reminder timing
   last_review_date: string | null;
   next_review_date: string;
   reminder_sent: boolean;
@@ -70,4 +71,38 @@ export interface GovernanceFramework {
   structures?: GovernanceStructure[];
   roles?: GovernanceRole[];
   policies?: GovernancePolicy[];
+}
+
+// New interfaces for the enhancements
+
+export interface PolicyReviewStatus {
+  id: string;
+  policy_id: string;
+  reviewer_id: string;
+  reviewer_name: string;
+  status: 'pending' | 'approved' | 'rejected';
+  comments: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PolicyApproval {
+  id: string;
+  policy_id: string;
+  approver_id: string;
+  approver_name: string;
+  approval_date: string;
+  signature: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplianceMetric {
+  framework_id: string;
+  framework_title: string;
+  total_policies: number;
+  active_policies: number;
+  policies_needing_review: number;
+  policies_up_to_date: number;
+  last_updated: string;
 }

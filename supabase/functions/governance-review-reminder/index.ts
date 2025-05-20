@@ -28,18 +28,17 @@ Deno.serve(async (req) => {
     }
     const resend = new Resend(resendApiKey)
 
-    // Define the reminder window (2 weeks before review)
+    // Get the current date
     const now = new Date()
-    const twoWeeksFromNow = new Date()
-    twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14)
-
-    // Find policies that need review in the next two weeks and haven't had reminders sent
+    
+    // Find policies that need review based on their reminder_days_before setting
     const { data: upcomingReviews, error } = await supabase
       .from('governance_review_schedule')
       .select(`
         id,
         next_review_date,
         reminder_sent,
+        reminder_days_before,
         governance_policies!inner (
           id,
           title,
@@ -57,8 +56,6 @@ Deno.serve(async (req) => {
         )
       `)
       .eq('reminder_sent', false)
-      .lt('next_review_date', twoWeeksFromNow.toISOString())
-      .gt('next_review_date', now.toISOString())
 
     if (error) {
       throw error
@@ -68,85 +65,108 @@ Deno.serve(async (req) => {
     const results = []
     for (const review of upcomingReviews || []) {
       try {
-        // Get user emails for this organization
-        const { data: users } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('organization_id', review.governance_policies.governance_frameworks.org_id)
-        
-        if (!users || users.length === 0) {
-          results.push({
-            reviewId: review.id,
-            status: 'error',
-            message: 'No users found for organization'
-          })
-          continue
-        }
-
-        // Get user emails
-        const userEmails = []
-        for (const user of users) {
-          const { data: userData } = await supabase.auth.admin.getUserById(user.id)
-          if (userData?.user?.email) {
-            userEmails.push({
-              email: userData.user.email,
-              name: user.full_name || userData.user.email
-            })
-          }
-        }
-
-        if (userEmails.length === 0) {
-          results.push({
-            reviewId: review.id,
-            status: 'error',
-            message: 'No valid email addresses found'
-          })
-          continue
-        }
-        
-        // Format the review date
+        // Calculate if it's time to send a reminder based on reminder_days_before
         const reviewDate = new Date(review.next_review_date)
-        const formattedDate = reviewDate.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
+        const reminderDaysBefore = review.reminder_days_before || 14 // Default to 14 days if not specified
+        
+        const reminderDate = new Date(reviewDate)
+        reminderDate.setDate(reviewDate.getDate() - reminderDaysBefore)
+        
+        // Check if today is the day to send the reminder (or if we're past due and reminder wasn't sent)
+        if (now >= reminderDate) {
+          // Get user emails for this organization
+          const { data: users } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('organization_id', review.governance_policies.governance_frameworks.org_id)
+          
+          if (!users || users.length === 0) {
+            results.push({
+              reviewId: review.id,
+              status: 'error',
+              message: 'No users found for organization'
+            })
+            continue
+          }
 
-        // Send reminder email
-        const { data: emailData, error: emailError } = await resend.emails.send({
-          from: 'Operational Resilience <notifications@resilienceportal.com>',
-          to: userEmails.map(u => u.email),
-          subject: `Governance Policy Review Reminder: ${review.governance_policies.title}`,
-          html: `
-            <h2>Governance Policy Review Reminder</h2>
-            <p>This is a reminder that the following governance policy is due for review:</p>
-            <ul>
-              <li><strong>Policy:</strong> ${review.governance_policies.title}</li>
-              <li><strong>Framework:</strong> ${review.governance_policies.governance_frameworks.title}</li>
-              <li><strong>Review Due:</strong> ${formattedDate}</li>
-            </ul>
-            <p>Please complete the review before the due date to ensure compliance with your governance review cycle.</p>
-            <p><a href="${supabaseUrl}/governance-framework/${review.governance_policies.framework_id}">Review Policy</a></p>
-            <p>Thank you,<br>Operational Resilience Portal</p>
-          `
-        })
+          // Get user emails
+          const userEmails = []
+          for (const user of users) {
+            const { data: userData } = await supabase.auth.admin.getUserById(user.id)
+            if (userData?.user?.email) {
+              userEmails.push({
+                email: userData.user.email,
+                name: user.full_name || userData.user.email
+              })
+            }
+          }
 
-        if (emailError) {
-          throw emailError
+          if (userEmails.length === 0) {
+            results.push({
+              reviewId: review.id,
+              status: 'error',
+              message: 'No valid email addresses found'
+            })
+            continue
+          }
+          
+          // Format the review date
+          const formattedDate = reviewDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+          
+          // Calculate days until review is due
+          const timeUntilReview = Math.ceil((reviewDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          const daysUntilMessage = timeUntilReview <= 0 
+            ? "OVERDUE! Review was due today" 
+            : `${timeUntilReview} day${timeUntilReview !== 1 ? 's' : ''} until due date`
+
+          // Send reminder email
+          const { data: emailData, error: emailError } = await resend.emails.send({
+            from: 'Operational Resilience <notifications@resilienceportal.com>',
+            to: userEmails.map(u => u.email),
+            subject: `Governance Policy Review Reminder: ${review.governance_policies.title}`,
+            html: `
+              <h2>Governance Policy Review Reminder</h2>
+              <p>This is a reminder that the following governance policy is due for review:</p>
+              <div style="border: 1px solid #e2e8f0; border-radius: 5px; padding: 15px; margin: 20px 0; background-color: #f8fafc;">
+                <p><strong>Policy:</strong> ${review.governance_policies.title}</p>
+                <p><strong>Framework:</strong> ${review.governance_policies.governance_frameworks.title}</p>
+                <p><strong>Review Due:</strong> ${formattedDate}</p>
+                <p><strong>Status:</strong> <span style="color: ${timeUntilReview <= 0 ? 'red' : 'orange'}; font-weight: bold;">${daysUntilMessage}</span></p>
+              </div>
+              <p>Please complete the review before the due date to ensure compliance with your governance review cycle.</p>
+              <p><a href="${supabaseUrl}/governance-framework/${review.governance_policies.framework_id}" style="display: inline-block; background-color: #4f46e5; color: white; padding: 10px 15px; text-decoration: none; border-radius: 5px;">Review Policy Now</a></p>
+              <p>Thank you,<br>Operational Resilience Portal</p>
+            `
+          })
+
+          if (emailError) {
+            throw emailError
+          }
+
+          // Mark reminder as sent
+          await supabase
+            .from('governance_review_schedule')
+            .update({ reminder_sent: true })
+            .eq('id', review.id)
+
+          results.push({
+            reviewId: review.id,
+            status: 'success',
+            message: 'Reminder sent successfully',
+            emailId: emailData?.id
+          })
+        } else {
+          // Not yet time to send reminder
+          results.push({
+            reviewId: review.id,
+            status: 'skipped',
+            message: `Reminder scheduled for ${reminderDate.toISOString()}`
+          })
         }
-
-        // Mark reminder as sent
-        await supabase
-          .from('governance_review_schedule')
-          .update({ reminder_sent: true })
-          .eq('id', review.id)
-
-        results.push({
-          reviewId: review.id,
-          status: 'success',
-          message: 'Reminder sent successfully',
-          emailId: emailData?.id
-        })
       } catch (err) {
         results.push({
           reviewId: review.id,

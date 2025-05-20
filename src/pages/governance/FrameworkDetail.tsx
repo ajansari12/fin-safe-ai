@@ -36,13 +36,17 @@ import {
   PlusCircle, 
   Download, 
   Calendar,
-  ArrowLeft
+  ArrowLeft,
+  ClipboardCheck
 } from "lucide-react";
 import StructureForm from "@/components/governance/StructureForm";
 import RoleForm from "@/components/governance/RoleForm";
 import PolicyForm from "@/components/governance/PolicyForm";
 import ChangeLogList from "@/components/governance/ChangeLogList";
 import ReviewScheduleForm from "@/components/governance/ReviewScheduleForm";
+import PolicyViewer from "@/components/governance/PolicyViewer";
+import BatchPolicyReview from "@/components/governance/BatchPolicyReview";
+import PolicyApprovalWorkflow from "@/components/governance/PolicyApprovalWorkflow";
 import { format } from "date-fns";
 
 export default function FrameworkDetail() {
@@ -54,6 +58,7 @@ export default function FrameworkDetail() {
   const [structures, setStructures] = useState<GovernanceStructure[]>([]);
   const [roles, setRoles] = useState<GovernanceRole[]>([]);
   const [policies, setPolicies] = useState<GovernancePolicy[]>([]);
+  const [selectedPolicy, setSelectedPolicy] = useState<GovernancePolicy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogContent, setDialogContent] = useState<{
     open: boolean;
@@ -153,6 +158,23 @@ export default function FrameworkDetail() {
     });
   }
 
+  function openBatchReviewDialog() {
+    setDialogContent({
+      open: true,
+      type: "batch-review",
+      title: "Batch Policy Review",
+      content: (
+        <BatchPolicyReview
+          policies={policies.filter(p => p.status === 'active')}
+          onCompleted={() => {
+            closeDialog();
+            loadFrameworkData();
+          }}
+        />
+      ),
+    });
+  }
+
   function openSetReviewScheduleDialog(policy: GovernancePolicy) {
     setDialogContent({
       open: true,
@@ -163,10 +185,54 @@ export default function FrameworkDetail() {
           policyId={policy.id} 
           onSuccess={() => {
             closeDialog();
-            loadFrameworkData(); // Reload all data to get updated review schedules
+            loadFrameworkData();
           }}
           onCancel={closeDialog}
         />
+      ),
+    });
+  }
+  
+  function openPolicyViewerDialog(policy: GovernancePolicy) {
+    setSelectedPolicy(policy);
+    setDialogContent({
+      open: true,
+      type: "viewer",
+      title: `View Policy: ${policy.title}`,
+      content: (
+        <div className="space-y-6">
+          <PolicyViewer policy={policy} />
+          
+          <Tabs defaultValue="approval">
+            <TabsList>
+              <TabsTrigger value="approval">Approval Workflow</TabsTrigger>
+              <TabsTrigger value="schedule">Review Schedule</TabsTrigger>
+            </TabsList>
+            <TabsContent value="approval">
+              <PolicyApprovalWorkflow 
+                policy={policy}
+                onApprovalChange={() => {
+                  loadFrameworkData();
+                }}
+              />
+            </TabsContent>
+            <TabsContent value="schedule">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Review Schedule</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ReviewScheduleForm
+                    policyId={policy.id}
+                    onSuccess={() => {
+                      loadFrameworkData();
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       ),
     });
   }
@@ -378,10 +444,18 @@ export default function FrameworkDetail() {
           <TabsContent value="policies" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Governance Policies</h2>
-              <Button onClick={openAddPolicyDialog} size="sm">
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Add Policy
-              </Button>
+              <div className="flex space-x-2">
+                {policies.length > 0 && (
+                  <Button onClick={openBatchReviewDialog} size="sm" variant="outline">
+                    <ClipboardCheck className="h-4 w-4 mr-2" />
+                    Batch Review
+                  </Button>
+                )}
+                <Button onClick={openAddPolicyDialog} size="sm">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Policy
+                </Button>
+              </div>
             </div>
             
             {policies.length === 0 ? (
@@ -424,6 +498,14 @@ export default function FrameworkDetail() {
                       
                       <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => openPolicyViewerDialog(policy)}
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            View Policy
+                          </Button>
                           {policy.file_path && (
                             <Button 
                               variant="outline" 
@@ -434,15 +516,15 @@ export default function FrameworkDetail() {
                               Download
                             </Button>
                           )}
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => openSetReviewScheduleDialog(policy)}
-                          >
-                            <Calendar className="h-3 w-3 mr-1" />
-                            Set Review Cycle
-                          </Button>
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => openSetReviewScheduleDialog(policy)}
+                        >
+                          <Calendar className="h-3 w-3 mr-1" />
+                          Set Review Cycle
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -467,8 +549,15 @@ export default function FrameworkDetail() {
         </Tabs>
       </div>
 
-      <Dialog open={dialogContent.open} onOpenChange={(open) => setDialogContent({ ...dialogContent, open })}>
-        <DialogContent>
+      <Dialog 
+        open={dialogContent.open} 
+        onOpenChange={(open) => {
+          setDialogContent({ ...dialogContent, open });
+          // Reload data when dialog closes in case there were changes
+          if (!open) loadFrameworkData();
+        }}
+      >
+        <DialogContent className={dialogContent.type === 'viewer' ? 'max-w-4xl' : undefined}>
           <DialogHeader>
             <DialogTitle>{dialogContent.title}</DialogTitle>
           </DialogHeader>

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,9 +17,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { createReviewSchedule, updateReviewSchedule } from "@/services/governance-service";
 import { GovernanceReviewSchedule } from "@/pages/governance/types";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const formSchema = z.object({
   review_frequency_months: z.coerce.number().int().min(1).max(60),
+  reminder_days_before: z.coerce.number().int().min(1).max(60).default(14),
 });
 
 interface ReviewScheduleFormProps {
@@ -42,6 +50,7 @@ export default function ReviewScheduleForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       review_frequency_months: existingSchedule?.review_frequency_months || 12,
+      reminder_days_before: 14,
     },
   });
 
@@ -52,9 +61,9 @@ export default function ReviewScheduleForm({
   };
 
   // Initialize preview
-  useState(() => {
+  useEffect(() => {
     updatePreviewDate(form.getValues().review_frequency_months);
-  });
+  }, [form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSaving(true);
@@ -66,6 +75,7 @@ export default function ReviewScheduleForm({
         // Update existing schedule
         const updatedSchedule = await updateReviewSchedule(existingSchedule.id, {
           review_frequency_months: values.review_frequency_months,
+          reminder_days_before: values.reminder_days_before,
           next_review_date: nextReviewDate.toISOString(),
         });
         
@@ -77,6 +87,7 @@ export default function ReviewScheduleForm({
         const newSchedule = await createReviewSchedule({
           policy_id: policyId,
           review_frequency_months: values.review_frequency_months,
+          reminder_days_before: values.reminder_days_before,
           next_review_date: nextReviewDate.toISOString(),
           last_review_date: null, // Add the missing property
           reminder_sent: false,
@@ -116,6 +127,35 @@ export default function ReviewScheduleForm({
               </FormControl>
               <FormDescription>
                 Next review will be due: {previewDate || 'in 12 months'}
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="reminder_days_before"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Send Reminder (Days Before Due)</FormLabel>
+              <FormControl>
+                <Select 
+                  onValueChange={(value) => field.onChange(parseInt(value))}
+                  value={field.value.toString()}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select days before to remind" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">7 days before</SelectItem>
+                    <SelectItem value="14">14 days before</SelectItem>
+                    <SelectItem value="30">30 days before</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormDescription>
+                Email reminders will be sent this many days before the review date
               </FormDescription>
               <FormMessage />
             </FormItem>

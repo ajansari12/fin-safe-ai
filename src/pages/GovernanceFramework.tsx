@@ -4,10 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAIAssistant } from "@/components/ai-assistant";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import FrameworksList from "@/components/governance/FrameworksList";
+import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const GovernanceFramework = () => {
   const { user } = useAuth();
   const { setCurrentModule } = useAIAssistant();
+  const [activeTab, setActiveTab] = React.useState("frameworks");
 
   useEffect(() => {
     setCurrentModule("governance-framework");
@@ -23,9 +26,20 @@ const GovernanceFramework = () => {
           </p>
         </div>
         
-        <div className="space-y-6">
-          <FrameworksList />
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
+            <TabsTrigger value="compliance">Compliance Dashboard</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="frameworks" className="space-y-6">
+            <FrameworksList />
+          </TabsContent>
+          
+          <TabsContent value="compliance">
+            <ComplianceDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
     </AuthenticatedLayout>
   );
