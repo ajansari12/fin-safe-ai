@@ -14,40 +14,51 @@ import { MobileMenu } from "./navbar/MobileMenu";
 const modules = [
   {
     title: "Governance",
-    href: "/governance",
+    href: "/governance-framework",
     description: "Accountability structures, roles, and risk oversight policies.",
   },
   {
     title: "Self Assessment",
-    href: "/self-assessment",
+    href: "/risk-appetite",
     description: "Identify critical operations and assess current resilience posture.",
   },
   {
+    title: "Impact Tolerances",
+    href: "/impact-tolerances",
+    description: "Define tolerable levels of disruption for critical operations.",
+  },
+  {
+    title: "Business Functions",
+    href: "/business-functions",
+    description: "Map and manage critical business functions and services.",
+  },
+  {
     title: "Risk Management",
-    href: "/risk-management",
+    href: "/controls-and-kri",
     description: "Identify, assess, and manage operational risks across the organization.",
   },
   {
     title: "Incident Management",
-    href: "/incident-management",
+    href: "/incident-log",
     description: "Detect, respond to, and recover from operational disruptions.",
   },
   {
     title: "Third-Party Risk",
-    href: "/third-party",
+    href: "/third-party-risk",
     description: "Manage risks associated with third-party service providers.",
   },
   {
-    title: "ICT Risk",
-    href: "/ict-risk",
-    description: "Manage technology and cyber security risks per OSFI B-13 guidance.",
+    title: "Compliance",
+    href: "/audit-and-compliance",
+    description: "Track and manage regulatory compliance requirements.",
   },
 ];
 
 const navLinks = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/reports", label: "Reports" },
-  { href: "/ai-assistant", label: "AI Assistant" },
+  { href: "/features", label: "Features" },
+  { href: "/compliance", label: "Compliance" },
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
 ];
 
 const Navbar = () => {
