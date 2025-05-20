@@ -1,4 +1,3 @@
-
 export interface GovernanceStructure {
   id: string;
   framework_id: string;
@@ -80,7 +79,7 @@ export interface PolicyReviewStatus {
   policy_id: string;
   reviewer_id: string;
   reviewer_name: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'approved' | 'rejected';  // Removed 'pending' as it's not in the database schema
   comments: string | null;
   created_at: string;
   updated_at: string;
