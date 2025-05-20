@@ -26,14 +26,16 @@ export async function createFramework(framework: Omit<GovernanceFramework, 'id' 
     // Log the creation in the change log
     await createChangeLog({
       framework_id: data.id,
+      policy_id: null,
       change_type: 'created',
       description: `Created framework: ${framework.title}`,
+      previous_version: null,
       new_version: 1,
       changed_by: framework.created_by
     });
 
     toast.success("Framework created successfully");
-    return data;
+    return data as GovernanceFramework;
   } catch (error) {
     console.error('Error creating framework:', error);
     toast.error("Failed to create framework");
@@ -52,7 +54,7 @@ export async function getFrameworks(): Promise<GovernanceFramework[]> {
       throw error;
     }
 
-    return data || [];
+    return data as GovernanceFramework[];
   } catch (error) {
     console.error('Error fetching frameworks:', error);
     toast.error("Failed to load frameworks");
@@ -72,7 +74,7 @@ export async function getFrameworkById(id: string): Promise<GovernanceFramework 
       throw error;
     }
 
-    return data;
+    return data as GovernanceFramework;
   } catch (error) {
     console.error(`Error fetching framework with ID ${id}:`, error);
     toast.error("Failed to load framework");
@@ -106,6 +108,7 @@ export async function updateFramework(id: string, updates: Partial<GovernanceFra
     // Log the update in the change log
     await createChangeLog({
       framework_id: id,
+      policy_id: null,
       change_type: 'updated',
       description: `Updated framework: ${data.title}`,
       previous_version: currentFrame?.version || 0,
@@ -114,7 +117,7 @@ export async function updateFramework(id: string, updates: Partial<GovernanceFra
     });
 
     toast.success("Framework updated successfully");
-    return data;
+    return data as GovernanceFramework;
   } catch (error) {
     console.error(`Error updating framework with ID ${id}:`, error);
     toast.error("Failed to update framework");
@@ -136,7 +139,7 @@ export async function createStructure(structure: Omit<GovernanceStructure, 'id' 
     }
 
     toast.success(`${structure.type === 'committee' ? 'Committee' : 'Sponsor'} added successfully`);
-    return data;
+    return data as GovernanceStructure;
   } catch (error) {
     console.error('Error creating structure:', error);
     toast.error(`Failed to add ${structure.type === 'committee' ? 'committee' : 'sponsor'}`);
@@ -155,7 +158,7 @@ export async function getStructuresByFrameworkId(frameworkId: string): Promise<G
       throw error;
     }
 
-    return data || [];
+    return data as GovernanceStructure[];
   } catch (error) {
     console.error(`Error fetching structures for framework ${frameworkId}:`, error);
     toast.error("Failed to load governance structure");
@@ -251,11 +254,13 @@ export async function createPolicy(
       policy_id: data.id,
       change_type: 'created',
       description: `Created policy: ${policy.title}`,
-      new_version: 1
+      previous_version: null,
+      new_version: 1,
+      changed_by: null
     });
 
     toast.success("Policy created successfully");
-    return data;
+    return data as GovernancePolicy;
   } catch (error) {
     console.error('Error creating policy:', error);
     toast.error("Failed to create policy");
@@ -274,7 +279,7 @@ export async function getPoliciesByFrameworkId(frameworkId: string): Promise<Gov
       throw error;
     }
 
-    return data || [];
+    return data as GovernancePolicy[];
   } catch (error) {
     console.error(`Error fetching policies for framework ${frameworkId}:`, error);
     toast.error("Failed to load governance policies");
@@ -350,11 +355,12 @@ export async function updatePolicy(id: string, updates: Partial<GovernancePolicy
       change_type: 'updated',
       description: `Updated policy: ${data.title}`,
       previous_version: currentPolicy.version,
-      new_version: newVersion
+      new_version: newVersion,
+      changed_by: null
     });
 
     toast.success("Policy updated successfully");
-    return data;
+    return data as GovernancePolicy;
   } catch (error) {
     console.error(`Error updating policy with ID ${id}:`, error);
     toast.error("Failed to update policy");
@@ -472,7 +478,8 @@ export async function completeReview(policyId: string, reviewId: string): Promis
       change_type: 'reviewed',
       description: `Policy review completed`,
       previous_version: policy.version,
-      new_version: policy.version
+      new_version: policy.version,
+      changed_by: null
     });
 
     toast.success("Review completed successfully");
@@ -495,7 +502,7 @@ export async function createChangeLog(logEntry: Omit<GovernanceChangeLog, 'id' |
       throw error;
     }
 
-    return data;
+    return data as GovernanceChangeLog;
   } catch (error) {
     console.error('Error creating change log:', error);
     return null;
@@ -514,7 +521,7 @@ export async function getChangeLogsByFrameworkId(frameworkId: string): Promise<G
       throw error;
     }
 
-    return data || [];
+    return data as GovernanceChangeLog[];
   } catch (error) {
     console.error(`Error fetching change logs for framework ${frameworkId}:`, error);
     toast.error("Failed to load change logs");

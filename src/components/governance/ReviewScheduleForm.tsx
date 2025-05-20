@@ -78,6 +78,7 @@ export default function ReviewScheduleForm({
           policy_id: policyId,
           review_frequency_months: values.review_frequency_months,
           next_review_date: nextReviewDate.toISOString(),
+          last_review_date: null, // Add the missing property
           reminder_sent: false,
         });
         
