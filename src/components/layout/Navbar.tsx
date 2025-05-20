@@ -1,17 +1,15 @@
 
 import * as React from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils";
-import { Menu, X, Shield } from "lucide-react";
+import { Logo } from "./navbar/Logo";
+import { ModulesMenu } from "./navbar/ModulesMenu";
+import { NavLinks } from "./navbar/NavLinks";
+import { AuthButtons } from "./navbar/AuthButtons";
+import { MobileMenuToggle } from "./navbar/MobileMenuToggle";
+import { MobileMenu } from "./navbar/MobileMenu";
 
 const modules = [
   {
@@ -46,6 +44,12 @@ const modules = [
   },
 ];
 
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/reports", label: "Reports" },
+  { href: "/ai-assistant", label: "AI Assistant" },
+];
+
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
@@ -56,167 +60,32 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Shield className="h-6 w-6 text-primary" />
-          <Link to="/" className="text-xl font-bold tracking-tight">
-            ResilientFI
-          </Link>
-        </div>
+        <Logo />
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex">
           <NavigationMenu>
             <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger>Modules</NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[600px] gap-3 p-4 md:grid-cols-2">
-                    {modules.map((module) => (
-                      <ListItem
-                        key={module.title}
-                        title={module.title}
-                        href={module.href}
-                      >
-                        {module.description}
-                      </ListItem>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link to="/dashboard">Dashboard</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link to="/reports">Reports</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                  <Link to="/ai-assistant">AI Assistant</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
+              <ModulesMenu modules={modules} />
+              <NavLinks links={navLinks} />
             </NavigationMenuList>
           </NavigationMenu>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden md:block">
-            <Button asChild variant="outline" className="mr-2">
-              <Link to="/login">Login</Link>
-            </Button>
-            <Button asChild>
-              <Link to="/start">Get Started</Link>
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="outline"
-            size="icon"
-            className="md:hidden"
-            onClick={toggleMobileMenu}
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
-          </Button>
+          <AuthButtons className="hidden md:block" />
+          <MobileMenuToggle isOpen={isMobileMenuOpen} onToggle={toggleMobileMenu} />
         </div>
       </div>
 
       {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 top-16 z-50 bg-background pt-4 md:hidden">
-          <nav className="container grid gap-6 px-4">
-            <Link
-              to="/dashboard"
-              className="text-lg font-medium"
-              onClick={toggleMobileMenu}
-            >
-              Dashboard
-            </Link>
-            <div>
-              <h3 className="text-lg font-medium mb-2">Modules</h3>
-              <div className="grid gap-3">
-                {modules.map((module) => (
-                  <Link
-                    key={module.title}
-                    to={module.href}
-                    className="text-muted-foreground hover:text-foreground"
-                    onClick={toggleMobileMenu}
-                  >
-                    {module.title}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <Link
-              to="/reports"
-              className="text-lg font-medium"
-              onClick={toggleMobileMenu}
-            >
-              Reports
-            </Link>
-            <Link
-              to="/ai-assistant"
-              className="text-lg font-medium"
-              onClick={toggleMobileMenu}
-            >
-              AI Assistant
-            </Link>
-            <div className="flex flex-col gap-2 mt-4">
-              <Button asChild variant="outline">
-                <Link to="/login" onClick={toggleMobileMenu}>Login</Link>
-              </Button>
-              <Button asChild>
-                <Link to="/start" onClick={toggleMobileMenu}>Get Started</Link>
-              </Button>
-            </div>
-          </nav>
-        </div>
-      )}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        modules={modules} 
+        onClose={() => setIsMobileMenuOpen(false)}
+      />
     </header>
   );
 };
-
-function ListItem({
-  className,
-  title,
-  children,
-  href,
-  ...props
-}: React.ComponentPropsWithoutRef<"a"> & {
-  title: string;
-}) {
-  return (
-    <li>
-      <NavigationMenuLink asChild>
-        <Link
-          to={href || "/"}
-          className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className
-          )}
-          {...props}
-        >
-          <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
-          </p>
-        </Link>
-      </NavigationMenuLink>
-    </li>
-  );
-}
-
-export function navigationMenuTriggerStyle() {
-  return cn(
-    "group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50"
-  );
-}
 
 export default Navbar;
