@@ -2,33 +2,67 @@
 import { Button } from "@/components/ui/button";
 import { Shield, CheckCircle, AlertTriangle, BarChart } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { DecorativeBg } from "@/components/ui/decorative-background";
 
 const Hero = () => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  useEffect(() => {
+    // Trigger animations after component mounts
+    setIsLoaded(true);
+  }, []);
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
+      <DecorativeBg variant="dots" className="opacity-50" />
+      
       <div className="section-container pt-16 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="inline-flex items-center px-4 py-2 mb-6 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            <div 
+              className={`inline-flex items-center px-4 py-2 mb-6 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 transition-all duration-700 ${
+                isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+              }`}
+            >
               <Shield className="h-4 w-4 mr-2" />
               <span className="text-sm font-medium">OSFI E-21 Compliant</span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-blue-500 dark:from-blue-400 dark:to-blue-200">
+            
+            <h1 
+              className={`text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-blue-500 dark:from-blue-400 dark:to-blue-200 transition-all duration-700 delay-150 ${
+                isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+              }`}
+            >
               Operational Resilience, Simplified
             </h1>
-            <p className="text-lg md:text-xl text-slate-700 dark:text-slate-300 mb-8 max-w-xl">
+            
+            <p 
+              className={`text-lg md:text-xl text-slate-700 dark:text-slate-300 mb-8 max-w-xl transition-all duration-700 delay-300 ${
+                isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+              }`}
+            >
               AI-powered risk management platform built specifically for Canadian financial institutions to achieve compliance with OSFI guidelines.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Button asChild size="lg" className="text-base">
+            
+            <div 
+              className={`flex flex-wrap gap-4 transition-all duration-700 delay-450 ${
+                isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+              }`}
+            >
+              <Button asChild size="lg" className="text-base rounded-xl">
                 <Link to="/start">Get Started</Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="text-base">
+              <Button asChild size="lg" variant="outline" className="text-base rounded-xl">
                 <Link to="/demo">Request Demo</Link>
               </Button>
             </div>
 
-            <div className="mt-12 grid grid-cols-2 gap-6">
+            <div 
+              className={`mt-12 grid grid-cols-2 gap-6 transition-all duration-700 delay-600 ${
+                isLoaded ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+              }`}
+            >
               <div className="flex items-start space-x-3">
                 <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
                 <div>
@@ -68,10 +102,14 @@ const Hero = () => {
             </div>
           </div>
           
-          <div className="relative lg:block">
+          <div 
+            className={`relative lg:block transition-all duration-1000 delay-300 ${
+              isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            }`}
+          >
             <div className="absolute -left-4 -top-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-pulse-slow dark:bg-blue-800 dark:opacity-50"></div>
             <div className="absolute -right-4 -bottom-4 w-72 h-72 bg-teal-400 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-pulse-slow dark:bg-teal-800 dark:opacity-50"></div>
-            <div className="relative bg-white dark:bg-slate-950 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden">
+            <div className="relative bg-white dark:bg-slate-950 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden transition-all hover:shadow-2xl duration-300">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h3 className="text-lg font-medium">Critical Risk Overview</h3>
@@ -87,8 +125,11 @@ const Hero = () => {
                       High Risk
                     </span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                    <div className="bg-red-500 h-2.5 rounded-full" style={{ width: '75%' }}></div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-red-500 h-2.5 rounded-full transition-all duration-1000 ease-in-out" 
+                      style={{ width: isLoaded ? '75%' : '0%' }}
+                    ></div>
                   </div>
                   <div className="mt-2 flex items-center text-xs">
                     <AlertTriangle className="h-3 w-3 text-red-500 mr-1" />
@@ -103,8 +144,11 @@ const Hero = () => {
                       Medium Risk
                     </span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                    <div className="bg-yellow-500 h-2.5 rounded-full" style={{ width: '45%' }}></div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-yellow-500 h-2.5 rounded-full transition-all duration-1000 delay-300 ease-in-out" 
+                      style={{ width: isLoaded ? '45%' : '0%' }}
+                    ></div>
                   </div>
                   <div className="mt-2 flex items-center text-xs">
                     <AlertTriangle className="h-3 w-3 text-yellow-500 mr-1" />
@@ -119,8 +163,11 @@ const Hero = () => {
                       Low Risk
                     </span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                    <div className="bg-green-500 h-2.5 rounded-full" style={{ width: '15%' }}></div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                    <div 
+                      className="bg-green-500 h-2.5 rounded-full transition-all duration-1000 delay-600 ease-in-out" 
+                      style={{ width: isLoaded ? '15%' : '0%' }}
+                    ></div>
                   </div>
                   <div className="mt-2 flex items-center text-xs">
                     <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
