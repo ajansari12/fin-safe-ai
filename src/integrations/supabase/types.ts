@@ -146,6 +146,88 @@ export type Database = {
           },
         ]
       }
+      governance_policy_approvals: {
+        Row: {
+          approval_date: string
+          approver_id: string
+          approver_name: string
+          created_at: string
+          id: string
+          policy_id: string | null
+          signature: string | null
+          updated_at: string
+        }
+        Insert: {
+          approval_date: string
+          approver_id: string
+          approver_name: string
+          created_at?: string
+          id?: string
+          policy_id?: string | null
+          signature?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approval_date?: string
+          approver_id?: string
+          approver_name?: string
+          created_at?: string
+          id?: string
+          policy_id?: string | null
+          signature?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_policy_approvals_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "governance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      governance_policy_reviews: {
+        Row: {
+          comments: string | null
+          created_at: string
+          id: string
+          policy_id: string | null
+          reviewer_id: string
+          reviewer_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          policy_id?: string | null
+          reviewer_id: string
+          reviewer_name: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          id?: string
+          policy_id?: string | null
+          reviewer_id?: string
+          reviewer_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_policy_reviews_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "governance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       governance_review_schedule: {
         Row: {
           created_at: string

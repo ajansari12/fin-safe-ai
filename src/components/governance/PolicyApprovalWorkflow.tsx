@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { GovernancePolicy, PolicyApproval, PolicyReviewStatus } from "@/pages/governance/types";
 import { createPolicyApproval, createPolicyReview, getPolicyApprovalsByPolicyId, getPolicyReviewsByPolicyId } from "@/services/governance-service";
@@ -61,9 +60,10 @@ export default function PolicyApprovalWorkflow({ policy, onApprovalChange }: Pol
     }
   };
   
-  useState(() => {
+  // Fix: Use useEffect instead of useState for initialization
+  useEffect(() => {
     refreshData();
-  });
+  }, [policy.id]); // Add policy.id as a dependency
   
   const handleOpenReviewDialog = (status: 'approved' | 'rejected') => {
     setReviewStatus(status);

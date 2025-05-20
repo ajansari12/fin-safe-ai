@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -542,7 +543,7 @@ export async function createPolicyReview(review: Omit<PolicyReviewStatus, 'id' |
     }
 
     toast.success("Review status recorded successfully");
-    return data as PolicyReviewStatus;
+    return data as unknown as PolicyReviewStatus;
   } catch (error) {
     console.error('Error creating policy review status:', error);
     toast.error("Failed to record review status");
@@ -561,7 +562,7 @@ export async function getPolicyReviewsByPolicyId(policyId: string): Promise<Poli
       throw error;
     }
 
-    return data as PolicyReviewStatus[] || [];
+    return data as unknown as PolicyReviewStatus[] || [];
   } catch (error) {
     console.error(`Error fetching reviews for policy ${policyId}:`, error);
     toast.error("Failed to load policy reviews");
@@ -582,7 +583,7 @@ export async function createPolicyApproval(approval: Omit<PolicyApproval, 'id' |
     }
 
     toast.success("Policy approval recorded successfully");
-    return data as PolicyApproval;
+    return data as unknown as PolicyApproval;
   } catch (error) {
     console.error('Error recording policy approval:', error);
     toast.error("Failed to record policy approval");
@@ -601,7 +602,7 @@ export async function getPolicyApprovalsByPolicyId(policyId: string): Promise<Po
       throw error;
     }
 
-    return data as PolicyApproval[] || [];
+    return data as unknown as PolicyApproval[] || [];
   } catch (error) {
     console.error(`Error fetching approvals for policy ${policyId}:`, error);
     toast.error("Failed to load policy approvals");
@@ -656,7 +657,7 @@ export async function getComplianceMetricsByOrgId(orgId: string): Promise<Compli
           // If no review schedule, it needs review
           policiesNeedingReview++;
         } else {
-          // Fix: Access the first element of the array if it's an array
+          // Fix: Handle the review schedule data properly whether it's an array or object
           const scheduleData = Array.isArray(policy.governance_review_schedule) 
             ? policy.governance_review_schedule[0] 
             : policy.governance_review_schedule;
