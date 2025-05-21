@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatCardsSection from "@/components/dashboard/StatCardsSection";
@@ -8,8 +8,15 @@ import IncidentTimelineSection from "@/components/dashboard/IncidentTimelineSect
 import ActionItemsCard from "@/components/dashboard/ActionItemsCard";
 import ProgramMaturityCard from "@/components/dashboard/ProgramMaturityCard";
 import PlaceholderContent from "@/components/dashboard/PlaceholderContent";
+import { useAIAssistant } from "@/components/ai-assistant";
 
 const Dashboard = () => {
+  const { setCurrentModule } = useAIAssistant();
+  
+  useEffect(() => {
+    setCurrentModule("dashboard");
+  }, [setCurrentModule]);
+  
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
