@@ -81,10 +81,10 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (profile) {
       setUserRole(profile.role || null);
       
-      // If we have an organization ID, load organization data
-      if (profile.organization_id) {
-        loadOrganizationData(profile.organization_id);
-      }
+      // Use default values for organization context since we don't have the organizations table yet
+      // This will be replaced once the database schema is updated
+      setOrgSector("banking");
+      setOrgSize("medium");
     }
   }, [profile]);
   
@@ -93,44 +93,13 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
     loadKnowledgeBase();
   }, []);
 
-  // Function to load organization data
-  const loadOrganizationData = async (orgId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('organizations')
-        .select('sector, size')
-        .eq('id', orgId)
-        .single();
-      
-      if (error) throw error;
-      
-      if (data) {
-        setOrgSector(data.sector as OrgSector || "banking");
-        setOrgSize(data.size as OrgSize || "medium");
-      }
-    } catch (error) {
-      console.error("Error loading organization data:", error);
-      // Fallback to defaults
-      setOrgSector("banking");
-      setOrgSize("medium");
-    }
-  };
-  
   // Function to load knowledge base
   const loadKnowledgeBase = async () => {
     try {
-      const { data, error } = await supabase
-        .from('knowledge_base')
-        .select('*');
-      
-      if (error) throw error;
-      
-      if (data) {
-        setKnowledgeSources(data as KnowledgeSource[]);
-      } else {
-        // Use mock data if no data is available
-        setKnowledgeSources(mockKnowledgeSources);
-      }
+      // Since the knowledge_base table doesn't exist yet, we'll use the mock data instead
+      // This would be replaced with a real database query once the schema is updated
+      console.log("Using mock knowledge base data");
+      setKnowledgeSources(mockKnowledgeSources);
     } catch (error) {
       console.error("Error loading knowledge base:", error);
       // Fallback to mock data
