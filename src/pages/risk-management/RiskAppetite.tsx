@@ -13,7 +13,7 @@ import { RiskAppetiteStatement } from "./types";
 import { format } from "date-fns";
 
 export default function RiskAppetite() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [statements, setStatements] = useState<RiskAppetiteStatement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,15 +21,15 @@ export default function RiskAppetite() {
   useEffect(() => {
     const loadStatements = async () => {
       setIsLoading(true);
-      if (user?.org_id) {
-        const data = await getRiskAppetiteStatements(user.org_id);
+      if (profile?.organization_id) {
+        const data = await getRiskAppetiteStatements(profile.organization_id);
         setStatements(data);
       }
       setIsLoading(false);
     };
     
     loadStatements();
-  }, [user?.org_id]);
+  }, [profile?.organization_id]);
 
   const handleCreateNew = () => {
     navigate("/risk-appetite/create");

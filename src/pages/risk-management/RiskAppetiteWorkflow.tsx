@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,7 +40,7 @@ import { toast } from "sonner";
 export default function RiskAppetiteWorkflow() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState("statement");
   const [categories, setCategories] = useState<RiskCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -226,7 +225,7 @@ export default function RiskAppetiteWorkflow() {
     setIsSaving(true);
     
     try {
-      const orgId = user.org_id || "default";
+      const orgId = profile?.organization_id || "default";
       const statementId = await saveRiskAppetiteWorkflow(formData, orgId, user?.id);
       
       if (statementId) {
