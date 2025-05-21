@@ -348,6 +348,53 @@ export type Database = {
           },
         ]
       }
+      kri_definitions: {
+        Row: {
+          created_at: string
+          critical_threshold: string | null
+          description: string | null
+          id: string
+          measurement_frequency: string | null
+          name: string
+          target_value: string | null
+          threshold_id: string
+          updated_at: string
+          warning_threshold: string | null
+        }
+        Insert: {
+          created_at?: string
+          critical_threshold?: string | null
+          description?: string | null
+          id?: string
+          measurement_frequency?: string | null
+          name: string
+          target_value?: string | null
+          threshold_id: string
+          updated_at?: string
+          warning_threshold?: string | null
+        }
+        Update: {
+          created_at?: string
+          critical_threshold?: string | null
+          description?: string | null
+          id?: string
+          measurement_frequency?: string | null
+          name?: string
+          target_value?: string | null
+          threshold_id?: string
+          updated_at?: string
+          warning_threshold?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kri_definitions_threshold_id_fkey"
+            columns: ["threshold_id"]
+            isOneToOne: false
+            referencedRelation: "risk_thresholds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -377,6 +424,117 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      risk_appetite_statements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          org_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          org_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          org_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      risk_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_thresholds: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          escalation_trigger: string | null
+          id: string
+          statement_id: string
+          tolerance_level: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          escalation_trigger?: string | null
+          id?: string
+          statement_id: string
+          tolerance_level: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          escalation_trigger?: string | null
+          id?: string
+          statement_id?: string
+          tolerance_level?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_thresholds_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "risk_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_thresholds_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "risk_appetite_statements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
