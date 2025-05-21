@@ -2,9 +2,7 @@
 import React from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
-import { AIAssistantButton } from "@/components/ai-assistant";
-import { AIAssistantDialog } from "@/components/ai-assistant";
-import { AIAssistantProvider } from "@/components/ai-assistant";
+import { AIAssistantProvider, AIAssistantButton, AIAssistantDialog } from "@/components/ai-assistant";
 
 interface PageLayoutProps {
   children: React.ReactNode;
