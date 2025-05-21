@@ -1,11 +1,75 @@
 
-import React from "react";
+import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAIAssistant } from "@/components/ai-assistant";
+import { createImpactTolerance, publishImpactTolerance, updateImpactTolerance } from "@/services/business-functions-service";
+import BusinessFunctionSelect from "@/components/impact-tolerance/BusinessFunctionSelect";
+import ImpactToleranceForm from "@/components/impact-tolerance/ImpactToleranceForm";
+import ImpactTolerancesList from "@/components/impact-tolerance/ImpactTolerancesList";
 
 const ImpactTolerances = () => {
   const { user } = useAuth();
+  const { setCurrentModule } = useAIAssistant();
+  const queryClient = useQueryClient();
+  
+  const [selectedTab, setSelectedTab] = useState("define");
+  const [selectedFunctionId, setSelectedFunctionId] = useState<string | undefined>();
+  const [selectedTolerance, setSelectedTolerance] = useState<any | null>(null);
+  
+  React.useEffect(() => {
+    setCurrentModule("impact-tolerances");
+  }, [setCurrentModule]);
+  
+  const handleSaveTolerance = async (values: any) => {
+    if (selectedTolerance) {
+      // Update existing tolerance
+      await updateImpactTolerance(selectedTolerance.id, values);
+    } else {
+      // Create new tolerance
+      await createImpactTolerance(values);
+    }
+    
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['impactTolerances'] });
+    
+    // Reset form and selection state if creating new
+    if (!selectedTolerance) {
+      setSelectedFunctionId(undefined);
+    }
+  };
+  
+  const handlePublishTolerance = async (values: any) => {
+    if (selectedTolerance) {
+      // Update and publish existing tolerance
+      await updateImpactTolerance(selectedTolerance.id, {
+        ...values,
+        status: 'published'
+      });
+    } else {
+      // Create new tolerance as published
+      await createImpactTolerance({
+        ...values,
+        status: 'published'
+      });
+    }
+    
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ['impactTolerances'] });
+    
+    // Reset form and selection state
+    setSelectedFunctionId(undefined);
+    setSelectedTolerance(null);
+    setSelectedTab("view");
+  };
+  
+  const handleSelectTolerance = (tolerance: any) => {
+    setSelectedTolerance(tolerance);
+    setSelectedFunctionId(tolerance.function_id);
+    setSelectedTab("define");
+  };
 
   return (
     <AuthenticatedLayout>
@@ -17,31 +81,39 @@ const ImpactTolerances = () => {
           </p>
         </div>
         
-        <div className="grid gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Define Impact Tolerances</CardTitle>
-              <CardDescription>
-                Set time-based tolerances for disruption to critical services.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Content for defining impact tolerances will go here.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Tolerance Testing</CardTitle>
-              <CardDescription>
-                Test and validate your defined impact tolerances.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>Content for tolerance testing will go here.</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} defaultValue="define">
+          <TabsList>
+            <TabsTrigger value="define">Define Impact Tolerances</TabsTrigger>
+            <TabsTrigger value="view">View Defined Tolerances</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="define" className="space-y-6 mt-6">
+            {/* Business Function Selection */}
+            <BusinessFunctionSelect 
+              onSelect={id => {
+                setSelectedFunctionId(id);
+                setSelectedTolerance(null);
+              }}
+              selectedId={selectedFunctionId}
+            />
+            
+            {/* Impact Tolerance Form - conditionally shown when function is selected */}
+            {selectedFunctionId && (
+              <ImpactToleranceForm
+                functionId={selectedFunctionId}
+                onSave={handleSaveTolerance}
+                onPublish={handlePublishTolerance}
+                initialValues={selectedTolerance}
+                isEdit={!!selectedTolerance}
+              />
+            )}
+          </TabsContent>
+          
+          <TabsContent value="view" className="space-y-6 mt-6">
+            {/* List of Impact Tolerances */}
+            <ImpactTolerancesList onSelectTolerance={handleSelectTolerance} />
+          </TabsContent>
+        </Tabs>
       </div>
     </AuthenticatedLayout>
   );

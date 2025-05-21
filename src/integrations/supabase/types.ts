@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      business_functions: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          criticality: string
+          description: string | null
+          id: string
+          name: string
+          org_id: string | null
+          owner: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          criticality: string
+          description?: string | null
+          id?: string
+          name: string
+          org_id?: string | null
+          owner?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          criticality?: string
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string | null
+          owner?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       governance_change_logs: {
         Row: {
           change_type: string
@@ -344,6 +380,62 @@ export type Database = {
             columns: ["framework_id"]
             isOneToOne: false
             referencedRelation: "governance_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impact_tolerances: {
+        Row: {
+          compliance_impact: string | null
+          created_at: string | null
+          created_by: string | null
+          financial_impact: string | null
+          function_id: string
+          id: string
+          max_tolerable_downtime: string
+          quantitative_threshold: string
+          recovery_time_objective: string
+          reputational_impact: string | null
+          status: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          compliance_impact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          financial_impact?: string | null
+          function_id: string
+          id?: string
+          max_tolerable_downtime: string
+          quantitative_threshold: string
+          recovery_time_objective: string
+          reputational_impact?: string | null
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          compliance_impact?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          financial_impact?: string | null
+          function_id?: string
+          id?: string
+          max_tolerable_downtime?: string
+          quantitative_threshold?: string
+          recovery_time_objective?: string
+          reputational_impact?: string | null
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impact_tolerances_function_id_fkey"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
             referencedColumns: ["id"]
           },
         ]
