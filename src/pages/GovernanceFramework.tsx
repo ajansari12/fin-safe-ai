@@ -5,21 +5,22 @@ import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import FrameworksList from "@/components/governance/FrameworksList";
 import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAIAssistant } from "@/components/ai-assistant";
+import { useAIAssistant, AIAssistantProvider } from "@/components/ai-assistant";
 
 const GovernanceFramework = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = React.useState("frameworks");
 
-  // Move the AI Assistant hook usage inside the component render
   return (
     <AuthenticatedLayout>
-      <GovernanceFrameworkContent activeTab={activeTab} setActiveTab={setActiveTab} />
+      <AIAssistantProvider>
+        <GovernanceFrameworkContent activeTab={activeTab} setActiveTab={setActiveTab} />
+      </AIAssistantProvider>
     </AuthenticatedLayout>
   );
 };
 
-// Create a child component that will use the AIAssistant hook after the provider is available
+// Child component that uses the AIAssistant hook after the provider is available
 const GovernanceFrameworkContent = ({ 
   activeTab, 
   setActiveTab 

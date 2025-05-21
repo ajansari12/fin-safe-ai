@@ -1,10 +1,9 @@
+
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { AIAssistantButton } from "@/components/ai-assistant";
-import { AIAssistantDialog } from "@/components/ai-assistant";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface AuthenticatedLayoutProps {
@@ -147,9 +146,6 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             </div>
           </main>
         </div>
-        
-        <AIAssistantButton />
-        <AIAssistantDialog />
       </div>
     </TooltipProvider>
   );
