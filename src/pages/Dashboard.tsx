@@ -8,7 +8,7 @@ import IncidentTimelineSection from "@/components/dashboard/IncidentTimelineSect
 import ActionItemsCard from "@/components/dashboard/ActionItemsCard";
 import ProgramMaturityCard from "@/components/dashboard/ProgramMaturityCard";
 import PlaceholderContent from "@/components/dashboard/PlaceholderContent";
-import { AIAssistantProvider, useAIAssistant } from "@/components/ai-assistant";
+import { useAIAssistant } from "@/components/ai-assistant";
 
 const DashboardContent = () => {
   const { setCurrentModule } = useAIAssistant();

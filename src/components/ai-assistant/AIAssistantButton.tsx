@@ -25,6 +25,14 @@ export const AIAssistantButton = () => {
         return "Ask me about setting impact tolerance levels";
       case "business-functions":
         return "Ask me about critical business functions";
+      case "dependencies":
+        return "Ask me about mapping dependencies";
+      case "scenario-testing":
+        return "Ask me about scenario testing methods";
+      case "third-party-risk":
+        return "Ask me about third-party risk management";
+      case "controls-and-kri":
+        return "Ask me about controls and KRIs";
       default:
         return `Ask me about ${currentModule}`;
     }

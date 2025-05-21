@@ -19,6 +19,16 @@ export type OrgSize = "small" | "medium" | "large" | "enterprise";
 // Define the AI knowledge domains
 export type KnowledgeDomain = "E-21" | "ISO-22301" | "OSFI" | "general";
 
+export interface KnowledgeSource {
+  id: string;
+  title: string;
+  domain: KnowledgeDomain;
+  sections: {
+    title: string;
+    content: string;
+  }[];
+}
+
 interface AIAssistantContextType {
   isAssistantOpen: boolean;
   setIsAssistantOpen: (isOpen: boolean) => void;
@@ -34,6 +44,7 @@ interface AIAssistantContextType {
   suggestKRIs: (category: string) => void;
   guideSetup: (step: string) => void;
   summarizeContent: (content: string) => void;
+  knowledgeSources: KnowledgeSource[];
 }
 
 const AIAssistantContext = createContext<AIAssistantContextType | undefined>(undefined);
@@ -52,6 +63,7 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [userRole, setUserRole] = useState<string | null>(null);
   const [orgSector, setOrgSector] = useState<OrgSector | null>(null);
   const [orgSize, setOrgSize] = useState<OrgSize | null>(null);
+  const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
   const { user, profile } = useAuth();
   
   const [assistantMessages, setAssistantMessages] = useState<AIMessage[]>([
@@ -76,26 +88,123 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [profile]);
   
+  // Load knowledge base data
+  useEffect(() => {
+    loadKnowledgeBase();
+  }, []);
+
   // Function to load organization data
   const loadOrganizationData = async (orgId: string) => {
     try {
-      // In a real implementation, this would fetch the organization details
-      // from the database. For now, we'll use placeholder data
-      setOrgSector("banking");
-      setOrgSize("medium");
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('sector, size')
+        .eq('id', orgId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setOrgSector(data.sector as OrgSector || "banking");
+        setOrgSize(data.size as OrgSize || "medium");
+      }
     } catch (error) {
       console.error("Error loading organization data:", error);
+      // Fallback to defaults
+      setOrgSector("banking");
+      setOrgSize("medium");
+    }
+  };
+  
+  // Function to load knowledge base
+  const loadKnowledgeBase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('knowledge_base')
+        .select('*');
+      
+      if (error) throw error;
+      
+      if (data) {
+        setKnowledgeSources(data as KnowledgeSource[]);
+      } else {
+        // Use mock data if no data is available
+        setKnowledgeSources(mockKnowledgeSources);
+      }
+    } catch (error) {
+      console.error("Error loading knowledge base:", error);
+      // Fallback to mock data
+      setKnowledgeSources(mockKnowledgeSources);
     }
   };
 
-  // Function to generate context-aware AI responses
+  // Mock knowledge sources for development
+  const mockKnowledgeSources: KnowledgeSource[] = [
+    {
+      id: "e-21",
+      title: "OSFI E-21 Guideline",
+      domain: "E-21",
+      sections: [
+        {
+          title: "Introduction",
+          content: "OSFI Guideline E-21 establishes expectations for federally regulated financial institutions (FRFIs) to develop robust approaches to operational risk management."
+        },
+        {
+          title: "Operational Risk Management Framework",
+          content: "The ORMF is the set of interrelated tools and processes that a FRFI uses to identify, assess, measure, monitor, and respond to operational risks."
+        },
+        {
+          title: "Key Definitions",
+          content: "Operational risk is the risk of loss resulting from people, inadequate or failed internal processes and systems, or from external events. Operational resilience is the ability of a FRFI to deliver critical operations through disruption."
+        }
+      ]
+    },
+    {
+      id: "iso-22301",
+      title: "ISO 22301",
+      domain: "ISO-22301",
+      sections: [
+        {
+          title: "Overview",
+          content: "ISO 22301 is the international standard for Business Continuity Management Systems (BCMS). It provides a framework to plan, establish, implement, operate, monitor, review, maintain and continually improve a business continuity management system."
+        },
+        {
+          title: "Business Impact Analysis",
+          content: "BIA is the process of analyzing the impact over time of a disruption on the organization. It helps identify time-critical functions, their recovery priorities, and resource requirements."
+        }
+      ]
+    }
+  ];
+
+  // Search knowledge base for relevant information
+  const searchKnowledgeBase = (query: string): string | null => {
+    const normalizedQuery = query.toLowerCase();
+    
+    for (const source of knowledgeSources) {
+      for (const section of source.sections) {
+        if (
+          section.title.toLowerCase().includes(normalizedQuery) ||
+          section.content.toLowerCase().includes(normalizedQuery)
+        ) {
+          return `${section.content}\n\nSource: ${source.title}, ${section.title}`;
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  // Function to generate AI response
   const generateAIResponse = async (message: string, context: any) => {
     setIsLoading(true);
     
     try {
+      // Check if we can find relevant information in the knowledge base
+      const knowledgeBaseInfo = searchKnowledgeBase(message);
+      
       // In a production environment, this would call an edge function
       // that interfaces with an AI service like OpenAI
-      // For now, we'll simulate responses based on context
+      // For now, we'll enhance our simulated responses with context and knowledge base
       
       let aiResponse = "";
       const moduleContext = currentModule || "general";
@@ -111,13 +220,44 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
         case "impact-tolerances":
           aiResponse = simulateToleranceResponse(message);
           break;
+        case "business-functions":
+          aiResponse = simulateBusinessFunctionsResponse(message);
+          break;
+        case "dependencies":
+          aiResponse = simulateDependenciesResponse(message);
+          break;
+        case "scenario-testing":
+          aiResponse = simulateScenarioTestingResponse(message);
+          break;
+        case "business-continuity":
+          aiResponse = simulateBusinessContinuityResponse(message);
+          break;
+        case "third-party-risk":
+          aiResponse = simulateThirdPartyRiskResponse(message);
+          break;
+        case "controls-and-kri":
+          aiResponse = simulateControlsResponse(message);
+          break;
+        case "incident-log":
+          aiResponse = simulateIncidentResponse(message);
+          break;
         default:
           aiResponse = simulateGeneralResponse(message);
+      }
+      
+      // Add knowledge base information if available
+      if (knowledgeBaseInfo) {
+        aiResponse = `Based on our knowledge base:\n\n${knowledgeBaseInfo}\n\n${aiResponse}`;
       }
       
       // Add user role context if available
       if (userRole) {
         aiResponse += getContextualAdvice(userRole);
+      }
+      
+      // Add organization context if available
+      if (orgSector) {
+        aiResponse += getSectorAdvice(orgSector);
       }
       
       // Simulate a delay to make it feel more natural
@@ -180,6 +320,34 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return "Impact tolerances define the maximum acceptable level of disruption to a business service. They should be expressed in terms of maximum tolerable downtime, data loss, or other relevant metrics specific to each critical business function.";
   };
   
+  const simulateBusinessFunctionsResponse = (message: string) => {
+    return "When mapping critical business functions, focus on identifying processes that directly support customer outcomes, financial stability, or regulatory compliance. Consider both front-office and back-office functions that are essential to your operations.";
+  };
+  
+  const simulateDependenciesResponse = (message: string) => {
+    return "Mapping dependencies requires identifying all internal and external resources required to deliver critical business services. This includes IT systems, third parties, staff, facilities, and data. Document both upstream and downstream dependencies for a complete view.";
+  };
+  
+  const simulateScenarioTestingResponse = (message: string) => {
+    return "Effective scenario testing should include severe but plausible scenarios based on your risk profile. Consider cyber attacks, technology failures, third-party outages, and natural disasters. The scenarios should test your ability to stay within impact tolerances.";
+  };
+  
+  const simulateBusinessContinuityResponse = (message: string) => {
+    return "Modern business continuity plans should focus on outcomes rather than just processes. Ensure plans are regularly tested, address dependencies, and include clear communication protocols. ISO 22301 provides a comprehensive framework for business continuity management.";
+  };
+  
+  const simulateThirdPartyRiskResponse = (message: string) => {
+    return "OSFI B-10 requires financial institutions to have a comprehensive third-party risk management program. This should include risk assessment, due diligence, contractual protections, and ongoing monitoring for all critical service providers.";
+  };
+  
+  const simulateControlsResponse = (message: string) => {
+    return "Controls should be designed based on your specific risks and aligned with your risk appetite. Implement both preventive and detective controls, and ensure they are regularly tested for effectiveness. Document control ownership and testing procedures clearly.";
+  };
+  
+  const simulateIncidentResponse = (message: string) => {
+    return "Incident management processes should enable quick detection, classification, and response to operational disruptions. Establish clear escalation paths, communication protocols, and roles for incident response teams. Document lessons learned from each incident.";
+  };
+  
   const simulateGeneralResponse = (message: string) => {
     if (message.toLowerCase().includes("e-21") || message.toLowerCase().includes("guideline")) {
       return "OSFI Guideline E-21 establishes expectations for federally regulated financial institutions (FRFIs) to develop robust approaches to operational risk management. It emphasizes a principles-based approach focusing on sound operational risk governance, management, and assessment.";
@@ -202,6 +370,23 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
       case "board":
       case "executive":
         return "\n\nAs an executive, you'll want to ensure this is aligned with strategic objectives and that proper reporting mechanisms are in place.";
+      case "compliance":
+        return "\n\nFrom a compliance perspective, ensure these elements are properly documented and regularly reviewed to meet regulatory expectations.";
+      default:
+        return "";
+    }
+  };
+  
+  const getSectorAdvice = (sector: OrgSector) => {
+    switch (sector) {
+      case "banking":
+        return "\n\nFor banking institutions, this should align with prudential regulatory requirements, particularly OSFI guidelines on operational resilience.";
+      case "insurance":
+        return "\n\nInsurance providers should consider policyholder protection and claim processing capabilities when implementing this.";
+      case "fintech":
+        return "\n\nAs a fintech organization, focus on digital service availability and data protection aspects of this requirement.";
+      case "investment":
+        return "\n\nInvestment firms should consider market access and transaction processing capabilities as key resilience priorities.";
       default:
         return "";
     }
@@ -267,7 +452,8 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
         explainTerm,
         suggestKRIs,
         guideSetup,
-        summarizeContent
+        summarizeContent,
+        knowledgeSources
       }}
     >
       {children}
