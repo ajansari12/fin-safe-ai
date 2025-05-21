@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
@@ -42,8 +43,8 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
   ];
 
   return (
-    <TooltipProvider>
-      <AIAssistantProvider>
+    <AIAssistantProvider>
+      <TooltipProvider>
         <div className="flex h-screen bg-gray-100 dark:bg-slate-900">
           {/* Sidebar */}
           <aside 
@@ -150,8 +151,8 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
         </div>
         <AIAssistantButton />
         <AIAssistantDialog />
-      </AIAssistantProvider>
-    </TooltipProvider>
+      </TooltipProvider>
+    </AIAssistantProvider>
   );
 };
 
