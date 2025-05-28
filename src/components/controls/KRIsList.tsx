@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, Trash2, Plus, TrendingUp } from "lucide-react";
-import { KRIDefinition } from "@/services/controls-service";
+import { KRIDefinition } from "@/services/kri-definitions";
 
 interface KRIsListProps {
   kris: KRIDefinition[];

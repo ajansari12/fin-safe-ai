@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { getControls, getKRIDefinitions, Control, KRIDefinition } from "@/services/controls-service";
+import { getControls, Control } from "@/services/controls";
+import { getKRIDefinitions, KRIDefinition } from "@/services/kri-definitions";
 import { getKRIBreachesData } from "@/services/kri-analytics-service";
 
 const ControlsDashboard: React.FC = () => {

@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, Trash2, Plus } from "lucide-react";
-import { Control } from "@/services/controls-service";
+import { Control } from "@/services/controls";
 
 interface ControlsListProps {
   controls: Control[];

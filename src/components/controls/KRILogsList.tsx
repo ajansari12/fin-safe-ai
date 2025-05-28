@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, AlertTriangle } from "lucide-react";
-import { KRILog } from "@/services/controls-service";
+import { KRILog } from "@/services/kri-logs";
 
 interface KRILogsListProps {
   logs: KRILog[];

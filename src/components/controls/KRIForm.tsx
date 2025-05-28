@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { KRIDefinition, Control, getControls } from "@/services/controls-service";
+import { KRIDefinition } from "@/services/kri-definitions";
+import { Control, getControls } from "@/services/controls";
 
 interface KRIFormProps {
   kri?: KRIDefinition;

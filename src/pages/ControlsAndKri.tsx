@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
@@ -13,17 +12,21 @@ import KRILogsList from "@/components/controls/KRILogsList";
 import KRILogForm from "@/components/controls/KRILogForm";
 import {
   Control,
-  KRIDefinition,
-  KRILog,
   getControls,
   createControl,
   updateControl,
-  deleteControl,
+  deleteControl
+} from "@/services/controls";
+import {
+  KRIDefinition,
   getKRIDefinitions,
-  createKRIDefinition,
+  createKRIDefinition
+} from "@/services/kri-definitions";
+import {
+  KRILog,
   getKRILogs,
   createKRILog
-} from "@/services/controls-service";
+} from "@/services/kri-logs";
 
 const ControlsAndKri = () => {
   const { user } = useAuth();
