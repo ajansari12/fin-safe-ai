@@ -43,11 +43,11 @@ export async function getMostSensitiveCBFs(): Promise<SensitiveCBF[]> {
     return data?.map(item => ({
       id: item.id,
       name: item.name,
-      category: item.category,
+      category: item.category || 'Unknown',
       criticality: item.criticality,
-      max_tolerable_downtime: Array.isArray(item.impact_tolerances) 
-        ? item.impact_tolerances[0]?.max_tolerable_downtime || 'Unknown'
-        : item.impact_tolerances?.max_tolerable_downtime || 'Unknown'
+      max_tolerable_downtime: Array.isArray(item.impact_tolerances) && item.impact_tolerances.length > 0
+        ? (item.impact_tolerances[0] as any)?.max_tolerable_downtime || 'Unknown'
+        : 'Unknown'
     })) || [];
   } catch (error) {
     console.error('Error fetching most sensitive CBFs:', error);
