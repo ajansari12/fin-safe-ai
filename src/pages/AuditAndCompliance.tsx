@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, AlertTriangle, CheckSquare, FileText } from "lucide-react";
+import { Upload, AlertTriangle, CheckSquare, FileText, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AuditUploadForm from "@/components/audit/AuditUploadForm";
 import AuditDocumentsList from "@/components/audit/AuditDocumentsList";
@@ -14,9 +13,10 @@ import AuditTaskForm from "@/components/audit/AuditTaskForm";
 import AuditTasksList from "@/components/audit/AuditTasksList";
 import AuditTrailExport from "@/components/audit/AuditTrailExport";
 import { auditService, AuditUpload, ComplianceFinding, AuditTask } from "@/services/audit-service";
+import { Button } from "@/components/ui/button";
 
 const AuditAndCompliance = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("documents");
   const [showFindingForm, setShowFindingForm] = useState(false);
@@ -32,25 +32,50 @@ const AuditAndCompliance = () => {
 
   // Get org_id from user profile
   const [orgId, setOrgId] = useState<string>("");
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        setProfileLoading(false);
+        return;
+      }
       
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .single();
+      console.log('Fetching profile for user:', user.id);
       
-      if (profile?.organization_id) {
-        setOrgId(profile.organization_id);
+      try {
+        const { supabase } = await import("@/integrations/supabase/client");
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('organization_id, full_name')
+          .eq('id', user.id)
+          .single();
+        
+        console.log('Profile data:', profile);
+        console.log('Profile error:', error);
+        
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast({
+            title: "Error loading profile",
+            description: "There was an error loading your profile data.",
+            variant: "destructive"
+          });
+        } else if (profile?.organization_id) {
+          console.log('Setting orgId to:', profile.organization_id);
+          setOrgId(profile.organization_id);
+        } else {
+          console.log('No organization_id found in profile');
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      } finally {
+        setProfileLoading(false);
       }
     };
 
     fetchUserProfile();
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     if (orgId) {
@@ -79,6 +104,40 @@ const AuditAndCompliance = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateSampleOrganization = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      // Create a sample organization ID
+      const sampleOrgId = crypto.randomUUID();
+      
+      // Update the user's profile with the organization ID
+      const { error } = await supabase
+        .from('profiles')
+        .update({ organization_id: sampleOrgId })
+        .eq('id', user.id);
+      
+      if (error) {
+        console.error('Error updating profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to set up organization. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        setOrgId(sampleOrgId);
+        toast({
+          title: "Organization set up",
+          description: "Your organization has been configured successfully."
+        });
+      }
+    } catch (error) {
+      console.error('Error creating organization:', error);
     }
   };
 
@@ -124,11 +183,39 @@ const AuditAndCompliance = () => {
     loadData();
   };
 
-  if (!orgId) {
+  if (profileLoading) {
     return (
       <AuthenticatedLayout>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Loading organization data...</p>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  if (!orgId) {
+    return (
+      <AuthenticatedLayout>
+        <div className="flex items-center justify-center h-64">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Building2 className="h-6 w-6" />
+                Organization Setup Required
+              </CardTitle>
+              <CardDescription>
+                You need to be associated with an organization to access audit and compliance features.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-sm text-muted-foreground mb-4">
+                Current user: {profile?.full_name || user?.email}
+              </p>
+              <Button onClick={handleCreateSampleOrganization}>
+                Set Up Organization
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </AuthenticatedLayout>
     );
