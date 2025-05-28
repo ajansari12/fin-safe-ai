@@ -728,6 +728,149 @@ export type Database = {
           },
         ]
       }
+      scenario_test_controls: {
+        Row: {
+          control_name: string
+          control_type: string | null
+          created_at: string
+          effectiveness: string
+          id: string
+          notes: string | null
+          scenario_test_id: string
+        }
+        Insert: {
+          control_name: string
+          control_type?: string | null
+          created_at?: string
+          effectiveness?: string
+          id?: string
+          notes?: string | null
+          scenario_test_id: string
+        }
+        Update: {
+          control_name?: string
+          control_type?: string | null
+          created_at?: string
+          effectiveness?: string
+          id?: string
+          notes?: string | null
+          scenario_test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_test_controls_scenario_test_id_fkey"
+            columns: ["scenario_test_id"]
+            isOneToOne: false
+            referencedRelation: "scenario_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenario_test_functions: {
+        Row: {
+          actual_downtime: string | null
+          business_function_id: string
+          created_at: string
+          estimated_downtime: string | null
+          id: string
+          impact_level: string
+          scenario_test_id: string
+        }
+        Insert: {
+          actual_downtime?: string | null
+          business_function_id: string
+          created_at?: string
+          estimated_downtime?: string | null
+          id?: string
+          impact_level?: string
+          scenario_test_id: string
+        }
+        Update: {
+          actual_downtime?: string | null
+          business_function_id?: string
+          created_at?: string
+          estimated_downtime?: string | null
+          id?: string
+          impact_level?: string
+          scenario_test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_test_functions_business_function_id_fkey"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scenario_test_functions_scenario_test_id_fkey"
+            columns: ["scenario_test_id"]
+            isOneToOne: false
+            referencedRelation: "scenario_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenario_tests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          current_step: number
+          description: string | null
+          disruption_type: string
+          id: string
+          improvements_identified: string | null
+          lessons_learned: string | null
+          org_id: string
+          outcome: string | null
+          post_mortem: string | null
+          response_plan: string | null
+          severity_level: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: number
+          description?: string | null
+          disruption_type: string
+          id?: string
+          improvements_identified?: string | null
+          lessons_learned?: string | null
+          org_id: string
+          outcome?: string | null
+          post_mortem?: string | null
+          response_plan?: string | null
+          severity_level?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_step?: number
+          description?: string | null
+          disruption_type?: string
+          id?: string
+          improvements_identified?: string | null
+          lessons_learned?: string | null
+          org_id?: string
+          outcome?: string | null
+          post_mortem?: string | null
+          response_plan?: string | null
+          severity_level?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       third_party_reviews: {
         Row: {
           assigned_reviewer: string | null
