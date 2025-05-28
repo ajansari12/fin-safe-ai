@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ const KRILogForm: React.FC<KRILogFormProps> = ({
       kri_id: kriId,
       measurement_date: new Date().toISOString().split('T')[0],
       actual_value: '',
-      threshold_breached: '',
+      threshold_breached: 'none',
       notes: ''
     }
   });
@@ -38,7 +39,8 @@ const KRILogForm: React.FC<KRILogFormProps> = ({
   const handleFormSubmit = (data: any) => {
     onSubmit({
       ...data,
-      actual_value: parseFloat(data.actual_value)
+      actual_value: parseFloat(data.actual_value),
+      threshold_breached: data.threshold_breached === 'none' ? '' : data.threshold_breached
     });
   };
 
@@ -91,7 +93,7 @@ const KRILogForm: React.FC<KRILogFormProps> = ({
                 <SelectValue placeholder="Select threshold status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No breach</SelectItem>
+                <SelectItem value="none">No breach</SelectItem>
                 <SelectItem value="warning">Warning threshold breached</SelectItem>
                 <SelectItem value="critical">Critical threshold breached</SelectItem>
               </SelectContent>

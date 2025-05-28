@@ -76,14 +76,14 @@ const KRIBasicInfoSection: React.FC<KRIBasicInfoSectionProps> = ({
         <div>
           <Label htmlFor="control_id">Associated Control</Label>
           <Select 
-            value={watchedControlId} 
-            onValueChange={(value) => setValue('control_id', value)}
+            value={watchedControlId || "none"} 
+            onValueChange={(value) => setValue('control_id', value === "none" ? "" : value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select a control (optional)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No control association</SelectItem>
+              <SelectItem value="none">No control association</SelectItem>
               {controls.map((control) => (
                 <SelectItem key={control.id} value={control.id}>
                   {control.title}
@@ -96,14 +96,14 @@ const KRIBasicInfoSection: React.FC<KRIBasicInfoSectionProps> = ({
         <div>
           <Label htmlFor="risk_appetite_statement_id">Risk Appetite Statement</Label>
           <Select 
-            value={watchedRiskAppetiteId} 
-            onValueChange={(value) => setValue('risk_appetite_statement_id', value)}
+            value={watchedRiskAppetiteId || "none"} 
+            onValueChange={(value) => setValue('risk_appetite_statement_id', value === "none" ? "" : value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select risk appetite statement" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No risk appetite link</SelectItem>
+              <SelectItem value="none">No risk appetite link</SelectItem>
               {riskAppetiteStatements.map((statement) => (
                 <SelectItem key={statement.id} value={statement.id}>
                   {statement.title}

@@ -23,13 +23,14 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({
       <div>
         <Label htmlFor="risk_rating">Risk Rating</Label>
         <Select 
-          value={watchedRiskRating} 
-          onValueChange={(value) => setValue('risk_rating', value as 'low' | 'medium' | 'high' | 'critical')}
+          value={watchedRiskRating || "not_set"} 
+          onValueChange={(value) => setValue('risk_rating', value === "not_set" ? "" : value as 'low' | 'medium' | 'high' | 'critical')}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select risk rating" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="not_set">Not assessed</SelectItem>
             <SelectItem value="low">Low</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
             <SelectItem value="high">High</SelectItem>
