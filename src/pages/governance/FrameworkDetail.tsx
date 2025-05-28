@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAIAssistant } from "@/components/ai-assistant";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import {
   Tabs,
@@ -52,7 +50,6 @@ import { format } from "date-fns";
 export default function FrameworkDetail() {
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
-  const { setCurrentModule } = useAIAssistant();
   const [activeTab, setActiveTab] = useState("structure");
   const [framework, setFramework] = useState<GovernanceFramework | null>(null);
   const [structures, setStructures] = useState<GovernanceStructure[]>([]);
@@ -73,7 +70,6 @@ export default function FrameworkDetail() {
   });
 
   useEffect(() => {
-    setCurrentModule("governance-framework");
     loadFrameworkData();
   }, [frameworkId]);
 
