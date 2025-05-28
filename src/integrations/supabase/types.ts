@@ -494,6 +494,7 @@ export type Database = {
           description: string | null
           id: string
           impact_rating: number | null
+          org_id: string
           reported_at: string | null
           reported_by: string | null
           resolved_at: string | null
@@ -510,6 +511,7 @@ export type Database = {
           description?: string | null
           id?: string
           impact_rating?: number | null
+          org_id: string
           reported_at?: string | null
           reported_by?: string | null
           resolved_at?: string | null
@@ -526,6 +528,7 @@ export type Database = {
           description?: string | null
           id?: string
           impact_rating?: number | null
+          org_id?: string
           reported_at?: string | null
           reported_by?: string | null
           resolved_at?: string | null
@@ -540,6 +543,62 @@ export type Database = {
             columns: ["business_function_id"]
             isOneToOne: false
             referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_responses: {
+        Row: {
+          alert_sent_to: string | null
+          created_at: string
+          id: string
+          incident_id: string
+          new_assignee: string | null
+          new_status: string | null
+          previous_assignee: string | null
+          previous_status: string | null
+          response_by: string | null
+          response_by_name: string | null
+          response_content: string
+          response_type: string
+          updated_at: string
+        }
+        Insert: {
+          alert_sent_to?: string | null
+          created_at?: string
+          id?: string
+          incident_id: string
+          new_assignee?: string | null
+          new_status?: string | null
+          previous_assignee?: string | null
+          previous_status?: string | null
+          response_by?: string | null
+          response_by_name?: string | null
+          response_content: string
+          response_type: string
+          updated_at?: string
+        }
+        Update: {
+          alert_sent_to?: string | null
+          created_at?: string
+          id?: string
+          incident_id?: string
+          new_assignee?: string | null
+          new_status?: string | null
+          previous_assignee?: string | null
+          previous_status?: string | null
+          response_by?: string | null
+          response_by_name?: string | null
+          response_content?: string
+          response_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_responses_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incident_logs"
             referencedColumns: ["id"]
           },
         ]
