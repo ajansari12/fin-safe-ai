@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,10 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Download, Trash2, Plus, X } from "lucide-react";
+import { Upload, Download, Trash2, Plus, X, TrendingUp, AlertTriangle, FileContract } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { VendorProfile, VendorDocument, VendorBusinessFunction, getVendorDocuments, getVendorBusinessFunctions, uploadVendorDocument, deleteVendorDocument, addVendorBusinessFunction, removeVendorBusinessFunction } from "@/services/third-party-service";
+import { calculateVendorRiskScore } from "@/services/risk-scoring-service";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import ContractManagement from "./ContractManagement";
 
 interface VendorDetailsDialogProps {
   vendor: VendorProfile | null;
@@ -39,6 +40,12 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
   const { data: businessFunctions = [] } = useQuery({
     queryKey: ['vendorBusinessFunctions', vendor?.id],
     queryFn: () => vendor ? getVendorBusinessFunctions(vendor.id) : Promise.resolve([]),
+    enabled: !!vendor?.id,
+  });
+
+  const { data: riskScore } = useQuery({
+    queryKey: ['vendorRiskScore', vendor?.id],
+    queryFn: () => vendor ? calculateVendorRiskScore(vendor) : Promise.resolve(null),
     enabled: !!vendor?.id,
   });
 
@@ -100,22 +107,37 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{vendor.vendor_name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {vendor.vendor_name}
+            {riskScore && riskScore.risk_score >= 4 && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                High Risk
+              </Badge>
+            )}
+          </DialogTitle>
           <DialogDescription>{vendor.service_provided}</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="risk-analysis" className="flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              Risk Analysis
+            </TabsTrigger>
+            <TabsTrigger value="contracts" className="flex items-center gap-1">
+              <FileContract className="h-3 w-3" />
+              Contracts
+            </TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="business-functions">Functions</TabsTrigger>
-            <TabsTrigger value="alerts">Alerts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm">Criticality</CardTitle>
@@ -138,15 +160,31 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
                 </CardContent>
               </Card>
 
-              {vendor.risk_rating && (
+              {riskScore && (
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Risk Rating</CardTitle>
+                    <CardTitle className="text-sm">Risk Score</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Badge variant={vendor.risk_rating === 'critical' ? 'destructive' : 'default'}>
-                      {vendor.risk_rating}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={riskScore.risk_color}>
+                        {riskScore.risk_level}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {riskScore.risk_score}/5
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {vendor.annual_spend && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Annual Spend</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm font-medium">${vendor.annual_spend.toLocaleString()}</p>
                   </CardContent>
                 </Card>
               )}
@@ -175,12 +213,6 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
                   </p>
                 </div>
               )}
-              {vendor.annual_spend && (
-                <div>
-                  <Label>Annual Spend</Label>
-                  <p className="text-sm">${vendor.annual_spend.toLocaleString()}</p>
-                </div>
-              )}
               {vendor.sla_expiry_date && (
                 <div>
                   <Label>SLA Expiry Date</Label>
@@ -193,6 +225,12 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
                   <p className="text-sm">{new Date(vendor.contract_end_date).toLocaleDateString()}</p>
                 </div>
               )}
+              {vendor.last_assessment_date && (
+                <div>
+                  <Label>Last Assessment</Label>
+                  <p className="text-sm">{new Date(vendor.last_assessment_date).toLocaleDateString()}</p>
+                </div>
+              )}
             </div>
 
             {vendor.notes && (
@@ -201,6 +239,86 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
                 <p className="text-sm whitespace-pre-wrap">{vendor.notes}</p>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="risk-analysis" className="space-y-4">
+            {riskScore ? (
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Risk Assessment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-medium mb-3">Overall Risk Score</h4>
+                        <div className="flex items-center gap-3">
+                          <Badge className={riskScore.risk_color} variant="default">
+                            {riskScore.risk_level}
+                          </Badge>
+                          <span className="text-2xl font-bold">{riskScore.risk_score}/5</span>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-3">Risk Factors</h4>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Criticality:</span>
+                            <span className="font-medium">{riskScore.factors.criticality_score}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Assessment Age:</span>
+                            <span className="font-medium">{riskScore.factors.assessment_score}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Contract Expiry:</span>
+                            <span className="font-medium">{riskScore.factors.contract_score}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>SLA Status:</span>
+                            <span className="font-medium">{riskScore.factors.sla_score}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Vendor Status:</span>
+                            <span className="font-medium">{riskScore.factors.status_score}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recommendations</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {riskScore.recommendations.map((recommendation, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <span className="text-amber-500 mt-1">•</span>
+                          <span className="text-sm">{recommendation}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">Loading risk analysis...</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="contracts" className="space-y-4">
+            <ContractManagement vendorId={vendor.id} vendorName={vendor.vendor_name} />
           </TabsContent>
 
           <TabsContent value="documents" className="space-y-4">
@@ -324,20 +442,6 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="alerts" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>SLA & Contract Alerts</CardTitle>
-                <CardDescription>
-                  Upcoming expirations and renewal reminders
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Alert management coming soon...</p>
               </CardContent>
             </Card>
           </TabsContent>

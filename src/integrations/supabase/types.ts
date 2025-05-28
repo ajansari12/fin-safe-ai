@@ -241,6 +241,56 @@ export type Database = {
           },
         ]
       }
+      contract_renewal_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_date: string
+          alert_type: string
+          contract_id: string
+          created_at: string | null
+          days_until_expiry: number
+          email_sent_at: string | null
+          id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_date: string
+          alert_type?: string
+          contract_id: string
+          created_at?: string | null
+          days_until_expiry: number
+          email_sent_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_date?: string
+          alert_type?: string
+          contract_id?: string
+          created_at?: string | null
+          days_until_expiry?: number
+          email_sent_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_renewal_alerts_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       controls: {
         Row: {
           created_at: string
@@ -1469,6 +1519,83 @@ export type Database = {
           },
         ]
       }
+      vendor_contracts: {
+        Row: {
+          auto_renewal: boolean | null
+          contract_name: string
+          contract_type: string
+          contract_value: number | null
+          created_at: string | null
+          end_date: string
+          file_path: string | null
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          renewal_notice_days: number | null
+          responsible_user_id: string | null
+          responsible_user_name: string | null
+          start_date: string
+          status: string
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+          vendor_profile_id: string
+          version_number: number
+        }
+        Insert: {
+          auto_renewal?: boolean | null
+          contract_name: string
+          contract_type?: string
+          contract_value?: number | null
+          created_at?: string | null
+          end_date: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          renewal_notice_days?: number | null
+          responsible_user_id?: string | null
+          responsible_user_name?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          vendor_profile_id: string
+          version_number?: number
+        }
+        Update: {
+          auto_renewal?: boolean | null
+          contract_name?: string
+          contract_type?: string
+          contract_value?: number | null
+          created_at?: string | null
+          end_date?: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          renewal_notice_days?: number | null
+          responsible_user_id?: string | null
+          responsible_user_name?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+          vendor_profile_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_contracts_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "third_party_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_documents: {
         Row: {
           description: string | null
@@ -1719,6 +1846,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_vendor_risk_score: {
+        Args: {
+          vendor_criticality: string
+          last_assessment_date: string
+          contract_end_date: string
+          sla_expiry_date: string
+          status: string
+        }
+        Returns: number
+      }
+      check_expiring_contracts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       check_user_framework_access: {
         Args: { framework_id: string }
         Returns: boolean

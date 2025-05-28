@@ -5,14 +5,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Plus, FileDown } from "lucide-react";
+import { Plus, FileDown, BarChart3 } from "lucide-react";
 import { createVendorProfile, updateVendorProfile, deleteVendorProfile, getVendorProfiles, VendorProfile } from "@/services/third-party-service";
 import { generateThirdPartyReviewPDF } from "@/services/third-party-pdf-service";
+import { checkExpiringContracts } from "@/services/contract-service";
 import VendorProfileForm from "@/components/third-party/VendorProfileForm";
 import VendorProfilesList from "@/components/third-party/VendorProfilesList";
 import VendorDetailsDialog from "@/components/third-party/VendorDetailsDialog";
+import VendorRiskDashboard from "@/components/third-party/VendorRiskDashboard";
 
 const ThirdPartyRisk = () => {
   const { user } = useAuth();
@@ -22,16 +24,19 @@ const ThirdPartyRisk = () => {
   const [selectedVendor, setSelectedVendor] = useState<VendorProfile | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: ['vendorProfiles'],
     queryFn: getVendorProfiles,
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes for risk updates
   });
 
   const createMutation = useMutation({
     mutationFn: createVendorProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendorProfiles'] });
+      queryClient.invalidateQueries({ queryKey: ['vendorRiskScores'] });
       setIsFormOpen(false);
       setEditingVendor(null);
       toast({
@@ -54,6 +59,7 @@ const ThirdPartyRisk = () => {
       updateVendorProfile(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendorProfiles'] });
+      queryClient.invalidateQueries({ queryKey: ['vendorRiskScores'] });
       setIsFormOpen(false);
       setEditingVendor(null);
       toast({
@@ -75,6 +81,7 @@ const ThirdPartyRisk = () => {
     mutationFn: deleteVendorProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendorProfiles'] });
+      queryClient.invalidateQueries({ queryKey: ['vendorRiskScores'] });
       toast({
         title: "Success",
         description: "Vendor profile deleted successfully",
@@ -87,6 +94,24 @@ const ThirdPartyRisk = () => {
         variant: "destructive",
       });
       console.error('Delete error:', error);
+    }
+  });
+
+  const contractCheckMutation = useMutation({
+    mutationFn: checkExpiringContracts,
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Contract expiry check completed",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to check contract expiry",
+        variant: "destructive",
+      });
+      console.error('Contract check error:', error);
     }
   });
 
@@ -132,6 +157,10 @@ const ThirdPartyRisk = () => {
     }
   };
 
+  const handleCheckContracts = () => {
+    contractCheckMutation.mutate();
+  };
+
   const closeForm = () => {
     setIsFormOpen(false);
     setEditingVendor(null);
@@ -152,13 +181,20 @@ const ThirdPartyRisk = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Third-Party Risk</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Third-Party Risk Management</h1>
             <p className="text-muted-foreground">
-              Assess and manage risks associated with third-party service providers.
+              Assess and manage risks associated with third-party service providers with automated risk scoring and contract management.
             </p>
           </div>
           
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleCheckContracts}
+              disabled={contractCheckMutation.isPending}
+            >
+              {contractCheckMutation.isPending ? "Checking..." : "Check Contracts"}
+            </Button>
             {vendors.length > 0 && (
               <Button 
                 variant="outline" 
@@ -177,12 +213,28 @@ const ThirdPartyRisk = () => {
           </div>
         </div>
 
-        <VendorProfilesList
-          vendors={vendors}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onViewDetails={handleViewDetails}
-        />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Risk Overview
+            </TabsTrigger>
+            <TabsTrigger value="vendors">Vendor Profiles</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview" className="space-y-6">
+            <VendorRiskDashboard />
+          </TabsContent>
+          
+          <TabsContent value="vendors" className="space-y-6">
+            <VendorProfilesList
+              vendors={vendors}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onViewDetails={handleViewDetails}
+            />
+          </TabsContent>
+        </Tabs>
 
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -191,7 +243,7 @@ const ThirdPartyRisk = () => {
                 {editingVendor ? 'Edit Vendor Profile' : 'Add New Vendor'}
               </DialogTitle>
               <DialogDescription>
-                Manage vendor information, contracts, and risk assessments.
+                Manage vendor information, contracts, and risk assessments with automated scoring.
               </DialogDescription>
             </DialogHeader>
             

@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { calculateVendorRiskScore } from "./risk-scoring-service";
 
 export interface VendorProfile {
   id: string;
@@ -23,6 +23,10 @@ export interface VendorProfile {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  // Computed fields
+  calculated_risk_score?: number;
+  calculated_risk_level?: string;
+  calculated_risk_color?: string;
 }
 
 export interface VendorSLAAlert {
@@ -84,7 +88,26 @@ export async function getVendorProfiles(): Promise<VendorProfile[]> {
     .order('vendor_name', { ascending: true });
 
   if (error) throw error;
-  return (data || []) as VendorProfile[];
+
+  // Enhance with risk scoring
+  const vendorsWithRisk = await Promise.all(
+    (data || []).map(async (vendor) => {
+      try {
+        const riskData = await calculateVendorRiskScore(vendor as VendorProfile);
+        return {
+          ...vendor,
+          calculated_risk_score: riskData.risk_score,
+          calculated_risk_level: riskData.risk_level,
+          calculated_risk_color: riskData.risk_color,
+        } as VendorProfile;
+      } catch (error) {
+        console.error(`Error calculating risk for vendor ${vendor.vendor_name}:`, error);
+        return vendor as VendorProfile;
+      }
+    })
+  );
+
+  return vendorsWithRisk;
 }
 
 export async function createVendorProfile(vendor: Omit<VendorProfile, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Promise<VendorProfile> {
