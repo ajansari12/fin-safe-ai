@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,14 +11,27 @@ import ImpactTolerancesList from "@/components/impact-tolerance/ImpactTolerances
 
 const ImpactTolerances = () => {
   const { user } = useAuth();
-  const { setCurrentModule } = useAIAssistant();
   const queryClient = useQueryClient();
   
   const [selectedTab, setSelectedTab] = useState("define");
   const [selectedFunctionId, setSelectedFunctionId] = useState<string | undefined>();
   const [selectedTolerance, setSelectedTolerance] = useState<any | null>(null);
   
+  // Add debugging to check if AI Assistant context is available
+  console.log("ImpactTolerances component rendering...");
+  
+  // Try to get AI assistant context with error handling
+  let setCurrentModule: (module: string | null) => void = () => {};
+  try {
+    const aiAssistant = useAIAssistant();
+    setCurrentModule = aiAssistant.setCurrentModule;
+    console.log("AI Assistant context available:", !!aiAssistant);
+  } catch (error) {
+    console.error("AI Assistant context not available:", error);
+  }
+  
   React.useEffect(() => {
+    console.log("Setting current module to impact-tolerances");
     setCurrentModule("impact-tolerances");
   }, [setCurrentModule]);
   
