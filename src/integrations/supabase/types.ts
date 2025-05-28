@@ -45,6 +45,51 @@ export type Database = {
         }
         Relationships: []
       }
+      controls: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          frequency: string
+          id: string
+          org_id: string
+          owner: string
+          scope: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency: string
+          id?: string
+          org_id: string
+          owner: string
+          scope: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string
+          id?: string
+          org_id?: string
+          owner?: string
+          scope?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       governance_change_logs: {
         Row: {
           change_type: string
@@ -501,42 +546,58 @@ export type Database = {
       }
       kri_definitions: {
         Row: {
+          control_id: string | null
           created_at: string
           critical_threshold: string | null
           description: string | null
           id: string
           measurement_frequency: string | null
           name: string
+          org_id: string
+          status: string
           target_value: string | null
           threshold_id: string
           updated_at: string
           warning_threshold: string | null
         }
         Insert: {
+          control_id?: string | null
           created_at?: string
           critical_threshold?: string | null
           description?: string | null
           id?: string
           measurement_frequency?: string | null
           name: string
+          org_id?: string
+          status?: string
           target_value?: string | null
           threshold_id: string
           updated_at?: string
           warning_threshold?: string | null
         }
         Update: {
+          control_id?: string | null
           created_at?: string
           critical_threshold?: string | null
           description?: string | null
           id?: string
           measurement_frequency?: string | null
           name?: string
+          org_id?: string
+          status?: string
           target_value?: string | null
           threshold_id?: string
           updated_at?: string
           warning_threshold?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "kri_definitions_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "controls"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "kri_definitions_threshold_id_fkey"
             columns: ["threshold_id"]
