@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, Download, Play } from "lucide-react";
+import { Edit, Trash2, Download, Play, FileDown } from "lucide-react";
 import { getScenarioTests, ScenarioTest } from "@/services/scenario-testing-service";
+import { generateScenarioTestPDF } from "@/services/scenario-pdf-service";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const SEVERITY_COLORS = {
   low: 'secondary',
@@ -45,21 +47,27 @@ const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
     queryFn: getScenarioTests
   });
 
-  const handleExport = (scenario: ScenarioTest) => {
-    const exportData = {
-      ...scenario,
-      exported_at: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `scenario-test-${scenario.title.replace(/\s+/g, '-').toLowerCase()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExport = async (scenario: ScenarioTest) => {
+    try {
+      await generateScenarioTestPDF(scenario);
+      toast.success("Scenario test report exported successfully");
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export scenario test report");
+    }
+  };
+
+  const handleExportAll = async () => {
+    try {
+      for (const scenario of scenarios.slice(0, 5)) { // Limit to first 5
+        await generateScenarioTestPDF(scenario);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Add delay
+      }
+      toast.success(`Exported ${Math.min(scenarios.length, 5)} scenario test reports`);
+    } catch (error) {
+      console.error("Bulk export failed:", error);
+      toast.error("Failed to export scenario test reports");
+    }
   };
 
   if (isLoading) {
@@ -75,10 +83,20 @@ const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Scenario Tests</CardTitle>
-        <CardDescription>
-          Manage and review your scenario testing activities.
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Scenario Tests</CardTitle>
+            <CardDescription>
+              Manage and review your scenario testing activities.
+            </CardDescription>
+          </div>
+          {scenarios.length > 0 && (
+            <Button variant="outline" onClick={handleExportAll} className="flex items-center gap-2">
+              <FileDown className="h-4 w-4" />
+              Export All
+            </Button>
+          )}
+        </div>
       </CardHeader>
       
       <CardContent>
@@ -171,7 +189,7 @@ const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
                         onClick={() => handleExport(scenario)}
                       >
                         <Download className="h-3 w-3" />
-                        <span className="sr-only">Export</span>
+                        <span className="sr-only">Export PDF</span>
                       </Button>
                       
                       <Button

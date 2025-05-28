@@ -4,9 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, AlertTriangle, Clock, CheckCircle } from "lucide-react";
+import { Eye, AlertTriangle, Clock, CheckCircle, FileDown } from "lucide-react";
 import { Incident } from "@/services/incident-service";
 import { format } from "date-fns";
+import { generateIncidentReportPDF } from "@/services/incident-pdf-service";
+import { toast } from "sonner";
 
 interface IncidentsListProps {
   incidents: Incident[];
@@ -52,6 +54,30 @@ const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident
     ).join(' ');
   };
 
+  const handleExportIncident = async (incident: Incident) => {
+    try {
+      await generateIncidentReportPDF(incident);
+      toast.success("Incident report exported successfully");
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("Failed to export incident report");
+    }
+  };
+
+  const handleExportAll = async () => {
+    try {
+      // Export multiple incidents as separate PDFs
+      for (const incident of incidents.slice(0, 5)) { // Limit to first 5 to avoid overwhelming
+        await generateIncidentReportPDF(incident);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Add delay between exports
+      }
+      toast.success(`Exported ${Math.min(incidents.length, 5)} incident reports`);
+    } catch (error) {
+      console.error("Bulk export failed:", error);
+      toast.error("Failed to export incident reports");
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -78,10 +104,20 @@ const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Incidents</CardTitle>
-        <CardDescription>
-          Track and manage operational incidents and disruptions.
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Recent Incidents</CardTitle>
+            <CardDescription>
+              Track and manage operational incidents and disruptions.
+            </CardDescription>
+          </div>
+          {incidents.length > 0 && (
+            <Button variant="outline" onClick={handleExportAll} className="flex items-center gap-2">
+              <FileDown className="h-4 w-4" />
+              Export All
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -135,13 +171,22 @@ const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident
                   {format(new Date(incident.reported_at), 'MMM dd, yyyy HH:mm')}
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onViewIncident(incident)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onViewIncident(incident)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleExportIncident(incident)}
+                    >
+                      <FileDown className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

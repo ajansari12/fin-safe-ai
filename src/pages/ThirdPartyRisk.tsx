@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, FileDown } from "lucide-react";
 import { createVendorProfile, updateVendorProfile, deleteVendorProfile, getVendorProfiles, VendorProfile } from "@/services/third-party-service";
+import { generateThirdPartyReviewPDF } from "@/services/third-party-pdf-service";
 import VendorProfileForm from "@/components/third-party/VendorProfileForm";
 import VendorProfilesList from "@/components/third-party/VendorProfilesList";
 import VendorDetailsDialog from "@/components/third-party/VendorDetailsDialog";
@@ -20,6 +21,7 @@ const ThirdPartyRisk = () => {
   const [editingVendor, setEditingVendor] = useState<VendorProfile | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<VendorProfile | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: ['vendorProfiles'],
@@ -110,6 +112,26 @@ const ThirdPartyRisk = () => {
     setIsDetailsOpen(true);
   };
 
+  const handleExportSummary = async () => {
+    setIsExporting(true);
+    try {
+      await generateThirdPartyReviewPDF(vendors);
+      toast({
+        title: "Success",
+        description: "Third-party review summary exported successfully",
+      });
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast({
+        title: "Error",
+        description: "Failed to export third-party review summary",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const closeForm = () => {
     setIsFormOpen(false);
     setEditingVendor(null);
@@ -136,10 +158,23 @@ const ThirdPartyRisk = () => {
             </p>
           </div>
           
-          <Button onClick={startNewVendor}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Vendor
-          </Button>
+          <div className="flex gap-2">
+            {vendors.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={handleExportSummary}
+                disabled={isExporting}
+                className="flex items-center gap-2"
+              >
+                <FileDown className="h-4 w-4" />
+                {isExporting ? "Exporting..." : "Export Summary"}
+              </Button>
+            )}
+            <Button onClick={startNewVendor}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Vendor
+            </Button>
+          </div>
         </div>
 
         <VendorProfilesList
