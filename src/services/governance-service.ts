@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -745,14 +744,16 @@ export async function assignPolicyForReview(
       throw error;
     }
 
-    // Create initial review record - using raw SQL to avoid type issues
-    const { error: reviewError } = await supabase.rpc('sql', {
-      query: `
-        INSERT INTO governance_policy_reviews (policy_id, reviewer_id, reviewer_name, status, comments)
-        VALUES ($1, $2, $3, $4, $5)
-      `,
-      params: [policyId, 'system', assignment.reviewer_name, 'under_review', assignment.comments]
-    });
+    // Create initial review record with proper type assertion
+    const { error: reviewError } = await supabase
+      .from('governance_policy_reviews')
+      .insert({
+        policy_id: policyId,
+        reviewer_id: 'system',
+        reviewer_name: assignment.reviewer_name,
+        status: 'under_review',
+        comments: assignment.comments || null
+      } as any);
 
     if (reviewError) {
       console.error('Review record creation failed:', reviewError);
