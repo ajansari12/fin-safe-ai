@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -116,13 +117,19 @@ export default function PolicyForm({
           onSuccess(updatedPolicy);
         }
       } else {
-        // Create new policy
+        // Create new policy with all required fields
         const newPolicy = await createPolicy({
           title: values.title,
           description: values.description || null,
           status: values.status,
           framework_id: frameworkId,
           version: 1,
+          assigned_reviewer_id: null,
+          assigned_reviewer_name: null,
+          review_due_date: null,
+          submitted_for_review_at: null,
+          approved_at: null,
+          rejected_at: null,
         }, selectedFile || undefined);
         
         if (newPolicy && onSuccess) {

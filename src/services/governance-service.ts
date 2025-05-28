@@ -10,7 +10,10 @@ import {
   PolicyReviewStatus,
   PolicyApproval,
   ComplianceMetric,
-  OverduePolicyReview
+  OverduePolicyReview,
+  PolicyReview,
+  ReviewerWorkload,
+  ComplianceAnalytics
 } from "@/pages/governance/types";
 
 // Framework CRUD operations
@@ -741,12 +744,12 @@ export async function assignPolicyForReview(
       throw error;
     }
 
-    // Create initial review record
+    // Create initial review record using the correct table name
     await supabase
       .from('governance_policy_reviews')
       .insert({
         policy_id: policyId,
-        reviewer_id: 'system', // Will be updated when actual reviewer logs in
+        reviewer_id: 'system',
         reviewer_name: assignment.reviewer_name,
         status: 'under_review',
         comments: assignment.comments
@@ -756,7 +759,7 @@ export async function assignPolicyForReview(
     try {
       await supabase.functions.invoke('send-email-notification', {
         body: {
-          to: [`${assignment.reviewer_name.toLowerCase().replace(' ', '.')}@company.com`], // This should be actual email
+          to: [`${assignment.reviewer_name.toLowerCase().replace(' ', '.')}@company.com`],
           subject: `Policy Review Assignment: ${updatedPolicy.title}`,
           html: `
             <h2>Policy Review Assignment</h2>

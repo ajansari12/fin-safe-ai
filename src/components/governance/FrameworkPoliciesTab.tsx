@@ -46,8 +46,8 @@ export default function FrameworkPoliciesTab({
     policy: GovernancePolicy | null;
   }>({ open: false, policy: null });
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
+  const getStatusBadge = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       draft: 'secondary',
       under_review: 'outline',
       approved: 'default',
@@ -55,7 +55,7 @@ export default function FrameworkPoliciesTab({
       active: 'default',
       archived: 'secondary'
     };
-    return variants[status as keyof typeof variants] || 'secondary';
+    return variants[status] || 'secondary';
   };
 
   const handleAssignForReview = (policy: GovernancePolicy) => {
