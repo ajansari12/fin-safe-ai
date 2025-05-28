@@ -5,18 +5,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
+import { Plus, Play, BarChart3 } from "lucide-react";
 import { createScenarioTest, updateScenarioTest, deleteScenarioTest, ScenarioTest } from "@/services/scenario-testing-service";
 import ScenarioBuilder from "@/components/scenario-testing/ScenarioBuilder";
 import ScenarioTestsList from "@/components/scenario-testing/ScenarioTestsList";
+import ScenarioAnalyticsDashboard from "@/components/scenario-testing/ScenarioAnalyticsDashboard";
+import GuidedTestExecution from "@/components/scenario-testing/GuidedTestExecution";
 
 const ScenarioTesting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [isExecutionOpen, setIsExecutionOpen] = useState(false);
   const [editingScenario, setEditingScenario] = useState<ScenarioTest | null>(null);
+  const [executingScenario, setExecutingScenario] = useState<ScenarioTest | null>(null);
+  const [activeTab, setActiveTab] = useState("tests");
 
   const createMutation = useMutation({
     mutationFn: createScenarioTest,
@@ -42,6 +47,7 @@ const ScenarioTesting = () => {
       updateScenarioTest(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scenarioTests'] });
+      queryClient.invalidateQueries({ queryKey: ['scenarioAnalytics'] });
       toast({
         title: "Success",
         description: "Scenario test updated successfully",
@@ -61,6 +67,7 @@ const ScenarioTesting = () => {
     mutationFn: deleteScenarioTest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scenarioTests'] });
+      queryClient.invalidateQueries({ queryKey: ['scenarioAnalytics'] });
       toast({
         title: "Success",
         description: "Scenario test deleted successfully",
@@ -110,6 +117,11 @@ const ScenarioTesting = () => {
     setIsBuilderOpen(true);
   };
 
+  const handleExecute = (scenario: ScenarioTest) => {
+    setExecutingScenario(scenario);
+    setIsExecutionOpen(true);
+  };
+
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id);
   };
@@ -117,6 +129,13 @@ const ScenarioTesting = () => {
   const closeBuilder = () => {
     setIsBuilderOpen(false);
     setEditingScenario(null);
+  };
+
+  const closeExecution = () => {
+    setIsExecutionOpen(false);
+    setExecutingScenario(null);
+    queryClient.invalidateQueries({ queryKey: ['scenarioTests'] });
+    queryClient.invalidateQueries({ queryKey: ['scenarioAnalytics'] });
   };
 
   const startNewScenario = () => {
@@ -131,7 +150,7 @@ const ScenarioTesting = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Scenario Testing</h1>
             <p className="text-muted-foreground">
-              Design and run scenario tests to evaluate operational resilience.
+              Design, execute, and analyze scenario tests to evaluate operational resilience.
             </p>
           </div>
           
@@ -141,12 +160,33 @@ const ScenarioTesting = () => {
           </Button>
         </div>
 
-        <ScenarioTestsList
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onContinue={handleContinue}
-        />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="tests" className="flex items-center gap-2">
+              <Play className="h-4 w-4" />
+              Tests
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
+          <TabsContent value="tests">
+            <ScenarioTestsList
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onContinue={handleContinue}
+              onExecute={handleExecute}
+            />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <ScenarioAnalyticsDashboard />
+          </TabsContent>
+        </Tabs>
+
+        {/* Scenario Builder Dialog */}
         <Dialog open={isBuilderOpen} onOpenChange={setIsBuilderOpen}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -164,6 +204,26 @@ const ScenarioTesting = () => {
               onComplete={handleComplete}
               onCancel={closeBuilder}
             />
+          </DialogContent>
+        </Dialog>
+
+        {/* Guided Test Execution Dialog */}
+        <Dialog open={isExecutionOpen} onOpenChange={setIsExecutionOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Guided Test Execution</DialogTitle>
+              <DialogDescription>
+                Execute the scenario test with step-by-step guidance and real-time tracking.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {executingScenario && (
+              <GuidedTestExecution
+                scenario={executingScenario}
+                onComplete={closeExecution}
+                onCancel={closeExecution}
+              />
+            )}
           </DialogContent>
         </Dialog>
       </div>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, Download, Play, FileDown } from "lucide-react";
+import { Edit, Trash2, Download, Play, FileDown, PlayCircle } from "lucide-react";
 import { getScenarioTests, ScenarioTest } from "@/services/scenario-testing-service";
 import { generateScenarioTestPDF } from "@/services/scenario-pdf-service";
 import { format } from "date-fns";
@@ -35,12 +35,14 @@ interface ScenarioTestsListProps {
   onEdit: (scenario: ScenarioTest) => void;
   onDelete: (id: string) => void;
   onContinue: (scenario: ScenarioTest) => void;
+  onExecute?: (scenario: ScenarioTest) => void;
 }
 
 const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
   onEdit,
   onDelete,
-  onContinue
+  onContinue,
+  onExecute
 }) => {
   const { data: scenarios = [], isLoading } = useQuery({
     queryKey: ['scenarioTests'],
@@ -163,11 +165,25 @@ const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      {/* Execute button - only show if scenario is completed and onExecute is provided */}
+                      {scenario.status === 'completed' && onExecute && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onExecute(scenario)}
+                          title="Execute Test"
+                        >
+                          <PlayCircle className="h-3 w-3" />
+                          <span className="sr-only">Execute</span>
+                        </Button>
+                      )}
+                      
                       {scenario.status !== 'completed' && (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => onContinue(scenario)}
+                          title="Continue"
                         >
                           <Play className="h-3 w-3" />
                           <span className="sr-only">Continue</span>
@@ -178,6 +194,7 @@ const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => onEdit(scenario)}
+                        title="Edit"
                       >
                         <Edit className="h-3 w-3" />
                         <span className="sr-only">Edit</span>
@@ -187,6 +204,7 @@ const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => handleExport(scenario)}
+                        title="Export PDF"
                       >
                         <Download className="h-3 w-3" />
                         <span className="sr-only">Export PDF</span>
@@ -196,6 +214,7 @@ const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => onDelete(scenario.id)}
+                        title="Delete"
                       >
                         <Trash2 className="h-3 w-3" />
                         <span className="sr-only">Delete</span>

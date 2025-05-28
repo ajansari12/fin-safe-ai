@@ -1421,6 +1421,133 @@ export type Database = {
           },
         ]
       }
+      scenario_execution_steps: {
+        Row: {
+          actual_outcome: string | null
+          completed_at: string | null
+          created_at: string
+          duration_minutes: number | null
+          expected_outcome: string | null
+          id: string
+          notes: string | null
+          responsible_person: string | null
+          scenario_result_id: string
+          started_at: string | null
+          status: string
+          step_description: string | null
+          step_name: string
+          step_number: number
+          updated_at: string
+        }
+        Insert: {
+          actual_outcome?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          expected_outcome?: string | null
+          id?: string
+          notes?: string | null
+          responsible_person?: string | null
+          scenario_result_id: string
+          started_at?: string | null
+          status?: string
+          step_description?: string | null
+          step_name: string
+          step_number: number
+          updated_at?: string
+        }
+        Update: {
+          actual_outcome?: string | null
+          completed_at?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          expected_outcome?: string | null
+          id?: string
+          notes?: string | null
+          responsible_person?: string | null
+          scenario_result_id?: string
+          started_at?: string | null
+          status?: string
+          step_description?: string | null
+          step_name?: string
+          step_number?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_execution_steps_scenario_result_id_fkey"
+            columns: ["scenario_result_id"]
+            isOneToOne: false
+            referencedRelation: "scenario_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scenario_results: {
+        Row: {
+          affected_functions_count: number | null
+          ai_recommendations: string | null
+          created_at: string
+          execution_completed_at: string | null
+          execution_notes: string | null
+          execution_started_at: string
+          id: string
+          lessons_learned: string | null
+          org_id: string
+          overall_score: number | null
+          recovery_time_minutes: number | null
+          response_time_minutes: number | null
+          scenario_test_id: string
+          success_rate: number | null
+          test_coverage_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          affected_functions_count?: number | null
+          ai_recommendations?: string | null
+          created_at?: string
+          execution_completed_at?: string | null
+          execution_notes?: string | null
+          execution_started_at?: string
+          id?: string
+          lessons_learned?: string | null
+          org_id: string
+          overall_score?: number | null
+          recovery_time_minutes?: number | null
+          response_time_minutes?: number | null
+          scenario_test_id: string
+          success_rate?: number | null
+          test_coverage_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          affected_functions_count?: number | null
+          ai_recommendations?: string | null
+          created_at?: string
+          execution_completed_at?: string | null
+          execution_notes?: string | null
+          execution_started_at?: string
+          id?: string
+          lessons_learned?: string | null
+          org_id?: string
+          overall_score?: number | null
+          recovery_time_minutes?: number | null
+          response_time_minutes?: number | null
+          scenario_test_id?: string
+          success_rate?: number | null
+          test_coverage_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_results_scenario_test_id_fkey"
+            columns: ["scenario_test_id"]
+            isOneToOne: false
+            referencedRelation: "scenario_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenario_test_controls: {
         Row: {
           control_name: string
@@ -1503,6 +1630,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scenario_test_metrics: {
+        Row: {
+          average_recovery_time_minutes: number | null
+          average_response_time_minutes: number | null
+          created_at: string
+          critical_functions_tested: number | null
+          failed_tests: number | null
+          high_priority_functions_tested: number | null
+          id: string
+          org_id: string
+          successful_tests: number | null
+          test_coverage_percentage: number | null
+          test_date: string
+          total_tests_conducted: number | null
+          updated_at: string
+        }
+        Insert: {
+          average_recovery_time_minutes?: number | null
+          average_response_time_minutes?: number | null
+          created_at?: string
+          critical_functions_tested?: number | null
+          failed_tests?: number | null
+          high_priority_functions_tested?: number | null
+          id?: string
+          org_id: string
+          successful_tests?: number | null
+          test_coverage_percentage?: number | null
+          test_date?: string
+          total_tests_conducted?: number | null
+          updated_at?: string
+        }
+        Update: {
+          average_recovery_time_minutes?: number | null
+          average_response_time_minutes?: number | null
+          created_at?: string
+          critical_functions_tested?: number | null
+          failed_tests?: number | null
+          high_priority_functions_tested?: number | null
+          id?: string
+          org_id?: string
+          successful_tests?: number | null
+          test_coverage_percentage?: number | null
+          test_date?: string
+          total_tests_conducted?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       scenario_tests: {
         Row: {
