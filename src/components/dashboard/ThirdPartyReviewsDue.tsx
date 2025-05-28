@@ -34,6 +34,7 @@ export default function ThirdPartyReviewsDue() {
     queryFn: getThirdPartyReviewsDue
   });
 
+  // Calculate counts based on the days_until_due property from the service
   const overdueCount = reviews?.filter(r => r.days_until_due < 0).length || 0;
   const upcomingCount = reviews?.filter(r => r.days_until_due >= 0 && r.days_until_due <= 7).length || 0;
 

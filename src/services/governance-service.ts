@@ -139,9 +139,11 @@ export async function deleteFramework(id: string): Promise<boolean> {
       throw error;
     }
 
+    toast.success("Framework deleted successfully");
     return true;
   } catch (error) {
     console.error(`Error deleting framework with ID ${id}:`, error);
+    toast.error("Failed to delete framework");
     return false;
   }
 }
@@ -968,8 +970,9 @@ export async function scheduleAutomaticReminders(policyId: string): Promise<void
     }
 
     const nextReviewDate = new Date(schedule.next_review_date);
+    const reminderDaysDefault = 14; // Default to 14 days if not specified
     const reminderDate = new Date(nextReviewDate);
-    reminderDate.setDate(reminderDate.getDate() - (schedule.reminder_days_before || 14));
+    reminderDate.setDate(reminderDate.getDate() - reminderDaysDefault);
 
     // In a production environment, you would set up a cron job or scheduled task
     // For now, we'll log the reminder schedule

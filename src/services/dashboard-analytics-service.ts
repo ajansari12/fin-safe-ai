@@ -1,5 +1,5 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { getOverduePolicyReviews } from "./governance-service";
 
 export interface IncidentAnalytics {
   total: number;
@@ -118,79 +118,132 @@ export async function getKRIBreaches(): Promise<KRIBreach[]> {
 }
 
 export async function getOverduePolicyReviews(): Promise<PolicyReview[]> {
-  const { data: reviews, error } = await supabase
-    .from('governance_review_schedule')
-    .select(`
-      id,
-      next_review_date,
-      governance_policies!inner(title, governance_frameworks!inner(title))
-    `)
-    .lt('next_review_date', new Date().toISOString())
-    .order('next_review_date', { ascending: true });
+  try {
+    // Get current user's organization
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
 
-  if (error) {
-    console.error('Error fetching overdue reviews:', error);
-    throw error;
+    if (!profile?.organization_id) {
+      return [];
+    }
+
+    // Query overdue reviews directly
+    const { data: overdueReviews, error } = await supabase
+      .from('governance_review_schedule')
+      .select(`
+        id,
+        policy_id,
+        next_review_date,
+        governance_policies!inner (
+          id,
+          title,
+          framework_id,
+          status,
+          governance_frameworks!inner (
+            title,
+            org_id
+          )
+        )
+      `)
+      .eq('governance_policies.governance_frameworks.org_id', profile.organization_id)
+      .lt('next_review_date', new Date().toISOString())
+      .in('governance_policies.status', ['active', 'approved']);
+
+    if (error) {
+      throw error;
+    }
+
+    return (overdueReviews || []).map(review => ({
+      id: review.id,
+      policy_title: review.governance_policies.title,
+      framework_title: review.governance_policies.governance_frameworks.title,
+      next_review_date: review.next_review_date,
+      days_overdue: Math.floor((new Date().getTime() - new Date(review.next_review_date).getTime()) / (1000 * 60 * 60 * 24))
+    }));
+  } catch (error) {
+    console.error('Error fetching overdue policy reviews:', error);
+    return [];
   }
-
-  return reviews?.map(review => ({
-    id: review.id,
-    policy_title: review.governance_policies?.title || 'Unknown Policy',
-    framework_title: review.governance_policies?.governance_frameworks?.title || 'Unknown Framework',
-    next_review_date: review.next_review_date,
-    days_overdue: Math.floor((Date.now() - new Date(review.next_review_date).getTime()) / (1000 * 60 * 60 * 24))
-  })) || [];
 }
 
 export async function getThirdPartyReviewsDue(): Promise<ThirdPartyReview[]> {
-  const { data: reviews, error } = await supabase
-    .from('third_party_reviews')
-    .select('*')
-    .lte('next_review_date', new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-    .order('next_review_date', { ascending: true });
+  try {
+    const nextMonth = new Date();
+    nextMonth.setDate(nextMonth.getDate() + 30);
 
-  if (error) {
-    console.error('Error fetching third party reviews:', error);
-    throw error;
+    const { data: reviews, error } = await supabase
+      .from('third_party_reviews')
+      .select('*')
+      .lte('next_review_date', nextMonth.toISOString().split('T')[0])
+      .order('next_review_date', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    return reviews?.map(review => ({
+      id: review.id,
+      vendor_name: review.vendor_name,
+      review_type: review.review_type,
+      risk_rating: review.risk_rating,
+      next_review_date: review.next_review_date,
+      status: review.status,
+      days_until_due: Math.floor((new Date(review.next_review_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching third party reviews due:', error);
+    return [];
   }
-
-  return reviews?.map(review => ({
-    id: review.id,
-    vendor_name: review.vendor_name,
-    review_type: review.review_type,
-    risk_rating: review.risk_rating,
-    next_review_date: review.next_review_date,
-    status: review.status,
-    days_until_due: Math.floor((new Date(review.next_review_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-  })) || [];
 }
 
 export async function getMostSensitiveCBFs(): Promise<SensitiveCBF[]> {
-  const { data: tolerances, error } = await supabase
-    .from('impact_tolerances')
-    .select(`
-      id,
-      max_tolerable_downtime,
-      business_functions!inner(id, name, category, criticality)
-    `)
-    .eq('status', 'published')
-    .order('max_tolerable_downtime', { ascending: true });
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
 
-  if (error) {
-    console.error('Error fetching sensitive CBFs:', error);
-    throw error;
+    if (!profile?.organization_id) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('business_functions')
+      .select(`
+        id,
+        name,
+        category,
+        criticality,
+        impact_tolerances!inner (
+          max_tolerable_downtime
+        )
+      `)
+      .eq('org_id', profile.organization_id)
+      .in('criticality', ['critical', 'high'])
+      .limit(10);
+
+    if (error) {
+      throw error;
+    }
+
+    return data?.map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      criticality: item.criticality,
+      max_tolerable_downtime: Array.isArray(item.impact_tolerances) 
+        ? item.impact_tolerances[0]?.max_tolerable_downtime || 'Unknown'
+        : item.impact_tolerances?.max_tolerable_downtime || 'Unknown'
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching most sensitive CBFs:', error);
+    return [];
   }
-
-  return tolerances?.slice(0, 5).map(tolerance => ({
-    id: tolerance.business_functions?.id || '',
-    name: tolerance.business_functions?.name || 'Unknown Function',
-    max_tolerable_downtime: tolerance.max_tolerable_downtime,
-    category: tolerance.business_functions?.category || 'Unknown',
-    criticality: tolerance.business_functions?.criticality || 'Unknown'
-  })) || [];
 }
-
-export { getOverduePolicyReviews };
 
 // KRI Breaches Chart Data
 export async function getKRIBreachesData() {
@@ -233,7 +286,6 @@ export async function getKRIBreachesData() {
     }
 
     // Group by date and count breaches
-    const chartData = [];
     const dateMap = new Map();
 
     data?.forEach(entry => {
@@ -280,73 +332,5 @@ export async function getUnresolvedIncidentsCount() {
   } catch (error) {
     console.error('Error fetching unresolved incidents:', error);
     return 0;
-  }
-}
-
-// Third Party Reviews Due
-export async function getThirdPartyReviewsDue() {
-  try {
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-
-    const { data, error } = await supabase
-      .from('third_party_reviews')
-      .select('*')
-      .lte('next_review_date', nextWeek.toISOString().split('T')[0])
-      .eq('status', 'pending');
-
-    if (error) {
-      throw error;
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching third party reviews due:', error);
-    return [];
-  }
-}
-
-// Most Sensitive CBFs
-export async function getMostSensitiveCBFs() {
-  try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', (await supabase.auth.getUser()).data.user?.id)
-      .single();
-
-    if (!profile?.organization_id) {
-      return [];
-    }
-
-    const { data, error } = await supabase
-      .from('business_functions')
-      .select(`
-        id,
-        name,
-        category,
-        criticality,
-        impact_tolerances!inner (
-          max_tolerable_downtime
-        )
-      `)
-      .eq('org_id', profile.organization_id)
-      .in('criticality', ['critical', 'high'])
-      .limit(10);
-
-    if (error) {
-      throw error;
-    }
-
-    return data?.map(item => ({
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      criticality: item.criticality,
-      max_tolerable_downtime: item.impact_tolerances.max_tolerable_downtime
-    })) || [];
-  } catch (error) {
-    console.error('Error fetching most sensitive CBFs:', error);
-    return [];
   }
 }
