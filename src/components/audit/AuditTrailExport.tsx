@@ -11,12 +11,12 @@ interface AuditTrailExportProps {
 }
 
 const AuditTrailExport: React.FC<AuditTrailExportProps> = ({ orgId }) => {
-  const [selectedModule, setSelectedModule] = useState<string>("");
+  const [selectedModule, setSelectedModule] = useState<string>("all");
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
 
   const modules = [
-    { value: "", label: "All Modules" },
+    { value: "all", label: "All Modules" },
     { value: "governance", label: "Governance" },
     { value: "incident", label: "Incident Management" },
     { value: "risk", label: "Risk Management" },
@@ -29,7 +29,7 @@ const AuditTrailExport: React.FC<AuditTrailExportProps> = ({ orgId }) => {
     setIsExporting(true);
     try {
       const { auditService } = await import("@/services/audit-service");
-      const auditTrail = await auditService.getAuditTrailByModule(orgId, selectedModule || undefined);
+      const auditTrail = await auditService.getAuditTrailByModule(orgId, selectedModule === "all" ? undefined : selectedModule);
       
       // Generate CSV content
       const csvHeaders = [
@@ -72,7 +72,7 @@ const AuditTrailExport: React.FC<AuditTrailExportProps> = ({ orgId }) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit-trail-${selectedModule || 'all-modules'}-${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `audit-trail-${selectedModule === "all" ? 'all-modules' : selectedModule}-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
 
