@@ -101,7 +101,10 @@ export const businessContinuityService = {
       .order('created_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as 'draft' | 'active' | 'archived'
+    }));
   },
 
   async createContinuityPlan(plan: Omit<ContinuityPlan, 'id' | 'created_at' | 'updated_at'>): Promise<ContinuityPlan> {
@@ -123,7 +126,10 @@ export const businessContinuityService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      status: data.status as 'draft' | 'active' | 'archived'
+    };
   },
 
   async updateContinuityPlan(id: string, updates: Partial<ContinuityPlan>): Promise<ContinuityPlan> {
@@ -146,7 +152,10 @@ export const businessContinuityService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      status: data.status as 'draft' | 'active' | 'archived'
+    };
   },
 
   async uploadPlanDocument(file: File, planId: string): Promise<string> {
@@ -176,7 +185,11 @@ export const businessContinuityService = {
       .order('scheduled_date', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      test_type: item.test_type as 'tabletop' | 'dry_run' | 'full_scale',
+      status: item.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    }));
   },
 
   async createContinuityTest(test: Omit<ContinuityTest, 'id' | 'created_at' | 'updated_at'>): Promise<ContinuityTest> {
@@ -198,7 +211,11 @@ export const businessContinuityService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      test_type: data.test_type as 'tabletop' | 'dry_run' | 'full_scale',
+      status: data.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    };
   },
 
   async updateContinuityTest(id: string, updates: Partial<ContinuityTest>): Promise<ContinuityTest> {
@@ -210,7 +227,11 @@ export const businessContinuityService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      test_type: data.test_type as 'tabletop' | 'dry_run' | 'full_scale',
+      status: data.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
+    };
   },
 
   // Recovery Contacts
@@ -222,7 +243,10 @@ export const businessContinuityService = {
       .order('escalation_order', { ascending: true });
     
     if (error) throw error;
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      contact_type: item.contact_type as 'internal' | 'external' | 'vendor' | 'emergency'
+    }));
   },
 
   async createRecoveryContact(contact: Omit<RecoveryContact, 'id' | 'created_at' | 'updated_at'>): Promise<RecoveryContact> {
@@ -244,7 +268,10 @@ export const businessContinuityService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      contact_type: data.contact_type as 'internal' | 'external' | 'vendor' | 'emergency'
+    };
   },
 
   async updateRecoveryContact(id: string, updates: Partial<RecoveryContact>): Promise<RecoveryContact> {
@@ -256,7 +283,10 @@ export const businessContinuityService = {
       .single();
     
     if (error) throw error;
-    return data;
+    return {
+      ...data,
+      contact_type: data.contact_type as 'internal' | 'external' | 'vendor' | 'emergency'
+    };
   },
 
   async deleteRecoveryContact(id: string): Promise<void> {
