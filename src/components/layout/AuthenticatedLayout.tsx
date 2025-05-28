@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
@@ -32,7 +31,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
     { path: "/third-party-risk", label: "Third-Party Risk" },
     { path: "/controls-and-kri", label: "Controls & KRIs" },
     { path: "/incident-log", label: "Incident Log" },
-    { path: "/audit-and-compliance", label: "Audit & Compliance" },
+    { path: "/audit-compliance", label: "Audit & Compliance" },
     { path: "/workflow-center", label: "Workflow Center" },
   ];
 

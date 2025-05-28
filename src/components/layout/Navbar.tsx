@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import {
   NavigationMenu,
@@ -49,7 +48,7 @@ const modules = [
   },
   {
     title: "Compliance",
-    href: "/audit-and-compliance",
+    href: "/audit-compliance",
     description: "Track and manage regulatory compliance requirements.",
   },
 ];
