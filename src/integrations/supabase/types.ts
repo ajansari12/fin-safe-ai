@@ -292,6 +292,184 @@ export type Database = {
           },
         ]
       }
+      continuity_plans: {
+        Row: {
+          business_function_id: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          fallback_steps: string
+          file_size: number | null
+          id: string
+          last_tested_date: string | null
+          mime_type: string | null
+          next_test_date: string | null
+          org_id: string
+          plan_description: string | null
+          plan_document_name: string | null
+          plan_document_path: string | null
+          plan_name: string
+          rpo_hours: number | null
+          rto_hours: number
+          status: string
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+          version: number
+        }
+        Insert: {
+          business_function_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          fallback_steps: string
+          file_size?: number | null
+          id?: string
+          last_tested_date?: string | null
+          mime_type?: string | null
+          next_test_date?: string | null
+          org_id: string
+          plan_description?: string | null
+          plan_document_name?: string | null
+          plan_document_path?: string | null
+          plan_name: string
+          rpo_hours?: number | null
+          rto_hours: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+          version?: number
+        }
+        Update: {
+          business_function_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          fallback_steps?: string
+          file_size?: number | null
+          id?: string
+          last_tested_date?: string | null
+          mime_type?: string | null
+          next_test_date?: string | null
+          org_id?: string
+          plan_description?: string | null
+          plan_document_name?: string | null
+          plan_document_path?: string | null
+          plan_name?: string
+          rpo_hours?: number | null
+          rto_hours?: number
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_continuity_plans_business_function"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      continuity_tests: {
+        Row: {
+          actual_outcomes: string | null
+          conducted_by: string | null
+          conducted_by_name: string | null
+          conducted_date: string | null
+          continuity_plan_id: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          duration_minutes: number | null
+          id: string
+          improvements_identified: string | null
+          issues_identified: string | null
+          org_id: string
+          overall_score: number | null
+          participants: string[] | null
+          rto_achieved_hours: number | null
+          rto_target_met: boolean | null
+          scheduled_date: string
+          status: string
+          success_criteria: string | null
+          test_description: string | null
+          test_name: string
+          test_scenario: string | null
+          test_scope: string | null
+          test_type: string
+          updated_at: string
+        }
+        Insert: {
+          actual_outcomes?: string | null
+          conducted_by?: string | null
+          conducted_by_name?: string | null
+          conducted_date?: string | null
+          continuity_plan_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          duration_minutes?: number | null
+          id?: string
+          improvements_identified?: string | null
+          issues_identified?: string | null
+          org_id: string
+          overall_score?: number | null
+          participants?: string[] | null
+          rto_achieved_hours?: number | null
+          rto_target_met?: boolean | null
+          scheduled_date: string
+          status?: string
+          success_criteria?: string | null
+          test_description?: string | null
+          test_name: string
+          test_scenario?: string | null
+          test_scope?: string | null
+          test_type: string
+          updated_at?: string
+        }
+        Update: {
+          actual_outcomes?: string | null
+          conducted_by?: string | null
+          conducted_by_name?: string | null
+          conducted_date?: string | null
+          continuity_plan_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          duration_minutes?: number | null
+          id?: string
+          improvements_identified?: string | null
+          issues_identified?: string | null
+          org_id?: string
+          overall_score?: number | null
+          participants?: string[] | null
+          rto_achieved_hours?: number | null
+          rto_target_met?: boolean | null
+          scheduled_date?: string
+          status?: string
+          success_criteria?: string | null
+          test_description?: string | null
+          test_name?: string
+          test_scenario?: string | null
+          test_scope?: string | null
+          test_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_continuity_tests_plan"
+            columns: ["continuity_plan_id"]
+            isOneToOne: false
+            referencedRelation: "continuity_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contract_renewal_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -1360,6 +1538,83 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recovery_contacts: {
+        Row: {
+          availability: string | null
+          contact_name: string
+          contact_role: string
+          contact_type: string
+          contact_verified_date: string | null
+          continuity_plan_id: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          department: string | null
+          email: string | null
+          escalation_order: number | null
+          id: string
+          last_contacted_date: string | null
+          notes: string | null
+          org_id: string
+          organization: string | null
+          primary_phone: string | null
+          secondary_phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          availability?: string | null
+          contact_name: string
+          contact_role: string
+          contact_type: string
+          contact_verified_date?: string | null
+          continuity_plan_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          department?: string | null
+          email?: string | null
+          escalation_order?: number | null
+          id?: string
+          last_contacted_date?: string | null
+          notes?: string | null
+          org_id: string
+          organization?: string | null
+          primary_phone?: string | null
+          secondary_phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          availability?: string | null
+          contact_name?: string
+          contact_role?: string
+          contact_type?: string
+          contact_verified_date?: string | null
+          continuity_plan_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          department?: string | null
+          email?: string | null
+          escalation_order?: number | null
+          id?: string
+          last_contacted_date?: string | null
+          notes?: string | null
+          org_id?: string
+          organization?: string | null
+          primary_phone?: string | null
+          secondary_phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_recovery_contacts_plan"
+            columns: ["continuity_plan_id"]
+            isOneToOne: false
+            referencedRelation: "continuity_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       risk_appetite_statements: {
         Row: {
