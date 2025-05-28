@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, AlertTriangle, Clock, CheckCircle, FileDown } from "lucide-react";
+import { Eye, AlertTriangle, Clock, CheckCircle, FileDown, ArrowUpRight } from "lucide-react";
 import { Incident } from "@/services/incident-service";
-import { format } from "date-fns";
+import { format, formatDistanceToNow, isAfter, addHours } from "date-fns";
 import { generateIncidentReportPDF } from "@/services/incident-pdf-service";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IncidentsListProps {
   incidents: Incident[];
@@ -52,6 +53,43 @@ const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident
     return category.split('_').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
     ).join(' ');
+  };
+
+  const getSLAStatus = (incident: Incident) => {
+    const reportedAt = new Date(incident.reported_at);
+    const now = new Date();
+    
+    if (incident.status === 'resolved' || incident.status === 'closed') {
+      return { status: 'completed', label: 'Completed' };
+    }
+    
+    const responseDeadline = incident.max_response_time_hours ? 
+      addHours(reportedAt, incident.max_response_time_hours) : 
+      addHours(reportedAt, 24);
+
+    const resolutionDeadline = incident.max_resolution_time_hours ? 
+      addHours(reportedAt, incident.max_resolution_time_hours) : 
+      addHours(reportedAt, 72);
+    
+    // First check if response SLA is breached
+    if (!incident.first_response_at && isAfter(now, responseDeadline)) {
+      return { status: 'breached', label: 'Response SLA Breached' };
+    }
+    
+    // Then check if resolution SLA is breached
+    if (isAfter(now, resolutionDeadline)) {
+      return { status: 'breached', label: 'Resolution SLA Breached' };
+    }
+    
+    // Calculate which deadline is closer
+    const deadlineToCheck = !incident.first_response_at ? responseDeadline : resolutionDeadline;
+    const hoursUntilDeadline = Math.floor((deadlineToCheck.getTime() - now.getTime()) / (1000 * 60 * 60));
+    
+    if (hoursUntilDeadline <= 2) {
+      return { status: 'warning', label: `SLA Due in ${hoursUntilDeadline}h` };
+    }
+    
+    return { status: 'ok', label: 'In SLA' };
   };
 
   const handleExportIncident = async (incident: Incident) => {
@@ -127,69 +165,118 @@ const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident
               <TableHead>Category</TableHead>
               <TableHead>Severity</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Impact</TableHead>
+              <TableHead>SLA</TableHead>
               <TableHead>Reported</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {incidents.map((incident) => (
-              <TableRow key={incident.id}>
-                <TableCell className="font-medium">
-                  <div className="max-w-xs truncate">
-                    {incident.title}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    {formatCategory(incident.category)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={getSeverityColor(incident.severity)}>
-                    {incident.severity.charAt(0).toUpperCase() + incident.severity.slice(1)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(incident.status)}
-                    <Badge variant={getStatusColor(incident.status)}>
-                      {incident.status.replace('_', ' ').toUpperCase()}
+            {incidents.map((incident) => {
+              const slaStatus = getSLAStatus(incident);
+              
+              return (
+                <TableRow key={incident.id}>
+                  <TableCell className="font-medium">
+                    <div className="max-w-xs truncate flex items-center gap-1">
+                      {incident.title}
+                      {incident.escalation_level > 0 && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <ArrowUpRight className="h-4 w-4 text-red-500" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Escalated to Level {incident.escalation_level}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {formatCategory(incident.category)}
                     </Badge>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {incident.impact_rating ? (
-                    <Badge variant={incident.impact_rating >= 7 ? 'destructive' : incident.impact_rating >= 4 ? 'default' : 'secondary'}>
-                      {incident.impact_rating}/10
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getSeverityColor(incident.severity)}>
+                      {incident.severity.charAt(0).toUpperCase() + incident.severity.slice(1)}
                     </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {format(new Date(incident.reported_at), 'MMM dd, yyyy HH:mm')}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onViewIncident(incident)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleExportIncident(incident)}
-                    >
-                      <FileDown className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(incident.status)}
+                      <Badge variant={getStatusColor(incident.status)}>
+                        {incident.status.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      switch(slaStatus.status) {
+                        case 'breached':
+                          return (
+                            <Badge variant="destructive" className="flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              {slaStatus.label}
+                            </Badge>
+                          );
+                        case 'warning':
+                          return (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-800 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {slaStatus.label}
+                            </Badge>
+                          );
+                        case 'completed':
+                          return (
+                            <Badge variant="outline" className="bg-green-50 text-green-800 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              {slaStatus.label}
+                            </Badge>
+                          );
+                        default:
+                          return (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-800">
+                              {slaStatus.label}
+                            </Badge>
+                          );
+                      }
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          {formatDistanceToNow(new Date(incident.reported_at), { addSuffix: true })}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {format(new Date(incident.reported_at), 'MMM dd, yyyy HH:mm')}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onViewIncident(incident)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleExportIncident(incident)}
+                      >
+                        <FileDown className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>

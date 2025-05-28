@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateIncidentData } from "@/services/incident-service";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { InfoIcon } from "lucide-react";
 
 interface IncidentFormProps {
   onSubmit: (data: CreateIncidentData) => Promise<void>;
@@ -24,6 +27,44 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
   const watchedSeverity = watch('severity');
   const watchedCategory = watch('category');
   const watchedBusinessFunctionId = watch('business_function_id');
+  const watchedMaxResponseTime = watch('max_response_time_hours');
+  const watchedMaxResolutionTime = watch('max_resolution_time_hours');
+
+  // Default SLA times based on severity
+  React.useEffect(() => {
+    if (watchedSeverity) {
+      let responseTime: number;
+      let resolutionTime: number;
+      
+      switch(watchedSeverity) {
+        case 'critical':
+          responseTime = 1;
+          resolutionTime = 4;
+          break;
+        case 'high':
+          responseTime = 4;
+          resolutionTime = 24;
+          break;
+        case 'medium':
+          responseTime = 24;
+          resolutionTime = 72;
+          break;
+        case 'low':
+        default:
+          responseTime = 72;
+          resolutionTime = 168;
+          break;
+      }
+      
+      if (!watchedMaxResponseTime) {
+        setValue('max_response_time_hours', responseTime);
+      }
+      
+      if (!watchedMaxResolutionTime) {
+        setValue('max_resolution_time_hours', resolutionTime);
+      }
+    }
+  }, [watchedSeverity, setValue, watchedMaxResponseTime, watchedMaxResolutionTime]);
 
   // Fetch business functions for the dropdown
   const { data: businessFunctions } = useQuery({
@@ -70,6 +111,23 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
       });
     }
   };
+
+  // Helper to show what level incident will be assigned to
+  const assignmentLevel = React.useMemo(() => {
+    if (!watchedSeverity) return null;
+    
+    switch(watchedSeverity) {
+      case 'critical':
+        return { level: 'executive', variant: 'destructive' as const };
+      case 'high':
+        return { level: 'manager', variant: 'default' as const };
+      case 'medium': 
+        return { level: 'manager', variant: 'default' as const };
+      case 'low':
+      default:
+        return { level: 'analyst', variant: 'secondary' as const };
+    }
+  }, [watchedSeverity]);
 
   return (
     <Card>
@@ -128,6 +186,15 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
               {errors.severity && (
                 <p className="text-sm text-destructive mt-1">Severity is required</p>
               )}
+              {assignmentLevel && (
+                <div className="flex items-center gap-2 mt-2">
+                  <InfoIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Will be assigned to: </span>
+                  <Badge variant={assignmentLevel.variant}>
+                    {assignmentLevel.level}
+                  </Badge>
+                </div>
+              )}
             </div>
 
             <div>
@@ -179,6 +246,45 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="md:col-span-2">
+              <Separator className="my-4" />
+              <h3 className="text-sm font-medium mb-2">SLA Configuration</h3>
+            </div>
+
+            <div>
+              <Label htmlFor="max_response_time_hours">Max Response Time (hours)</Label>
+              <Input
+                id="max_response_time_hours"
+                type="number"
+                min="1"
+                {...register('max_response_time_hours', { 
+                  valueAsNumber: true,
+                  min: { value: 1, message: 'Minimum time is 1 hour' }
+                })}
+                placeholder="Maximum time to first response"
+              />
+              {errors.max_response_time_hours && (
+                <p className="text-sm text-destructive mt-1">{errors.max_response_time_hours.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="max_resolution_time_hours">Max Resolution Time (hours)</Label>
+              <Input
+                id="max_resolution_time_hours"
+                type="number"
+                min="1"
+                {...register('max_resolution_time_hours', { 
+                  valueAsNumber: true,
+                  min: { value: 1, message: 'Minimum time is 1 hour' }
+                })}
+                placeholder="Maximum time to resolution"
+              />
+              {errors.max_resolution_time_hours && (
+                <p className="text-sm text-destructive mt-1">{errors.max_resolution_time_hours.message}</p>
+              )}
             </div>
 
             <div className="md:col-span-2">

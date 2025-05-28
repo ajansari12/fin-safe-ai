@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
@@ -14,6 +14,7 @@ import IncidentDetailDialog from "@/components/incident/IncidentDetailDialog";
 import { 
   getIncidents, 
   createIncident, 
+  checkSLABreaches,
   Incident, 
   CreateIncidentData 
 } from "@/services/incident-service";
@@ -52,6 +53,26 @@ const IncidentLog = () => {
     }
   });
 
+  // Check for SLA breaches periodically
+  useEffect(() => {
+    // Check for SLA breaches immediately on page load
+    const checkBreaches = async () => {
+      try {
+        await checkSLABreaches();
+        queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      } catch (error) {
+        console.error('Error checking SLA breaches:', error);
+      }
+    };
+    
+    checkBreaches();
+    
+    // Then check every 5 minutes
+    const interval = setInterval(checkBreaches, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [queryClient]);
+
   const handleCreateIncident = async (data: CreateIncidentData) => {
     await createMutation.mutateAsync(data);
   };
@@ -66,6 +87,30 @@ const IncidentLog = () => {
   const inProgressIncidents = incidents.filter(i => i.status === 'in_progress').length;
   const resolvedIncidents = incidents.filter(i => i.status === 'resolved' || i.status === 'closed').length;
   const criticalIncidents = incidents.filter(i => i.severity === 'critical').length;
+  const escalatedIncidents = incidents.filter(i => i.escalation_level > 0).length;
+  
+  // SLA breaches
+  const slaBreaches = incidents.filter(incident => {
+    if (incident.status === 'resolved' || incident.status === 'closed') {
+      return false;
+    }
+    
+    const reportedAt = new Date(incident.reported_at);
+    const now = new Date();
+    
+    // Response SLA breach
+    if (!incident.first_response_at && 
+        ((now.getTime() - reportedAt.getTime()) / (1000 * 60 * 60)) > (incident.max_response_time_hours || 24)) {
+      return true;
+    }
+    
+    // Resolution SLA breach
+    if (((now.getTime() - reportedAt.getTime()) / (1000 * 60 * 60)) > (incident.max_resolution_time_hours || 72)) {
+      return true;
+    }
+    
+    return false;
+  }).length;
 
   return (
     <AuthenticatedLayout>
@@ -84,7 +129,7 @@ const IncidentLog = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Incidents</CardTitle>
@@ -147,6 +192,25 @@ const IncidentLog = () => {
               <p className="text-xs text-muted-foreground">
                 High priority
               </p>
+            </CardContent>
+          </Card>
+          
+          <Card className={slaBreaches > 0 ? "bg-red-50" : ""}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">SLA Breaches</CardTitle>
+              <AlertTriangle className={`h-4 w-4 ${slaBreaches > 0 ? "text-red-500" : "text-muted-foreground"}`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${slaBreaches > 0 ? "text-red-600" : ""}`}>
+                {slaBreaches}
+              </div>
+              <div className="flex items-center gap-1 mt-1">
+                {escalatedIncidents > 0 && (
+                  <Badge variant="outline" className="bg-amber-50 text-amber-800">
+                    {escalatedIncidents} Escalated
+                  </Badge>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Incident {
@@ -16,6 +17,27 @@ export interface Incident {
   resolved_at?: string;
   created_at: string;
   updated_at: string;
+  max_response_time_hours?: number;
+  max_resolution_time_hours?: number;
+  first_response_at?: string;
+  escalated_at?: string;
+  escalation_level: number;
+  assigned_level: string;
+}
+
+export interface IncidentEscalation {
+  id: string;
+  incident_id: string;
+  escalation_level: number;
+  escalated_from_user?: string;
+  escalated_to_user?: string;
+  escalated_from_name?: string;
+  escalated_to_name?: string;
+  escalation_reason: string;
+  escalation_type: string;
+  created_at: string;
+  acknowledged_at?: string;
+  resolved_at?: string;
 }
 
 export interface IncidentResponse {
@@ -42,6 +64,8 @@ export interface CreateIncidentData {
   impact_rating?: number;
   business_function_id?: string;
   assigned_to?: string;
+  max_response_time_hours?: number;
+  max_resolution_time_hours?: number;
 }
 
 export interface UpdateIncidentData {
@@ -54,6 +78,8 @@ export interface UpdateIncidentData {
   business_function_id?: string;
   assigned_to?: string;
   resolved_at?: string;
+  max_response_time_hours?: number;
+  max_resolution_time_hours?: number;
 }
 
 export async function getIncidents(): Promise<Incident[]> {
@@ -144,7 +170,6 @@ export async function updateIncident(
       console.log('Incident assignment email sent');
     } catch (emailError) {
       console.error('Failed to send incident assignment email:', emailError);
-      // Don't fail the update if email fails
     }
   }
 
@@ -160,6 +185,21 @@ export async function getIncidentResponses(incidentId: string): Promise<Incident
 
   if (error) {
     console.error('Error fetching incident responses:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function getIncidentEscalations(incidentId: string): Promise<IncidentEscalation[]> {
+  const { data, error } = await supabase
+    .from('incident_escalations')
+    .select('*')
+    .eq('incident_id', incidentId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching incident escalations:', error);
     throw error;
   }
 
@@ -201,8 +241,119 @@ export async function createIncidentResponse(responseData: {
   return data;
 }
 
+export async function escalateIncident(
+  incidentId: string, 
+  escalationReason: string,
+  escalationType: string = 'manual'
+): Promise<IncidentEscalation> {
+  const user = (await supabase.auth.getUser()).data.user;
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user?.id)
+    .single();
+
+  // Get current incident details
+  const incident = await getIncidentById(incidentId);
+  if (!incident) {
+    throw new Error('Incident not found');
+  }
+
+  const { data, error } = await supabase
+    .from('incident_escalations')
+    .insert({
+      incident_id: incidentId,
+      escalation_level: incident.escalation_level + 1,
+      escalated_from_user: user?.id,
+      escalated_from_name: profile?.full_name || user?.email || 'Unknown User',
+      escalation_reason: escalationReason,
+      escalation_type: escalationType
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating escalation:', error);
+    throw error;
+  }
+
+  // Update incident escalation level
+  await updateIncident(incidentId, {
+    escalation_level: incident.escalation_level + 1
+  });
+
+  // Send escalation notification
+  try {
+    await supabase.functions.invoke('send-incident-escalation', {
+      body: {
+        incidentId: incidentId,
+        escalationId: data.id,
+        escalationReason: escalationReason
+      }
+    });
+    console.log('Escalation notification sent');
+  } catch (emailError) {
+    console.error('Failed to send escalation notification:', emailError);
+  }
+
+  return data;
+}
+
+export async function checkSLABreaches(): Promise<void> {
+  const { error } = await supabase.rpc('check_incident_sla_breaches');
+  
+  if (error) {
+    console.error('Error checking SLA breaches:', error);
+    throw error;
+  }
+}
+
+export async function getIncidentMetrics(incidentId: string): Promise<{
+  responseTime?: number;
+  resolutionTime?: number;
+  slaStatus: {
+    response: 'met' | 'breached' | 'pending';
+    resolution: 'met' | 'breached' | 'pending';
+  };
+}> {
+  const incident = await getIncidentById(incidentId);
+  if (!incident) {
+    throw new Error('Incident not found');
+  }
+
+  const reportedAt = new Date(incident.reported_at);
+  const now = new Date();
+  
+  let responseTime: number | undefined;
+  let resolutionTime: number | undefined;
+  
+  if (incident.first_response_at) {
+    responseTime = Math.floor((new Date(incident.first_response_at).getTime() - reportedAt.getTime()) / (1000 * 60 * 60));
+  }
+  
+  if (incident.resolved_at) {
+    resolutionTime = Math.floor((new Date(incident.resolved_at).getTime() - reportedAt.getTime()) / (1000 * 60 * 60));
+  }
+
+  const hoursElapsed = Math.floor((now.getTime() - reportedAt.getTime()) / (1000 * 60 * 60));
+
+  const slaStatus = {
+    response: incident.first_response_at 
+      ? (responseTime! <= (incident.max_response_time_hours || 24) ? 'met' : 'breached')
+      : (hoursElapsed > (incident.max_response_time_hours || 24) ? 'breached' : 'pending'),
+    resolution: incident.resolved_at
+      ? (resolutionTime! <= (incident.max_resolution_time_hours || 72) ? 'met' : 'breached')
+      : (hoursElapsed > (incident.max_resolution_time_hours || 72) ? 'breached' : 'pending')
+  } as const;
+
+  return {
+    responseTime,
+    resolutionTime,
+    slaStatus
+  };
+}
+
 export async function sendAlert(incidentId: string, email: string, message: string): Promise<void> {
-  // Create a response record for the alert
   await createIncidentResponse({
     incident_id: incidentId,
     response_type: 'alert',
@@ -210,7 +361,6 @@ export async function sendAlert(incidentId: string, email: string, message: stri
     alert_sent_to: email
   });
 
-  // In a real implementation, you would send an actual email here
   console.log(`Alert sent to ${email}: ${message}`);
 }
 

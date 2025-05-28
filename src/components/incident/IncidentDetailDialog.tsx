@@ -8,9 +8,11 @@ import { format } from "date-fns";
 import { 
   Incident, 
   updateIncident, 
-  getIncidentResponses, 
+  getIncidentResponses,
+  getIncidentEscalations,
   createIncidentResponse, 
   sendAlert,
+  escalateIncident,
   UpdateIncidentData 
 } from "@/services/incident-service";
 import IncidentDetailTabs from "./IncidentDetailTabs";
@@ -33,6 +35,13 @@ const IncidentDetailDialog: React.FC<IncidentDetailDialogProps> = ({
   const { data: responses } = useQuery({
     queryKey: ['incident-responses', incident?.id],
     queryFn: () => incident ? getIncidentResponses(incident.id) : Promise.resolve([]),
+    enabled: !!incident?.id && open
+  });
+
+  // Fetch incident escalations
+  const { data: escalations } = useQuery({
+    queryKey: ['incident-escalations', incident?.id],
+    queryFn: () => incident ? getIncidentEscalations(incident.id) : Promise.resolve([]),
     enabled: !!incident?.id && open
   });
 
@@ -63,6 +72,7 @@ const IncidentDetailDialog: React.FC<IncidentDetailDialogProps> = ({
     mutationFn: createIncidentResponse,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['incident-responses'] });
+      queryClient.invalidateQueries({ queryKey: ['incident-metrics'] });
       toast({
         title: "Response Added",
         description: "Your response has been added to the incident.",
@@ -73,6 +83,28 @@ const IncidentDetailDialog: React.FC<IncidentDetailDialogProps> = ({
       toast({
         title: "Error",
         description: "Failed to add response. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Escalate incident mutation
+  const escalateMutation = useMutation({
+    mutationFn: ({ incidentId, reason }: { incidentId: string; reason: string }) => 
+      escalateIncident(incidentId, reason, 'manual'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['incidents'] });
+      queryClient.invalidateQueries({ queryKey: ['incident-escalations'] });
+      toast({
+        title: "Incident Escalated",
+        description: "The incident has been escalated to the next level.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error escalating incident:', error);
+      toast({
+        title: "Error",
+        description: "Failed to escalate incident. Please try again.",
         variant: "destructive",
       });
     }
@@ -125,6 +157,15 @@ const IncidentDetailDialog: React.FC<IncidentDetailDialogProps> = ({
     });
   };
 
+  const handleEscalate = async (reason: string) => {
+    if (!reason.trim()) return;
+
+    escalateMutation.mutate({
+      incidentId: incident.id,
+      reason: reason
+    });
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
       case 'open': return <AlertTriangle className="h-4 w-4" />;
@@ -142,6 +183,11 @@ const IncidentDetailDialog: React.FC<IncidentDetailDialogProps> = ({
           <DialogTitle className="flex items-center gap-2">
             {getStatusIcon(incident.status)}
             {incident.title}
+            {incident.escalation_level > 0 && (
+              <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full">
+                Escalated L{incident.escalation_level}
+              </span>
+            )}
           </DialogTitle>
           <DialogDescription>
             Incident ID: {incident.id.slice(0, 8)} • Reported {format(new Date(incident.reported_at), 'MMM dd, yyyy HH:mm')}
@@ -151,12 +197,15 @@ const IncidentDetailDialog: React.FC<IncidentDetailDialogProps> = ({
         <IncidentDetailTabs
           incident={incident}
           responses={responses}
+          escalations={escalations}
           onUpdate={handleUpdate}
           onAddResponse={handleAddResponse}
           onSendAlert={handleSendAlert}
+          onEscalate={handleEscalate}
           isUpdating={updateMutation.isPending}
           isAddingResponse={responseMutation.isPending}
           isSendingAlert={alertMutation.isPending}
+          isEscalating={escalateMutation.isPending}
         />
       </DialogContent>
     </Dialog>

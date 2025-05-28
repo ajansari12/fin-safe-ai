@@ -749,15 +749,74 @@ export type Database = {
           },
         ]
       }
+      incident_escalations: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          escalated_from_name: string | null
+          escalated_from_user: string | null
+          escalated_to_name: string | null
+          escalated_to_user: string | null
+          escalation_level: number
+          escalation_reason: string
+          escalation_type: string
+          id: string
+          incident_id: string
+          resolved_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          escalated_from_name?: string | null
+          escalated_from_user?: string | null
+          escalated_to_name?: string | null
+          escalated_to_user?: string | null
+          escalation_level: number
+          escalation_reason: string
+          escalation_type?: string
+          id?: string
+          incident_id: string
+          resolved_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          escalated_from_name?: string | null
+          escalated_from_user?: string | null
+          escalated_to_name?: string | null
+          escalated_to_user?: string | null
+          escalation_level?: number
+          escalation_reason?: string
+          escalation_type?: string
+          id?: string
+          incident_id?: string
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_escalations_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incident_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_logs: {
         Row: {
+          assigned_level: string | null
           assigned_to: string | null
           business_function_id: string | null
           category: string | null
           created_at: string | null
           description: string | null
+          escalated_at: string | null
+          escalation_level: number | null
+          first_response_at: string | null
           id: string
           impact_rating: number | null
+          max_resolution_time_hours: number | null
+          max_response_time_hours: number | null
           org_id: string
           reported_at: string | null
           reported_by: string | null
@@ -768,13 +827,19 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          assigned_level?: string | null
           assigned_to?: string | null
           business_function_id?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
+          escalated_at?: string | null
+          escalation_level?: number | null
+          first_response_at?: string | null
           id?: string
           impact_rating?: number | null
+          max_resolution_time_hours?: number | null
+          max_response_time_hours?: number | null
           org_id: string
           reported_at?: string | null
           reported_by?: string | null
@@ -785,13 +850,19 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          assigned_level?: string | null
           assigned_to?: string | null
           business_function_id?: string | null
           category?: string | null
           created_at?: string | null
           description?: string | null
+          escalated_at?: string | null
+          escalation_level?: number | null
+          first_response_at?: string | null
           id?: string
           impact_rating?: number | null
+          max_resolution_time_hours?: number | null
+          max_response_time_hours?: number | null
           org_id?: string
           reported_at?: string | null
           reported_by?: string | null
@@ -1857,6 +1928,10 @@ export type Database = {
         Returns: number
       }
       check_expiring_contracts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      check_incident_sla_breaches: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
