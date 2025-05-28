@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Incident {
@@ -119,20 +118,37 @@ export async function createIncident(incidentData: CreateIncidentData): Promise<
   return data;
 }
 
-export async function updateIncident(id: string, updates: UpdateIncidentData): Promise<Incident> {
-  const { data, error } = await supabase
+export async function updateIncident(
+  id: string, 
+  data: UpdateIncidentData
+): Promise<Incident> {
+  const { data: incident, error } = await supabase
     .from('incident_logs')
-    .update(updates)
+    .update(data)
     .eq('id', id)
     .select()
     .single();
 
-  if (error) {
-    console.error('Error updating incident:', error);
-    throw error;
+  if (error) throw error;
+
+  // Send assignment email if assignee changed
+  if (data.assigned_to && incident.assigned_to !== data.assigned_to) {
+    try {
+      await supabase.functions.invoke('send-incident-assignment', {
+        body: {
+          incidentId: id,
+          assigneeId: data.assigned_to,
+          reportedById: incident.reported_by
+        }
+      });
+      console.log('Incident assignment email sent');
+    } catch (emailError) {
+      console.error('Failed to send incident assignment email:', emailError);
+      // Don't fail the update if email fails
+    }
   }
 
-  return data;
+  return incident;
 }
 
 export async function getIncidentResponses(incidentId: string): Promise<IncidentResponse[]> {

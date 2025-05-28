@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +72,20 @@ export function useOrganizationSetup() {
         await Promise.all(
           orgData.policyFiles.map(file => uploadPolicyFile(file, organization.id))
         );
+      }
+
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            userId: (await supabase.auth.getUser()).data.user?.id,
+            organizationId: organization.id
+          }
+        });
+        console.log('Welcome email sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail the setup if email fails
       }
 
       toast({
