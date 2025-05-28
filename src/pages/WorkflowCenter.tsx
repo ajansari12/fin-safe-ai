@@ -142,18 +142,21 @@ const WorkflowCenter = () => {
   // Template operations
   const handleSaveTemplate = async (templateData: Omit<WorkflowTemplate, 'id'>) => {
     try {
+      const completeTemplateData = {
+        ...templateData,
+        description: templateData.description || "",
+        org_id: orgId,
+        created_by: user?.id
+      };
+
       if (editingTemplate) {
-        await workflowService.updateWorkflowTemplate(editingTemplate.id, templateData);
+        await workflowService.updateWorkflowTemplate(editingTemplate.id, completeTemplateData);
         toast({
           title: "Template updated",
           description: "Workflow template has been updated successfully."
         });
       } else {
-        await workflowService.createWorkflowTemplate({
-          ...templateData,
-          org_id: orgId,
-          created_by: user?.id
-        });
+        await workflowService.createWorkflowTemplate(completeTemplateData);
         toast({
           title: "Template created",
           description: "Workflow template has been created successfully."

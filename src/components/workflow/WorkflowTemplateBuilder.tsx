@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, GripVertical, Save, X } from "lucide-react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { toast } from "@/hooks/use-toast";
 
 interface WorkflowStep {
@@ -25,7 +24,7 @@ interface WorkflowStep {
 interface WorkflowTemplate {
   id?: string;
   name: string;
-  description: string;
+  description?: string;
   module: string;
   steps: WorkflowStep[];
 }
@@ -141,12 +140,10 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
     }));
   };
 
-  const onDragEnd = useCallback((result: any) => {
-    if (!result.destination) return;
-
-    const steps = Array.from(workflowTemplate.steps);
-    const [reorderedStep] = steps.splice(result.source.index, 1);
-    steps.splice(result.destination.index, 0, reorderedStep);
+  const moveStep = (fromIndex: number, toIndex: number) => {
+    const steps = [...workflowTemplate.steps];
+    const [movedStep] = steps.splice(fromIndex, 1);
+    steps.splice(toIndex, 0, movedStep);
 
     // Update step numbers
     const updatedSteps = steps.map((step, index) => ({
@@ -158,7 +155,7 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
       ...prev,
       steps: updatedSteps
     }));
-  }, [workflowTemplate.steps]);
+  };
 
   return (
     <div className="space-y-6">
@@ -229,7 +226,7 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              value={workflowTemplate.description}
+              value={workflowTemplate.description || ""}
               onChange={(e) => setWorkflowTemplate(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe the purpose and scope of this workflow template"
               rows={3}
@@ -244,7 +241,7 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
             <div>
               <CardTitle>Workflow Steps</CardTitle>
               <CardDescription>
-                Define the sequence of steps in this workflow. Drag to reorder.
+                Define the sequence of steps in this workflow. Use the drag handles to reorder.
               </CardDescription>
             </div>
             <Button onClick={addStep}>
@@ -260,133 +257,115 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
               {errors.steps && <p className="text-sm text-red-500 mt-2">{errors.steps}</p>}
             </div>
           ) : (
-            <DragDropContext onDragEnd={onDragEnd}>
-              <Droppable droppableId="workflow-steps">
-                {(provided) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                    {workflowTemplate.steps.map((step, index) => (
-                      <Draggable key={step.id} draggableId={step.id} index={index}>
-                        {(provided, snapshot) => (
-                          <Card
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            className={`${snapshot.isDragging ? 'shadow-lg' : ''}`}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start gap-4">
-                                <div
-                                  {...provided.dragHandleProps}
-                                  className="flex items-center gap-2 text-muted-foreground"
-                                >
-                                  <GripVertical className="h-4 w-4" />
-                                  <Badge variant="outline">
-                                    Step {step.step_number}
-                                  </Badge>
-                                </div>
-                                
-                                <div className="flex-1 space-y-4">
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                      <Label>Step Name *</Label>
-                                      <Input
-                                        value={step.step_name}
-                                        onChange={(e) => updateStep(step.id, { step_name: e.target.value })}
-                                        placeholder="e.g., Initial Review"
-                                        className={errors[`step_${index}_name`] ? "border-red-500" : ""}
-                                      />
-                                      {errors[`step_${index}_name`] && (
-                                        <p className="text-sm text-red-500">{errors[`step_${index}_name`]}</p>
-                                      )}
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                      <Label>Assigned Role *</Label>
-                                      <Select
-                                        value={step.assigned_role}
-                                        onValueChange={(value) => updateStep(step.id, { assigned_role: value })}
-                                      >
-                                        <SelectTrigger className={errors[`step_${index}_role`] ? "border-red-500" : ""}>
-                                          <SelectValue placeholder="Select role" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {roles.map((role) => (
-                                            <SelectItem key={role} value={role}>
-                                              {role}
-                                            </SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                      {errors[`step_${index}_role`] && (
-                                        <p className="text-sm text-red-500">{errors[`step_${index}_role`]}</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="space-y-2">
-                                    <Label>Step Description</Label>
-                                    <Textarea
-                                      value={step.step_description}
-                                      onChange={(e) => updateStep(step.id, { step_description: e.target.value })}
-                                      placeholder="Describe what needs to be done in this step"
-                                      rows={2}
-                                    />
-                                  </div>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div className="space-y-2">
-                                      <Label>Duration (hours)</Label>
-                                      <Input
-                                        type="number"
-                                        value={step.estimated_duration_hours || ""}
-                                        onChange={(e) => updateStep(step.id, { 
-                                          estimated_duration_hours: e.target.value ? parseInt(e.target.value) : undefined 
-                                        })}
-                                        placeholder="24"
-                                      />
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                      <Label>Required Approvals</Label>
-                                      <Input
-                                        type="number"
-                                        value={step.required_approvals || ""}
-                                        onChange={(e) => updateStep(step.id, { 
-                                          required_approvals: e.target.value ? parseInt(e.target.value) : undefined 
-                                        })}
-                                        placeholder="1"
-                                      />
-                                    </div>
-                                    
-                                    <div className="space-y-2">
-                                      <Label>Conditions</Label>
-                                      <Input
-                                        value={step.conditions || ""}
-                                        onChange={(e) => updateStep(step.id, { conditions: e.target.value })}
-                                        placeholder="Optional conditions"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeStep(step.id)}
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+            <div className="space-y-4">
+              {workflowTemplate.steps.map((step, index) => (
+                <Card key={step.id} className="border">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <GripVertical className="h-4 w-4 cursor-move" />
+                        <Badge variant="outline">
+                          Step {step.step_number}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex-1 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Step Name *</Label>
+                            <Input
+                              value={step.step_name}
+                              onChange={(e) => updateStep(step.id, { step_name: e.target.value })}
+                              placeholder="e.g., Initial Review"
+                              className={errors[`step_${index}_name`] ? "border-red-500" : ""}
+                            />
+                            {errors[`step_${index}_name`] && (
+                              <p className="text-sm text-red-500">{errors[`step_${index}_name`]}</p>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Assigned Role *</Label>
+                            <Select
+                              value={step.assigned_role}
+                              onValueChange={(value) => updateStep(step.id, { assigned_role: value })}
+                            >
+                              <SelectTrigger className={errors[`step_${index}_role`] ? "border-red-500" : ""}>
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {roles.map((role) => (
+                                  <SelectItem key={role} value={role}>
+                                    {role}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {errors[`step_${index}_role`] && (
+                              <p className="text-sm text-red-500">{errors[`step_${index}_role`]}</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label>Step Description</Label>
+                          <Textarea
+                            value={step.step_description}
+                            onChange={(e) => updateStep(step.id, { step_description: e.target.value })}
+                            placeholder="Describe what needs to be done in this step"
+                            rows={2}
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="space-y-2">
+                            <Label>Duration (hours)</Label>
+                            <Input
+                              type="number"
+                              value={step.estimated_duration_hours || ""}
+                              onChange={(e) => updateStep(step.id, { 
+                                estimated_duration_hours: e.target.value ? parseInt(e.target.value) : undefined 
+                              })}
+                              placeholder="24"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Required Approvals</Label>
+                            <Input
+                              type="number"
+                              value={step.required_approvals || ""}
+                              onChange={(e) => updateStep(step.id, { 
+                                required_approvals: e.target.value ? parseInt(e.target.value) : undefined 
+                              })}
+                              placeholder="1"
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label>Conditions</Label>
+                            <Input
+                              value={step.conditions || ""}
+                              onChange={(e) => updateStep(step.id, { conditions: e.target.value })}
+                              placeholder="Optional conditions"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeStep(step.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>
