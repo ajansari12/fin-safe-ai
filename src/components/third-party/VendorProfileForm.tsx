@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ const VendorProfileForm: React.FC<VendorProfileFormProps> = ({
               <Label htmlFor="criticality">Criticality *</Label>
               <Select 
                 value={watchedCriticality} 
-                onValueChange={(value) => setValue('criticality', value)}
+                onValueChange={(value) => setValue('criticality', value as 'critical' | 'high' | 'medium' | 'low')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select criticality" />
@@ -112,7 +113,7 @@ const VendorProfileForm: React.FC<VendorProfileFormProps> = ({
               <Label htmlFor="status">Status</Label>
               <Select 
                 value={watchedStatus} 
-                onValueChange={(value) => setValue('status', value)}
+                onValueChange={(value) => setValue('status', value as 'active' | 'inactive' | 'under_review' | 'terminated')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -196,7 +197,7 @@ const VendorProfileForm: React.FC<VendorProfileFormProps> = ({
               <Label htmlFor="risk_rating">Risk Rating</Label>
               <Select 
                 value={watchedRiskRating} 
-                onValueChange={(value) => setValue('risk_rating', value)}
+                onValueChange={(value) => setValue('risk_rating', value as 'low' | 'medium' | 'high' | 'critical')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select risk rating" />
