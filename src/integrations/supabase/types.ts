@@ -378,37 +378,55 @@ export type Database = {
       }
       governance_policies: {
         Row: {
+          approved_at: string | null
+          assigned_reviewer_id: string | null
+          assigned_reviewer_name: string | null
           created_at: string
           description: string | null
           file_path: string | null
           file_type: string | null
           framework_id: string | null
           id: string
+          rejected_at: string | null
+          review_due_date: string | null
           status: string
+          submitted_for_review_at: string | null
           title: string
           updated_at: string
           version: number
         }
         Insert: {
+          approved_at?: string | null
+          assigned_reviewer_id?: string | null
+          assigned_reviewer_name?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
           file_type?: string | null
           framework_id?: string | null
           id?: string
+          rejected_at?: string | null
+          review_due_date?: string | null
           status?: string
+          submitted_for_review_at?: string | null
           title: string
           updated_at?: string
           version?: number
         }
         Update: {
+          approved_at?: string | null
+          assigned_reviewer_id?: string | null
+          assigned_reviewer_name?: string | null
           created_at?: string
           description?: string | null
           file_path?: string | null
           file_type?: string | null
           framework_id?: string | null
           id?: string
+          rejected_at?: string | null
+          review_due_date?: string | null
           status?: string
+          submitted_for_review_at?: string | null
           title?: string
           updated_at?: string
           version?: number

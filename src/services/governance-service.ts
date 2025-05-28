@@ -714,6 +714,247 @@ export async function getComplianceMetricsByOrgId(orgId: string): Promise<Compli
   }
 }
 
+// Policy Review Workflow functions
+export async function assignPolicyForReview(
+  policyId: string,
+  assignment: {
+    reviewer_name: string;
+    review_due_date: string;
+    comments?: string | null;
+  }
+): Promise<GovernancePolicy | null> {
+  try {
+    const { data: updatedPolicy, error } = await supabase
+      .from('governance_policies')
+      .update({
+        status: 'under_review',
+        assigned_reviewer_name: assignment.reviewer_name,
+        review_due_date: assignment.review_due_date,
+        submitted_for_review_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', policyId)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // Create initial review record
+    await supabase
+      .from('governance_policy_reviews')
+      .insert({
+        policy_id: policyId,
+        reviewer_id: 'system', // Will be updated when actual reviewer logs in
+        reviewer_name: assignment.reviewer_name,
+        status: 'under_review',
+        comments: assignment.comments
+      });
+
+    // Send notification email
+    try {
+      await supabase.functions.invoke('send-email-notification', {
+        body: {
+          to: [`${assignment.reviewer_name.toLowerCase().replace(' ', '.')}@company.com`], // This should be actual email
+          subject: `Policy Review Assignment: ${updatedPolicy.title}`,
+          html: `
+            <h2>Policy Review Assignment</h2>
+            <p>You have been assigned to review the following policy:</p>
+            <h3>${updatedPolicy.title}</h3>
+            <p><strong>Due Date:</strong> ${assignment.review_due_date}</p>
+            ${assignment.comments ? `<p><strong>Notes:</strong> ${assignment.comments}</p>` : ''}
+            <p>Please log in to the Governance Framework to complete your review.</p>
+          `
+        }
+      });
+    } catch (emailError) {
+      console.error('Failed to send notification email:', emailError);
+    }
+
+    toast.success("Policy assigned for review and notification sent");
+    return updatedPolicy as GovernancePolicy;
+  } catch (error) {
+    console.error('Error assigning policy for review:', error);
+    toast.error("Failed to assign policy for review");
+    return null;
+  }
+}
+
+export async function submitPolicyReview(
+  policyId: string,
+  review: {
+    status: 'approved' | 'rejected';
+    comments: string;
+  }
+): Promise<PolicyReview | null> {
+  try {
+    const { data: user } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.user?.id)
+      .single();
+
+    const { data: reviewData, error } = await supabase
+      .from('governance_policy_reviews')
+      .insert({
+        policy_id: policyId,
+        reviewer_id: user.user?.id || 'anonymous',
+        reviewer_name: profile?.full_name || 'Anonymous Reviewer',
+        status: review.status,
+        comments: review.comments
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    toast.success(`Policy ${review.status} successfully`);
+    return reviewData as PolicyReview;
+  } catch (error) {
+    console.error('Error submitting policy review:', error);
+    toast.error("Failed to submit policy review");
+    return null;
+  }
+}
+
+export async function getPolicyReviews(policyId: string): Promise<PolicyReview[]> {
+  try {
+    const { data, error } = await supabase
+      .from('governance_policy_reviews')
+      .select('*')
+      .eq('policy_id', policyId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    return data as PolicyReview[];
+  } catch (error) {
+    console.error(`Error fetching reviews for policy ${policyId}:`, error);
+    return [];
+  }
+}
+
+export async function getComplianceAnalytics(orgId: string): Promise<ComplianceAnalytics | null> {
+  try {
+    // Get all policies for the organization
+    const { data: policies, error: policiesError } = await supabase
+      .from('governance_policies')
+      .select(`
+        *,
+        governance_frameworks!inner (
+          org_id
+        ),
+        governance_policy_reviews (
+          status,
+          created_at,
+          reviewed_at
+        )
+      `)
+      .eq('governance_frameworks.org_id', orgId);
+
+    if (policiesError) {
+      throw policiesError;
+    }
+
+    // Calculate overdue percentage
+    const now = new Date();
+    const overdueCount = policies?.filter(p => 
+      p.review_due_date && new Date(p.review_due_date) < now && p.status === 'under_review'
+    ).length || 0;
+    const overdue_percentage = policies?.length ? (overdueCount / policies.length) * 100 : 0;
+
+    // Calculate average approval time
+    const approvedPolicies = policies?.filter(p => p.approved_at) || [];
+    const approvalTimes = approvedPolicies.map(p => {
+      const submitted = new Date(p.submitted_for_review_at || p.created_at);
+      const approved = new Date(p.approved_at!);
+      return Math.floor((approved.getTime() - submitted.getTime()) / (1000 * 60 * 60 * 24));
+    });
+    const avg_approval_time_days = approvalTimes.length > 0 
+      ? approvalTimes.reduce((sum, time) => sum + time, 0) / approvalTimes.length 
+      : 0;
+
+    // Count policies by status
+    const policies_by_status = {
+      draft: policies?.filter(p => p.status === 'draft').length || 0,
+      under_review: policies?.filter(p => p.status === 'under_review').length || 0,
+      approved: policies?.filter(p => p.status === 'approved').length || 0,
+      rejected: policies?.filter(p => p.status === 'rejected').length || 0,
+      active: policies?.filter(p => p.status === 'active').length || 0,
+      archived: policies?.filter(p => p.status === 'archived').length || 0,
+    };
+
+    // Calculate reviewer workloads
+    const reviewerMap = new Map<string, {
+      reviewer_name: string;
+      pending: PolicyReview[];
+      completed: PolicyReview[];
+    }>();
+
+    policies?.forEach(policy => {
+      if (policy.governance_policy_reviews) {
+        policy.governance_policy_reviews.forEach((review: any) => {
+          const key = review.reviewer_id || 'unknown';
+          if (!reviewerMap.has(key)) {
+            reviewerMap.set(key, {
+              reviewer_name: review.reviewer_name || 'Unknown',
+              pending: [],
+              completed: []
+            });
+          }
+          
+          const reviewer = reviewerMap.get(key)!;
+          if (review.status === 'under_review') {
+            reviewer.pending.push(review);
+          } else if (review.status === 'approved' || review.status === 'rejected') {
+            reviewer.completed.push(review);
+          }
+        });
+      }
+    });
+
+    const reviewer_workloads: ReviewerWorkload[] = Array.from(reviewerMap.entries()).map(([id, data]) => {
+      const completedTimes = data.completed
+        .filter(r => r.reviewed_at)
+        .map(r => {
+          const created = new Date(r.created_at);
+          const reviewed = new Date(r.reviewed_at!);
+          return Math.floor((reviewed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24));
+        });
+      
+      const avg_turnaround_days = completedTimes.length > 0
+        ? completedTimes.reduce((sum, time) => sum + time, 0) / completedTimes.length
+        : 0;
+
+      return {
+        reviewer_id: id,
+        reviewer_name: data.reviewer_name,
+        pending_reviews: data.pending.length,
+        completed_reviews: data.completed.length,
+        avg_turnaround_days
+      };
+    });
+
+    return {
+      overdue_percentage,
+      avg_approval_time_days,
+      total_policies: policies?.length || 0,
+      policies_by_status,
+      reviewer_workloads
+    };
+  } catch (error) {
+    console.error('Error fetching compliance analytics:', error);
+    toast.error("Failed to load compliance analytics");
+    return null;
+  }
+}
+
 // Change Log operations
 export async function createChangeLog(logEntry: Omit<GovernanceChangeLog, 'id' | 'created_at'>): Promise<GovernanceChangeLog | null> {
   try {

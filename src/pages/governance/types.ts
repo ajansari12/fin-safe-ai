@@ -28,7 +28,13 @@ export interface GovernancePolicy {
   file_path: string | null;
   file_type: string | null;
   version: number;
-  status: 'draft' | 'under_review' | 'approved' | 'active' | 'archived';
+  status: 'draft' | 'under_review' | 'approved' | 'rejected' | 'active' | 'archived';
+  assigned_reviewer_id: string | null;
+  assigned_reviewer_name: string | null;
+  review_due_date: string | null;
+  submitted_for_review_at: string | null;
+  approved_at: string | null;
+  rejected_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,4 +121,41 @@ export interface OverduePolicyReview {
   framework_title: string;
   next_review_date: string;
   days_overdue: number;
+}
+
+// New interfaces for policy approval workflow
+export interface PolicyReview {
+  id: string;
+  policy_id: string;
+  reviewer_id: string;
+  reviewer_name: string;
+  status: 'draft' | 'under_review' | 'approved' | 'rejected';
+  comments: string | null;
+  assigned_at: string;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ReviewerWorkload {
+  reviewer_id: string;
+  reviewer_name: string;
+  pending_reviews: number;
+  completed_reviews: number;
+  avg_turnaround_days: number;
+}
+
+export interface ComplianceAnalytics {
+  overdue_percentage: number;
+  avg_approval_time_days: number;
+  total_policies: number;
+  policies_by_status: {
+    draft: number;
+    under_review: number;
+    approved: number;
+    rejected: number;
+    active: number;
+    archived: number;
+  };
+  reviewer_workloads: ReviewerWorkload[];
 }

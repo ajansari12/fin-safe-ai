@@ -31,7 +31,7 @@ const formSchema = z.object({
     message: "Policy title must be at least 3 characters.",
   }),
   description: z.string().optional(),
-  status: z.enum(["draft", "under_review", "approved", "active", "archived"]).default("draft"),
+  status: z.enum(["draft", "under_review", "approved", "rejected", "active", "archived"]).default("draft"),
 });
 
 interface PolicyFormProps {
@@ -92,6 +92,7 @@ export default function PolicyForm({
       case 'draft': return 'text-gray-600';
       case 'under_review': return 'text-yellow-600';
       case 'approved': return 'text-green-600';
+      case 'rejected': return 'text-red-600';
       case 'active': return 'text-blue-600';
       case 'archived': return 'text-gray-400';
       default: return 'text-gray-600';
@@ -198,6 +199,9 @@ export default function PolicyForm({
                     <SelectItem value="approved">
                       <span className={getStatusColor('approved')}>Approved</span>
                     </SelectItem>
+                    <SelectItem value="rejected">
+                      <span className={getStatusColor('rejected')}>Rejected</span>
+                    </SelectItem>
                     <SelectItem value="active">
                       <span className={getStatusColor('active')}>Active</span>
                     </SelectItem>
@@ -211,6 +215,7 @@ export default function PolicyForm({
                 {field.value === 'draft' && "Policy is being drafted"}
                 {field.value === 'under_review' && "Policy is under review by stakeholders"}
                 {field.value === 'approved' && "Policy has been approved but not yet active"}
+                {field.value === 'rejected' && "Policy has been rejected and needs revision"}
                 {field.value === 'active' && "Policy is currently in effect"}
                 {field.value === 'archived' && "Policy is no longer in use"}
               </FormDescription>
