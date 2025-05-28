@@ -1,4 +1,5 @@
 
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Dependency {
@@ -71,7 +72,7 @@ export async function getDependencies(businessFunctionId?: string): Promise<Depe
       throw error;
     }
     
-    return data || [];
+    return (data || []) as Dependency[];
   } catch (error) {
     console.error('Error in getDependencies:', error);
     return [];
@@ -104,7 +105,7 @@ export async function createDependency(input: DependencyInput): Promise<Dependen
       throw error;
     }
 
-    return data;
+    return data as Dependency;
   } catch (error) {
     console.error('Error in createDependency:', error);
     throw error;
@@ -125,7 +126,7 @@ export async function updateDependency(id: string, input: Partial<DependencyInpu
       throw error;
     }
 
-    return data;
+    return data as Dependency;
   } catch (error) {
     console.error('Error in updateDependency:', error);
     throw error;
@@ -182,7 +183,7 @@ export async function getDependencyLogs(dependencyId?: string, businessFunctionI
       throw error;
     }
     
-    return data || [];
+    return (data || []) as DependencyLog[];
   } catch (error) {
     console.error('Error in getDependencyLogs:', error);
     return [];
@@ -218,9 +219,10 @@ export async function getDependencyBreaches(): Promise<DependencyLog[]> {
       throw error;
     }
     
-    return data || [];
+    return (data || []) as DependencyLog[];
   } catch (error) {
     console.error('Error in getDependencyBreaches:', error);
     return [];
   }
 }
+
