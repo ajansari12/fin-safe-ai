@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Incident {
@@ -80,6 +79,7 @@ export interface UpdateIncidentData {
   resolved_at?: string;
   max_response_time_hours?: number;
   max_resolution_time_hours?: number;
+  escalation_level?: number;
 }
 
 export async function getIncidents(): Promise<Incident[]> {

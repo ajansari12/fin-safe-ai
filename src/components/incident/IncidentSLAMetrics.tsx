@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,12 +21,12 @@ const IncidentSLAMetrics: React.FC<IncidentSLAMetricsProps> = ({ incident }) => 
   const getSLABadge = (status: string) => {
     switch (status) {
       case 'met':
-        return <Badge variant="success" className="bg-green-100 text-green-800">SLA Met</Badge>;
+        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">SLA Met</Badge>;
       case 'breached':
         return <Badge variant="destructive">SLA Breached</Badge>;
       case 'pending':
       default:
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800">SLA Pending</Badge>;
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-300">SLA Pending</Badge>;
     }
   };
 
@@ -137,7 +136,7 @@ const IncidentSLAMetrics: React.FC<IncidentSLAMetricsProps> = ({ incident }) => 
                 {incident.resolved_at ? 
                   `Target: ${incident.max_resolution_time_hours}h` : 
                   getTimeRemaining(
-                    incident.max_resolution_time_hours || 72,
+                    incident.max_resolution_time_hours ||  72,
                     (new Date().getTime() - new Date(incident.reported_at).getTime()) / (3600*1000)
                   )
                 }
