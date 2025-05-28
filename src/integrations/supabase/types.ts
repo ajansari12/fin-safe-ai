@@ -871,6 +871,78 @@ export type Database = {
         }
         Relationships: []
       }
+      third_party_profiles: {
+        Row: {
+          address: string | null
+          annual_spend: number | null
+          contact_email: string | null
+          contact_phone: string | null
+          contract_end_date: string | null
+          contract_start_date: string | null
+          created_at: string
+          created_by: string | null
+          criticality: string
+          id: string
+          last_assessment_date: string | null
+          next_assessment_date: string | null
+          notes: string | null
+          org_id: string
+          risk_rating: string | null
+          service_provided: string
+          sla_expiry_date: string | null
+          status: string
+          updated_at: string
+          vendor_name: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          annual_spend?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          criticality: string
+          id?: string
+          last_assessment_date?: string | null
+          next_assessment_date?: string | null
+          notes?: string | null
+          org_id: string
+          risk_rating?: string | null
+          service_provided: string
+          sla_expiry_date?: string | null
+          status?: string
+          updated_at?: string
+          vendor_name: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          annual_spend?: number | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contract_end_date?: string | null
+          contract_start_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          criticality?: string
+          id?: string
+          last_assessment_date?: string | null
+          next_assessment_date?: string | null
+          notes?: string | null
+          org_id?: string
+          risk_rating?: string | null
+          service_provided?: string
+          sla_expiry_date?: string | null
+          status?: string
+          updated_at?: string
+          vendor_name?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       third_party_reviews: {
         Row: {
           assigned_reviewer: string | null
@@ -884,6 +956,7 @@ export type Database = {
           status: string
           updated_at: string | null
           vendor_name: string
+          vendor_profile_id: string | null
         }
         Insert: {
           assigned_reviewer?: string | null
@@ -897,6 +970,7 @@ export type Database = {
           status?: string
           updated_at?: string | null
           vendor_name: string
+          vendor_profile_id?: string | null
         }
         Update: {
           assigned_reviewer?: string | null
@@ -910,8 +984,156 @@ export type Database = {
           status?: string
           updated_at?: string | null
           vendor_name?: string
+          vendor_profile_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "third_party_reviews_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "third_party_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_business_functions: {
+        Row: {
+          business_function_id: string
+          created_at: string
+          dependency_level: string
+          id: string
+          vendor_profile_id: string
+        }
+        Insert: {
+          business_function_id: string
+          created_at?: string
+          dependency_level?: string
+          id?: string
+          vendor_profile_id: string
+        }
+        Update: {
+          business_function_id?: string
+          created_at?: string
+          dependency_level?: string
+          id?: string
+          vendor_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_business_functions_business_function_id_fkey"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_business_functions_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "third_party_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_documents: {
+        Row: {
+          description: string | null
+          document_name: string
+          document_type: string
+          expiry_date: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          upload_date: string
+          uploaded_by: string | null
+          vendor_profile_id: string
+        }
+        Insert: {
+          description?: string | null
+          document_name: string
+          document_type: string
+          expiry_date?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          upload_date?: string
+          uploaded_by?: string | null
+          vendor_profile_id: string
+        }
+        Update: {
+          description?: string | null
+          document_name?: string
+          document_type?: string
+          expiry_date?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          upload_date?: string
+          uploaded_by?: string | null
+          vendor_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_documents_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "third_party_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_sla_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_date: string
+          alert_type: string
+          created_at: string
+          days_before_alert: number
+          email_sent_at: string | null
+          id: string
+          status: string
+          updated_at: string
+          vendor_profile_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_date: string
+          alert_type: string
+          created_at?: string
+          days_before_alert?: number
+          email_sent_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          vendor_profile_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_date?: string
+          alert_type?: string
+          created_at?: string
+          days_before_alert?: number
+          email_sent_at?: string | null
+          id?: string
+          status?: string
+          updated_at?: string
+          vendor_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_sla_alerts_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "third_party_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
