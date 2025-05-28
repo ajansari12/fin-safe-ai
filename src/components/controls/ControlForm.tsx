@@ -29,7 +29,7 @@ const ControlForm: React.FC<ControlFormProps> = ({
       scope: '',
       frequency: '',
       owner: '',
-      status: 'active'
+      status: 'active' as const
     }
   });
 
@@ -112,7 +112,7 @@ const ControlForm: React.FC<ControlFormProps> = ({
             <Label htmlFor="status">Status</Label>
             <Select 
               value={watchedStatus} 
-              onValueChange={(value) => setValue('status', value)}
+              onValueChange={(value) => setValue('status', value as 'active' | 'inactive' | 'under_review')}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />

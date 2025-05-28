@@ -64,7 +64,7 @@ export async function getControls(): Promise<Control[]> {
     throw error;
   }
 
-  return data || [];
+  return (data || []) as Control[];
 }
 
 export async function createControl(control: Omit<Control, 'id' | 'created_at' | 'updated_at' | 'org_id' | 'created_by'>): Promise<Control> {
@@ -92,7 +92,7 @@ export async function createControl(control: Omit<Control, 'id' | 'created_at' |
     throw error;
   }
 
-  return data;
+  return data as Control;
 }
 
 export async function updateControl(id: string, updates: Partial<Control>): Promise<Control> {
@@ -111,7 +111,7 @@ export async function updateControl(id: string, updates: Partial<Control>): Prom
     throw error;
   }
 
-  return data;
+  return data as Control;
 }
 
 export async function deleteControl(id: string): Promise<void> {
@@ -146,7 +146,7 @@ export async function getKRIDefinitions(): Promise<KRIDefinition[]> {
     throw error;
   }
 
-  return data || [];
+  return (data || []) as KRIDefinition[];
 }
 
 export async function createKRIDefinition(kri: Omit<KRIDefinition, 'id' | 'created_at' | 'updated_at' | 'org_id'>): Promise<KRIDefinition> {
@@ -173,7 +173,7 @@ export async function createKRIDefinition(kri: Omit<KRIDefinition, 'id' | 'creat
     throw error;
   }
 
-  return data;
+  return data as KRIDefinition;
 }
 
 export async function getKRILogs(kriId: string): Promise<KRILog[]> {
@@ -187,7 +187,7 @@ export async function getKRILogs(kriId: string): Promise<KRILog[]> {
     throw error;
   }
 
-  return data || [];
+  return (data || []) as KRILog[];
 }
 
 export async function createKRILog(log: Omit<KRILog, 'id' | 'created_at' | 'updated_at'>): Promise<KRILog> {
@@ -201,5 +201,5 @@ export async function createKRILog(log: Omit<KRILog, 'id' | 'created_at' | 'upda
     throw error;
   }
 
-  return data;
+  return data as KRILog;
 }

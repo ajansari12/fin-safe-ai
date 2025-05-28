@@ -33,7 +33,7 @@ const KRIForm: React.FC<KRIFormProps> = ({
       warning_threshold: '',
       critical_threshold: '',
       target_value: '',
-      status: 'active'
+      status: 'active' as const
     }
   });
 
@@ -119,7 +119,7 @@ const KRIForm: React.FC<KRIFormProps> = ({
               <Label htmlFor="status">Status</Label>
               <Select 
                 value={watchedStatus} 
-                onValueChange={(value) => setValue('status', value)}
+                onValueChange={(value) => setValue('status', value as 'active' | 'inactive')}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
