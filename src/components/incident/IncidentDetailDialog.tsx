@@ -144,13 +144,34 @@ const IncidentDetailDialog: React.FC<IncidentDetailDialogProps> = ({
   const handleUpdate = async (data: UpdateIncidentData) => {
     const updates: UpdateIncidentData = {};
     
-    // Only include changed fields
-    Object.keys(data).forEach(key => {
-      const typedKey = key as keyof UpdateIncidentData;
-      if (data[typedKey] !== incident[typedKey]) {
-        updates[typedKey] = data[typedKey] as any;
-      }
-    });
+    // Only include changed fields with proper type checking
+    if (data.title !== incident.title) {
+      updates.title = data.title;
+    }
+    if (data.description !== incident.description) {
+      updates.description = data.description;
+    }
+    if (data.category !== incident.category) {
+      updates.category = data.category;
+    }
+    if (data.severity !== incident.severity) {
+      updates.severity = data.severity;
+    }
+    if (data.status !== incident.status) {
+      updates.status = data.status;
+    }
+    if (data.impact_rating !== incident.impact_rating) {
+      updates.impact_rating = data.impact_rating;
+    }
+    if (data.business_function_id !== incident.business_function_id) {
+      updates.business_function_id = data.business_function_id;
+    }
+    if (data.assigned_to !== incident.assigned_to) {
+      updates.assigned_to = data.assigned_to;
+    }
+    if (data.resolved_at !== incident.resolved_at) {
+      updates.resolved_at = data.resolved_at;
+    }
 
     if (Object.keys(updates).length > 0) {
       updateMutation.mutate({ id: incident.id, updates });
