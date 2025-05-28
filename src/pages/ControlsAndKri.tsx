@@ -1,46 +1,52 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import ControlsDashboard from "@/components/controls/ControlsDashboard";
-import ControlsList from "@/components/controls/ControlsList";
-import ControlForm from "@/components/controls/ControlForm";
-import KRIsList from "@/components/controls/KRIsList";
-import KRIForm from "@/components/controls/KRIForm";
-import KRILogsList from "@/components/controls/KRILogsList";
-import KRILogForm from "@/components/controls/KRILogForm";
-import {
-  Control,
-  getControls,
-  createControl,
-  updateControl,
-  deleteControl
-} from "@/services/controls";
-import {
-  KRIDefinition,
-  getKRIDefinitions,
-  createKRIDefinition
-} from "@/services/kri-definitions";
-import {
-  KRILog,
-  getKRILogs,
-  createKRILog
-} from "@/services/kri-logs";
+import { Control } from "@/services/controls";
+import { KRIDefinition } from "@/services/kri-definitions";
+import { useControlsAndKRIData } from "@/hooks/useControlsAndKRIData";
+import { useControlsOperations } from "@/hooks/useControlsOperations";
+import { useKRIOperations } from "@/hooks/useKRIOperations";
+import { useKRILogsOperations } from "@/hooks/useKRILogsOperations";
+import ControlsAndKRINavigation from "@/components/controls/ControlsAndKRINavigation";
+import ControlsAndKRITabs from "@/components/controls/ControlsAndKRITabs";
 
 const ControlsAndKri = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  
+  // Data hooks
+  const {
+    controls,
+    kris,
+    kriLogs,
+    isLoading,
+    loadControls,
+    loadKRIs,
+    loadKRILogs
+  } = useControlsAndKRIData();
 
-  // State management
+  // Operation hooks
+  const {
+    handleCreateControl,
+    handleUpdateControl,
+    handleDeleteControl,
+    isSubmitting: isControlSubmitting
+  } = useControlsOperations();
+
+  const {
+    handleCreateKRI,
+    handleUpdateKRI,
+    handleDeleteKRI,
+    isSubmitting: isKRISubmitting
+  } = useKRIOperations();
+
+  const {
+    handleCreateKRILog,
+    isSubmitting: isKRILogSubmitting
+  } = useKRILogsOperations();
+
+  // UI state
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [controls, setControls] = useState<Control[]>([]);
-  const [kris, setKris] = useState<KRIDefinition[]>([]);
-  const [kriLogs, setKriLogs] = useState<KRILog[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Form states
   const [showControlForm, setShowControlForm] = useState(false);
   const [showKRIForm, setShowKRIForm] = useState(false);
   const [showKRILogForm, setShowKRILogForm] = useState(false);
@@ -49,65 +55,10 @@ const ControlsAndKri = () => {
   const [editingKRI, setEditingKRI] = useState<KRIDefinition | undefined>();
   const [selectedKRI, setSelectedKRI] = useState<{ id: string; name: string } | undefined>();
 
-  // Load data
-  const loadControls = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getControls();
-      setControls(data);
-    } catch (error) {
-      console.error('Error loading controls:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load controls",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadKRIs = async () => {
-    try {
-      setIsLoading(true);
-      const data = await getKRIDefinitions();
-      setKris(data);
-    } catch (error) {
-      console.error('Error loading KRIs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load KRIs",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadKRILogs = async (kriId: string) => {
-    try {
-      setIsLoading(true);
-      const data = await getKRILogs(kriId);
-      setKriLogs(data);
-    } catch (error) {
-      console.error('Error loading KRI logs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load KRI logs",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadControls();
-    loadKRIs();
-  }, []);
+  const isSubmitting = isControlSubmitting || isKRISubmitting || isKRILogSubmitting;
 
   // Control handlers
-  const handleCreateControl = () => {
+  const handleCreateControlClick = () => {
     setEditingControl(undefined);
     setShowControlForm(true);
   };
@@ -119,57 +70,30 @@ const ControlsAndKri = () => {
 
   const handleSubmitControl = async (data: any) => {
     try {
-      setIsSubmitting(true);
       if (editingControl) {
-        await updateControl(editingControl.id, data);
-        toast({
-          title: "Success",
-          description: "Control updated successfully",
-        });
+        await handleUpdateControl(editingControl.id, data);
       } else {
-        await createControl(data);
-        toast({
-          title: "Success",
-          description: "Control created successfully",
-        });
+        await handleCreateControl(data);
       }
       setShowControlForm(false);
       setEditingControl(undefined);
       loadControls();
     } catch (error) {
-      console.error('Error saving control:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save control",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      // Error handling is done in the hook
     }
   };
 
-  const handleDeleteControl = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this control?')) return;
-    
+  const handleDeleteControlClick = async (id: string) => {
     try {
-      await deleteControl(id);
-      toast({
-        title: "Success",
-        description: "Control deleted successfully",
-      });
+      await handleDeleteControl(id);
       loadControls();
     } catch (error) {
-      console.error('Error deleting control:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete control",
-        variant: "destructive",
-      });
+      // Error handling is done in the hook
     }
   };
 
   // KRI handlers
-  const handleCreateKRI = () => {
+  const handleCreateKRIClick = () => {
     setEditingKRI(undefined);
     setShowKRIForm(true);
   };
@@ -181,42 +105,26 @@ const ControlsAndKri = () => {
 
   const handleSubmitKRI = async (data: any) => {
     try {
-      setIsSubmitting(true);
       if (editingKRI) {
-        // Update functionality would go here
-        toast({
-          title: "Info",
-          description: "KRI update functionality coming soon",
-        });
+        await handleUpdateKRI(editingKRI, data);
       } else {
-        await createKRIDefinition(data);
-        toast({
-          title: "Success",
-          description: "KRI created successfully",
-        });
+        await handleCreateKRI(data);
       }
       setShowKRIForm(false);
       setEditingKRI(undefined);
       loadKRIs();
     } catch (error) {
-      console.error('Error saving KRI:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save KRI",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      // Error handling is done in the hook
     }
   };
 
-  const handleDeleteKRI = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this KRI?')) return;
-    
-    toast({
-      title: "Info",
-      description: "KRI deletion functionality coming soon",
-    });
+  const handleDeleteKRIClick = async (id: string) => {
+    try {
+      await handleDeleteKRI(id);
+      loadKRIs();
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   const handleViewKRILogs = async (kriId: string) => {
@@ -228,31 +136,19 @@ const ControlsAndKri = () => {
     }
   };
 
-  const handleCreateKRILog = () => {
+  const handleCreateKRILogClick = () => {
     setShowKRILogForm(true);
   };
 
   const handleSubmitKRILog = async (data: any) => {
     try {
-      setIsSubmitting(true);
-      await createKRILog(data);
-      toast({
-        title: "Success",
-        description: "KRI measurement logged successfully",
-      });
+      await handleCreateKRILog(data);
       setShowKRILogForm(false);
       if (selectedKRI) {
         await loadKRILogs(selectedKRI.id);
       }
     } catch (error) {
-      console.error('Error logging KRI measurement:', error);
-      toast({
-        title: "Error",
-        description: "Failed to log KRI measurement",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      // Error handling is done in the hook
     }
   };
 
@@ -266,62 +162,29 @@ const ControlsAndKri = () => {
     setSelectedKRI(undefined);
   };
 
-  // Show forms
-  if (showControlForm) {
-    return (
-      <AuthenticatedLayout>
-        <div className="space-y-6">
-          <ControlForm
-            control={editingControl}
-            onSubmit={handleSubmitControl}
-            onCancel={handleCancelForm}
-            isSubmitting={isSubmitting}
-          />
-        </div>
-      </AuthenticatedLayout>
-    );
-  }
+  // Show navigation components if any form is active
+  const showNavigation = showControlForm || showKRIForm || showKRILogForm || showKRILogs;
 
-  if (showKRIForm) {
+  if (showNavigation) {
     return (
       <AuthenticatedLayout>
         <div className="space-y-6">
-          <KRIForm
-            kri={editingKRI}
-            onSubmit={handleSubmitKRI}
-            onCancel={handleCancelForm}
+          <ControlsAndKRINavigation
+            showControlForm={showControlForm}
+            showKRIForm={showKRIForm}
+            showKRILogForm={showKRILogForm}
+            showKRILogs={showKRILogs}
+            editingControl={editingControl}
+            editingKRI={editingKRI}
+            selectedKRI={selectedKRI}
+            kriLogs={kriLogs}
             isSubmitting={isSubmitting}
-          />
-        </div>
-      </AuthenticatedLayout>
-    );
-  }
-
-  if (showKRILogForm && selectedKRI) {
-    return (
-      <AuthenticatedLayout>
-        <div className="space-y-6">
-          <KRILogForm
-            kriId={selectedKRI.id}
-            kriName={selectedKRI.name}
-            onSubmit={handleSubmitKRILog}
-            onCancel={handleCancelForm}
-            isSubmitting={isSubmitting}
-          />
-        </div>
-      </AuthenticatedLayout>
-    );
-  }
-
-  if (showKRILogs && selectedKRI) {
-    return (
-      <AuthenticatedLayout>
-        <div className="space-y-6">
-          <KRILogsList
-            logs={kriLogs}
-            kriName={selectedKRI.name}
-            onCreateLog={handleCreateKRILog}
             isLoading={isLoading}
+            onSubmitControl={handleSubmitControl}
+            onSubmitKRI={handleSubmitKRI}
+            onSubmitKRILog={handleSubmitKRILog}
+            onCreateKRILog={handleCreateKRILogClick}
+            onCancel={handleCancelForm}
           />
         </div>
       </AuthenticatedLayout>
@@ -338,45 +201,20 @@ const ControlsAndKri = () => {
           </p>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="controls">Controls</TabsTrigger>
-            <TabsTrigger value="kris">KRIs</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            <ControlsDashboard />
-          </TabsContent>
-
-          <TabsContent value="controls" className="space-y-6">
-            <ControlsList
-              controls={controls}
-              onEdit={handleEditControl}
-              onDelete={handleDeleteControl}
-              onCreate={handleCreateControl}
-              isLoading={isLoading}
-            />
-          </TabsContent>
-
-          <TabsContent value="kris" className="space-y-6">
-            <KRIsList
-              kris={kris}
-              onEdit={handleEditKRI}
-              onDelete={handleDeleteKRI}
-              onCreate={handleCreateKRI}
-              onViewLogs={handleViewKRILogs}
-              isLoading={isLoading}
-            />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Advanced analytics features coming soon...</p>
-            </div>
-          </TabsContent>
-        </Tabs>
+        <ControlsAndKRITabs
+          activeTab={activeTab}
+          controls={controls}
+          kris={kris}
+          isLoading={isLoading}
+          onTabChange={setActiveTab}
+          onEditControl={handleEditControl}
+          onDeleteControl={handleDeleteControlClick}
+          onCreateControl={handleCreateControlClick}
+          onEditKRI={handleEditKRI}
+          onDeleteKRI={handleDeleteKRIClick}
+          onCreateKRI={handleCreateKRIClick}
+          onViewKRILogs={handleViewKRILogs}
+        />
       </div>
     </AuthenticatedLayout>
   );
