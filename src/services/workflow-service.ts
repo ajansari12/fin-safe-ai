@@ -70,7 +70,10 @@ export const workflowService = {
         ...item.template,
         steps: Array.isArray(item.template.steps) ? item.template.steps : []
       } : undefined,
-      steps: item.steps || []
+      steps: (item.steps || []).map((step: any) => ({
+        ...step,
+        status: step.status as WorkflowStep['status']
+      }))
     }));
   },
 
@@ -98,7 +101,10 @@ export const workflowService = {
         ...item.template,
         steps: Array.isArray(item.template.steps) ? item.template.steps : []
       } : undefined,
-      steps: item.steps || []
+      steps: (item.steps || []).map((step: any) => ({
+        ...step,
+        status: step.status as WorkflowStep['status']
+      }))
     }));
   },
 
@@ -126,7 +132,10 @@ export const workflowService = {
         ...item.template,
         steps: Array.isArray(item.template.steps) ? item.template.steps : []
       } : undefined,
-      steps: item.steps || []
+      steps: (item.steps || []).map((step: any) => ({
+        ...step,
+        status: step.status as WorkflowStep['status']
+      }))
     }));
   },
 
