@@ -1,129 +1,190 @@
-
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  getFrameworks,
+  getStructuresByFrameworkId,
+  getRolesByFrameworkId,
+  getPoliciesByFrameworkId,
+  deleteFramework,
+} from "@/services/governance-service";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { getFrameworks } from "@/services/governance-service";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Link } from "react-router-dom";
 import { GovernanceFramework } from "@/pages/governance/types";
-import { PlusCircle, FileText, Calendar } from "lucide-react";
-import { format } from "date-fns";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import FrameworkForm from "./FrameworkForm";
+import { Plus, Edit, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import BulkGovernanceOperations from "./BulkGovernanceOperations";
+import ComplianceReportGenerator from "./ComplianceReportGenerator";
 
 export default function FrameworksList() {
-  const navigate = useNavigate();
   const [frameworks, setFrameworks] = useState<GovernanceFramework[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const { data, refetch, isLoading } = useQuery({
+    queryKey: ["frameworks"],
+    queryFn: getFrameworks,
+  });
+  const [allPolicies, setAllPolicies] = useState([]);
+  const [allRoles, setAllRoles] = useState([]);
 
   useEffect(() => {
-    loadFrameworks();
-  }, []);
-
-  async function loadFrameworks() {
-    setIsLoading(true);
-    try {
-      const data = await getFrameworks();
+    if (data) {
       setFrameworks(data);
-    } catch (error) {
-      console.error("Error loading frameworks:", error);
-    } finally {
-      setIsLoading(false);
     }
-  }
+  }, [data]);
 
-  function handleFrameworkCreated(framework: GovernanceFramework) {
-    setCreateDialogOpen(false);
-    setFrameworks((prev) => [framework, ...prev]);
+  useEffect(() => {
+    const loadData = async () => {
+      if (data) {
+        const policies = await Promise.all(
+          data.map(async (framework) => {
+            const policies = await getPoliciesByFrameworkId(framework.id);
+            return policies;
+          })
+        );
+        const roles = await Promise.all(
+          data.map(async (framework) => {
+            const roles = await getRolesByFrameworkId(framework.id);
+            return roles;
+          })
+        );
+        const flattenedPolicies = policies.flat();
+        const flattenedRoles = roles.flat();
+        setAllPolicies(flattenedPolicies);
+        setAllRoles(flattenedRoles);
+      }
+    };
+    loadData();
+  }, [data]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteFramework(id);
+      toast.success("Framework deleted successfully");
+      refetch();
+    } catch (error) {
+      console.error("Error deleting framework:", error);
+      toast.error("Failed to delete framework");
+    }
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Governance Frameworks</h2>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <PlusCircle className="h-4 w-4 mr-2" />
-          New Framework
-        </Button>
+      {/* Enhanced features section */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <BulkGovernanceOperations 
+          policies={allPolicies}
+          roles={allRoles}
+          onRefresh={refetch}
+        />
+        <ComplianceReportGenerator />
       </div>
 
-      {isLoading ? (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="shadow-sm animate-pulse">
-              <CardHeader className="bg-gray-100 h-24"></CardHeader>
-              <CardContent className="pt-4">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              </CardContent>
-              <CardFooter className="bg-gray-50">
-                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : frameworks.length === 0 ? (
-        <Card>
-          <CardContent className="py-8">
-            <div className="text-center">
-              <FileText className="h-12 w-12 mb-4 mx-auto text-gray-400" />
-              <h3 className="text-xl font-medium mb-2">No frameworks yet</h3>
-              <p className="text-gray-500 mb-4">
-                Create your first governance framework to start documenting your operational resilience governance structure.
-              </p>
-              <Button onClick={() => setCreateDialogOpen(true)}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Create Framework
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {frameworks.map((framework) => (
-            <Card key={framework.id} className="shadow-sm hover:shadow transition-shadow cursor-pointer" onClick={() => navigate(`/governance-framework/${framework.id}`)}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>{framework.title}</CardTitle>
-                    <CardDescription>Version {framework.version}</CardDescription>
-                  </div>
-                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-blue-100 text-blue-800">
-                    {framework.status}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm line-clamp-2">
-                  {framework.description || "No description provided"}
-                </p>
-              </CardContent>
-              <CardFooter className="text-xs text-gray-500 flex justify-between items-center">
-                <div className="flex items-center">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  Updated {format(new Date(framework.updated_at), 'MMM d, yyyy')}
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Governance Frameworks</CardTitle>
+          <CardDescription>
+            A list of all governance frameworks in your organization.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {frameworks.map((framework) => (
+                <TableRow key={framework.id}>
+                  <TableCell>{framework.title}</TableCell>
+                  <TableCell>{framework.status}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="mr-2"
+                      >
+                        <Link to={`/governance-framework/${framework.id}`}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Manage
+                        </Link>
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" size="sm">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Are you absolutely sure?
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently
+                              delete your framework and remove your data from our
+                              servers.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(framework.id)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Framework</DialogTitle>
-          </DialogHeader>
-          <FrameworkForm onSuccess={handleFrameworkCreated} />
-        </DialogContent>
-      </Dialog>
+      <Button asChild>
+        <Link to="/governance-framework/new">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Framework
+        </Link>
+      </Button>
     </div>
   );
 }

@@ -752,3 +752,158 @@ export async function getFileUrl(filePath: string): Promise<string | null> {
     return null;
   }
 }
+
+// Enhanced review deadline logic
+export async function checkReviewDeadlines(orgId: string): Promise<void> {
+  try {
+    const { data: overdueReviews, error } = await supabase
+      .rpc('get_overdue_policy_reviews', { org_uuid: orgId });
+
+    if (error) {
+      throw error;
+    }
+
+    console.log(`Found ${overdueReviews?.length || 0} overdue policy reviews`);
+
+    // Trigger email reminders for overdue reviews
+    if (overdueReviews && overdueReviews.length > 0) {
+      // Call the edge function to send reminders
+      const { error: reminderError } = await supabase.functions.invoke('governance-review-reminder', {
+        body: { overdueReviews }
+      });
+
+      if (reminderError) {
+        console.error('Error triggering review reminders:', reminderError);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking review deadlines:', error);
+    toast.error("Failed to check review deadlines");
+  }
+}
+
+// Enhanced policy status management
+export async function updatePolicyStatus(
+  policyId: string, 
+  newStatus: 'draft' | 'under_review' | 'approved' | 'active' | 'archived',
+  comments?: string
+): Promise<GovernancePolicy | null> {
+  try {
+    const { data: policy, error: policyError } = await supabase
+      .from('governance_policies')
+      .select('*')
+      .eq('id', policyId)
+      .single();
+
+    if (policyError || !policy) {
+      throw new Error('Policy not found');
+    }
+
+    const { data: updatedPolicy, error } = await supabase
+      .from('governance_policies')
+      .update({ 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', policyId)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    // Log the status change
+    await createChangeLog({
+      framework_id: policy.framework_id,
+      policy_id: policyId,
+      change_type: 'updated',
+      description: `Policy status changed from ${policy.status} to ${newStatus}${comments ? `: ${comments}` : ''}`,
+      previous_version: policy.version,
+      new_version: policy.version,
+      changed_by: null
+    });
+
+    toast.success(`Policy status updated to ${newStatus}`);
+    return updatedPolicy as GovernancePolicy;
+  } catch (error) {
+    console.error(`Error updating policy status:`, error);
+    toast.error("Failed to update policy status");
+    return null;
+  }
+}
+
+// Bulk policy operations
+export async function bulkUpdatePolicyStatus(
+  policyIds: string[], 
+  newStatus: 'draft' | 'under_review' | 'approved' | 'active' | 'archived'
+): Promise<number> {
+  try {
+    let successCount = 0;
+
+    for (const policyId of policyIds) {
+      const result = await updatePolicyStatus(policyId, newStatus);
+      if (result) {
+        successCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully updated ${successCount} policies to ${newStatus}`);
+    }
+
+    return successCount;
+  } catch (error) {
+    console.error('Error in bulk policy status update:', error);
+    toast.error("Failed to update policy statuses");
+    return 0;
+  }
+}
+
+// Bulk role operations
+export async function bulkDeleteRoles(roleIds: string[]): Promise<number> {
+  try {
+    const { error } = await supabase
+      .from('governance_roles')
+      .delete()
+      .in('id', roleIds);
+
+    if (error) {
+      throw error;
+    }
+
+    toast.success(`Successfully deleted ${roleIds.length} roles`);
+    return roleIds.length;
+  } catch (error) {
+    console.error('Error in bulk role deletion:', error);
+    toast.error("Failed to delete roles");
+    return 0;
+  }
+}
+
+// Enhanced review schedule with automatic reminders
+export async function scheduleAutomaticReminders(policyId: string): Promise<void> {
+  try {
+    const { data: schedule } = await supabase
+      .from('governance_review_schedule')
+      .select('*')
+      .eq('policy_id', policyId)
+      .single();
+
+    if (!schedule) {
+      console.warn(`No review schedule found for policy ${policyId}`);
+      return;
+    }
+
+    const nextReviewDate = new Date(schedule.next_review_date);
+    const reminderDate = new Date(nextReviewDate);
+    reminderDate.setDate(reminderDate.getDate() - (schedule.reminder_days_before || 14));
+
+    // In a production environment, you would set up a cron job or scheduled task
+    // For now, we'll log the reminder schedule
+    console.log(`Reminder scheduled for policy ${policyId} on ${reminderDate.toISOString()}`);
+
+  } catch (error) {
+    console.error('Error scheduling automatic reminders:', error);
+  }
+}

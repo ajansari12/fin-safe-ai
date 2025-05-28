@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { createPolicy, updatePolicy } from "@/services/governance-service";
 import { GovernancePolicy } from "@/pages/governance/types";
@@ -25,7 +32,7 @@ const formSchema = z.object({
     message: "Policy title must be at least 3 characters.",
   }),
   description: z.string().optional(),
-  status: z.enum(["active", "draft", "archived"]).default("active"),
+  status: z.enum(["draft", "under_review", "approved", "active", "archived"]).default("draft"),
 });
 
 interface PolicyFormProps {
@@ -50,7 +57,7 @@ export default function PolicyForm({
     defaultValues: {
       title: existingPolicy?.title || "",
       description: existingPolicy?.description || "",
-      status: (existingPolicy?.status as "active" | "draft" | "archived") || "active",
+      status: (existingPolicy?.status as "draft" | "under_review" | "approved" | "active" | "archived") || "draft",
     },
   });
 
@@ -80,6 +87,17 @@ export default function PolicyForm({
       setSelectedFile(file);
     }
   }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft': return 'text-gray-600';
+      case 'under_review': return 'text-yellow-600';
+      case 'approved': return 'text-green-600';
+      case 'active': return 'text-blue-600';
+      case 'archived': return 'text-gray-400';
+      default: return 'text-gray-600';
+    }
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSaving(true);
@@ -167,15 +185,36 @@ export default function PolicyForm({
             <FormItem>
               <FormLabel>Status</FormLabel>
               <FormControl>
-                <select
-                  className="w-full p-2 border rounded"
-                  {...field}
-                >
-                  <option value="active">Active</option>
-                  <option value="draft">Draft</option>
-                  <option value="archived">Archived</option>
-                </select>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">
+                      <span className={getStatusColor('draft')}>Draft</span>
+                    </SelectItem>
+                    <SelectItem value="under_review">
+                      <span className={getStatusColor('under_review')}>Under Review</span>
+                    </SelectItem>
+                    <SelectItem value="approved">
+                      <span className={getStatusColor('approved')}>Approved</span>
+                    </SelectItem>
+                    <SelectItem value="active">
+                      <span className={getStatusColor('active')}>Active</span>
+                    </SelectItem>
+                    <SelectItem value="archived">
+                      <span className={getStatusColor('archived')}>Archived</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </FormControl>
+              <FormDescription>
+                {field.value === 'draft' && "Policy is being drafted"}
+                {field.value === 'under_review' && "Policy is under review by stakeholders"}
+                {field.value === 'approved' && "Policy has been approved but not yet active"}
+                {field.value === 'active' && "Policy is currently in effect"}
+                {field.value === 'archived' && "Policy is no longer in use"}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
