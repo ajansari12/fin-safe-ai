@@ -1,9 +1,10 @@
+
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ClockIcon, CheckCircleIcon, AlertTriangleIcon, BarChart4Icon } from "lucide-react";
-import { Incident, getIncidentMetrics } from "@/services/incident-service";
+import { Incident, getIncidentMetrics } from "@/services/incident";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNow } from 'date-fns';
 

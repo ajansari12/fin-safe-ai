@@ -14,7 +14,7 @@ import {
   sendAlert,
   escalateIncident,
   UpdateIncidentData 
-} from "@/services/incident-service";
+} from "@/services/incident";
 import IncidentDetailTabs from "./IncidentDetailTabs";
 
 interface IncidentDetailDialogProps {

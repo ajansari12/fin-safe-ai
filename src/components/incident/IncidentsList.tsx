@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, AlertTriangle, Clock, CheckCircle, FileDown, ArrowUpRight } from "lucide-react";
-import { Incident } from "@/services/incident-service";
+import { Incident } from "@/services/incident";
 import { format, formatDistanceToNow, isAfter, addHours } from "date-fns";
 import { generateIncidentReportPDF } from "@/services/incident-pdf-service";
 import { toast } from "sonner";

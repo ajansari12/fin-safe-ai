@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Incident, IncidentResponse, IncidentEscalation, UpdateIncidentData } from "@/services/incident-service";
+import { Incident, IncidentResponse, IncidentEscalation, UpdateIncidentData } from "@/services/incident";
 import IncidentDetailsTab from "./tabs/IncidentDetailsTab";
 import IncidentResponsesTab from "./tabs/IncidentResponsesTab";
 import IncidentRCATab from "./tabs/IncidentRCATab";

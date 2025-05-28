@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +16,7 @@ import {
   checkSLABreaches,
   Incident, 
   CreateIncidentData 
-} from "@/services/incident-service";
+} from "@/services/incident";
 
 const IncidentLog = () => {
   const { user } = useAuth();
