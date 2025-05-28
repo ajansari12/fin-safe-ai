@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { getControls, Control } from "@/services/controls";
 import { getKRIDefinitions, KRIDefinition } from "@/services/kri-definitions";
 import { getKRIBreachesData } from "@/services/kri-analytics-service";
+import KRIVarianceCard from "./KRIVarianceCard";
+import KRIVarianceChart from "./KRIVarianceChart";
+import KRIAppetiteBreaches from "./KRIAppetiteBreaches";
 
 const ControlsDashboard: React.FC = () => {
   const [controls, setControls] = useState<Control[]>([]);
@@ -85,7 +87,7 @@ const ControlsDashboard: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Controls</CardTitle>
@@ -133,9 +135,18 @@ const ControlsDashboard: React.FC = () => {
             </p>
           </CardContent>
         </Card>
+
+        {/* New KRI Variance Card */}
+        <KRIVarianceCard />
       </div>
 
-      {/* Charts */}
+      {/* New variance analysis section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <KRIVarianceChart />
+        <KRIAppetiteBreaches />
+      </div>
+
+      {/* Existing Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>

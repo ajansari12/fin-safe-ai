@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface KRILog {
@@ -57,6 +58,27 @@ export async function createKRILog(data: CreateKRILogData): Promise<KRILog> {
       console.error('Failed to send KRI breach alert:', emailError);
       // Don't fail the log creation if email fails
     }
+  }
+
+  // Check for appetite variance and send notifications
+  try {
+    // Get the variance record that was automatically created by the trigger
+    const { data: varianceData, error: varianceError } = await supabase
+      .from('kri_appetite_variance')
+      .select('id, variance_status')
+      .eq('kri_id', kriLog.kri_id)
+      .eq('measurement_date', kriLog.measurement_date)
+      .single();
+
+    if (!varianceError && varianceData && ['warning', 'breach'].includes(varianceData.variance_status)) {
+      await supabase.functions.invoke('send-kri-appetite-breach-alert', {
+        body: { varianceId: varianceData.id }
+      });
+      console.log('KRI appetite breach alert sent for variance:', varianceData.id);
+    }
+  } catch (appetiteError) {
+    console.error('Failed to send KRI appetite breach alert:', appetiteError);
+    // Don't fail the log creation if appetite alert fails
   }
 
   return kriLog;

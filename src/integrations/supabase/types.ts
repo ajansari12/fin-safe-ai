@@ -938,6 +938,50 @@ export type Database = {
           },
         ]
       }
+      kri_appetite_variance: {
+        Row: {
+          actual_value: number
+          appetite_threshold: number | null
+          created_at: string
+          id: string
+          kri_id: string
+          measurement_date: string
+          updated_at: string
+          variance_percentage: number | null
+          variance_status: string
+        }
+        Insert: {
+          actual_value: number
+          appetite_threshold?: number | null
+          created_at?: string
+          id?: string
+          kri_id: string
+          measurement_date: string
+          updated_at?: string
+          variance_percentage?: number | null
+          variance_status: string
+        }
+        Update: {
+          actual_value?: number
+          appetite_threshold?: number | null
+          created_at?: string
+          id?: string
+          kri_id?: string
+          measurement_date?: string
+          updated_at?: string
+          variance_percentage?: number | null
+          variance_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kri_appetite_variance_kri_id_fkey"
+            columns: ["kri_id"]
+            isOneToOne: false
+            referencedRelation: "kri_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kri_definitions: {
         Row: {
           control_id: string | null
@@ -948,6 +992,7 @@ export type Database = {
           measurement_frequency: string | null
           name: string
           org_id: string
+          risk_appetite_statement_id: string | null
           status: string
           target_value: string | null
           threshold_id: string
@@ -963,6 +1008,7 @@ export type Database = {
           measurement_frequency?: string | null
           name: string
           org_id?: string
+          risk_appetite_statement_id?: string | null
           status?: string
           target_value?: string | null
           threshold_id: string
@@ -978,6 +1024,7 @@ export type Database = {
           measurement_frequency?: string | null
           name?: string
           org_id?: string
+          risk_appetite_statement_id?: string | null
           status?: string
           target_value?: string | null
           threshold_id?: string
@@ -990,6 +1037,13 @@ export type Database = {
             columns: ["control_id"]
             isOneToOne: false
             referencedRelation: "controls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kri_definitions_risk_appetite_statement_id_fkey"
+            columns: ["risk_appetite_statement_id"]
+            isOneToOne: false
+            referencedRelation: "risk_appetite_statements"
             referencedColumns: ["id"]
           },
           {
@@ -1917,6 +1971,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_kri_appetite_variance: {
+        Args: {
+          p_kri_id: string
+          p_actual_value: number
+          p_measurement_date: string
+        }
+        Returns: string
+      }
       calculate_vendor_risk_score: {
         Args: {
           vendor_criticality: string
