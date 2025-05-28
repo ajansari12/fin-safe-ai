@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, AlertTriangle, CheckSquare, FileText, Building2 } from "lucide-react";
+import { Upload, AlertTriangle, CheckSquare, FileText, Building2, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AuditUploadForm from "@/components/audit/AuditUploadForm";
 import AuditDocumentsList from "@/components/audit/AuditDocumentsList";
@@ -12,6 +13,8 @@ import ComplianceFindingsList from "@/components/audit/ComplianceFindingsList";
 import AuditTaskForm from "@/components/audit/AuditTaskForm";
 import AuditTasksList from "@/components/audit/AuditTasksList";
 import AuditTrailExport from "@/components/audit/AuditTrailExport";
+import AuditTrailsList from "@/components/audit/AuditTrailsList";
+import AuditPDFExport from "@/components/audit/AuditPDFExport";
 import { auditService, AuditUpload, ComplianceFinding, AuditTask } from "@/services/audit-service";
 import { Button } from "@/components/ui/button";
 
@@ -232,7 +235,7 @@ const AuditAndCompliance = () => {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Documents
@@ -245,9 +248,13 @@ const AuditAndCompliance = () => {
               <CheckSquare className="h-4 w-4" />
               Tasks
             </TabsTrigger>
+            <TabsTrigger value="trails" className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Audit Trails
+            </TabsTrigger>
             <TabsTrigger value="export" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Export
+              Reports
             </TabsTrigger>
           </TabsList>
 
@@ -346,8 +353,13 @@ const AuditAndCompliance = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="trails" className="space-y-6">
+            <AuditTrailsList orgId={orgId} />
+          </TabsContent>
+
           <TabsContent value="export" className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
+              <AuditPDFExport orgId={orgId} />
               <AuditTrailExport orgId={orgId} />
               <Card>
                 <CardHeader>

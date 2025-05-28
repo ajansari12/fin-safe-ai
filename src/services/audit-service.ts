@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AuditUpload {
@@ -136,10 +135,29 @@ export const auditService = {
       .single();
     
     if (error) throw error;
+
+    // Create audit trail
+    await this.createAuditTrail({
+      org_id: finding.org_id,
+      module_name: 'audit',
+      action_type: 'create',
+      entity_type: 'compliance_finding',
+      entity_id: data.id,
+      entity_name: finding.finding_title,
+      changes_made: { created: finding }
+    });
+
     return data;
   },
 
   async updateComplianceFinding(id: string, updates: Partial<ComplianceFinding>): Promise<ComplianceFinding> {
+    // Get the current finding for audit trail
+    const { data: currentFinding } = await supabase
+      .from('compliance_findings')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     const { data, error } = await supabase
       .from('compliance_findings')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -148,6 +166,23 @@ export const auditService = {
       .single();
     
     if (error) throw error;
+
+    // Create audit trail
+    if (currentFinding) {
+      await this.createAuditTrail({
+        org_id: currentFinding.org_id,
+        module_name: 'audit',
+        action_type: 'update',
+        entity_type: 'compliance_finding',
+        entity_id: id,
+        entity_name: currentFinding.finding_title,
+        changes_made: { 
+          previous: currentFinding, 
+          updated: updates 
+        }
+      });
+    }
+
     return data;
   },
 
@@ -170,10 +205,29 @@ export const auditService = {
       .single();
     
     if (error) throw error;
+
+    // Create audit trail
+    await this.createAuditTrail({
+      org_id: task.org_id,
+      module_name: 'audit',
+      action_type: 'create',
+      entity_type: 'audit_task',
+      entity_id: data.id,
+      entity_name: task.task_title,
+      changes_made: { created: task }
+    });
+
     return data;
   },
 
   async updateAuditTask(id: string, updates: Partial<AuditTask>): Promise<AuditTask> {
+    // Get the current task for audit trail
+    const { data: currentTask } = await supabase
+      .from('audit_tasks')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     const { data, error } = await supabase
       .from('audit_tasks')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -182,6 +236,23 @@ export const auditService = {
       .single();
     
     if (error) throw error;
+
+    // Create audit trail
+    if (currentTask) {
+      await this.createAuditTrail({
+        org_id: currentTask.org_id,
+        module_name: 'audit',
+        action_type: 'update',
+        entity_type: 'audit_task',
+        entity_id: id,
+        entity_name: currentTask.task_title,
+        changes_made: { 
+          previous: currentTask, 
+          updated: updates 
+        }
+      });
+    }
+
     return data;
   },
 
@@ -200,6 +271,72 @@ export const auditService = {
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createAuditTrail(auditTrail: {
+    org_id: string;
+    module_name: string;
+    action_type: string;
+    entity_type: string;
+    entity_id?: string;
+    entity_name?: string;
+    changes_made?: any;
+    ip_address?: string;
+    user_agent?: string;
+  }) {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user?.id)
+      .single();
+
+    const { data, error } = await supabase
+      .from('audit_trails')
+      .insert({
+        ...auditTrail,
+        user_id: user?.id,
+        user_name: profile?.full_name || 'Unknown User',
+        ip_address: auditTrail.ip_address || 'Unknown',
+        user_agent: auditTrail.user_agent || navigator.userAgent
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async getAuditTrails(orgId: string, filters?: {
+    module_name?: string;
+    action_type?: string;
+    entity_type?: string;
+    limit?: number;
+  }) {
+    let query = supabase
+      .from('audit_trails')
+      .select('*')
+      .eq('org_id', orgId);
+
+    if (filters?.module_name) {
+      query = query.eq('module_name', filters.module_name);
+    }
+
+    if (filters?.action_type) {
+      query = query.eq('action_type', filters.action_type);
+    }
+
+    if (filters?.entity_type) {
+      query = query.eq('entity_type', filters.entity_type);
+    }
+
+    const { data, error } = await query
+      .order('timestamp', { ascending: false })
+      .limit(filters?.limit || 100);
     
     if (error) throw error;
     return data || [];
