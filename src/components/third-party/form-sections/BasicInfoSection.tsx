@@ -31,7 +31,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
           placeholder="Enter vendor name"
         />
         {errors.vendor_name && (
-          <p className="text-sm text-destructive mt-1">{errors.vendor_name.message}</p>
+          <p className="text-sm text-destructive mt-1">
+            {typeof errors.vendor_name.message === 'string' ? errors.vendor_name.message : 'Vendor name is required'}
+          </p>
         )}
       </div>
 
@@ -43,7 +45,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
           placeholder="Describe the service provided"
         />
         {errors.service_provided && (
-          <p className="text-sm text-destructive mt-1">{errors.service_provided.message}</p>
+          <p className="text-sm text-destructive mt-1">
+            {typeof errors.service_provided.message === 'string' ? errors.service_provided.message : 'Service description is required'}
+          </p>
         )}
       </div>
 
