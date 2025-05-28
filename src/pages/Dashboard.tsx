@@ -8,6 +8,11 @@ import IncidentTimelineSection from "@/components/dashboard/IncidentTimelineSect
 import ActionItemsCard from "@/components/dashboard/ActionItemsCard";
 import ProgramMaturityCard from "@/components/dashboard/ProgramMaturityCard";
 import PlaceholderContent from "@/components/dashboard/PlaceholderContent";
+import KRIBreachesChart from "@/components/dashboard/KRIBreachesChart";
+import UnresolvedIncidents from "@/components/dashboard/UnresolvedIncidents";
+import GovernancePoliciesOverdue from "@/components/dashboard/GovernancePoliciesOverdue";
+import ThirdPartyReviewsDue from "@/components/dashboard/ThirdPartyReviewsDue";
+import MostSensitiveCBFs from "@/components/dashboard/MostSensitiveCBFs";
 import { useAIAssistant } from "@/components/ai-assistant";
 
 const DashboardContent = () => {
@@ -38,17 +43,42 @@ const DashboardContent = () => {
         <StatCardsSection />
         
         <TabsContent value="overview" className="space-y-6">
-          {/* Risk Charts */}
-          <RiskChartSection />
+          {/* Enhanced Analytics Grid */}
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+            {/* KRI Breaches Chart - spans 2 columns on larger screens */}
+            <div className="xl:col-span-2">
+              <KRIBreachesChart />
+            </div>
+            
+            {/* Unresolved Incidents */}
+            <UnresolvedIncidents />
+            
+            {/* Governance Policies Overdue */}
+            <GovernancePoliciesOverdue />
+            
+            {/* Third Party Reviews Due */}
+            <ThirdPartyReviewsDue />
+            
+            {/* Most Sensitive CBFs */}
+            <MostSensitiveCBFs />
+          </div>
 
-          {/* Timeline Charts */}
-          <IncidentTimelineSection />
+          {/* Original Dashboard Sections */}
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            {/* Risk Charts */}
+            <RiskChartSection />
 
-          {/* Action Items */}
-          <ActionItemsCard />
+            {/* Timeline Charts */}
+            <IncidentTimelineSection />
+          </div>
 
-          {/* Program Maturity */}
-          <ProgramMaturityCard />
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            {/* Action Items */}
+            <ActionItemsCard />
+
+            {/* Program Maturity */}
+            <ProgramMaturityCard />
+          </div>
         </TabsContent>
         
         <TabsContent value="governance">

@@ -440,6 +440,65 @@ export type Database = {
           },
         ]
       }
+      incident_logs: {
+        Row: {
+          assigned_to: string | null
+          business_function_id: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          impact_rating: number | null
+          reported_at: string | null
+          reported_by: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          business_function_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          impact_rating?: number | null
+          reported_at?: string | null
+          reported_by?: string | null
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          business_function_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          impact_rating?: number | null
+          reported_at?: string | null
+          reported_by?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_logs_business_function_id_fkey"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kri_definitions: {
         Row: {
           created_at: string
@@ -483,6 +542,47 @@ export type Database = {
             columns: ["threshold_id"]
             isOneToOne: false
             referencedRelation: "risk_thresholds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kri_logs: {
+        Row: {
+          actual_value: number
+          created_at: string | null
+          id: string
+          kri_id: string
+          measurement_date: string
+          notes: string | null
+          threshold_breached: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_value: number
+          created_at?: string | null
+          id?: string
+          kri_id: string
+          measurement_date: string
+          notes?: string | null
+          threshold_breached?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_value?: number
+          created_at?: string | null
+          id?: string
+          kri_id?: string
+          measurement_date?: string
+          notes?: string | null
+          threshold_breached?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kri_logs_kri_id_fkey"
+            columns: ["kri_id"]
+            isOneToOne: false
+            referencedRelation: "kri_definitions"
             referencedColumns: ["id"]
           },
         ]
@@ -627,6 +727,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      third_party_reviews: {
+        Row: {
+          assigned_reviewer: string | null
+          created_at: string | null
+          id: string
+          last_review_date: string | null
+          next_review_date: string
+          notes: string | null
+          review_type: string
+          risk_rating: string | null
+          status: string
+          updated_at: string | null
+          vendor_name: string
+        }
+        Insert: {
+          assigned_reviewer?: string | null
+          created_at?: string | null
+          id?: string
+          last_review_date?: string | null
+          next_review_date: string
+          notes?: string | null
+          review_type: string
+          risk_rating?: string | null
+          status?: string
+          updated_at?: string | null
+          vendor_name: string
+        }
+        Update: {
+          assigned_reviewer?: string | null
+          created_at?: string | null
+          id?: string
+          last_review_date?: string | null
+          next_review_date?: string
+          notes?: string | null
+          review_type?: string
+          risk_rating?: string | null
+          status?: string
+          updated_at?: string | null
+          vendor_name?: string
+        }
+        Relationships: []
       }
     }
     Views: {
