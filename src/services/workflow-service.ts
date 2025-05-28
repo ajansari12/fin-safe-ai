@@ -63,7 +63,15 @@ export const workflowService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as WorkflowInstance['status'],
+      template: item.template ? {
+        ...item.template,
+        steps: Array.isArray(item.template.steps) ? item.template.steps : []
+      } : undefined,
+      steps: item.steps || []
+    }));
   },
 
   async getWorkflowInstancesByStatus(orgId: string, status: string): Promise<WorkflowInstance[]> {
@@ -83,7 +91,15 @@ export const workflowService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as WorkflowInstance['status'],
+      template: item.template ? {
+        ...item.template,
+        steps: Array.isArray(item.template.steps) ? item.template.steps : []
+      } : undefined,
+      steps: item.steps || []
+    }));
   },
 
   async getWorkflowInstancesByModule(orgId: string, module: string): Promise<WorkflowInstance[]> {
@@ -103,7 +119,15 @@ export const workflowService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      status: item.status as WorkflowInstance['status'],
+      template: item.template ? {
+        ...item.template,
+        steps: Array.isArray(item.template.steps) ? item.template.steps : []
+      } : undefined,
+      steps: item.steps || []
+    }));
   },
 
   async updateWorkflowInstanceStatus(instanceId: string, status: WorkflowInstance['status'], additionalFields?: Partial<WorkflowInstance>): Promise<void> {
@@ -144,7 +168,10 @@ export const workflowService = {
       throw error;
     }
 
-    return newInstance;
+    return {
+      ...newInstance,
+      status: newInstance.status as WorkflowInstance['status']
+    };
   },
 
   async getWorkflowTemplates(orgId: string): Promise<WorkflowTemplate[]> {
@@ -159,6 +186,9 @@ export const workflowService = {
       throw error;
     }
 
-    return data || [];
+    return (data || []).map(item => ({
+      ...item,
+      steps: Array.isArray(item.steps) ? item.steps : []
+    }));
   }
 };
