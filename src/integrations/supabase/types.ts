@@ -9,6 +9,128 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_tasks: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          completion_date: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          due_date: string
+          finding_id: string | null
+          id: string
+          org_id: string
+          priority: string
+          progress_notes: string | null
+          status: string
+          task_description: string | null
+          task_title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          completion_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          due_date: string
+          finding_id?: string | null
+          id?: string
+          org_id: string
+          priority?: string
+          progress_notes?: string | null
+          status?: string
+          task_description?: string | null
+          task_title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          completion_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          due_date?: string
+          finding_id?: string | null
+          id?: string
+          org_id?: string
+          priority?: string
+          progress_notes?: string | null
+          status?: string
+          task_description?: string | null
+          task_title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_tasks_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_findings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_uploads: {
+        Row: {
+          audit_period: string | null
+          audit_type: string
+          created_at: string
+          description: string | null
+          document_name: string
+          document_type: string
+          file_path: string | null
+          file_size: number | null
+          id: string
+          org_id: string
+          status: string
+          tags: string[] | null
+          updated_at: string
+          upload_date: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+        }
+        Insert: {
+          audit_period?: string | null
+          audit_type: string
+          created_at?: string
+          description?: string | null
+          document_name: string
+          document_type: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          org_id: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          upload_date?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Update: {
+          audit_period?: string | null
+          audit_type?: string
+          created_at?: string
+          description?: string | null
+          document_name?: string
+          document_type?: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          org_id?: string
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          upload_date?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+        }
+        Relationships: []
+      }
       business_functions: {
         Row: {
           category: string | null
@@ -44,6 +166,80 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      compliance_findings: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          audit_upload_id: string | null
+          corrective_actions: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          due_date: string | null
+          finding_description: string
+          finding_reference: string
+          finding_title: string
+          id: string
+          internal_response: string | null
+          module_affected: string
+          org_id: string
+          regulator_comments: string | null
+          severity: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          audit_upload_id?: string | null
+          corrective_actions?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          due_date?: string | null
+          finding_description: string
+          finding_reference: string
+          finding_title: string
+          id?: string
+          internal_response?: string | null
+          module_affected: string
+          org_id: string
+          regulator_comments?: string | null
+          severity: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          audit_upload_id?: string | null
+          corrective_actions?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          due_date?: string | null
+          finding_description?: string
+          finding_reference?: string
+          finding_title?: string
+          id?: string
+          internal_response?: string | null
+          module_affected?: string
+          org_id?: string
+          regulator_comments?: string | null
+          severity?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_findings_audit_upload_id_fkey"
+            columns: ["audit_upload_id"]
+            isOneToOne: false
+            referencedRelation: "audit_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       controls: {
         Row: {
