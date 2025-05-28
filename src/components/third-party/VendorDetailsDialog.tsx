@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Download, Trash2, Plus, X, TrendingUp, AlertTriangle, FileContract } from "lucide-react";
+import { Upload, Download, Trash2, Plus, X, TrendingUp, AlertTriangle, FileText } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { VendorProfile, VendorDocument, VendorBusinessFunction, getVendorDocuments, getVendorBusinessFunctions, uploadVendorDocument, deleteVendorDocument, addVendorBusinessFunction, removeVendorBusinessFunction } from "@/services/third-party-service";
 import { calculateVendorRiskScore } from "@/services/risk-scoring-service";
@@ -129,7 +130,7 @@ const VendorDetailsDialog: React.FC<VendorDetailsDialogProps> = ({
               Risk Analysis
             </TabsTrigger>
             <TabsTrigger value="contracts" className="flex items-center gap-1">
-              <FileContract className="h-3 w-3" />
+              <FileText className="h-3 w-3" />
               Contracts
             </TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>

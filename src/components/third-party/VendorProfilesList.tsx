@@ -43,8 +43,8 @@ const VendorProfilesList: React.FC<VendorProfilesListProps> = ({
     if (vendor.calculated_risk_level) {
       const level = vendor.calculated_risk_level;
       return {
-        variant: level === 'Critical' || level === 'High' ? 'destructive' : 
-                level === 'Medium' ? 'default' : 'secondary',
+        variant: (level === 'Critical' || level === 'High' ? 'destructive' : 
+                level === 'Medium' ? 'default' : 'secondary') as "destructive" | "default" | "secondary" | "outline",
         className: vendor.calculated_risk_color || ''
       };
     }
@@ -137,13 +137,13 @@ const VendorProfilesList: React.FC<VendorProfilesListProps> = ({
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                 <div>
                   <p className="text-sm font-medium">Criticality</p>
-                  <Badge variant={getCriticalityColor(vendor.criticality)}>
+                  <Badge variant={getCriticalityColor(vendor.criticality) as "destructive" | "default" | "secondary" | "outline"}>
                     {vendor.criticality}
                   </Badge>
                 </div>
                 <div>
                   <p className="text-sm font-medium">Status</p>
-                  <Badge variant={getStatusColor(vendor.status)}>
+                  <Badge variant={getStatusColor(vendor.status) as "destructive" | "default" | "secondary" | "outline"}>
                     {vendor.status.replace('_', ' ')}
                   </Badge>
                 </div>
