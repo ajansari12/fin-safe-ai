@@ -1,3 +1,4 @@
+
 export interface GovernanceStructure {
   id: string;
   framework_id: string;
@@ -27,7 +28,7 @@ export interface GovernancePolicy {
   file_path: string | null;
   file_type: string | null;
   version: number;
-  status: 'active' | 'draft' | 'archived';
+  status: 'draft' | 'under_review' | 'approved' | 'active' | 'archived';
   created_at: string;
   updated_at: string;
 }
@@ -36,7 +37,7 @@ export interface GovernanceReviewSchedule {
   id: string;
   policy_id: string;
   review_frequency_months: number;
-  reminder_days_before?: number; // Added for customizable reminder timing
+  reminder_days_before?: number;
   last_review_date: string | null;
   next_review_date: string;
   reminder_sent: boolean;
@@ -79,7 +80,7 @@ export interface PolicyReviewStatus {
   policy_id: string;
   reviewer_id: string;
   reviewer_name: string;
-  status: 'approved' | 'rejected';  // Removed 'pending' as it's not in the database schema
+  status: 'approved' | 'rejected';
   comments: string | null;
   created_at: string;
   updated_at: string;
@@ -104,4 +105,14 @@ export interface ComplianceMetric {
   policies_needing_review: number;
   policies_up_to_date: number;
   last_updated: string;
+}
+
+export interface OverduePolicyReview {
+  id: string;
+  policy_id: string;
+  policy_title: string;
+  framework_id: string;
+  framework_title: string;
+  next_review_date: string;
+  days_overdue: number;
 }

@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,7 +56,7 @@ export default function PolicyForm({
     defaultValues: {
       title: existingPolicy?.title || "",
       description: existingPolicy?.description || "",
-      status: (existingPolicy?.status as "draft" | "under_review" | "approved" | "active" | "archived") || "draft",
+      status: existingPolicy?.status || "draft",
     },
   });
 

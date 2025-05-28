@@ -1,5 +1,5 @@
-
 import { supabase } from "@/integrations/supabase/client";
+import { getOverduePolicyReviews } from "./governance-service";
 
 export interface IncidentAnalytics {
   total: number;
@@ -188,4 +188,165 @@ export async function getMostSensitiveCBFs(): Promise<SensitiveCBF[]> {
     category: tolerance.business_functions?.category || 'Unknown',
     criticality: tolerance.business_functions?.criticality || 'Unknown'
   })) || [];
+}
+
+export { getOverduePolicyReviews };
+
+// KRI Breaches Chart Data
+export async function getKRIBreachesData() {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return [];
+    }
+
+    // Get KRI breaches for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const { data, error } = await supabase
+      .from('kri_logs')
+      .select(`
+        measurement_date,
+        threshold_breached,
+        kri_definitions!inner (
+          threshold_id,
+          risk_thresholds!inner (
+            statement_id,
+            risk_appetite_statements!inner (
+              org_id
+            )
+          )
+        )
+      `)
+      .eq('kri_definitions.risk_thresholds.risk_appetite_statements.org_id', profile.organization_id)
+      .gte('measurement_date', thirtyDaysAgo.toISOString().split('T')[0])
+      .not('threshold_breached', 'is', null);
+
+    if (error) {
+      throw error;
+    }
+
+    // Group by date and count breaches
+    const chartData = [];
+    const dateMap = new Map();
+
+    data?.forEach(entry => {
+      const date = entry.measurement_date;
+      if (!dateMap.has(date)) {
+        dateMap.set(date, {
+          date,
+          total: 0,
+          critical: 0,
+          warning: 0
+        });
+      }
+      
+      const dayData = dateMap.get(date);
+      dayData.total++;
+      
+      if (entry.threshold_breached === 'critical') {
+        dayData.critical++;
+      } else if (entry.threshold_breached === 'warning') {
+        dayData.warning++;
+      }
+    });
+
+    return Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+  } catch (error) {
+    console.error('Error fetching KRI breaches data:', error);
+    return [];
+  }
+}
+
+// Unresolved Incidents Count
+export async function getUnresolvedIncidentsCount() {
+  try {
+    const { data, error } = await supabase
+      .from('incident_logs')
+      .select('id')
+      .neq('status', 'resolved');
+
+    if (error) {
+      throw error;
+    }
+
+    return data?.length || 0;
+  } catch (error) {
+    console.error('Error fetching unresolved incidents:', error);
+    return 0;
+  }
+}
+
+// Third Party Reviews Due
+export async function getThirdPartyReviewsDue() {
+  try {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    const { data, error } = await supabase
+      .from('third_party_reviews')
+      .select('*')
+      .lte('next_review_date', nextWeek.toISOString().split('T')[0])
+      .eq('status', 'pending');
+
+    if (error) {
+      throw error;
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching third party reviews due:', error);
+    return [];
+  }
+}
+
+// Most Sensitive CBFs
+export async function getMostSensitiveCBFs() {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return [];
+    }
+
+    const { data, error } = await supabase
+      .from('business_functions')
+      .select(`
+        id,
+        name,
+        category,
+        criticality,
+        impact_tolerances!inner (
+          max_tolerable_downtime
+        )
+      `)
+      .eq('org_id', profile.organization_id)
+      .in('criticality', ['critical', 'high'])
+      .limit(10);
+
+    if (error) {
+      throw error;
+    }
+
+    return data?.map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      criticality: item.criticality,
+      max_tolerable_downtime: item.impact_tolerances.max_tolerable_downtime
+    })) || [];
+  } catch (error) {
+    console.error('Error fetching most sensitive CBFs:', error);
+    return [];
+  }
 }
