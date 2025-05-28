@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -34,15 +33,16 @@ const VendorProfileForm: React.FC<VendorProfileFormProps> = ({
       sla_expiry_date: vendor.sla_expiry_date || '',
       contract_start_date: vendor.contract_start_date || '',
       contract_end_date: vendor.contract_end_date || '',
-      annual_spend: vendor.annual_spend || '',
+      annual_spend: vendor.annual_spend || 0,
       status: vendor.status,
       risk_rating: vendor.risk_rating || '',
       last_assessment_date: vendor.last_assessment_date || '',
       next_assessment_date: vendor.next_assessment_date || '',
       notes: vendor.notes || ''
     } : {
-      criticality: 'medium',
-      status: 'active'
+      criticality: 'medium' as const,
+      status: 'active' as const,
+      annual_spend: 0
     }
   });
 
@@ -50,13 +50,21 @@ const VendorProfileForm: React.FC<VendorProfileFormProps> = ({
   const watchedStatus = watch('status');
   const watchedRiskRating = watch('risk_rating');
 
+  const handleFormSubmit = (data: any) => {
+    const formattedData = {
+      ...data,
+      annual_spend: data.annual_spend ? Number(data.annual_spend) : undefined
+    };
+    onSubmit(formattedData);
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{vendor ? 'Edit Vendor Profile' : 'Add New Vendor'}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="vendor_name">Vendor Name *</Label>

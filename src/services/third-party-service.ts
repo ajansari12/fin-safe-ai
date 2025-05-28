@@ -84,7 +84,7 @@ export async function getVendorProfiles(): Promise<VendorProfile[]> {
     .order('vendor_name', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as VendorProfile[];
 }
 
 export async function createVendorProfile(vendor: Omit<VendorProfile, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Promise<VendorProfile> {
@@ -109,7 +109,7 @@ export async function createVendorProfile(vendor: Omit<VendorProfile, 'id' | 'or
     .single();
 
   if (error) throw error;
-  return data;
+  return data as VendorProfile;
 }
 
 export async function updateVendorProfile(id: string, updates: Partial<VendorProfile>): Promise<VendorProfile> {
@@ -121,7 +121,7 @@ export async function updateVendorProfile(id: string, updates: Partial<VendorPro
     .single();
 
   if (error) throw error;
-  return data;
+  return data as VendorProfile;
 }
 
 export async function deleteVendorProfile(id: string): Promise<void> {
@@ -143,7 +143,7 @@ export async function getVendorBusinessFunctions(vendorId: string): Promise<Vend
     .eq('vendor_profile_id', vendorId);
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as VendorBusinessFunction[];
 }
 
 export async function addVendorBusinessFunction(vendorId: string, businessFunctionId: string, dependencyLevel: string): Promise<VendorBusinessFunction> {
@@ -158,7 +158,7 @@ export async function addVendorBusinessFunction(vendorId: string, businessFuncti
     .single();
 
   if (error) throw error;
-  return data;
+  return data as VendorBusinessFunction;
 }
 
 export async function removeVendorBusinessFunction(id: string): Promise<void> {
@@ -180,7 +180,7 @@ export async function getVendorSLAAlerts(vendorId?: string): Promise<VendorSLAAl
   const { data, error } = await query.order('alert_date', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as VendorSLAAlert[];
 }
 
 export async function createVendorSLAAlert(alert: Omit<VendorSLAAlert, 'id' | 'created_at' | 'updated_at'>): Promise<VendorSLAAlert> {
@@ -191,7 +191,7 @@ export async function createVendorSLAAlert(alert: Omit<VendorSLAAlert, 'id' | 'c
     .single();
 
   if (error) throw error;
-  return data;
+  return data as VendorSLAAlert;
 }
 
 export async function updateVendorSLAAlert(id: string, updates: Partial<VendorSLAAlert>): Promise<VendorSLAAlert> {
@@ -203,7 +203,7 @@ export async function updateVendorSLAAlert(id: string, updates: Partial<VendorSL
     .single();
 
   if (error) throw error;
-  return data;
+  return data as VendorSLAAlert;
 }
 
 export async function getVendorDocuments(vendorId: string): Promise<VendorDocument[]> {
@@ -214,7 +214,7 @@ export async function getVendorDocuments(vendorId: string): Promise<VendorDocume
     .order('upload_date', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as VendorDocument[];
 }
 
 export async function uploadVendorDocument(
@@ -250,7 +250,7 @@ export async function uploadVendorDocument(
     .single();
 
   if (error) throw error;
-  return data;
+  return data as VendorDocument;
 }
 
 export async function deleteVendorDocument(id: string, filePath?: string): Promise<void> {
