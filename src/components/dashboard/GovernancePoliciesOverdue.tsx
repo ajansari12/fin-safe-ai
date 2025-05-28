@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getOverduePolicyReviews } from "@/services/dashboard-analytics-service";
+import { getOverduePolicyReviews, PolicyReview } from "@/services/dashboard-analytics-service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, FileCheck2, Clock, ChevronRight } from "lucide-react";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export default function GovernancePoliciesOverdue() {
-  const { data: overdueReviews, isLoading } = useQuery({
+  const { data: overdueReviews, isLoading } = useQuery<PolicyReview[]>({
     queryKey: ['overduePolicyReviews'],
     queryFn: getOverduePolicyReviews
   });
