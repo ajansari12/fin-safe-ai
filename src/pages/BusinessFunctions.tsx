@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -162,7 +161,7 @@ const BusinessFunctions = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingFunction, setEditingFunction] = useState<BusinessFunction | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCriticality, setFilterCriticality] = useState<string>('');
+  const [filterCriticality, setFilterCriticality] = useState<string>('all');
 
   const { data: businessFunctions = [], isLoading } = useQuery({
     queryKey: ['businessFunctions'],
@@ -235,7 +234,7 @@ const BusinessFunctions = () => {
     const matchesSearch = func.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          func.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          func.owner?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCriticality = !filterCriticality || func.criticality === filterCriticality;
+    const matchesCriticality = filterCriticality === 'all' || func.criticality === filterCriticality;
     return matchesSearch && matchesCriticality;
   });
 
@@ -336,7 +335,7 @@ const BusinessFunctions = () => {
                   <SelectValue placeholder="Filter by criticality" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Criticalities</SelectItem>
+                  <SelectItem value="all">All Criticalities</SelectItem>
                   {CRITICALITY_LEVELS.map((level) => (
                     <SelectItem key={level.value} value={level.value}>
                       {level.label}
@@ -351,9 +350,9 @@ const BusinessFunctions = () => {
             {filteredFunctions.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">
-                  {searchTerm || filterCriticality ? 'No functions match your filters.' : 'No business functions defined yet.'}
+                  {searchTerm || filterCriticality !== 'all' ? 'No functions match your filters.' : 'No business functions defined yet.'}
                 </p>
-                {!searchTerm && !filterCriticality && (
+                {!searchTerm && filterCriticality === 'all' && (
                   <Button 
                     variant="outline" 
                     className="mt-4"
