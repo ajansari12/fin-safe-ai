@@ -32,8 +32,8 @@ export const generateThirdPartyReviewPDF = async (vendors: VendorProfile[]) => {
         ${vendors.map(vendor => `
           <tr>
             <td><strong>${vendor.vendor_name}</strong></td>
-            <td>${vendor.service_type || 'N/A'}</td>
-            <td>${getRiskBadge(vendor.risk_rating)}</td>
+            <td>${vendor.service_provided || 'N/A'}</td>
+            <td>${vendor.risk_rating ? getRiskBadge(vendor.risk_rating) : 'N/A'}</td>
             <td>${getStatusBadge(vendor.status)}</td>
             <td>${vendor.contract_end_date ? format(new Date(vendor.contract_end_date), 'MMM dd, yyyy') : 'N/A'}</td>
             <td>${vendor.last_assessment_date ? format(new Date(vendor.last_assessment_date), 'MMM dd, yyyy') : 'Never'}</td>
@@ -116,7 +116,7 @@ export const generateThirdPartyReviewPDF = async (vendors: VendorProfile[]) => {
               <tr>
                 <td><strong>${vendor.vendor_name}</strong></td>
                 <td>${format(new Date(vendor.contract_end_date!), 'MMM dd, yyyy')}</td>
-                <td>${getRiskBadge(vendor.risk_rating)}</td>
+                <td>${vendor.risk_rating ? getRiskBadge(vendor.risk_rating) : 'N/A'}</td>
                 <td>${daysUntilExpiry} days</td>
               </tr>
             `;

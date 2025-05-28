@@ -1,6 +1,6 @@
 
 import { generatePDF, createHTMLContent } from './pdf-export-service';
-import { GovernancePolicy, GovernanceFramework } from './governance-service';
+import { GovernancePolicy, GovernanceFramework } from '../pages/governance/types';
 import { format } from 'date-fns';
 
 interface PolicyWithFramework extends GovernancePolicy {
@@ -37,7 +37,7 @@ export const generateGovernancePolicyListPDF = async (
             <td>${getStatusBadge(policy.status)}</td>
             <td>${policy.version || '1.0'}</td>
             <td>${format(new Date(policy.created_at), 'MMM dd, yyyy')}</td>
-            <td>${policy.last_reviewed ? format(new Date(policy.last_reviewed), 'MMM dd, yyyy') : 'Never'}</td>
+            <td>Never</td>
           </tr>
         `).join('')}
       </tbody>

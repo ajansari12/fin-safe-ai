@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { getFrameworks, getComplianceMetricsByOrgId, getPoliciesByFramework } from "@/services/governance-service";
+import { getFrameworks, getComplianceMetricsByOrgId, getPoliciesByFrameworkId } from "@/services/governance-service";
 import { FileText, Download, Calendar, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -43,7 +43,7 @@ export default function ComplianceReportGenerator() {
         const allPolicies: any[] = [];
         if (frameworks) {
           for (const framework of frameworks) {
-            const policies = await getPoliciesByFramework(framework.id);
+            const policies = await getPoliciesByFrameworkId(framework.id);
             allPolicies.push(...policies.map(p => ({ ...p, framework })));
           }
         }
@@ -51,7 +51,7 @@ export default function ComplianceReportGenerator() {
       } else {
         // Generate report for specific framework
         const framework = frameworks?.find(f => f.id === selectedFramework);
-        const policies = await getPoliciesByFramework(selectedFramework);
+        const policies = await getPoliciesByFrameworkId(selectedFramework);
         const policiesWithFramework = policies.map(p => ({ ...p, framework }));
         await generateGovernancePolicyListPDF(policiesWithFramework, framework?.title);
       }
