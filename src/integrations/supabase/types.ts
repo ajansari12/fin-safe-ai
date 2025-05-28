@@ -336,6 +336,122 @@ export type Database = {
         }
         Relationships: []
       }
+      dependencies: {
+        Row: {
+          business_function_id: string
+          created_at: string
+          criticality: string
+          dependency_id: string | null
+          dependency_name: string
+          dependency_type: string
+          description: string | null
+          id: string
+          org_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          business_function_id: string
+          created_at?: string
+          criticality?: string
+          dependency_id?: string | null
+          dependency_name: string
+          dependency_type: string
+          description?: string | null
+          id?: string
+          org_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          business_function_id?: string
+          created_at?: string
+          criticality?: string
+          dependency_id?: string | null
+          dependency_name?: string
+          dependency_type?: string
+          description?: string | null
+          id?: string
+          org_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependencies_business_function_id_fkey"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dependency_logs: {
+        Row: {
+          alert_sent: boolean | null
+          breach_duration_minutes: number | null
+          business_function_id: string
+          created_at: string
+          dependency_id: string
+          detected_at: string
+          event_type: string
+          id: string
+          impact_level: string | null
+          new_status: string
+          notes: string | null
+          org_id: string
+          previous_status: string | null
+          tolerance_breached: boolean | null
+        }
+        Insert: {
+          alert_sent?: boolean | null
+          breach_duration_minutes?: number | null
+          business_function_id: string
+          created_at?: string
+          dependency_id: string
+          detected_at?: string
+          event_type: string
+          id?: string
+          impact_level?: string | null
+          new_status: string
+          notes?: string | null
+          org_id: string
+          previous_status?: string | null
+          tolerance_breached?: boolean | null
+        }
+        Update: {
+          alert_sent?: boolean | null
+          breach_duration_minutes?: number | null
+          business_function_id?: string
+          created_at?: string
+          dependency_id?: string
+          detected_at?: string
+          event_type?: string
+          id?: string
+          impact_level?: string | null
+          new_status?: string
+          notes?: string | null
+          org_id?: string
+          previous_status?: string | null
+          tolerance_breached?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependency_logs_business_function_id_fkey"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependency_logs_dependency_id_fkey"
+            columns: ["dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       governance_change_logs: {
         Row: {
           change_type: string

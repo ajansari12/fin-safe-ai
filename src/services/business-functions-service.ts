@@ -195,3 +195,68 @@ export async function updateImpactTolerance(id: string, toleranceData: {
 export async function publishImpactTolerance(id: string) {
   return updateImpactTolerance(id, { status: 'published' });
 }
+
+export async function getDependenciesForFunction(functionId: string) {
+  const { data, error } = await supabase
+    .from('dependencies')
+    .select('*')
+    .eq('business_function_id', functionId)
+    .order('dependency_name', { ascending: true });
+  
+  if (error) {
+    console.error('Error fetching dependencies for function:', error);
+    throw error;
+  }
+  
+  return data || [];
+}
+
+export async function getDependencyMetrics() {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return {
+        totalDependencies: 0,
+        criticalDependencies: 0,
+        failedDependencies: 0,
+        recentBreaches: 0
+      };
+    }
+
+    const [dependenciesResult, breachesResult] = await Promise.all([
+      supabase
+        .from('dependencies')
+        .select('criticality, status')
+        .eq('org_id', profile.organization_id),
+      supabase
+        .from('dependency_logs')
+        .select('id')
+        .eq('org_id', profile.organization_id)
+        .eq('tolerance_breached', true)
+        .gte('detected_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()) // Last 7 days
+    ]);
+
+    const dependencies = dependenciesResult.data || [];
+    const breaches = breachesResult.data || [];
+
+    return {
+      totalDependencies: dependencies.length,
+      criticalDependencies: dependencies.filter(d => d.criticality === 'critical').length,
+      failedDependencies: dependencies.filter(d => d.status === 'failed').length,
+      recentBreaches: breaches.length
+    };
+  } catch (error) {
+    console.error('Error fetching dependency metrics:', error);
+    return {
+      totalDependencies: 0,
+      criticalDependencies: 0,
+      failedDependencies: 0,
+      recentBreaches: 0
+    };
+  }
+}
