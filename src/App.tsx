@@ -71,7 +71,7 @@ function App() {
                 <Route path="/incident-log" element={<IncidentLog />} />
                 <Route path="/third-party-risk" element={<ThirdPartyRisk />} />
                 <Route path="/business-continuity" element={<BusinessContinuity />} />
-                <Route path="/governance" element={<GovernanceFramework />} />
+                <Route path="/governance-framework" element={<GovernanceFramework />} />
                 <Route path="/governance/:id" element={<FrameworkDetail />} />
                 <Route path="/business-functions" element={<BusinessFunctions />} />
                 <Route path="/impact-tolerances" element={<ImpactTolerances />} />
