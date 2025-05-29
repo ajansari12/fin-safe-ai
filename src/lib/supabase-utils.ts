@@ -71,12 +71,14 @@ export async function getIncidentsWithPagination(options: QueryOptions = {}): Pr
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Start with base query
-    let query = supabase
+    // Use simpler query type to avoid deep instantiation
+    const baseQuery = supabase
       .from('incident_logs')
       .select('*', { count: 'exact' })
-      .range(from, to)
-      .order(sortBy, { ascending: sortOrder === 'asc' });
+      .range(from, to);
+
+    // Build query dynamically
+    let query = baseQuery.order(sortBy, { ascending: sortOrder === 'asc' });
 
     // Apply filters manually to avoid type complexity
     for (const [key, value] of Object.entries(filters)) {
@@ -125,12 +127,14 @@ export async function getPoliciesWithPagination(options: QueryOptions = {}): Pro
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Start with base query
-    let query = supabase
+    // Use simpler query type to avoid deep instantiation
+    const baseQuery = supabase
       .from('governance_policies')
       .select('*', { count: 'exact' })
-      .range(from, to)
-      .order(sortBy, { ascending: sortOrder === 'asc' });
+      .range(from, to);
+
+    // Build query dynamically
+    let query = baseQuery.order(sortBy, { ascending: sortOrder === 'asc' });
 
     // Apply filters manually to avoid type complexity
     for (const [key, value] of Object.entries(filters)) {
@@ -179,12 +183,14 @@ export async function getKRILogsWithPagination(options: QueryOptions = {}): Prom
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Start with base query
-    let query = supabase
+    // Use simpler query type to avoid deep instantiation
+    const baseQuery = supabase
       .from('kri_logs')
       .select('*', { count: 'exact' })
-      .range(from, to)
-      .order(sortBy, { ascending: sortOrder === 'asc' });
+      .range(from, to);
+
+    // Build query dynamically
+    let query = baseQuery.order(sortBy, { ascending: sortOrder === 'asc' });
 
     // Apply filters manually to avoid type complexity
     for (const [key, value] of Object.entries(filters)) {

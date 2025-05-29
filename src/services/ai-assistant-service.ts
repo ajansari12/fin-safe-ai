@@ -32,17 +32,17 @@ export interface SectorThreshold {
 
 export interface ChatLog {
   id: string;
-  user_id: string;
+  user_id: string | null;
   org_id: string;
   session_id: string;
   message_type: 'user' | 'assistant';
   message_content: string;
   user_context: any;
-  module_context?: string;
-  feedback_rating?: number;
-  feedback_comment?: string;
+  module_context?: string | null;
+  feedback_rating?: number | null;
+  feedback_comment?: string | null;
   knowledge_sources_used: string[];
-  response_time_ms?: number;
+  response_time_ms?: number | null;
   created_at: string;
 }
 
@@ -340,7 +340,16 @@ class AIAssistantService {
       const { data, error } = await query;
       if (error) throw error;
 
-      return data || [];
+      // Transform the data to match our ChatLog interface
+      const chatLogs: ChatLog[] = (data || []).map(log => ({
+        ...log,
+        message_type: log.message_type as 'user' | 'assistant',
+        knowledge_sources_used: Array.isArray(log.knowledge_sources_used) 
+          ? log.knowledge_sources_used as string[]
+          : []
+      }));
+
+      return chatLogs;
     } catch (error) {
       console.error('Error fetching chat history:', error);
       return [];
