@@ -194,7 +194,7 @@ export async function getKRILogsWithPagination(options: QueryOptions = {}): Prom
     let finalQuery = queryBuilder;
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%') {
+        if (typeof value === 'string' && value.includes('%')) {
           finalQuery = finalQuery.ilike(key, value);
         } else {
           finalQuery = finalQuery.eq(key, value);
