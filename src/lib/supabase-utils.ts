@@ -186,7 +186,7 @@ export async function getKRILogsWithPagination(options: QueryOptions = {}) {
     // Apply filters
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%') {
+        if (typeof value === 'string' && value.includes('%')) {
           query = query.ilike(key, value);
         } else {
           query = query.eq(key, value);
