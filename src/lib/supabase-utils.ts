@@ -250,17 +250,47 @@ export async function safeGetSinglePolicy(id: string) {
   }
 }
 
-export async function safeDeleteRecord(tableName: string, id: string): Promise<boolean> {
+export async function safeDeleteIncident(id: string): Promise<boolean> {
   try {
     const { error } = await supabase
-      .from(tableName as any)
+      .from('incident_logs')
       .delete()
       .eq('id', id);
 
     if (error) throw error;
     return true;
   } catch (error) {
-    ErrorHandler.handle(error, `Deleting ${tableName} record`);
+    ErrorHandler.handle(error, 'Deleting incident record');
+    return false;
+  }
+}
+
+export async function safeDeletePolicy(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('governance_policies')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    ErrorHandler.handle(error, 'Deleting policy record');
+    return false;
+  }
+}
+
+export async function safeDeleteKRILog(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('kri_logs')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    ErrorHandler.handle(error, 'Deleting KRI log record');
     return false;
   }
 }
