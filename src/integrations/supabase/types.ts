@@ -624,17 +624,97 @@ export type Database = {
           },
         ]
       }
+      control_tests: {
+        Row: {
+          control_id: string
+          created_at: string
+          effectiveness_rating: number | null
+          findings: string | null
+          id: string
+          org_id: string
+          recommendations: string | null
+          remediation_deadline: string | null
+          remediation_required: boolean | null
+          remediation_status: string | null
+          risk_reduction_impact: number | null
+          test_date: string
+          test_description: string | null
+          test_method: string
+          test_result: string
+          test_type: string
+          tested_by_id: string | null
+          tested_by_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          control_id: string
+          created_at?: string
+          effectiveness_rating?: number | null
+          findings?: string | null
+          id?: string
+          org_id: string
+          recommendations?: string | null
+          remediation_deadline?: string | null
+          remediation_required?: boolean | null
+          remediation_status?: string | null
+          risk_reduction_impact?: number | null
+          test_date?: string
+          test_description?: string | null
+          test_method?: string
+          test_result: string
+          test_type?: string
+          tested_by_id?: string | null
+          tested_by_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          control_id?: string
+          created_at?: string
+          effectiveness_rating?: number | null
+          findings?: string | null
+          id?: string
+          org_id?: string
+          recommendations?: string | null
+          remediation_deadline?: string | null
+          remediation_required?: boolean | null
+          remediation_status?: string | null
+          risk_reduction_impact?: number | null
+          test_date?: string
+          test_description?: string | null
+          test_method?: string
+          test_result?: string
+          test_type?: string
+          tested_by_id?: string | null
+          tested_by_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "control_tests_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "controls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       controls: {
         Row: {
           created_at: string
           created_by: string | null
           description: string | null
+          effectiveness_score: number | null
           frequency: string
           id: string
+          last_test_date: string | null
+          next_test_due_date: string | null
           org_id: string
           owner: string
+          risk_reduction_score: number | null
           scope: string
           status: string
+          test_frequency_days: number | null
+          test_method: string | null
           title: string
           updated_at: string
           updated_by: string | null
@@ -643,12 +723,18 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          effectiveness_score?: number | null
           frequency: string
           id?: string
+          last_test_date?: string | null
+          next_test_due_date?: string | null
           org_id: string
           owner: string
+          risk_reduction_score?: number | null
           scope: string
           status?: string
+          test_frequency_days?: number | null
+          test_method?: string | null
           title: string
           updated_at?: string
           updated_by?: string | null
@@ -657,12 +743,18 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          effectiveness_score?: number | null
           frequency?: string
           id?: string
+          last_test_date?: string | null
+          next_test_due_date?: string | null
           org_id?: string
           owner?: string
+          risk_reduction_score?: number | null
           scope?: string
           status?: string
+          test_frequency_days?: number | null
+          test_method?: string | null
           title?: string
           updated_at?: string
           updated_by?: string | null

@@ -1,15 +1,18 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Control } from "@/services/controls";
 import { KRIDefinition } from "@/services/kri-definitions";
+import { ControlTest, getControlTests } from "@/services/control-tests";
 import { useControlsAndKRIData } from "@/hooks/useControlsAndKRIData";
 import { useControlsOperations } from "@/hooks/useControlsOperations";
 import { useKRIOperations } from "@/hooks/useKRIOperations";
 import { useKRILogsOperations } from "@/hooks/useKRILogsOperations";
+import { useControlTestOperations } from "@/hooks/useControlTestOperations";
 import ControlsAndKRINavigation from "@/components/controls/ControlsAndKRINavigation";
 import ControlsAndKRITabs from "@/components/controls/ControlsAndKRITabs";
+import ControlTestForm from "@/components/controls/ControlTestForm";
+import ControlTestsList from "@/components/controls/ControlTestsList";
 
 const ControlsAndKri = () => {
   const { user } = useAuth();
@@ -45,17 +48,26 @@ const ControlsAndKri = () => {
     isSubmitting: isKRILogSubmitting
   } = useKRILogsOperations();
 
+  const {
+    handleCreateControlTest,
+    isSubmitting: isControlTestSubmitting
+  } = useControlTestOperations();
+
   // UI state
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showControlForm, setShowControlForm] = useState(false);
   const [showKRIForm, setShowKRIForm] = useState(false);
   const [showKRILogForm, setShowKRILogForm] = useState(false);
   const [showKRILogs, setShowKRILogs] = useState(false);
+  const [showControlTestForm, setShowControlTestForm] = useState(false);
+  const [showControlTests, setShowControlTests] = useState(false);
   const [editingControl, setEditingControl] = useState<Control | undefined>();
   const [editingKRI, setEditingKRI] = useState<KRIDefinition | undefined>();
   const [selectedKRI, setSelectedKRI] = useState<{ id: string; name: string } | undefined>();
+  const [selectedControl, setSelectedControl] = useState<{ id: string; title: string } | undefined>();
+  const [controlTests, setControlTests] = useState<ControlTest[]>([]);
 
-  const isSubmitting = isControlSubmitting || isKRISubmitting || isKRILogSubmitting;
+  const isSubmitting = isControlSubmitting || isKRISubmitting || isKRILogSubmitting || isControlTestSubmitting;
 
   // Control handlers
   const handleCreateControlClick = () => {
@@ -90,6 +102,43 @@ const ControlsAndKri = () => {
     } catch (error) {
       // Error handling is done in the hook
     }
+  };
+
+  // Control testing handlers
+  const handleTestControl = (control: Control) => {
+    setSelectedControl({ id: control.id, title: control.title });
+    setShowControlTestForm(true);
+  };
+
+  const handleViewControlTests = async (control: Control) => {
+    try {
+      const tests = await getControlTests(control.id);
+      setControlTests(tests);
+      setSelectedControl({ id: control.id, title: control.title });
+      setShowControlTests(true);
+    } catch (error) {
+      console.error('Error loading control tests:', error);
+    }
+  };
+
+  const handleSubmitControlTest = async (data: any) => {
+    try {
+      await handleCreateControlTest(data);
+      setShowControlTestForm(false);
+      loadControls(); // Reload to update control effectiveness scores
+      
+      // If we're viewing tests for this control, reload the tests
+      if (selectedControl && selectedControl.id === data.control_id) {
+        const tests = await getControlTests(data.control_id);
+        setControlTests(tests);
+      }
+    } catch (error) {
+      // Error handling is done in the hook
+    }
+  };
+
+  const handleCreateControlTestClick = () => {
+    setShowControlTestForm(true);
   };
 
   // KRI handlers
@@ -157,13 +206,51 @@ const ControlsAndKri = () => {
     setShowKRIForm(false);
     setShowKRILogForm(false);
     setShowKRILogs(false);
+    setShowControlTestForm(false);
+    setShowControlTests(false);
     setEditingControl(undefined);
     setEditingKRI(undefined);
     setSelectedKRI(undefined);
+    setSelectedControl(undefined);
+    setControlTests([]);
   };
 
   // Show navigation components if any form is active
   const showNavigation = showControlForm || showKRIForm || showKRILogForm || showKRILogs;
+
+  // Show control test form
+  if (showControlTestForm && selectedControl) {
+    return (
+      <AuthenticatedLayout>
+        <div className="space-y-6">
+          <ControlTestForm
+            controlId={selectedControl.id}
+            controlName={selectedControl.title}
+            onSubmit={handleSubmitControlTest}
+            onCancel={handleCancelForm}
+            isSubmitting={isSubmitting}
+          />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  // Show control tests list
+  if (showControlTests && selectedControl) {
+    return (
+      <AuthenticatedLayout>
+        <div className="space-y-6">
+          <ControlTestsList
+            tests={controlTests}
+            controlName={selectedControl.title}
+            onCreateTest={handleCreateControlTestClick}
+            onBack={handleCancelForm}
+            isLoading={isLoading}
+          />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (showNavigation) {
     return (
@@ -197,7 +284,7 @@ const ControlsAndKri = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Controls & KRIs</h1>
           <p className="text-muted-foreground">
-            Manage risk controls and key risk indicators.
+            Manage risk controls, key risk indicators, and testing workflows.
           </p>
         </div>
         
@@ -205,11 +292,14 @@ const ControlsAndKri = () => {
           activeTab={activeTab}
           controls={controls}
           kris={kris}
+          controlTests={controlTests}
           isLoading={isLoading}
           onTabChange={setActiveTab}
           onEditControl={handleEditControl}
           onDeleteControl={handleDeleteControlClick}
           onCreateControl={handleCreateControlClick}
+          onTestControl={handleTestControl}
+          onViewControlTests={handleViewControlTests}
           onEditKRI={handleEditKRI}
           onDeleteKRI={handleDeleteKRIClick}
           onCreateKRI={handleCreateKRIClick}

@@ -3,19 +3,23 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Control } from "@/services/controls";
 import { KRIDefinition } from "@/services/kri-definitions";
-import ControlsDashboard from "./ControlsDashboard";
+import EnhancedControlsDashboard from "./EnhancedControlsDashboard";
 import ControlsList from "./ControlsList";
 import KRIsList from "./KRIsList";
+import { ControlTest } from "@/services/control-tests";
 
 interface ControlsAndKRITabsProps {
   activeTab: string;
   controls: Control[];
   kris: KRIDefinition[];
+  controlTests: ControlTest[];
   isLoading: boolean;
   onTabChange: (value: string) => void;
   onEditControl: (control: Control) => void;
   onDeleteControl: (id: string) => void;
   onCreateControl: () => void;
+  onTestControl: (control: Control) => void;
+  onViewControlTests: (control: Control) => void;
   onEditKRI: (kri: KRIDefinition) => void;
   onDeleteKRI: (id: string) => void;
   onCreateKRI: () => void;
@@ -26,11 +30,14 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
   activeTab,
   controls,
   kris,
+  controlTests,
   isLoading,
   onTabChange,
   onEditControl,
   onDeleteControl,
   onCreateControl,
+  onTestControl,
+  onViewControlTests,
   onEditKRI,
   onDeleteKRI,
   onCreateKRI,
@@ -46,7 +53,11 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
       </TabsList>
 
       <TabsContent value="dashboard" className="space-y-6">
-        <ControlsDashboard />
+        <EnhancedControlsDashboard
+          controls={controls}
+          controlTests={controlTests}
+          isLoading={isLoading}
+        />
       </TabsContent>
 
       <TabsContent value="controls" className="space-y-6">
@@ -55,6 +66,8 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
           onEdit={onEditControl}
           onDelete={onDeleteControl}
           onCreate={onCreateControl}
+          onTest={onTestControl}
+          onViewTests={onViewControlTests}
           isLoading={isLoading}
         />
       </TabsContent>
