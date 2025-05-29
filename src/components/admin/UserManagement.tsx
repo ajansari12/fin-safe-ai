@@ -113,6 +113,8 @@ const UserManagement: React.FC = () => {
         return "bg-blue-100 text-blue-800";
       case "analyst":
         return "bg-green-100 text-green-800";
+      case "inactive":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -198,8 +200,8 @@ const UserManagement: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getRoleColor(user.user_roles?.[0]?.role || "user")}>
-                      {user.user_roles?.[0]?.role || "No role"}
+                    <Badge className={getRoleColor(user.role)}>
+                      {user.role}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -208,7 +210,7 @@ const UserManagement: React.FC = () => {
                   <TableCell>
                     <div className="flex gap-2">
                       <Select
-                        value={user.user_roles?.[0]?.role || ""}
+                        value={user.role}
                         onValueChange={(newRole) => handleUpdateRole(user.id, newRole)}
                       >
                         <SelectTrigger className="w-32">

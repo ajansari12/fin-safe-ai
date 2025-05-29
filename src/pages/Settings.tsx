@@ -25,13 +25,12 @@ const Settings = () => {
 
     try {
       const { data } = await supabase
-        .from('user_roles')
+        .from('profiles')
         .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
+        .eq('id', user.id)
         .single();
 
-      setIsAdmin(!!data);
+      setIsAdmin(data?.role === 'admin');
     } catch (error) {
       console.error('Error checking admin role:', error);
       setIsAdmin(false);

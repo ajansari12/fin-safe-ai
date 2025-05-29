@@ -9,7 +9,6 @@ export interface UserProfile {
   organization_id: string | null;
   created_at: string;
   updated_at: string;
-  user_roles?: { role: string }[];
 }
 
 export interface UserInvitation {
@@ -65,10 +64,7 @@ export async function getOrganizationUsers(): Promise<UserProfile[]> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select(`
-      *,
-      user_roles(role)
-    `)
+    .select('*')
     .eq('organization_id', profile.organization_id);
 
   if (error) throw error;
@@ -100,31 +96,19 @@ export async function inviteUser(email: string, role: string): Promise<UserInvit
 }
 
 export async function updateUserRole(userId: string, newRole: string): Promise<void> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single();
-
-  if (!profile?.organization_id) throw new Error('No organization found');
-
   const { error } = await supabase
-    .from('user_roles')
-    .upsert({
-      user_id: userId,
-      organization_id: profile.organization_id,
-      role: newRole
-    });
+    .from('profiles')
+    .update({ role: newRole })
+    .eq('id', userId);
 
   if (error) throw error;
 }
 
 export async function deactivateUser(userId: string): Promise<void> {
-  // This would typically involve setting a status field or removing from user_roles
   const { error } = await supabase
-    .from('user_roles')
-    .delete()
-    .eq('user_id', userId);
+    .from('profiles')
+    .update({ role: 'inactive' })
+    .eq('id', userId);
 
   if (error) throw error;
 }
