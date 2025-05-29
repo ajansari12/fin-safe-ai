@@ -20,8 +20,8 @@ async function createPaginatedQuery<T>(
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Build query using raw query builder without excessive chaining
-    const query = supabase.from(tableName);
+    // Build query using type assertion to handle dynamic table names
+    const query = (supabase as any).from(tableName);
     let baseQuery = query.select('*', { count: 'exact' });
     
     // Apply filters using individual queries to avoid type complexity
@@ -31,14 +31,14 @@ async function createPaginatedQuery<T>(
 
     for (const [key, value] of filterEntries) {
       if (typeof value === 'string' && value.includes('%')) {
-        baseQuery = (baseQuery as any).ilike(key, value);
+        baseQuery = baseQuery.ilike(key, value);
       } else {
-        baseQuery = (baseQuery as any).eq(key, value);
+        baseQuery = baseQuery.eq(key, value);
       }
     }
 
-    // Apply range and order with type assertion
-    const { data, error, count } = await (baseQuery as any)
+    // Apply range and order
+    const { data, error, count } = await baseQuery
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
