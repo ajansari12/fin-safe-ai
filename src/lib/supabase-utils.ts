@@ -58,7 +58,7 @@ export async function getUserOrganization() {
 }
 
 // Specific utility functions for different tables
-export async function getIncidentsWithPagination(options: QueryOptions = {}) {
+export async function getIncidentsWithPagination(options: QueryOptions = {}): Promise<PaginatedResult<any>> {
   try {
     const {
       page = 1,
@@ -71,24 +71,27 @@ export async function getIncidentsWithPagination(options: QueryOptions = {}) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase
+    // Build the query step by step to avoid type complexity
+    const queryBuilder = supabase
       .from('incident_logs')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
     // Apply filters
+    let finalQuery = queryBuilder;
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         if (typeof value === 'string' && value.includes('%')) {
-          query = query.ilike(key, value);
+          finalQuery = finalQuery.ilike(key, value);
         } else {
-          query = query.eq(key, value);
+          finalQuery = finalQuery.eq(key, value);
         }
       }
     });
 
-    const { data, error, count } = await query;
+    const result = await finalQuery;
+    const { data, error, count } = result;
 
     if (error) throw error;
 
@@ -111,7 +114,7 @@ export async function getIncidentsWithPagination(options: QueryOptions = {}) {
   }
 }
 
-export async function getPoliciesWithPagination(options: QueryOptions = {}) {
+export async function getPoliciesWithPagination(options: QueryOptions = {}): Promise<PaginatedResult<any>> {
   try {
     const {
       page = 1,
@@ -124,24 +127,27 @@ export async function getPoliciesWithPagination(options: QueryOptions = {}) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase
+    // Build the query step by step to avoid type complexity
+    const queryBuilder = supabase
       .from('governance_policies')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
     // Apply filters
+    let finalQuery = queryBuilder;
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
         if (typeof value === 'string' && value.includes('%')) {
-          query = query.ilike(key, value);
+          finalQuery = finalQuery.ilike(key, value);
         } else {
-          query = query.eq(key, value);
+          finalQuery = finalQuery.eq(key, value);
         }
       }
     });
 
-    const { data, error, count } = await query;
+    const result = await finalQuery;
+    const { data, error, count } = result;
 
     if (error) throw error;
 
@@ -164,7 +170,7 @@ export async function getPoliciesWithPagination(options: QueryOptions = {}) {
   }
 }
 
-export async function getKRILogsWithPagination(options: QueryOptions = {}) {
+export async function getKRILogsWithPagination(options: QueryOptions = {}): Promise<PaginatedResult<any>> {
   try {
     const {
       page = 1,
@@ -177,24 +183,27 @@ export async function getKRILogsWithPagination(options: QueryOptions = {}) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase
+    // Build the query step by step to avoid type complexity
+    const queryBuilder = supabase
       .from('kri_logs')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
     // Apply filters
+    let finalQuery = queryBuilder;
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
-          query = query.ilike(key, value);
+        if (typeof value === 'string' && value.includes('%') {
+          finalQuery = finalQuery.ilike(key, value);
         } else {
-          query = query.eq(key, value);
+          finalQuery = finalQuery.eq(key, value);
         }
       }
     });
 
-    const { data, error, count } = await query;
+    const result = await finalQuery;
+    const { data, error, count } = result;
 
     if (error) throw error;
 
