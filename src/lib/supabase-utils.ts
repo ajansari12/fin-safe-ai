@@ -71,27 +71,29 @@ export async function getIncidentsWithPagination(options: QueryOptions = {}): Pr
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Use simpler query type to avoid deep instantiation
-    const baseQuery = supabase
-      .from('incident_logs')
-      .select('*', { count: 'exact' })
-      .range(from, to);
-
-    // Build query dynamically
-    let query = baseQuery.order(sortBy, { ascending: sortOrder === 'asc' });
-
-    // Apply filters manually to avoid type complexity
+    // Build filters first
+    const filterConditions: any[] = [];
     for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
-          query = query.ilike(key, value);
-        } else {
-          query = query.eq(key, value);
-        }
+        filterConditions.push({ key, value });
       }
     }
 
-    const { data, error, count } = await query;
+    // Execute query with explicit typing
+    const queryBuilder = supabase.from('incident_logs').select('*', { count: 'exact' });
+    
+    // Apply filters
+    filterConditions.forEach(({ key, value }) => {
+      if (typeof value === 'string' && value.includes('%')) {
+        queryBuilder.ilike(key, value);
+      } else {
+        queryBuilder.eq(key, value);
+      }
+    });
+
+    const { data, error, count } = await queryBuilder
+      .range(from, to)
+      .order(sortBy, { ascending: sortOrder === 'asc' });
 
     if (error) throw error;
 
@@ -127,27 +129,29 @@ export async function getPoliciesWithPagination(options: QueryOptions = {}): Pro
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Use simpler query type to avoid deep instantiation
-    const baseQuery = supabase
-      .from('governance_policies')
-      .select('*', { count: 'exact' })
-      .range(from, to);
-
-    // Build query dynamically
-    let query = baseQuery.order(sortBy, { ascending: sortOrder === 'asc' });
-
-    // Apply filters manually to avoid type complexity
+    // Build filters first
+    const filterConditions: any[] = [];
     for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
-          query = query.ilike(key, value);
-        } else {
-          query = query.eq(key, value);
-        }
+        filterConditions.push({ key, value });
       }
     }
 
-    const { data, error, count } = await query;
+    // Execute query with explicit typing
+    const queryBuilder = supabase.from('governance_policies').select('*', { count: 'exact' });
+    
+    // Apply filters
+    filterConditions.forEach(({ key, value }) => {
+      if (typeof value === 'string' && value.includes('%')) {
+        queryBuilder.ilike(key, value);
+      } else {
+        queryBuilder.eq(key, value);
+      }
+    });
+
+    const { data, error, count } = await queryBuilder
+      .range(from, to)
+      .order(sortBy, { ascending: sortOrder === 'asc' });
 
     if (error) throw error;
 
@@ -183,27 +187,29 @@ export async function getKRILogsWithPagination(options: QueryOptions = {}): Prom
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Use simpler query type to avoid deep instantiation
-    const baseQuery = supabase
-      .from('kri_logs')
-      .select('*', { count: 'exact' })
-      .range(from, to);
-
-    // Build query dynamically
-    let query = baseQuery.order(sortBy, { ascending: sortOrder === 'asc' });
-
-    // Apply filters manually to avoid type complexity
+    // Build filters first
+    const filterConditions: any[] = [];
     for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
-          query = query.ilike(key, value);
-        } else {
-          query = query.eq(key, value);
-        }
+        filterConditions.push({ key, value });
       }
     }
 
-    const { data, error, count } = await query;
+    // Execute query with explicit typing
+    const queryBuilder = supabase.from('kri_logs').select('*', { count: 'exact' });
+    
+    // Apply filters
+    filterConditions.forEach(({ key, value }) => {
+      if (typeof value === 'string' && value.includes('%')) {
+        queryBuilder.ilike(key, value);
+      } else {
+        queryBuilder.eq(key, value);
+      }
+    });
+
+    const { data, error, count } = await queryBuilder
+      .range(from, to)
+      .order(sortBy, { ascending: sortOrder === 'asc' });
 
     if (error) throw error;
 
