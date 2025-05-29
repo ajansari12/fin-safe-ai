@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_chat_logs: {
+        Row: {
+          created_at: string
+          feedback_comment: string | null
+          feedback_rating: number | null
+          id: string
+          knowledge_sources_used: Json | null
+          message_content: string
+          message_type: string
+          module_context: string | null
+          org_id: string
+          response_time_ms: number | null
+          session_id: string
+          updated_at: string
+          user_context: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          feedback_comment?: string | null
+          feedback_rating?: number | null
+          id?: string
+          knowledge_sources_used?: Json | null
+          message_content: string
+          message_type: string
+          module_context?: string | null
+          org_id: string
+          response_time_ms?: number | null
+          session_id?: string
+          updated_at?: string
+          user_context?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          feedback_comment?: string | null
+          feedback_rating?: number | null
+          id?: string
+          knowledge_sources_used?: Json | null
+          message_content?: string
+          message_type?: string
+          module_context?: string | null
+          org_id?: string
+          response_time_ms?: number | null
+          session_id?: string
+          updated_at?: string
+          user_context?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string

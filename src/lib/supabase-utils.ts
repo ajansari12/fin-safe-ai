@@ -71,27 +71,25 @@ export async function getIncidentsWithPagination(options: QueryOptions = {}): Pr
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Build the query step by step to avoid type complexity
-    const queryBuilder = supabase
+    // Start with base query
+    let query = supabase
       .from('incident_logs')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
-    // Apply filters
-    let finalQuery = queryBuilder;
-    Object.entries(filters).forEach(([key, value]) => {
+    // Apply filters manually to avoid type complexity
+    for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null && value !== '') {
         if (typeof value === 'string' && value.includes('%')) {
-          finalQuery = finalQuery.ilike(key, value);
+          query = query.ilike(key, value);
         } else {
-          finalQuery = finalQuery.eq(key, value);
+          query = query.eq(key, value);
         }
       }
-    });
+    }
 
-    const result = await finalQuery;
-    const { data, error, count } = result;
+    const { data, error, count } = await query;
 
     if (error) throw error;
 
@@ -127,27 +125,25 @@ export async function getPoliciesWithPagination(options: QueryOptions = {}): Pro
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Build the query step by step to avoid type complexity
-    const queryBuilder = supabase
+    // Start with base query
+    let query = supabase
       .from('governance_policies')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
-    // Apply filters
-    let finalQuery = queryBuilder;
-    Object.entries(filters).forEach(([key, value]) => {
+    // Apply filters manually to avoid type complexity
+    for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null && value !== '') {
         if (typeof value === 'string' && value.includes('%')) {
-          finalQuery = finalQuery.ilike(key, value);
+          query = query.ilike(key, value);
         } else {
-          finalQuery = finalQuery.eq(key, value);
+          query = query.eq(key, value);
         }
       }
-    });
+    }
 
-    const result = await finalQuery;
-    const { data, error, count } = result;
+    const { data, error, count } = await query;
 
     if (error) throw error;
 
@@ -183,27 +179,25 @@ export async function getKRILogsWithPagination(options: QueryOptions = {}): Prom
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Build the query step by step to avoid type complexity
-    const queryBuilder = supabase
+    // Start with base query
+    let query = supabase
       .from('kri_logs')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
-    // Apply filters
-    let finalQuery = queryBuilder;
-    Object.entries(filters).forEach(([key, value]) => {
+    // Apply filters manually to avoid type complexity
+    for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== null && value !== '') {
         if (typeof value === 'string' && value.includes('%')) {
-          finalQuery = finalQuery.ilike(key, value);
+          query = query.ilike(key, value);
         } else {
-          finalQuery = finalQuery.eq(key, value);
+          query = query.eq(key, value);
         }
       }
-    });
+    }
 
-    const result = await finalQuery;
-    const { data, error, count } = result;
+    const { data, error, count } = await query;
 
     if (error) throw error;
 
