@@ -214,6 +214,10 @@ export async function getDashboardWidgets(userRole: string): Promise<DashboardWi
 
 // Helper functions
 function calculateKRIForecasts(kriLogs: any[]): PredictiveAnalytics['kri_forecast'] {
+  if (!Array.isArray(kriLogs) || kriLogs.length === 0) {
+    return [];
+  }
+
   const groupedByKRI = kriLogs.reduce((acc, log) => {
     const kriName = log.kri_definitions?.name || 'Unknown KRI';
     if (!acc[kriName]) acc[kriName] = [];
@@ -242,6 +246,10 @@ function calculateKRIForecasts(kriLogs: any[]): PredictiveAnalytics['kri_forecas
 }
 
 function calculateIncidentForecasts(incidents: any[]): PredictiveAnalytics['incident_forecast'] {
+  if (!Array.isArray(incidents) || incidents.length === 0) {
+    return [];
+  }
+
   const groupedByCategory = incidents.reduce((acc, incident) => {
     const category = incident.category || 'other';
     if (!acc[category]) acc[category] = [];
@@ -266,9 +274,9 @@ function calculateIncidentForecasts(incidents: any[]): PredictiveAnalytics['inci
 }
 
 function calculateOverallRiskScore(kriLogs: any[], incidents: any[]): number {
-  const kriBreaches = kriLogs.filter(log => log.threshold_breached && log.threshold_breached !== 'none').length;
-  const criticalIncidents = incidents.filter(i => i.severity === 'critical').length;
-  const totalIncidents = incidents.length;
+  const kriBreaches = Array.isArray(kriLogs) ? kriLogs.filter(log => log.threshold_breached && log.threshold_breached !== 'none').length : 0;
+  const criticalIncidents = Array.isArray(incidents) ? incidents.filter(i => i.severity === 'critical').length : 0;
+  const totalIncidents = Array.isArray(incidents) ? incidents.length : 0;
   
   // Risk score out of 100 (higher = more risk)
   const kriScore = Math.min(50, kriBreaches * 10);
@@ -291,11 +299,15 @@ function calculateTrend(values: number[]): number {
 }
 
 function generateRiskHeatmap(functions: any[], incidents: any[], dependencyRisks: any[]): RiskHeatmap[] {
+  if (!Array.isArray(functions) || functions.length === 0) {
+    return [];
+  }
+
   return functions.map(func => {
-    const functionIncidents = incidents.filter(i => i.business_function_id === func.id);
-    const functionRisks = dependencyRisks.filter(r => 
+    const functionIncidents = Array.isArray(incidents) ? incidents.filter(i => i.business_function_id === func.id) : [];
+    const functionRisks = Array.isArray(dependencyRisks) ? dependencyRisks.filter(r => 
       r.dependencies?.business_function_id === func.id
-    );
+    ) : [];
 
     // Calculate risk scores for each category
     const operational = Math.min(100, functionIncidents.length * 15 + functionRisks.length * 10);
@@ -319,23 +331,25 @@ function generateRiskHeatmap(functions: any[], incidents: any[], dependencyRisks
 }
 
 function calculateComplianceScores(policies: any[], findings: any[], incidents: any[], vendors: any[], continuityPlans: any[]): ComplianceScorecard {
-  const activePolicies = policies.filter(p => p.status === 'active').length;
-  const totalPolicies = policies.length;
+  const activePolicies = Array.isArray(policies) ? policies.filter(p => p.status === 'active').length : 0;
+  const totalPolicies = Array.isArray(policies) ? policies.length : 0;
   const governanceScore = totalPolicies > 0 ? Math.round((activePolicies / totalPolicies) * 100) : 0;
 
-  const openFindings = findings.filter(f => f.status === 'open').length;
-  const totalFindings = findings.length;
+  const openFindings = Array.isArray(findings) ? findings.filter(f => f.status === 'open').length : 0;
+  const totalFindings = Array.isArray(findings) ? findings.length : 0;
   const riskScore = totalFindings > 0 ? Math.round(((totalFindings - openFindings) / totalFindings) * 100) : 100;
 
-  const resolvedIncidents = incidents.filter(i => i.status === 'resolved').length;
-  const totalIncidents = incidents.length;
+  const resolvedIncidents = Array.isArray(incidents) ? incidents.filter(i => i.status === 'resolved').length : 0;
+  const totalIncidents = Array.isArray(incidents) ? incidents.length : 0;
   const incidentScore = totalIncidents > 0 ? Math.round((resolvedIncidents / totalIncidents) * 100) : 100;
 
-  const assessedVendors = vendors.filter(v => v.last_assessment_date).length;
-  const vendorScore = vendors.length > 0 ? Math.round((assessedVendors / vendors.length) * 100) : 0;
+  const assessedVendors = Array.isArray(vendors) ? vendors.filter(v => v.last_assessment_date).length : 0;
+  const totalVendors = Array.isArray(vendors) ? vendors.length : 0;
+  const vendorScore = totalVendors > 0 ? Math.round((assessedVendors / totalVendors) * 100) : 0;
 
-  const activePlans = continuityPlans.filter(p => p.status === 'active').length;
-  const continuityScore = continuityPlans.length > 0 ? Math.round((activePlans / continuityPlans.length) * 100) : 0;
+  const activePlans = Array.isArray(continuityPlans) ? continuityPlans.filter(p => p.status === 'active').length : 0;
+  const totalPlans = Array.isArray(continuityPlans) ? continuityPlans.length : 0;
+  const continuityScore = totalPlans > 0 ? Math.round((activePlans / totalPlans) * 100) : 0;
 
   const overall = Math.round((governanceScore + riskScore + incidentScore + vendorScore + continuityScore) / 5);
 
