@@ -226,7 +226,9 @@ function calculateKRIForecasts(kriLogs: any[]): PredictiveAnalytics['kri_forecas
   }, {} as Record<string, any[]>);
 
   return Object.entries(groupedByKRI).map(([kriName, logs]) => {
-    const values = logs.map(log => log.actual_value).sort((a, b) => a - b);
+    // Ensure logs is an array
+    const logArray = Array.isArray(logs) ? logs : [];
+    const values = logArray.map(log => log.actual_value).sort((a, b) => a - b);
     const current = values[values.length - 1] || 0;
     
     // Simple moving average prediction
@@ -258,8 +260,10 @@ function calculateIncidentForecasts(incidents: any[]): PredictiveAnalytics['inci
   }, {} as Record<string, any[]>);
 
   return Object.entries(groupedByCategory).map(([category, categoryIncidents]) => {
-    const monthlyCount = categoryIncidents.length;
-    const criticalCount = categoryIncidents.filter(i => i.severity === 'critical').length;
+    // Ensure categoryIncidents is an array
+    const incidentArray = Array.isArray(categoryIncidents) ? categoryIncidents : [];
+    const monthlyCount = incidentArray.length;
+    const criticalCount = incidentArray.filter(i => i.severity === 'critical').length;
     
     // Simple prediction based on recent trend
     const predicted = Math.ceil(monthlyCount * 1.1); // Slight increase assumption
