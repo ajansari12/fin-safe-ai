@@ -16,6 +16,7 @@ import FrameworkDetail from "@/pages/governance/FrameworkDetail";
 import BusinessFunctions from "@/pages/BusinessFunctions";
 import ImpactTolerances from "@/pages/ImpactTolerances";
 import Dependencies from "@/pages/Dependencies";
+import DependencyMapping from "@/pages/DependencyMapping";
 import ScenarioTesting from "@/pages/ScenarioTesting";
 import ControlsAndKri from "@/pages/ControlsAndKri";
 import AuditAndCompliance from "@/pages/AuditAndCompliance";
@@ -24,6 +25,7 @@ import RiskAppetite from "@/pages/RiskAppetite";
 import RiskAppetiteMain from "@/pages/risk-management/RiskAppetite";
 import RiskAppetiteWorkflow from "@/pages/risk-management/RiskAppetiteWorkflow";
 import Compliance from "@/pages/Compliance";
+import AnalyticsHub from "@/pages/AnalyticsHub";
 import OrganizationSetup from "@/pages/setup/OrganizationSetup";
 import Settings from "@/pages/Settings";
 import Billing from "@/pages/Billing";
@@ -74,6 +76,7 @@ function App() {
                 <Route path="/business-functions" element={<BusinessFunctions />} />
                 <Route path="/impact-tolerances" element={<ImpactTolerances />} />
                 <Route path="/dependencies" element={<Dependencies />} />
+                <Route path="/dependency-mapping" element={<DependencyMapping />} />
                 <Route path="/scenario-testing" element={<ScenarioTesting />} />
                 <Route path="/controls-kri" element={<ControlsAndKri />} />
                 <Route path="/audit-compliance" element={<AuditAndCompliance />} />
@@ -83,6 +86,7 @@ function App() {
                 <Route path="/risk-appetite/create" element={<RiskAppetiteWorkflow />} />
                 <Route path="/risk-appetite/edit/:id" element={<RiskAppetiteWorkflow />} />
                 <Route path="/compliance" element={<Compliance />} />
+                <Route path="/analytics" element={<AnalyticsHub />} />
                 <Route path="/setup" element={<OrganizationSetup />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/billing" element={<Billing />} />
