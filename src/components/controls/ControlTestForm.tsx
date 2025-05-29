@@ -56,10 +56,25 @@ const ControlTestForm: React.FC<ControlTestFormProps> = ({
   });
 
   const handleSubmit = (values: z.infer<typeof controlTestSchema>) => {
-    onSubmit({
+    // Ensure all required fields are present for CreateControlTestData
+    const submitData: CreateControlTestData = {
       control_id: controlId,
-      ...values
-    });
+      test_date: values.test_date,
+      test_type: values.test_type,
+      test_method: values.test_method,
+      test_result: values.test_result,
+      effectiveness_rating: values.effectiveness_rating,
+      risk_reduction_impact: values.risk_reduction_impact,
+      test_description: values.test_description,
+      findings: values.findings,
+      recommendations: values.recommendations,
+      tested_by_name: values.tested_by_name,
+      remediation_required: values.remediation_required,
+      remediation_deadline: values.remediation_deadline,
+      remediation_status: values.remediation_status
+    };
+    
+    onSubmit(submitData);
   };
 
   const remediationRequired = form.watch("remediation_required");
