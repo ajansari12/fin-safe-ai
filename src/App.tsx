@@ -78,7 +78,7 @@ function App() {
                 <Route path="/dependencies" element={<Dependencies />} />
                 <Route path="/dependency-mapping" element={<DependencyMapping />} />
                 <Route path="/scenario-testing" element={<ScenarioTesting />} />
-                <Route path="/controls-kri" element={<ControlsAndKri />} />
+                <Route path="/controls-and-kri" element={<ControlsAndKri />} />
                 <Route path="/audit-compliance" element={<AuditAndCompliance />} />
                 <Route path="/workflow-center" element={<WorkflowCenter />} />
                 <Route path="/risk-appetite-old" element={<RiskAppetite />} />
