@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ErrorHandler } from "./error-handling";
 
@@ -70,22 +71,25 @@ export async function getIncidentsWithPagination(options: QueryOptions = {}): Pr
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Build base query
-    let baseQuery = supabase.from('incident_logs').select('*', { count: 'exact' });
+    // Build query using raw query builder without excessive chaining
+    const query = supabase.from('incident_logs');
+    let baseQuery = query.select('*', { count: 'exact' });
     
-    // Apply each filter individually to avoid deep type instantiation
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
-          baseQuery = baseQuery.ilike(key, value);
-        } else {
-          baseQuery = baseQuery.eq(key, value);
-        }
+    // Apply filters using individual queries to avoid type complexity
+    const filterEntries = Object.entries(filters).filter(([, value]) => 
+      value !== undefined && value !== null && value !== ''
+    );
+
+    for (const [key, value] of filterEntries) {
+      if (typeof value === 'string' && value.includes('%')) {
+        baseQuery = (baseQuery as any).ilike(key, value);
+      } else {
+        baseQuery = (baseQuery as any).eq(key, value);
       }
     }
 
-    // Apply range and order
-    const { data, error, count } = await baseQuery
+    // Apply range and order with type assertion
+    const { data, error, count } = await (baseQuery as any)
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -123,22 +127,25 @@ export async function getPoliciesWithPagination(options: QueryOptions = {}): Pro
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Build base query
-    let baseQuery = supabase.from('governance_policies').select('*', { count: 'exact' });
+    // Build query using raw query builder without excessive chaining
+    const query = supabase.from('governance_policies');
+    let baseQuery = query.select('*', { count: 'exact' });
     
-    // Apply each filter individually to avoid deep type instantiation
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
-          baseQuery = baseQuery.ilike(key, value);
-        } else {
-          baseQuery = baseQuery.eq(key, value);
-        }
+    // Apply filters using individual queries to avoid type complexity
+    const filterEntries = Object.entries(filters).filter(([, value]) => 
+      value !== undefined && value !== null && value !== ''
+    );
+
+    for (const [key, value] of filterEntries) {
+      if (typeof value === 'string' && value.includes('%')) {
+        baseQuery = (baseQuery as any).ilike(key, value);
+      } else {
+        baseQuery = (baseQuery as any).eq(key, value);
       }
     }
 
-    // Apply range and order
-    const { data, error, count } = await baseQuery
+    // Apply range and order with type assertion
+    const { data, error, count } = await (baseQuery as any)
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
@@ -176,22 +183,25 @@ export async function getKRILogsWithPagination(options: QueryOptions = {}): Prom
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Build base query
-    let baseQuery = supabase.from('kri_logs').select('*', { count: 'exact' });
+    // Build query using raw query builder without excessive chaining
+    const query = supabase.from('kri_logs');
+    let baseQuery = query.select('*', { count: 'exact' });
     
-    // Apply each filter individually to avoid deep type instantiation
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null && value !== '') {
-        if (typeof value === 'string' && value.includes('%')) {
-          baseQuery = baseQuery.ilike(key, value);
-        } else {
-          baseQuery = baseQuery.eq(key, value);
-        }
+    // Apply filters using individual queries to avoid type complexity
+    const filterEntries = Object.entries(filters).filter(([, value]) => 
+      value !== undefined && value !== null && value !== ''
+    );
+
+    for (const [key, value] of filterEntries) {
+      if (typeof value === 'string' && value.includes('%')) {
+        baseQuery = (baseQuery as any).ilike(key, value);
+      } else {
+        baseQuery = (baseQuery as any).eq(key, value);
       }
     }
 
-    // Apply range and order
-    const { data, error, count } = await baseQuery
+    // Apply range and order with type assertion
+    const { data, error, count } = await (baseQuery as any)
       .range(from, to)
       .order(sortBy, { ascending: sortOrder === 'asc' });
 
