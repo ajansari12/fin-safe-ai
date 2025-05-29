@@ -574,8 +574,15 @@ export type Database = {
           dependency_name: string
           dependency_type: string
           description: string | null
+          escalation_contacts: Json | null
+          geographic_location: string | null
           id: string
+          maximum_tolerable_downtime_hours: number | null
+          monitoring_status: string | null
           org_id: string
+          recovery_time_objective_hours: number | null
+          redundancy_level: string | null
+          sla_requirements: string | null
           status: string
           updated_at: string
         }
@@ -587,8 +594,15 @@ export type Database = {
           dependency_name: string
           dependency_type: string
           description?: string | null
+          escalation_contacts?: Json | null
+          geographic_location?: string | null
           id?: string
+          maximum_tolerable_downtime_hours?: number | null
+          monitoring_status?: string | null
           org_id: string
+          recovery_time_objective_hours?: number | null
+          redundancy_level?: string | null
+          sla_requirements?: string | null
           status?: string
           updated_at?: string
         }
@@ -600,8 +614,15 @@ export type Database = {
           dependency_name?: string
           dependency_type?: string
           description?: string | null
+          escalation_contacts?: Json | null
+          geographic_location?: string | null
           id?: string
+          maximum_tolerable_downtime_hours?: number | null
+          monitoring_status?: string | null
           org_id?: string
+          recovery_time_objective_hours?: number | null
+          redundancy_level?: string | null
+          sla_requirements?: string | null
           status?: string
           updated_at?: string
         }
@@ -675,6 +696,199 @@ export type Database = {
           {
             foreignKeyName: "dependency_logs_dependency_id_fkey"
             columns: ["dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dependency_maps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          description: string | null
+          failure_propagation_likelihood: number | null
+          id: string
+          org_id: string
+          propagation_delay_minutes: number | null
+          relationship_strength: string
+          relationship_type: string
+          source_dependency_id: string
+          target_dependency_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          failure_propagation_likelihood?: number | null
+          id?: string
+          org_id: string
+          propagation_delay_minutes?: number | null
+          relationship_strength?: string
+          relationship_type: string
+          source_dependency_id: string
+          target_dependency_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          failure_propagation_likelihood?: number | null
+          id?: string
+          org_id?: string
+          propagation_delay_minutes?: number | null
+          relationship_strength?: string
+          relationship_type?: string
+          source_dependency_id?: string
+          target_dependency_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependency_maps_source_dependency_id_fkey"
+            columns: ["source_dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependency_maps_target_dependency_id_fkey"
+            columns: ["target_dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dependency_risks: {
+        Row: {
+          assessor_id: string | null
+          assessor_name: string | null
+          contingency_plan: string | null
+          created_at: string
+          dependency_id: string
+          id: string
+          impact_score: number
+          last_assessment_date: string
+          likelihood_score: number
+          mitigation_strategy: string | null
+          next_assessment_date: string | null
+          org_id: string
+          risk_category: string
+          risk_rating: string | null
+          updated_at: string
+        }
+        Insert: {
+          assessor_id?: string | null
+          assessor_name?: string | null
+          contingency_plan?: string | null
+          created_at?: string
+          dependency_id: string
+          id?: string
+          impact_score: number
+          last_assessment_date?: string
+          likelihood_score: number
+          mitigation_strategy?: string | null
+          next_assessment_date?: string | null
+          org_id: string
+          risk_category: string
+          risk_rating?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assessor_id?: string | null
+          assessor_name?: string | null
+          contingency_plan?: string | null
+          created_at?: string
+          dependency_id?: string
+          id?: string
+          impact_score?: number
+          last_assessment_date?: string
+          likelihood_score?: number
+          mitigation_strategy?: string | null
+          next_assessment_date?: string | null
+          org_id?: string
+          risk_category?: string
+          risk_rating?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependency_risks_dependency_id_fkey"
+            columns: ["dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      failure_scenarios: {
+        Row: {
+          affected_functions: Json | null
+          business_impact_description: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          estimated_duration_hours: number | null
+          id: string
+          last_simulated_at: string | null
+          mitigation_effectiveness: number | null
+          org_id: string
+          scenario_description: string | null
+          scenario_name: string
+          scenario_type: string
+          severity_level: string
+          simulation_results: Json | null
+          trigger_dependency_id: string
+          updated_at: string
+        }
+        Insert: {
+          affected_functions?: Json | null
+          business_impact_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          estimated_duration_hours?: number | null
+          id?: string
+          last_simulated_at?: string | null
+          mitigation_effectiveness?: number | null
+          org_id: string
+          scenario_description?: string | null
+          scenario_name: string
+          scenario_type?: string
+          severity_level?: string
+          simulation_results?: Json | null
+          trigger_dependency_id: string
+          updated_at?: string
+        }
+        Update: {
+          affected_functions?: Json | null
+          business_impact_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          estimated_duration_hours?: number | null
+          id?: string
+          last_simulated_at?: string | null
+          mitigation_effectiveness?: number | null
+          org_id?: string
+          scenario_description?: string | null
+          scenario_name?: string
+          scenario_type?: string
+          severity_level?: string
+          simulation_results?: Json | null
+          trigger_dependency_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "failure_scenarios_trigger_dependency_id_fkey"
+            columns: ["trigger_dependency_id"]
             isOneToOne: false
             referencedRelation: "dependencies"
             referencedColumns: ["id"]

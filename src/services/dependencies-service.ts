@@ -1,5 +1,3 @@
-
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Dependency {
@@ -41,6 +39,13 @@ export interface DependencyInput {
   criticality: 'critical' | 'high' | 'medium' | 'low';
   description?: string;
   status?: 'operational' | 'degraded' | 'failed' | 'maintenance';
+  recovery_time_objective_hours?: number;
+  maximum_tolerable_downtime_hours?: number;
+  monitoring_status?: 'monitored' | 'partially_monitored' | 'not_monitored' | 'unknown';
+  escalation_contacts?: any;
+  sla_requirements?: string;
+  geographic_location?: string;
+  redundancy_level?: 'none' | 'basic' | 'full' | 'distributed';
 }
 
 export async function getDependencies(businessFunctionId?: string): Promise<Dependency[]> {
@@ -226,3 +231,81 @@ export async function getDependencyBreaches(): Promise<DependencyLog[]> {
   }
 }
 
+export async function createDependencyRelationship(relationship: {
+  source_dependency_id: string;
+  target_dependency_id: string;
+  relationship_type: 'depends_on' | 'supports' | 'feeds_into' | 'backed_by' | 'redundant_with';
+  relationship_strength: 'weak' | 'medium' | 'strong' | 'critical';
+  failure_propagation_likelihood?: number;
+  propagation_delay_minutes?: number;
+  description?: string;
+}): Promise<any> {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', (await supabase.auth.getUser()).data.user?.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      throw new Error('No organization found for user');
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user?.id)
+      .single();
+
+    const { data, error } = await supabase
+      .from('dependency_maps')
+      .insert({
+        ...relationship,
+        org_id: profile.organization_id,
+        created_by: user?.id,
+        created_by_name: userProfile?.full_name || 'Unknown User'
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating dependency relationship:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in createDependencyRelationship:', error);
+    throw error;
+  }
+}
+
+export async function updateDependencyEnhancements(id: string, updates: {
+  recovery_time_objective_hours?: number;
+  maximum_tolerable_downtime_hours?: number;
+  monitoring_status?: 'monitored' | 'partially_monitored' | 'not_monitored' | 'unknown';
+  escalation_contacts?: any;
+  sla_requirements?: string;
+  geographic_location?: string;
+  redundancy_level?: 'none' | 'basic' | 'full' | 'distributed';
+}): Promise<Dependency> {
+  try {
+    const { data, error } = await supabase
+      .from('dependencies')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating dependency enhancements:', error);
+      throw error;
+    }
+
+    return data as Dependency;
+  } catch (error) {
+    console.error('Error in updateDependencyEnhancements:', error);
+    throw error;
+  }
+}
