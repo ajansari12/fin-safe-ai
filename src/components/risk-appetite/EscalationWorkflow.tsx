@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowUp, Clock, AlertTriangle, CheckCircle } from 'lucide-react';
-import { enhancedRiskAppetiteService, AppetiteBreach } from '@/services/enhanced-risk-appetite-service';
+import { appetiteBreachesService, type AppetiteBreach } from '@/services/risk-appetite';
 import { toast } from '@/hooks/use-toast';
 
 const EscalationWorkflow: React.FC = () => {
@@ -23,7 +23,7 @@ const EscalationWorkflow: React.FC = () => {
   const loadBreaches = async () => {
     setIsLoading(true);
     try {
-      const data = await enhancedRiskAppetiteService.getAppetiteBreaches('open');
+      const data = await appetiteBreachesService.getAppetiteBreaches('open');
       setBreaches(data);
     } catch (error) {
       console.error('Error loading breaches:', error);
@@ -35,7 +35,7 @@ const EscalationWorkflow: React.FC = () => {
   const handleEscalate = async (breach: AppetiteBreach) => {
     setIsEscalating(true);
     try {
-      await enhancedRiskAppetiteService.escalateBreach(
+      await appetiteBreachesService.escalateBreach(
         breach.id,
         breach.escalation_level + 1
       );
@@ -59,7 +59,7 @@ const EscalationWorkflow: React.FC = () => {
 
   const handleResolve = async (breach: AppetiteBreach) => {
     try {
-      await enhancedRiskAppetiteService.updateBreachStatus(
+      await appetiteBreachesService.updateBreachStatus(
         breach.id,
         'resolved',
         escalationNotes
@@ -84,7 +84,7 @@ const EscalationWorkflow: React.FC = () => {
 
   const handleAcknowledge = async (breach: AppetiteBreach) => {
     try {
-      await enhancedRiskAppetiteService.updateBreachStatus(breach.id, 'acknowledged');
+      await appetiteBreachesService.updateBreachStatus(breach.id, 'acknowledged');
       
       toast({
         title: "Breach Acknowledged",

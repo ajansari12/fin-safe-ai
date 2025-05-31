@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { enhancedRiskAppetiteService, RiskPostureData } from '@/services/enhanced-risk-appetite-service';
+import { riskPostureService, type RiskPostureData } from '@/services/risk-appetite';
 
 const RiskPostureHeatmap: React.FC = () => {
   const [heatmapData, setHeatmapData] = useState<RiskPostureData[]>([]);
@@ -15,7 +15,7 @@ const RiskPostureHeatmap: React.FC = () => {
   const loadHeatmapData = async () => {
     setIsLoading(true);
     try {
-      const data = await enhancedRiskAppetiteService.getRiskPostureHeatmap();
+      const data = await riskPostureService.getRiskPostureHeatmap();
       setHeatmapData(data);
     } catch (error) {
       console.error('Error loading heatmap data:', error);

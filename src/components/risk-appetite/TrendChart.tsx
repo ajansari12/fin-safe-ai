@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { enhancedRiskAppetiteService, TrendData } from '@/services/enhanced-risk-appetite-service';
+import { trendDataService, type TrendData } from '@/services/risk-appetite';
 import { getRiskCategories } from '@/services/risk-management-service';
 import { RiskCategory } from '@/pages/risk-management/types';
 
@@ -25,7 +25,7 @@ const TrendChart: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await enhancedRiskAppetiteService.getTrendData(timeframe);
+      const data = await trendDataService.getTrendData(timeframe);
       setTrendData(data);
     } catch (error) {
       console.error('Error loading trend data:', error);
