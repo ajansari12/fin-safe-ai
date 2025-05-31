@@ -95,10 +95,11 @@ const RoleManagementMatrix: React.FC = () => {
   };
 
   const handleDeleteRole = async (role: UserRole) => {
-    if (!confirm(`Are you sure you want to delete the role "${role.role_name}"?`)) return;
+    const roleDisplayName = role.role_name || role.role || 'Unknown Role';
+    if (!confirm(`Are you sure you want to delete the role "${roleDisplayName}"?`)) return;
 
     try {
-      await enhancedAdminService.deleteRole(role.id, role.role_name);
+      await enhancedAdminService.deleteRole(role.id, roleDisplayName);
       toast({ title: "Success", description: "Role deleted successfully" });
       loadRoles();
     } catch (error) {
@@ -177,25 +178,27 @@ const RoleManagementMatrix: React.FC = () => {
           <TableBody>
             {roles.map((role) => (
               <TableRow key={role.id}>
-                <TableCell className="font-medium">{role.role_name}</TableCell>
-                <TableCell>{role.description}</TableCell>
+                <TableCell className="font-medium">
+                  {role.role_name || role.role || 'Unknown Role'}
+                </TableCell>
+                <TableCell>{role.description || 'No description'}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {role.permissions.slice(0, 3).map(permission => (
+                    {(role.permissions || []).slice(0, 3).map(permission => (
                       <Badge key={permission} variant="secondary" className="text-xs">
                         {permission.replace(/_/g, ' ')}
                       </Badge>
                     ))}
-                    {role.permissions.length > 3 && (
+                    {(role.permissions || []).length > 3 && (
                       <Badge variant="outline" className="text-xs">
-                        +{role.permissions.length - 3} more
+                        +{(role.permissions || []).length - 3} more
                       </Badge>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={role.is_active ? "default" : "secondary"}>
-                    {role.is_active ? "Active" : "Inactive"}
+                  <Badge variant={(role.is_active !== false) ? "default" : "secondary"}>
+                    {(role.is_active !== false) ? "Active" : "Inactive"}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -236,14 +239,27 @@ const RoleManagementMatrix: React.FC = () => {
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="edit_role_name">Role Name</Label>
-                    <Input id="edit_role_name" name="role_name" defaultValue={selectedRole.role_name} required />
+                    <Input 
+                      id="edit_role_name" 
+                      name="role_name" 
+                      defaultValue={selectedRole.role_name || selectedRole.role || ''} 
+                      required 
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="edit_description">Description</Label>
-                    <Textarea id="edit_description" name="description" defaultValue={selectedRole.description || ''} />
+                    <Textarea 
+                      id="edit_description" 
+                      name="description" 
+                      defaultValue={selectedRole.description || ''} 
+                    />
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="is_active" name="is_active" defaultChecked={selectedRole.is_active} />
+                    <Checkbox 
+                      id="is_active" 
+                      name="is_active" 
+                      defaultChecked={selectedRole.is_active !== false} 
+                    />
                     <Label htmlFor="is_active">Active</Label>
                   </div>
                   <div className="grid gap-2">
@@ -254,7 +270,7 @@ const RoleManagementMatrix: React.FC = () => {
                           <Checkbox 
                             id={`edit_permission_${permission}`} 
                             name={`permission_${permission}`}
-                            defaultChecked={selectedRole.permissions.includes(permission)}
+                            defaultChecked={(selectedRole.permissions || []).includes(permission)}
                           />
                           <Label htmlFor={`edit_permission_${permission}`} className="text-sm">
                             {permission.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
