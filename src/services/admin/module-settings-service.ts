@@ -26,7 +26,7 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data: settingsData, error } = await supabase
+      const { data, error } = await supabase
         .from('settings')
         .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
@@ -35,17 +35,26 @@ class ModuleSettingsService {
 
       if (error) throw error;
       
-      return (settingsData || []).map((setting) => ({
-        id: setting.id,
-        org_id: setting.org_id,
-        setting_key: setting.setting_key,
-        setting_value: this.transformSettingValue(setting.setting_value),
-        description: setting.description,
-        category: 'modules',
-        created_by: null,
-        created_at: setting.created_at,
-        updated_at: setting.updated_at
-      }));
+      // Simplified mapping without complex type inference
+      const settings: ModuleSetting[] = [];
+      
+      if (data) {
+        for (const item of data) {
+          settings.push({
+            id: item.id,
+            org_id: item.org_id,
+            setting_key: item.setting_key,
+            setting_value: this.transformSettingValue(item.setting_value),
+            description: item.description,
+            category: 'modules',
+            created_by: null,
+            created_at: item.created_at,
+            updated_at: item.updated_at
+          });
+        }
+      }
+      
+      return settings;
     } catch (error) {
       console.error('Error fetching module settings:', error);
       return [];
@@ -74,13 +83,12 @@ class ModuleSettingsService {
     }
   }
 
-  private transformSettingValue(value: unknown): SettingValue {
-    if (typeof value === 'object' && value !== null) {
-      const obj = value as Record<string, unknown>;
+  private transformSettingValue(value: any): SettingValue {
+    if (value && typeof value === 'object') {
       return {
-        enabled: typeof obj.enabled === 'boolean' ? obj.enabled : undefined,
-        retention_days: typeof obj.retention_days === 'number' ? obj.retention_days : undefined,
-        auto_delete: typeof obj.auto_delete === 'boolean' ? obj.auto_delete : undefined
+        enabled: Boolean(value.enabled),
+        retention_days: typeof value.retention_days === 'number' ? value.retention_days : undefined,
+        auto_delete: Boolean(value.auto_delete)
       };
     }
     if (typeof value === 'boolean') {
