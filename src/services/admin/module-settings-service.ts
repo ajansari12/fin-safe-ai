@@ -29,26 +29,17 @@ class ModuleSettingsService {
 
       if (error) throw error;
       
-      const moduleSettings: ModuleSetting[] = [];
-      
-      if (settingsData) {
-        settingsData.forEach((setting: any) => {
-          const moduleSetting: ModuleSetting = {
-            id: setting.id,
-            org_id: setting.org_id,
-            setting_key: setting.setting_key,
-            setting_value: setting.setting_value,
-            description: setting.description,
-            category: 'modules',
-            created_by: null,
-            created_at: setting.created_at,
-            updated_at: setting.updated_at
-          };
-          moduleSettings.push(moduleSetting);
-        });
-      }
-      
-      return moduleSettings;
+      return (settingsData || []).map((setting: any) => ({
+        id: setting.id,
+        org_id: setting.org_id,
+        setting_key: setting.setting_key,
+        setting_value: setting.setting_value,
+        description: setting.description,
+        category: 'modules',
+        created_by: null,
+        created_at: setting.created_at,
+        updated_at: setting.updated_at
+      }));
     } catch (error) {
       console.error('Error fetching module settings:', error);
       return [];

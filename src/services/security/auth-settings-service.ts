@@ -39,7 +39,34 @@ class AuthSettingsService {
         return null;
       }
 
-      return data;
+      if (!data) return null;
+
+      // Transform the data to match our interface
+      return {
+        id: data.id,
+        org_id: data.org_id,
+        mfa_enforced: data.mfa_enforced,
+        mfa_enforcement_date: data.mfa_enforcement_date,
+        allowed_auth_methods: Array.isArray(data.allowed_auth_methods) 
+          ? data.allowed_auth_methods as string[]
+          : ["email_password"],
+        session_timeout_minutes: data.session_timeout_minutes,
+        password_policy: typeof data.password_policy === 'object' && data.password_policy
+          ? data.password_policy as any
+          : {
+              min_length: 8,
+              require_uppercase: true,
+              require_numbers: true,
+              require_symbols: false
+            },
+        ip_whitelist: Array.isArray(data.ip_whitelist) 
+          ? data.ip_whitelist as string[]
+          : [],
+        created_by: data.created_by,
+        updated_by: data.updated_by,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
     } catch (error) {
       console.error('Error fetching auth settings:', error);
       return null;

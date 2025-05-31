@@ -225,7 +225,7 @@ const SecuritySettings: React.FC = () => {
               ].map(({ key, label }) => (
                 <div key={key} className="flex items-center space-x-2">
                   <Switch
-                    checked={settings?.password_policy?.[key as keyof typeof settings.password_policy] || false}
+                    checked={Boolean(settings?.password_policy?.[key as keyof typeof settings.password_policy])}
                     onCheckedChange={(checked) => updateSettings({
                       password_policy: {
                         ...settings?.password_policy,

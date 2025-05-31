@@ -42,7 +42,7 @@ class SecurityLoggingService {
       const logEntry = {
         org_id: profile.organization_id,
         user_id: profile.id,
-        user_email: profile.email || 'unknown',
+        user_email: profile.full_name || 'unknown@example.com', // Use full_name as fallback since email doesn't exist
         user_name: profile.full_name || 'Unknown User',
         action_type: actionType,
         resource_type: resourceType,
@@ -80,7 +80,27 @@ class SecurityLoggingService {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      return (data || []).map((log: any) => ({
+        id: log.id,
+        org_id: log.org_id,
+        user_id: log.user_id,
+        user_email: log.user_email,
+        user_name: log.user_name,
+        action_type: log.action_type,
+        resource_type: log.resource_type,
+        resource_id: log.resource_id,
+        resource_name: log.resource_name,
+        action_details: log.action_details || {},
+        ip_address: log.ip_address ? String(log.ip_address) : undefined,
+        user_agent: log.user_agent,
+        session_id: log.session_id,
+        status: log.status as 'success' | 'failure' | 'warning',
+        error_message: log.error_message,
+        risk_score: log.risk_score || 0,
+        created_at: log.created_at
+      }));
     } catch (error) {
       console.error('Error fetching security logs:', error);
       return [];
@@ -101,7 +121,27 @@ class SecurityLoggingService {
         .limit(50);
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      return (data || []).map((log: any) => ({
+        id: log.id,
+        org_id: log.org_id,
+        user_id: log.user_id,
+        user_email: log.user_email,
+        user_name: log.user_name,
+        action_type: log.action_type,
+        resource_type: log.resource_type,
+        resource_id: log.resource_id,
+        resource_name: log.resource_name,
+        action_details: log.action_details || {},
+        ip_address: log.ip_address ? String(log.ip_address) : undefined,
+        user_agent: log.user_agent,
+        session_id: log.session_id,
+        status: log.status as 'success' | 'failure' | 'warning',
+        error_message: log.error_message,
+        risk_score: log.risk_score || 0,
+        created_at: log.created_at
+      }));
     } catch (error) {
       console.error('Error fetching high-risk logs:', error);
       return [];
