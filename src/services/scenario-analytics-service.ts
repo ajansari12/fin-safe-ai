@@ -25,6 +25,43 @@ export interface ScenarioTestMetric {
   updated_at: string;
 }
 
+export interface ScenarioResult {
+  id: string;
+  scenario_test_id: string;
+  org_id: string;
+  execution_started_at: string;
+  execution_completed_at?: string;
+  overall_score?: number;
+  success_rate?: number;
+  response_time_minutes?: number;
+  recovery_time_minutes?: number;
+  affected_functions_count?: number;
+  test_coverage_score?: number;
+  execution_notes?: string;
+  lessons_learned?: string;
+  ai_recommendations?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScenarioExecutionStep {
+  id: string;
+  scenario_result_id: string;
+  step_number: number;
+  step_name: string;
+  step_description?: string;
+  expected_outcome?: string;
+  actual_outcome?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+  started_at?: string;
+  completed_at?: string;
+  duration_minutes?: number;
+  responsible_person?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function getScenarioAnalytics(): Promise<ScenarioAnalytics> {
   const { data: profile } = await supabase
     .from('profiles')
@@ -81,7 +118,7 @@ export async function getScenarioAnalytics(): Promise<ScenarioAnalytics> {
   };
 }
 
-export async function getScenarioResults(scenarioTestId?: string) {
+export async function getScenarioResults(scenarioTestId?: string): Promise<ScenarioResult[]> {
   const { data: profile } = await supabase
     .from('profiles')
     .select('organization_id')
@@ -106,4 +143,102 @@ export async function getScenarioResults(scenarioTestId?: string) {
 
   if (error) throw error;
   return data || [];
+}
+
+export async function createScenarioResult(resultData: Partial<ScenarioResult>): Promise<ScenarioResult> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', (await supabase.auth.getUser()).data.user?.id)
+    .single();
+
+  if (!profile?.organization_id) {
+    throw new Error('User organization not found');
+  }
+
+  const { data, error } = await supabase
+    .from('scenario_results')
+    .insert({
+      ...resultData,
+      org_id: profile.organization_id
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateScenarioResult(id: string, updates: Partial<ScenarioResult>): Promise<ScenarioResult> {
+  const { data, error } = await supabase
+    .from('scenario_results')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getExecutionSteps(scenarioResultId: string): Promise<ScenarioExecutionStep[]> {
+  const { data, error } = await supabase
+    .from('scenario_execution_steps')
+    .select('*')
+    .eq('scenario_result_id', scenarioResultId)
+    .order('step_number', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createExecutionStep(stepData: Partial<ScenarioExecutionStep>): Promise<ScenarioExecutionStep> {
+  const { data, error } = await supabase
+    .from('scenario_execution_steps')
+    .insert(stepData)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateExecutionStep(id: string, updates: Partial<ScenarioExecutionStep>): Promise<ScenarioExecutionStep> {
+  const { data, error } = await supabase
+    .from('scenario_execution_steps')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function generateAIRecommendations(resultData: Partial<ScenarioResult>): Promise<string> {
+  // Mock AI recommendations for now - in real implementation this would call an AI service
+  const recommendations = `
+Based on the scenario test execution:
+
+1. Response Time Analysis:
+   - Average response time: ${resultData.response_time_minutes || 0} minutes
+   - Recommendation: ${(resultData.response_time_minutes || 0) > 30 ? 'Consider implementing automated detection systems to reduce response time' : 'Response time is within acceptable limits'}
+
+2. Recovery Performance:
+   - Recovery time: ${resultData.recovery_time_minutes || 0} minutes
+   - Success rate: ${resultData.success_rate || 0}%
+   - Recommendation: ${(resultData.success_rate || 0) < 80 ? 'Review and update recovery procedures. Consider additional training for response teams.' : 'Recovery procedures are performing well'}
+
+3. Areas for Improvement:
+   - ${(resultData.success_rate || 0) < 80 ? 'Focus on improving scenario execution success rate through better preparation and training' : 'Maintain current high performance standards'}
+   - Consider implementing real-time monitoring for faster detection
+   - Review communication protocols during incidents
+
+4. Next Steps:
+   - Schedule follow-up training sessions
+   - Update response procedures based on lessons learned
+   - Plan next scenario test within 3-6 months
+  `;
+
+  return recommendations.trim();
 }

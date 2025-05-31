@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChevronLeft, ChevronRight, Save, Download, FileTemplate, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Download, File, Sparkles } from "lucide-react";
 import { ScenarioTest } from "@/services/scenario-testing-service";
 import { ScenarioTemplate } from "@/services/scenario-templates-service";
 import ScenarioTemplateLibrary from "./ScenarioTemplateLibrary";
@@ -202,7 +202,7 @@ const EnhancedScenarioBuilder: React.FC<EnhancedScenarioBuilderProps> = ({
                   size="sm"
                   onClick={() => setBuilderMode('template')}
                 >
-                  <FileTemplate className="h-4 w-4 mr-2" />
+                  <File className="h-4 w-4 mr-2" />
                   Use Template
                 </Button>
                 <Button

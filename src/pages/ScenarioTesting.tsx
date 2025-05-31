@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Play, BarChart3, FileTemplate } from "lucide-react";
+import { Plus, Play, BarChart3, File } from "lucide-react";
 import { createScenarioTest, updateScenarioTest, deleteScenarioTest, ScenarioTest } from "@/services/scenario-testing-service";
 import EnhancedScenarioBuilder from "@/components/scenario-testing/EnhancedScenarioBuilder";
 import ScenarioTestsList from "@/components/scenario-testing/ScenarioTestsList";
@@ -161,7 +161,7 @@ const ScenarioTesting = () => {
               variant="outline"
               onClick={() => setIsTemplateLibraryOpen(true)}
             >
-              <FileTemplate className="h-4 w-4 mr-2" />
+              <File className="h-4 w-4 mr-2" />
               Template Library
             </Button>
             <Button onClick={startNewScenario}>

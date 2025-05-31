@@ -43,7 +43,7 @@ export async function getScenarioTemplates(): Promise<ScenarioTemplate[]> {
     return [];
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('scenario_templates')
     .select('*')
     .eq('org_id', profile.organization_id)
@@ -64,7 +64,7 @@ export async function createScenarioTemplate(templateData: CreateScenarioTemplat
     throw new Error('User organization not found');
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('scenario_templates')
     .insert({
       ...templateData,
@@ -79,7 +79,7 @@ export async function createScenarioTemplate(templateData: CreateScenarioTemplat
 }
 
 export async function updateScenarioTemplate(id: string, updates: Partial<ScenarioTemplate>): Promise<ScenarioTemplate> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('scenario_templates')
     .update(updates)
     .eq('id', id)
@@ -91,7 +91,7 @@ export async function updateScenarioTemplate(id: string, updates: Partial<Scenar
 }
 
 export async function deleteScenarioTemplate(id: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('scenario_templates')
     .delete()
     .eq('id', id);
@@ -100,7 +100,7 @@ export async function deleteScenarioTemplate(id: string): Promise<void> {
 }
 
 export async function getPredefinedTemplates(): Promise<ScenarioTemplate[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('scenario_templates')
     .select('*')
     .eq('is_predefined', true)

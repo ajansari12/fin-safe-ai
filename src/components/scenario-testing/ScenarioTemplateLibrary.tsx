@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, FileTemplate, Clock, AlertTriangle } from "lucide-react";
+import { Plus, File, Clock, AlertTriangle } from "lucide-react";
 import { getScenarioTemplates, getPredefinedTemplates, createScenarioTemplate, ScenarioTemplate, CreateScenarioTemplateData } from "@/services/scenario-templates-service";
 import { toast } from "sonner";
 
@@ -94,7 +93,7 @@ const ScenarioTemplateLibrary: React.FC<ScenarioTemplateLibraryProps> = ({ onUse
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
-              <FileTemplate className="h-4 w-4" />
+              <File className="h-4 w-4" />
               {template.template_steps?.length || 0} steps
             </div>
             {template.estimated_duration_hours && (
@@ -185,7 +184,7 @@ const ScenarioTemplateLibrary: React.FC<ScenarioTemplateLibraryProps> = ({ onUse
             </div>
           ) : customTemplates.length === 0 ? (
             <div className="text-center py-8">
-              <FileTemplate className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <File className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">No custom templates created yet.</p>
               <Button 
                 onClick={() => setIsCreateDialogOpen(true)}
