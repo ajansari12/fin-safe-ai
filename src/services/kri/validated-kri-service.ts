@@ -42,16 +42,16 @@ export class ValidatedKRIService {
       throw new Error('Organization not found');
     }
 
-    // Prepare data for database insert
+    // Prepare data for database insert - exclude threshold_id since it's not in our schema
     const kriData = {
-      name: validation.data.name || data.name || '',
-      description: validation.data.description || data.description,
-      measurement_frequency: validation.data.measurement_frequency || data.measurement_frequency || 'monthly',
-      target_value: validation.data.target_value || data.target_value,
-      warning_threshold: validation.data.warning_threshold || data.warning_threshold,
-      critical_threshold: validation.data.critical_threshold || data.critical_threshold,
-      control_id: validation.data.control_id || data.control_id,
-      status: validation.data.status || data.status || 'active',
+      name: data.name || '',
+      description: data.description,
+      measurement_frequency: data.measurement_frequency || 'monthly',
+      target_value: data.target_value,
+      warning_threshold: data.warning_threshold,
+      critical_threshold: data.critical_threshold,
+      control_id: data.control_id,
+      status: data.status || 'active',
       org_id: profile.organization_id,
     };
 
@@ -83,7 +83,7 @@ export class ValidatedKRIService {
     }
 
     const updateData = {
-      ...validation.data,
+      ...updates,
       updated_at: new Date().toISOString(),
     };
 
@@ -119,7 +119,7 @@ export class ValidatedKRIService {
     const { data: kri, error: kriError } = await supabase
       .from('kri_definitions')
       .select('id')
-      .eq('id', validation.data.kri_id)
+      .eq('id', data.kri_id)
       .eq('org_id', profile.organization_id)
       .single();
 
@@ -128,11 +128,11 @@ export class ValidatedKRIService {
     }
 
     const logData = {
-      kri_id: validation.data.kri_id,
-      measurement_date: validation.data.measurement_date.toISOString().split('T')[0],
-      actual_value: validation.data.actual_value,
-      target_value: validation.data.target_value,
-      notes: validation.data.notes,
+      kri_id: data.kri_id,
+      measurement_date: data.measurement_date.toISOString().split('T')[0],
+      actual_value: data.actual_value,
+      target_value: data.target_value,
+      notes: data.notes,
     };
 
     const { data: kriLog, error } = await supabase

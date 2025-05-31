@@ -10,7 +10,6 @@ export interface ModuleSetting {
     enabled?: boolean;
     retention_days?: number;
     auto_delete?: boolean;
-    [key: string]: any;
   };
   description: string | null;
   category: string;
@@ -73,9 +72,13 @@ class ModuleSettingsService {
     }
   }
 
-  private transformSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any } {
+  private transformSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean } {
     if (typeof value === 'object' && value !== null) {
-      return value;
+      return {
+        enabled: value.enabled,
+        retention_days: value.retention_days,
+        auto_delete: value.auto_delete
+      };
     }
     if (typeof value === 'boolean') {
       return { enabled: value };
