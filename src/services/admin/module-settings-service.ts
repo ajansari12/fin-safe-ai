@@ -18,6 +18,12 @@ export interface ModuleSetting {
   updated_at: string;
 }
 
+interface SettingValue {
+  enabled?: boolean;
+  retention_days?: number;
+  auto_delete?: boolean;
+}
+
 class ModuleSettingsService {
   async getModuleSettings(): Promise<ModuleSetting[]> {
     try {
@@ -72,7 +78,7 @@ class ModuleSettingsService {
     }
   }
 
-  private transformSettingValue(value: unknown): { enabled?: boolean; retention_days?: number; auto_delete?: boolean } {
+  private transformSettingValue(value: unknown): SettingValue {
     if (typeof value === 'object' && value !== null) {
       const obj = value as Record<string, unknown>;
       return {

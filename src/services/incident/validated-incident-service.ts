@@ -69,16 +69,16 @@ export class ValidatedIncidentService {
 
     // Prepare data with required fields
     const incidentData = {
-      title: data.title,
-      description: data.description,
-      severity: data.severity,
-      category: data.category,
-      business_function_id: data.business_function_id,
-      assigned_to: data.assigned_to,
-      status: data.status || 'open',
-      impact_rating: data.impact_rating,
-      max_response_time_hours: data.max_response_time_hours,
-      max_resolution_time_hours: data.max_resolution_time_hours,
+      title: validation.data.title,
+      description: validation.data.description,
+      severity: validation.data.severity,
+      category: validation.data.category,
+      business_function_id: validation.data.business_function_id,
+      assigned_to: validation.data.assigned_to,
+      status: validation.data.status || 'open',
+      impact_rating: validation.data.impact_rating,
+      max_response_time_hours: validation.data.max_response_time_hours,
+      max_resolution_time_hours: validation.data.max_resolution_time_hours,
       org_id: profile.organization_id,
       reported_by: profile.id,
       reported_at: new Date().toISOString(),
@@ -112,7 +112,7 @@ export class ValidatedIncidentService {
     }
 
     const updateData = {
-      ...updates,
+      ...validation.data,
       updated_at: new Date().toISOString(),
     };
 
