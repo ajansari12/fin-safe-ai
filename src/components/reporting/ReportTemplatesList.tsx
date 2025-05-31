@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, Copy, Search, Filter, Play } from "lucide-react";
+import { Edit, Trash2, Copy, Search, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { reportingService, ReportTemplate } from "@/services/reporting-service";
 
@@ -50,13 +50,15 @@ const ReportTemplatesList: React.FC<ReportTemplatesListProps> = ({ onEditTemplat
   const handleDuplicateTemplate = async (template: ReportTemplate) => {
     try {
       const duplicateTemplate = {
-        ...template,
         template_name: `${template.template_name} (Copy)`,
-        is_system_template: false
+        template_type: template.template_type,
+        description: template.description,
+        template_config: template.template_config,
+        data_blocks: template.data_blocks,
+        layout_config: template.layout_config,
+        is_system_template: false,
+        is_active: true
       };
-      delete (duplicateTemplate as any).id;
-      delete (duplicateTemplate as any).created_at;
-      delete (duplicateTemplate as any).updated_at;
 
       await reportingService.createReportTemplate(duplicateTemplate);
       toast({ title: "Success", description: "Template duplicated successfully" });
@@ -70,7 +72,7 @@ const ReportTemplatesList: React.FC<ReportTemplatesListProps> = ({ onEditTemplat
   const handleGenerateReport = async (template: ReportTemplate) => {
     try {
       const reportData = await reportingService.generateReportData(template.id);
-      const instance = await reportingService.createReportInstance({
+      const instance = {
         template_id: template.id,
         instance_name: `${template.template_name} - ${new Date().toLocaleDateString()}`,
         report_data: reportData,
@@ -84,8 +86,9 @@ const ReportTemplatesList: React.FC<ReportTemplatesListProps> = ({ onEditTemplat
         file_size: null,
         scheduled_delivery: null,
         email_recipients: []
-      });
+      };
       
+      await reportingService.createReportInstance(instance);
       toast({ title: "Success", description: "Report generated successfully" });
     } catch (error) {
       console.error('Error generating report:', error);

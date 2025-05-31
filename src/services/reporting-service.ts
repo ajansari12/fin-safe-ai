@@ -71,7 +71,16 @@ class ReportingService {
         .order('template_name');
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      return (data || []).map(template => ({
+        ...template,
+        data_blocks: Array.isArray(template.data_blocks) 
+          ? template.data_blocks as DataBlock[]
+          : typeof template.data_blocks === 'string' 
+            ? JSON.parse(template.data_blocks)
+            : []
+      }));
     } catch (error) {
       console.error('Error fetching report templates:', error);
       return [];
@@ -87,7 +96,16 @@ class ReportingService {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Transform the data to match our interface
+      return {
+        ...data,
+        data_blocks: Array.isArray(data.data_blocks) 
+          ? data.data_blocks as DataBlock[]
+          : typeof data.data_blocks === 'string' 
+            ? JSON.parse(data.data_blocks)
+            : []
+      };
     } catch (error) {
       console.error('Error fetching report template:', error);
       return null;
@@ -102,15 +120,30 @@ class ReportingService {
       const { data, error } = await supabase
         .from('report_templates')
         .insert({
-          ...template,
           org_id: profile.organization_id,
-          created_by: profile.id
+          created_by: profile.id,
+          template_name: template.template_name,
+          template_type: template.template_type,
+          description: template.description,
+          template_config: template.template_config,
+          data_blocks: template.data_blocks as any,
+          layout_config: template.layout_config,
+          is_system_template: template.is_system_template,
+          is_active: template.is_active
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        data_blocks: Array.isArray(data.data_blocks) 
+          ? data.data_blocks as DataBlock[]
+          : typeof data.data_blocks === 'string' 
+            ? JSON.parse(data.data_blocks)
+            : []
+      };
     } catch (error) {
       console.error('Error creating report template:', error);
       throw error;
@@ -119,9 +152,14 @@ class ReportingService {
 
   async updateReportTemplate(id: string, updates: Partial<ReportTemplate>): Promise<void> {
     try {
+      const updateData: any = { ...updates };
+      if (updateData.data_blocks) {
+        updateData.data_blocks = updateData.data_blocks as any;
+      }
+      
       const { error } = await supabase
         .from('report_templates')
-        .update(updates)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
@@ -163,7 +201,16 @@ class ReportingService {
         .order('generation_date', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      return (data || []).map(instance => ({
+        ...instance,
+        email_recipients: Array.isArray(instance.email_recipients) 
+          ? instance.email_recipients as string[]
+          : typeof instance.email_recipients === 'string' 
+            ? JSON.parse(instance.email_recipients)
+            : []
+      }));
     } catch (error) {
       console.error('Error fetching report instances:', error);
       return [];
@@ -178,16 +225,34 @@ class ReportingService {
       const { data, error } = await supabase
         .from('report_instances')
         .insert({
-          ...instance,
           org_id: profile.organization_id,
+          template_id: instance.template_id,
+          instance_name: instance.instance_name,
+          report_data: instance.report_data,
           generated_by: profile.id,
-          generated_by_name: profile.full_name || 'Unknown User'
+          generated_by_name: profile.full_name || 'Unknown User',
+          generation_date: instance.generation_date,
+          report_period_start: instance.report_period_start,
+          report_period_end: instance.report_period_end,
+          status: instance.status,
+          file_path: instance.file_path,
+          file_size: instance.file_size,
+          scheduled_delivery: instance.scheduled_delivery,
+          email_recipients: instance.email_recipients as any
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        email_recipients: Array.isArray(data.email_recipients) 
+          ? data.email_recipients as string[]
+          : typeof data.email_recipients === 'string' 
+            ? JSON.parse(data.email_recipients)
+            : []
+      };
     } catch (error) {
       console.error('Error creating report instance:', error);
       throw error;
@@ -196,9 +261,14 @@ class ReportingService {
 
   async updateReportInstance(id: string, updates: Partial<ReportInstance>): Promise<void> {
     try {
+      const updateData: any = { ...updates };
+      if (updateData.email_recipients) {
+        updateData.email_recipients = updateData.email_recipients as any;
+      }
+      
       const { error } = await supabase
         .from('report_instances')
-        .update(updates)
+        .update(updateData)
         .eq('id', id);
 
       if (error) throw error;
