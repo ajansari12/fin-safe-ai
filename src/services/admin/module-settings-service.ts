@@ -20,36 +20,48 @@ interface SettingValue {
   auto_delete?: boolean;
 }
 
+// Simple type for database row
+interface SettingRow {
+  id: string;
+  org_id: string;
+  setting_key: string;
+  setting_value: any;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 class ModuleSettingsService {
   async getModuleSettings(): Promise<ModuleSetting[]> {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      // Use explicit typing to avoid deep type inference
+      const response = await supabase
         .from('settings')
         .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
 
-      if (error) throw error;
+      if (response.error) throw response.error;
       
-      // Simplified mapping without complex type inference
       const settings: ModuleSetting[] = [];
+      const rows = response.data as SettingRow[];
       
-      if (data) {
-        for (const item of data) {
+      if (rows) {
+        for (const row of rows) {
           settings.push({
-            id: item.id,
-            org_id: item.org_id,
-            setting_key: item.setting_key,
-            setting_value: this.transformSettingValue(item.setting_value),
-            description: item.description,
+            id: row.id,
+            org_id: row.org_id,
+            setting_key: row.setting_key,
+            setting_value: this.transformSettingValue(row.setting_value),
+            description: row.description,
             category: 'modules',
             created_by: null,
-            created_at: item.created_at,
-            updated_at: item.updated_at
+            created_at: row.created_at,
+            updated_at: row.updated_at
           });
         }
       }
@@ -66,7 +78,7 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
 
-      const { error } = await supabase
+      const response = await supabase
         .from('settings')
         .upsert({
           org_id: profile.organization_id,
@@ -76,7 +88,7 @@ class ModuleSettingsService {
           description: `Module ${settingKey} activation setting`
         });
 
-      if (error) throw error;
+      if (response.error) throw response.error;
     } catch (error) {
       console.error('Error updating module setting:', error);
       throw error;
