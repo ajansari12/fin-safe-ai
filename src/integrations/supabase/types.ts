@@ -1610,6 +1610,59 @@ export type Database = {
           },
         ]
       }
+      dependency_status: {
+        Row: {
+          availability_percentage: number | null
+          created_at: string
+          dependency_id: string
+          error_rate_percentage: number | null
+          failure_reason: string | null
+          health_score: number
+          id: string
+          last_successful_check: string | null
+          monitoring_source: string | null
+          org_id: string
+          response_time_ms: number | null
+          status_timestamp: string
+        }
+        Insert: {
+          availability_percentage?: number | null
+          created_at?: string
+          dependency_id: string
+          error_rate_percentage?: number | null
+          failure_reason?: string | null
+          health_score?: number
+          id?: string
+          last_successful_check?: string | null
+          monitoring_source?: string | null
+          org_id: string
+          response_time_ms?: number | null
+          status_timestamp?: string
+        }
+        Update: {
+          availability_percentage?: number | null
+          created_at?: string
+          dependency_id?: string
+          error_rate_percentage?: number | null
+          failure_reason?: string | null
+          health_score?: number
+          id?: string
+          last_successful_check?: string | null
+          monitoring_source?: string | null
+          org_id?: string
+          response_time_ms?: number | null
+          status_timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependency_status_dependency_id_fkey"
+            columns: ["dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       failure_scenarios: {
         Row: {
           affected_functions: Json | null
@@ -2627,6 +2680,88 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      propagation_chains: {
+        Row: {
+          business_function_id: string | null
+          business_impact_description: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          failure_probability: number
+          id: string
+          impact_multiplier: number
+          last_simulated: string | null
+          mitigation_actions: string | null
+          org_id: string
+          propagation_delay_minutes: number
+          propagation_type: string
+          simulation_results: Json | null
+          source_dependency_id: string
+          target_dependency_id: string
+          updated_at: string
+        }
+        Insert: {
+          business_function_id?: string | null
+          business_impact_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          failure_probability?: number
+          id?: string
+          impact_multiplier?: number
+          last_simulated?: string | null
+          mitigation_actions?: string | null
+          org_id: string
+          propagation_delay_minutes?: number
+          propagation_type?: string
+          simulation_results?: Json | null
+          source_dependency_id: string
+          target_dependency_id: string
+          updated_at?: string
+        }
+        Update: {
+          business_function_id?: string | null
+          business_impact_description?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          failure_probability?: number
+          id?: string
+          impact_multiplier?: number
+          last_simulated?: string | null
+          mitigation_actions?: string | null
+          org_id?: string
+          propagation_delay_minutes?: number
+          propagation_type?: string
+          simulation_results?: Json | null
+          source_dependency_id?: string
+          target_dependency_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "propagation_chains_business_function_id_fkey"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propagation_chains_source_dependency_id_fkey"
+            columns: ["source_dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "propagation_chains_target_dependency_id_fkey"
+            columns: ["target_dependency_id"]
+            isOneToOne: false
+            referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recovery_contacts: {
         Row: {

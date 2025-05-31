@@ -26,7 +26,7 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data: rawData, error } = await supabase
+      const { data, error } = await supabase
         .from('settings')
         .select('*')
         .eq('org_id', profile.organization_id)
@@ -38,25 +38,17 @@ class ModuleSettingsService {
         return [];
       }
 
-      const settings: ModuleSetting[] = [];
-      
-      if (rawData) {
-        for (const item of rawData) {
-          settings.push({
-            id: item.id,
-            org_id: item.org_id,
-            setting_key: item.setting_key,
-            setting_value: this.transformSettingValue(item.setting_value),
-            description: item.description,
-            category: 'modules',
-            created_by: null,
-            created_at: item.created_at,
-            updated_at: item.updated_at
-          });
-        }
-      }
-      
-      return settings;
+      return (data || []).map(item => ({
+        id: item.id,
+        org_id: item.org_id,
+        setting_key: item.setting_key,
+        setting_value: this.transformSettingValue(item.setting_value),
+        description: item.description,
+        category: 'modules',
+        created_by: null,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
     } catch (error) {
       console.error('Error in getModuleSettings:', error);
       return [];
