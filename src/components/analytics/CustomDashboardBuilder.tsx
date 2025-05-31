@@ -1,16 +1,20 @@
 
 import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Layout, Settings, Plus, X } from "lucide-react";
+import { Layout, Settings, Plus, X, Save, Copy, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getDashboardWidgets, type DashboardWidget } from "@/services/analytics-service";
+import { customDashboardService, type CustomDashboard, type DashboardWidget } from "@/services/custom-dashboard-service";
+import { ExecutiveScorecard } from "./ExecutiveScorecard";
+import { PredictiveInsights } from "./PredictiveInsights";
 import PredictiveAnalyticsChart from "./PredictiveAnalyticsChart";
 import RiskHeatmap from "./RiskHeatmap";
 import ComplianceScorecard from "./ComplianceScorecard";
+import { useToast } from "@/hooks/use-toast";
 
 interface GridLayoutProps {
   widgets: DashboardWidget[];
@@ -20,12 +24,16 @@ interface GridLayoutProps {
 
 const GridLayout: React.FC<GridLayoutProps> = ({ widgets, userRole, onWidgetRemove }) => {
   const renderWidget = (widget: DashboardWidget) => {
-    const canView = widget.role_visibility.includes(userRole);
+    const canView = widget.roleVisibility.includes(userRole);
     
     if (!canView) return null;
 
     const widgetContent = () => {
-      switch (widget.data_source) {
+      switch (widget.dataSource) {
+        case 'risk_scorecard':
+          return <ExecutiveScorecard />;
+        case 'predictive_insights':
+          return <PredictiveInsights />;
         case 'predictive_analytics':
           return <PredictiveAnalyticsChart />;
         case 'risk_heatmap':
@@ -71,76 +79,157 @@ const GridLayout: React.FC<GridLayoutProps> = ({ widgets, userRole, onWidgetRemo
 };
 
 const CustomDashboardBuilder: React.FC = () => {
-  const { user } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<string>('analyst');
-  const [customWidgets, setCustomWidgets] = useState<DashboardWidget[]>([]);
-  const [availableWidgets, setAvailableWidgets] = useState<DashboardWidget[]>([]);
+  const { profile } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedRole, setSelectedRole] = useState<string>(profile?.role || 'analyst');
+  const [selectedDashboard, setSelectedDashboard] = useState<CustomDashboard | null>(null);
+  const [dashboardName, setDashboardName] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
 
-  const { data: defaultWidgets } = useQuery({
-    queryKey: ['dashboardWidgets', selectedRole],
-    queryFn: () => getDashboardWidgets(selectedRole)
+  const { data: dashboards = [] } = useQuery({
+    queryKey: ['customDashboards', selectedRole],
+    queryFn: () => customDashboardService.getUserDashboards(selectedRole),
+    enabled: !!profile
   });
 
-  useEffect(() => {
-    if (defaultWidgets) {
-      setCustomWidgets(defaultWidgets);
-      // Set available widgets that aren't currently displayed
-      const allPossibleWidgets: DashboardWidget[] = [
-        {
-          id: 'predictive-analytics',
-          type: 'chart',
-          title: 'Predictive Analytics',
-          data_source: 'predictive_analytics',
-          config: {},
-          position: { x: 0, y: 0, w: 6, h: 4 },
-          role_visibility: ['admin', 'manager', 'analyst']
-        },
-        {
-          id: 'risk-heatmap',
-          type: 'heatmap',
-          title: 'Risk Heatmap',
-          data_source: 'risk_heatmap',
-          config: {},
-          position: { x: 6, y: 0, w: 6, h: 4 },
-          role_visibility: ['admin', 'manager']
-        },
-        {
-          id: 'compliance-scorecard',
-          type: 'metric',
-          title: 'Compliance Scorecard',
-          data_source: 'compliance_scorecard',
-          config: {},
-          position: { x: 0, y: 4, w: 6, h: 4 },
-          role_visibility: ['admin', 'manager']
-        }
-      ];
-      
-      const currentWidgetIds = defaultWidgets.map(w => w.id);
-      const available = allPossibleWidgets.filter(w => 
-        !currentWidgetIds.includes(w.id) && 
-        w.role_visibility.includes(selectedRole)
-      );
-      setAvailableWidgets(available);
-    }
-  }, [defaultWidgets, selectedRole]);
+  const { data: defaultWidgets = [] } = useQuery({
+    queryKey: ['defaultWidgets', selectedRole],
+    queryFn: () => customDashboardService.getDefaultWidgetsByRole(selectedRole)
+  });
 
-  const handleAddWidget = (widgetId: string) => {
-    const widget = availableWidgets.find(w => w.id === widgetId);
-    if (widget) {
-      setCustomWidgets(prev => [...prev, widget]);
-      setAvailableWidgets(prev => prev.filter(w => w.id !== widgetId));
+  const createMutation = useMutation({
+    mutationFn: (dashboard: Partial<CustomDashboard>) => 
+      customDashboardService.createDashboard(dashboard),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customDashboards'] });
+      toast({ title: "Dashboard created successfully" });
+      setIsEditing(false);
+      setDashboardName('');
     }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<CustomDashboard> }) =>
+      customDashboardService.updateDashboard(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customDashboards'] });
+      toast({ title: "Dashboard updated successfully" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => customDashboardService.deleteDashboard(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customDashboards'] });
+      toast({ title: "Dashboard deleted successfully" });
+      if (selectedDashboard) {
+        setSelectedDashboard(null);
+      }
+    }
+  });
+
+  const cloneMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string; name: string }) =>
+      customDashboardService.cloneDashboard(id, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customDashboards'] });
+      toast({ title: "Dashboard cloned successfully" });
+    }
+  });
+
+  const availableWidgets: DashboardWidget[] = [
+    {
+      id: 'risk-scorecard',
+      type: 'scorecard',
+      title: 'Executive Risk Scorecard',
+      dataSource: 'risk_scorecard',
+      config: {},
+      position: { x: 0, y: 0, w: 12, h: 6 },
+      roleVisibility: ['admin', 'executive']
+    },
+    {
+      id: 'predictive-insights',
+      type: 'chart',
+      title: 'Predictive Insights',
+      dataSource: 'predictive_insights',
+      config: {},
+      position: { x: 0, y: 6, w: 12, h: 6 },
+      roleVisibility: ['admin', 'manager', 'analyst']
+    },
+    {
+      id: 'predictive-analytics',
+      type: 'chart',
+      title: 'Predictive Analytics',
+      dataSource: 'predictive_analytics',
+      config: {},
+      position: { x: 0, y: 0, w: 6, h: 4 },
+      roleVisibility: ['admin', 'manager', 'analyst']
+    },
+    {
+      id: 'risk-heatmap',
+      type: 'heatmap',
+      title: 'Risk Heatmap',
+      dataSource: 'risk_heatmap',
+      config: {},
+      position: { x: 6, y: 0, w: 6, h: 4 },
+      roleVisibility: ['admin', 'manager']
+    },
+    {
+      id: 'compliance-scorecard',
+      type: 'metric',
+      title: 'Compliance Scorecard',
+      dataSource: 'compliance_scorecard',
+      config: {},
+      position: { x: 0, y: 4, w: 6, h: 4 },
+      roleVisibility: ['admin', 'manager']
+    }
+  ];
+
+  useEffect(() => {
+    if (dashboards.length > 0 && !selectedDashboard) {
+      setSelectedDashboard(dashboards[0]);
+    }
+  }, [dashboards, selectedDashboard]);
+
+  const handleAddWidget = (widget: DashboardWidget) => {
+    if (!selectedDashboard) return;
+    
+    const updatedWidgets = [...selectedDashboard.widgets, widget];
+    const updates = { ...selectedDashboard, widgets: updatedWidgets };
+    
+    updateMutation.mutate({ id: selectedDashboard.id, updates });
+    setSelectedDashboard(updates);
   };
 
   const handleRemoveWidget = (widgetId: string) => {
-    const widget = customWidgets.find(w => w.id === widgetId);
-    if (widget) {
-      setCustomWidgets(prev => prev.filter(w => w.id !== widgetId));
-      if (widget.role_visibility.includes(selectedRole)) {
-        setAvailableWidgets(prev => [...prev, widget]);
-      }
-    }
+    if (!selectedDashboard) return;
+    
+    const updatedWidgets = selectedDashboard.widgets.filter(w => w.id !== widgetId);
+    const updates = { ...selectedDashboard, widgets: updatedWidgets };
+    
+    updateMutation.mutate({ id: selectedDashboard.id, updates });
+    setSelectedDashboard(updates);
   };
+
+  const handleCreateDashboard = () => {
+    if (!dashboardName.trim()) return;
+    
+    createMutation.mutate({
+      name: dashboardName,
+      type: 'standard',
+      widgets: defaultWidgets,
+      layoutConfig: {},
+      isShared: false,
+      sharedWith: []
+    });
+  };
+
+  const getCurrentWidgetIds = () => selectedDashboard?.widgets.map(w => w.id) || [];
+  const getAvailableWidgets = () => availableWidgets.filter(w => 
+    !getCurrentWidgetIds().includes(w.id) && 
+    w.roleVisibility.includes(selectedRole)
+  );
 
   return (
     <div className="space-y-6">
@@ -151,7 +240,7 @@ const CustomDashboardBuilder: React.FC = () => {
             Custom Dashboard Builder
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Customize your analytics dashboard by adding or removing widgets
+            Create and customize analytics dashboards with drag-and-drop widgets
           </p>
         </CardHeader>
         <CardContent>
@@ -166,50 +255,127 @@ const CustomDashboardBuilder: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="executive">Executive</SelectItem>
                 <SelectItem value="manager">Manager</SelectItem>
                 <SelectItem value="analyst">Analyst</SelectItem>
               </SelectContent>
             </Select>
-            
-            {availableWidgets.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Add widget:</span>
-                {availableWidgets.map(widget => (
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Dashboard:</span>
+              <Select 
+                value={selectedDashboard?.id || ''} 
+                onValueChange={(id) => setSelectedDashboard(dashboards.find(d => d.id === id) || null)}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select dashboard" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dashboards.map(dashboard => (
+                    <SelectItem key={dashboard.id} value={dashboard.id}>
+                      {dashboard.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New
+              </Button>
+              
+              {selectedDashboard && (
+                <>
                   <Button
-                    key={widget.id}
                     variant="outline"
                     size="sm"
-                    onClick={() => handleAddWidget(widget.id)}
-                    className="flex items-center gap-1"
+                    onClick={() => cloneMutation.mutate({ 
+                      id: selectedDashboard.id, 
+                      name: `${selectedDashboard.name} Copy` 
+                    })}
                   >
-                    <Plus className="h-3 w-3" />
-                    {widget.title}
+                    <Copy className="h-4 w-4" />
                   </Button>
-                ))}
-              </div>
-            )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => deleteMutation.mutate(selectedDashboard.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm text-muted-foreground">Current widgets:</span>
-            {customWidgets.map(widget => (
-              <Badge key={widget.id} variant="secondary">
-                {widget.title}
-              </Badge>
-            ))}
-          </div>
+          {isEditing && (
+            <div className="flex items-center gap-2 mb-4 p-4 bg-gray-50 rounded">
+              <Input
+                placeholder="Dashboard name"
+                value={dashboardName}
+                onChange={(e) => setDashboardName(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleCreateDashboard} disabled={!dashboardName.trim()}>
+                <Save className="h-4 w-4 mr-1" />
+                Create
+              </Button>
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+            </div>
+          )}
+
+          {selectedDashboard && getAvailableWidgets().length > 0 && (
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-sm font-medium">Add widget:</span>
+              {getAvailableWidgets().map(widget => (
+                <Button
+                  key={widget.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddWidget(widget)}
+                  className="flex items-center gap-1"
+                >
+                  <Plus className="h-3 w-3" />
+                  {widget.title}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {selectedDashboard && (
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-sm text-muted-foreground">Current widgets:</span>
+              {selectedDashboard.widgets.map(widget => (
+                <Badge key={widget.id} variant="secondary">
+                  {widget.title}
+                </Badge>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Dashboard Preview */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Dashboard Preview ({selectedRole})</h3>
-        <GridLayout 
-          widgets={customWidgets}
-          userRole={selectedRole}
-          onWidgetRemove={handleRemoveWidget}
-        />
-      </div>
+      {selectedDashboard && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4">
+            {selectedDashboard.name} ({selectedRole})
+          </h3>
+          <GridLayout 
+            widgets={selectedDashboard.widgets}
+            userRole={selectedRole}
+            onWidgetRemove={handleRemoveWidget}
+          />
+        </div>
+      )}
     </div>
   );
 };

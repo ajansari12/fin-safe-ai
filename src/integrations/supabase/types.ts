@@ -60,6 +60,51 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_insights: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          created_by: string | null
+          forecast_period: string | null
+          generated_at: string
+          id: string
+          insight_data: Json
+          insight_type: string
+          org_id: string
+          tags: string[] | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          forecast_period?: string | null
+          generated_at?: string
+          id?: string
+          insight_data?: Json
+          insight_type: string
+          org_id: string
+          tags?: string[] | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          forecast_period?: string | null
+          generated_at?: string
+          id?: string
+          insight_data?: Json
+          insight_type?: string
+          org_id?: string
+          tags?: string[] | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -1163,6 +1208,54 @@ export type Database = {
           title?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      custom_dashboards: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dashboard_name: string
+          dashboard_type: string
+          id: string
+          is_default: boolean | null
+          is_shared: boolean | null
+          layout_config: Json
+          org_id: string
+          shared_with: string[] | null
+          updated_at: string
+          user_id: string | null
+          widget_config: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dashboard_name: string
+          dashboard_type?: string
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          layout_config?: Json
+          org_id: string
+          shared_with?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+          widget_config?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dashboard_name?: string
+          dashboard_type?: string
+          id?: string
+          is_default?: boolean | null
+          is_shared?: boolean | null
+          layout_config?: Json
+          org_id?: string
+          shared_with?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+          widget_config?: Json
         }
         Relationships: []
       }

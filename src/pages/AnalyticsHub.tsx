@@ -2,10 +2,10 @@
 import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import AnalyticsHub from "@/components/analytics/AnalyticsHub";
-import { useAIAssistant } from "@/components/ai-assistant";
+import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 const AnalyticsHubPage = () => {
-  const { setCurrentModule } = useAIAssistant();
+  const { setCurrentModule } = useEnhancedAIAssistant();
   
   useEffect(() => {
     setCurrentModule("analytics");
