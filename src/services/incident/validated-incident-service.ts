@@ -2,7 +2,57 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 import { incidentSchema, IncidentFormData, validateWithSchema } from "@/lib/validations";
-import { Incident, CreateIncidentData, UpdateIncidentData } from "./types";
+
+export interface Incident {
+  id: string;
+  org_id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  severity: string;
+  status: string;
+  impact_rating?: number;
+  business_function_id?: string;
+  reported_by?: string;
+  assigned_to?: string;
+  reported_at: string;
+  resolved_at?: string;
+  created_at: string;
+  updated_at: string;
+  max_response_time_hours?: number;
+  max_resolution_time_hours?: number;
+  first_response_at?: string;
+  escalated_at?: string;
+  escalation_level: number;
+  assigned_level: string;
+}
+
+export interface CreateIncidentData {
+  title: string;
+  description?: string;
+  severity: string;
+  category?: string;
+  business_function_id?: string;
+  reported_by?: string;
+  assigned_to?: string;
+  status?: string;
+  impact_rating?: number;
+  max_response_time_hours?: number;
+  max_resolution_time_hours?: number;
+}
+
+export interface UpdateIncidentData {
+  title?: string;
+  description?: string;
+  severity?: string;
+  category?: string;
+  business_function_id?: string;
+  assigned_to?: string;
+  status?: string;
+  impact_rating?: number;
+  max_response_time_hours?: number;
+  max_resolution_time_hours?: number;
+}
 
 export class ValidatedIncidentService {
   async createIncident(data: CreateIncidentData): Promise<Incident> {
@@ -26,7 +76,7 @@ export class ValidatedIncidentService {
 
     const { data: incident, error } = await supabase
       .from('incident_logs')
-      .insert([incidentData])
+      .insert(incidentData)
       .select()
       .single();
 

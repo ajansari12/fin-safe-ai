@@ -49,7 +49,7 @@ export class ValidatedKRIService {
 
     const { data: kri, error } = await supabase
       .from('kri_definitions')
-      .insert([kriData])
+      .insert(kriData)
       .select()
       .single();
 
@@ -124,7 +124,7 @@ export class ValidatedKRIService {
 
     const { data: kriLog, error } = await supabase
       .from('kri_logs')
-      .insert([logData])
+      .insert(logData)
       .select()
       .single();
 

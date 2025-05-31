@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CreateIncidentData } from "@/services/incident-service";
+import { CreateIncidentData } from "@/services/incident/validated-incident-service";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon } from "lucide-react";
@@ -112,7 +111,21 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
 
   const handleFormSubmit = async (data: IncidentFormData) => {
     try {
-      await onSubmit(data);
+      // Ensure required fields are present for CreateIncidentData
+      const createData: CreateIncidentData = {
+        title: data.title!,
+        description: data.description,
+        severity: data.severity!,
+        category: data.category,
+        business_function_id: data.business_function_id,
+        assigned_to: data.assigned_to,
+        status: data.status,
+        impact_rating: data.impact_rating,
+        max_response_time_hours: data.max_response_time_hours,
+        max_resolution_time_hours: data.max_resolution_time_hours,
+      };
+
+      await onSubmit(createData);
       form.reset();
       toast({
         title: "Incident Created",

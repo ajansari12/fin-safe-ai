@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { enhancedAdminService, ModuleSetting } from "@/services/enhanced-admin-service";
+import { moduleSettingsService, ModuleSetting } from "@/services/admin/module-settings-service";
 
 const ModuleToggleManager: React.FC = () => {
   const [moduleSettings, setModuleSettings] = useState<ModuleSetting[]>([]);
@@ -19,7 +19,7 @@ const ModuleToggleManager: React.FC = () => {
   const loadModuleSettings = async () => {
     try {
       setLoading(true);
-      const data = await enhancedAdminService.getModuleSettings();
+      const data = await moduleSettingsService.getModuleSettings();
       setModuleSettings(data);
     } catch (error) {
       console.error('Error loading module settings:', error);
@@ -31,7 +31,7 @@ const ModuleToggleManager: React.FC = () => {
 
   const handleModuleToggle = async (moduleKey: string, enabled: boolean) => {
     try {
-      await enhancedAdminService.updateModuleSetting(moduleKey, enabled);
+      await moduleSettingsService.updateModuleSetting(moduleKey, enabled);
       toast({ 
         title: "Success", 
         description: `Module ${moduleKey} ${enabled ? 'enabled' : 'disabled'}` 
@@ -48,7 +48,7 @@ const ModuleToggleManager: React.FC = () => {
     return setting?.setting_value?.enabled || false;
   };
 
-  const availableModules = enhancedAdminService.getAvailableModules();
+  const availableModules = moduleSettingsService.getAvailableModules();
 
   if (loading) {
     return <div className="animate-pulse">Loading module settings...</div>;

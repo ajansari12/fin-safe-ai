@@ -11,7 +11,7 @@ import IncidentDetailDialog from "@/components/incident/IncidentDetailDialog";
 import MobileIncidentLog from "@/components/incident/MobileIncidentLog";
 import { useIncidentSLAChecker } from "@/hooks/useIncidentSLAChecker";
 import { useIncidentOperations } from "@/hooks/useIncidentOperations";
-import { getIncidents, Incident } from "@/services/incident";
+import { validatedIncidentService, Incident } from "@/services/incident/validated-incident-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const IncidentLog = () => {
@@ -22,16 +22,15 @@ const IncidentLog = () => {
 
   // Use custom hooks
   useIncidentSLAChecker();
-  const { createMutation, handleCreateIncident } = useIncidentOperations();
 
-  // Fetch incidents
+  // Fetch incidents using validated service
   const { data: incidents = [], isLoading } = useQuery({
     queryKey: ['incidents'],
-    queryFn: getIncidents
+    queryFn: () => validatedIncidentService.getIncidents()
   });
 
-  const handleCreateIncidentWithForm = async (data: any) => {
-    await handleCreateIncident(data);
+  const handleCreateIncident = async (data: any) => {
+    await validatedIncidentService.createIncident(data);
     setShowForm(false);
   };
 
@@ -60,8 +59,8 @@ const IncidentLog = () => {
 
         {showForm && (
           <IncidentForm 
-            onSubmit={handleCreateIncidentWithForm}
-            isSubmitting={createMutation.isPending}
+            onSubmit={handleCreateIncident}
+            isSubmitting={false}
           />
         )}
 

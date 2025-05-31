@@ -26,7 +26,7 @@ class DataRetentionService {
             id: setting.id,
             org_id: setting.org_id,
             setting_key: setting.setting_key,
-            setting_value: setting.setting_value,
+            setting_value: this.transformSettingValue(setting.setting_value),
             description: setting.description,
             category: 'data_retention',
             created_by: null,
@@ -69,6 +69,13 @@ class DataRetentionService {
       console.error('Error updating data retention setting:', error);
       throw error;
     }
+  }
+
+  private transformSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any } {
+    if (typeof value === 'object' && value !== null) {
+      return value as { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any };
+    }
+    return { retention_days: 365, auto_delete: false };
   }
 }
 

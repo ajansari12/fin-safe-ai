@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { enhancedAdminService, ModuleSetting } from "@/services/enhanced-admin-service";
+import { dataRetentionService } from "@/services/admin/data-retention-service";
+import { ModuleSetting } from "@/services/admin/module-settings-service";
 
 const DataRetentionSettings: React.FC = () => {
   const [retentionSettings, setRetentionSettings] = useState<ModuleSetting[]>([]);
@@ -37,7 +38,7 @@ const DataRetentionSettings: React.FC = () => {
   const loadRetentionSettings = async () => {
     try {
       setLoading(true);
-      const data = await enhancedAdminService.getDataRetentionSettings();
+      const data = await dataRetentionService.getDataRetentionSettings();
       setRetentionSettings(data);
     } catch (error) {
       console.error('Error loading retention settings:', error);
@@ -54,7 +55,7 @@ const DataRetentionSettings: React.FC = () => {
       const retentionDays = parseInt(formData.get('retention_days') as string);
       const autoDelete = formData.get('auto_delete') === 'on';
 
-      await enhancedAdminService.updateDataRetentionSetting(
+      await dataRetentionService.updateDataRetentionSetting(
         selectedModule,
         retentionDays,
         autoDelete

@@ -6,7 +6,7 @@ export interface ModuleSetting {
   id: string;
   org_id: string;
   setting_key: string;
-  setting_value: boolean | Record<string, any>;
+  setting_value: { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any };
   description: string | null;
   category: string;
   created_by: string | null;
@@ -33,7 +33,7 @@ class ModuleSettingsService {
         id: setting.id,
         org_id: setting.org_id,
         setting_key: setting.setting_key,
-        setting_value: setting.setting_value as boolean | Record<string, any>,
+        setting_value: this.transformSettingValue(setting.setting_value),
         description: setting.description,
         category: 'modules',
         created_by: null,
@@ -66,6 +66,16 @@ class ModuleSettingsService {
       console.error('Error updating module setting:', error);
       throw error;
     }
+  }
+
+  private transformSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any } {
+    if (typeof value === 'object' && value !== null) {
+      return value as { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any };
+    }
+    if (typeof value === 'boolean') {
+      return { enabled: value };
+    }
+    return { enabled: false };
   }
 
   getAvailableModules(): Array<{ key: string; name: string; description: string }> {
