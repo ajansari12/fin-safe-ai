@@ -6,11 +6,7 @@ export interface ModuleSetting {
   id: string;
   org_id: string;
   setting_key: string;
-  setting_value: {
-    enabled?: boolean;
-    retention_days?: number;
-    auto_delete?: boolean;
-  };
+  setting_value: SettingValue;
   description: string | null;
   category: string;
   created_by: string | null;
