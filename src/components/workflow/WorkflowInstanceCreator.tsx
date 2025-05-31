@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Save, X } from "lucide-react";
-import { format } from "date-fns";
+import { CalendarIcon, Save, X, User, Clock } from "lucide-react";
+import { format, addHours } from "date-fns";
 import { WorkflowTemplate, WorkflowInstance } from "@/services/workflow-service";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface WorkflowInstanceCreatorProps {
   template: WorkflowTemplate;
@@ -20,67 +21,123 @@ interface WorkflowInstanceCreatorProps {
   onCancel: () => void;
 }
 
-const users = [
-  "John Smith", "Sarah Johnson", "Mike Davis", "Emily Brown", "David Wilson"
-];
+interface StepAssignment {
+  step_number: number;
+  step_name: string;
+  assigned_to?: string;
+  assigned_to_name?: string;
+  due_date?: Date;
+  sla_hours?: number;
+}
 
 const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
   template,
   onSave,
   onCancel
 }) => {
-  const [instance, setInstance] = useState({
-    name: `${template.name} - ${format(new Date(), "MMM dd, yyyy")}`,
-    owner_name: "",
-    owner_id: "",
-    status: 'draft' as const
-  });
+  const { toast } = useToast();
+  const [instanceName, setInstanceName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [stepAssignments, setStepAssignments] = useState<StepAssignment[]>([]);
+  const [users, setUsers] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [loading, setLoading] = useState(false);
 
-  const [stepAssignments, setStepAssignments] = useState<Record<string, { assigned_to?: string; assigned_to_name?: string; due_date?: Date }>>({});
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  useEffect(() => {
+    // Initialize step assignments from template
+    const assignments: StepAssignment[] = template.steps.map((step, index) => ({
+      step_number: step.step_number || index + 1,
+      step_name: step.step_name,
+      sla_hours: step.sla_hours || 24,
+      due_date: addHours(startDate, (step.sla_hours || 24) + (index * 24))
+    }));
+    setStepAssignments(assignments);
+  }, [template.steps, startDate]);
 
-  const validateInstance = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!instance.name.trim()) {
-      newErrors.name = "Instance name is required";
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .not('full_name', 'is', null)
+        .order('full_name');
+
+      if (error) {
+        console.error('Error loading users:', error);
+      } else {
+        setUsers(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
     }
-    
-    if (!instance.owner_name) {
-      newErrors.owner = "Owner is required";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (validateInstance()) {
-      const workflowInstance: Omit<WorkflowInstance, 'id' | 'created_at' | 'updated_at'> = {
-        template_id: template.id!,
-        org_id: template.org_id,
-        name: instance.name,
-        status: instance.status,
-        owner_id: instance.owner_id,
-        owner_name: instance.owner_name,
-        created_by: instance.owner_id
-      };
+  const updateStepAssignment = (stepNumber: number, updates: Partial<StepAssignment>) => {
+    setStepAssignments(prev => 
+      prev.map(assignment => 
+        assignment.step_number === stepNumber 
+          ? { ...assignment, ...updates }
+          : assignment
+      )
+    );
+  };
 
-      onSave(workflowInstance);
-    } else {
+  const handleUserAssignment = (stepNumber: number, userId: string) => {
+    const user = users.find(u => u.id === userId);
+    updateStepAssignment(stepNumber, {
+      assigned_to: userId,
+      assigned_to_name: user?.full_name || ""
+    });
+  };
+
+  const handleSave = async () => {
+    if (!instanceName.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please fix the errors before creating the workflow instance",
+        description: "Instance name is required",
         variant: "destructive"
       });
+      return;
     }
-  };
 
-  const updateStepAssignment = (stepNumber: number, updates: Partial<{ assigned_to: string; assigned_to_name: string; due_date: Date }>) => {
-    setStepAssignments(prev => ({
-      ...prev,
-      [stepNumber]: { ...prev[stepNumber], ...updates }
-    }));
+    setLoading(true);
+    try {
+      // Get current user's org_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id, id, full_name')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.organization_id) {
+        throw new Error('User organization not found');
+      }
+
+      const instanceData: Omit<WorkflowInstance, 'id' | 'created_at' | 'updated_at'> = {
+        template_id: template.id,
+        org_id: profile.organization_id,
+        name: instanceName,
+        status: 'draft',
+        owner_id: profile.id,
+        owner_name: ownerName || profile.full_name || '',
+        created_by: profile.id
+      };
+
+      onSave(instanceData);
+    } catch (error) {
+      console.error('Error creating instance:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create workflow instance",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,7 +146,7 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
         <div>
           <h2 className="text-2xl font-bold">Create Workflow Instance</h2>
           <p className="text-muted-foreground">
-            Create a new workflow instance from the "{template.name}" template
+            Create a new instance from: {template.name}
           </p>
         </div>
         <div className="flex gap-2">
@@ -97,9 +154,9 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
             <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
-          <Button onClick={handleSave}>
+          <Button onClick={handleSave} disabled={loading}>
             <Save className="h-4 w-4 mr-2" />
-            Create Instance
+            {loading ? 'Creating...' : 'Create Instance'}
           </Button>
         </div>
       </div>
@@ -108,7 +165,7 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
         <CardHeader>
           <CardTitle>Instance Details</CardTitle>
           <CardDescription>
-            Configure the basic information for this workflow instance
+            Configure the details for this workflow instance
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -117,142 +174,136 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
               <Label htmlFor="instanceName">Instance Name *</Label>
               <Input
                 id="instanceName"
-                value={instance.name}
-                onChange={(e) => setInstance(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter instance name"
-                className={errors.name ? "border-red-500" : ""}
+                value={instanceName}
+                onChange={(e) => setInstanceName(e.target.value)}
+                placeholder="e.g., Q4 2024 Policy Review"
               />
-              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="owner">Workflow Owner *</Label>
-              <Select
-                value={instance.owner_name}
-                onValueChange={(value) => setInstance(prev => ({ 
-                  ...prev, 
-                  owner_name: value,
-                  owner_id: `user_${value.toLowerCase().replace(' ', '_')}`
-                }))}
-              >
-                <SelectTrigger className={errors.owner ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Select owner" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user} value={user}>
-                      {user}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.owner && <p className="text-sm text-red-500">{errors.owner}</p>}
+              <Label htmlFor="ownerName">Workflow Owner</Label>
+              <Input
+                id="ownerName"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="Owner name (optional)"
+              />
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <Badge variant="outline">
-              Template: {template.name}
-            </Badge>
-            <Badge variant="secondary">
-              Module: {template.module}
-            </Badge>
-            <Badge variant="outline">
-              {template.steps?.length || 0} Steps
-            </Badge>
+
+          <div className="space-y-2">
+            <Label>Start Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={(date) => date && setStartDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Step Assignments</CardTitle>
+          <CardTitle>Step Assignments & Schedule</CardTitle>
           <CardDescription>
-            Assign team members and due dates for each workflow step
+            Assign users to each step and configure due dates
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {template.steps?.map((step, index) => (
-              <Card key={step.step_number || index} className="border-l-4 border-l-blue-500">
+            {stepAssignments.map((assignment) => (
+              <Card key={assignment.step_number} className="border">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h4 className="font-medium">
-                        Step {step.step_number}: {step.step_name}
-                      </h4>
-                      {step.step_description && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {step.step_description}
-                        </p>
-                      )}
-                    </div>
+                  <div className="flex items-start gap-4">
                     <Badge variant="outline">
-                      Role: {step.assigned_role}
+                      Step {assignment.step_number}
                     </Badge>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Assign To</Label>
-                      <Select
-                        value={stepAssignments[step.step_number]?.assigned_to_name || ""}
-                        onValueChange={(value) => updateStepAssignment(step.step_number, { 
-                          assigned_to_name: value,
-                          assigned_to: `user_${value.toLowerCase().replace(' ', '_')}`
-                        })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select assignee" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {users.map((user) => (
-                            <SelectItem key={user} value={user}>
-                              {user}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
                     
-                    <div className="space-y-2">
-                      <Label>Due Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
+                    <div className="flex-1 space-y-4">
+                      <div>
+                        <h4 className="font-medium">{assignment.step_name}</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            Assigned To
+                          </Label>
+                          <Select
+                            value={assignment.assigned_to || ""}
+                            onValueChange={(value) => handleUserAssignment(assignment.step_number, value)}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {stepAssignments[step.step_number]?.due_date ? (
-                              format(stepAssignments[step.step_number].due_date!, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={stepAssignments[step.step_number]?.due_date}
-                            onSelect={(date) => updateStepAssignment(step.step_number, { due_date: date })}
-                            initialFocus
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select user" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {users.map((user) => (
+                                <SelectItem key={user.id} value={user.id}>
+                                  {user.full_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            SLA Hours
+                          </Label>
+                          <Input
+                            type="number"
+                            value={assignment.sla_hours || ""}
+                            onChange={(e) => updateStepAssignment(assignment.step_number, {
+                              sla_hours: e.target.value ? parseInt(e.target.value) : undefined
+                            })}
+                            placeholder="24"
+                            min="1"
                           />
-                        </PopoverContent>
-                      </Popover>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label>Due Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {assignment.due_date ? 
+                                  format(assignment.due_date, "PPP") : 
+                                  <span>Pick a date</span>
+                                }
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={assignment.due_date}
+                                onSelect={(date) => updateStepAssignment(assignment.step_number, {
+                                  due_date: date
+                                })}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  
-                  {step.estimated_duration_hours && (
-                    <div className="mt-3">
-                      <Badge variant="secondary">
-                        Estimated: {step.estimated_duration_hours}h
-                      </Badge>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
-            ))} 
+            ))}
           </div>
         </CardContent>
       </Card>

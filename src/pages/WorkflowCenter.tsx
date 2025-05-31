@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
@@ -16,6 +15,8 @@ import WorkflowTemplateBuilder from "@/components/workflow/WorkflowTemplateBuild
 import WorkflowTemplatesList from "@/components/workflow/WorkflowTemplatesList";
 import WorkflowInstanceCreator from "@/components/workflow/WorkflowInstanceCreator";
 import WorkflowProgressTracker from "@/components/workflow/WorkflowProgressTracker";
+import DragDropTemplateBuilder from "@/components/workflow/DragDropTemplateBuilder";
+import WorkflowHistory from "@/components/workflow/WorkflowHistory";
 
 const WorkflowCenter = () => {
   const { user, profile } = useAuth();
@@ -403,7 +404,7 @@ const WorkflowCenter = () => {
         <WorkflowStats workflows={filteredWorkflows} />
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="instances" className="flex items-center gap-2">
               <List className="h-4 w-4" />
               Instances
@@ -414,6 +415,7 @@ const WorkflowCenter = () => {
             </TabsTrigger>
             <TabsTrigger value="in_progress">In Progress</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Analytics
@@ -464,6 +466,17 @@ const WorkflowCenter = () => {
             />
           </TabsContent>
 
+          <TabsContent value="history" className="space-y-6">
+            <WorkflowHistory
+              workflows={workflows}
+              onViewWorkflow={(workflow) => {
+                setSelectedWorkflow(workflow);
+                setIsProgressTrackerOpen(true);
+              }}
+              loading={loading}
+            />
+          </TabsContent>
+
           <TabsContent value="analytics" className="space-y-6">
             <Card>
               <CardHeader>
@@ -498,7 +511,7 @@ const WorkflowCenter = () => {
           </Card>
         )}
 
-        {/* Template Builder Dialog */}
+        {/* Template Builder Dialog - Updated to use DragDropTemplateBuilder */}
         <Dialog open={isTemplateBuilderOpen} onOpenChange={setIsTemplateBuilderOpen}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -506,11 +519,11 @@ const WorkflowCenter = () => {
                 {editingTemplate ? 'Edit Workflow Template' : 'Create Workflow Template'}
               </DialogTitle>
               <DialogDescription>
-                Design reusable workflow templates for consistent process execution across modules.
+                Design reusable workflow templates with drag & drop functionality for consistent process execution.
               </DialogDescription>
             </DialogHeader>
             
-            <WorkflowTemplateBuilder
+            <DragDropTemplateBuilder
               template={editingTemplate || undefined}
               onSave={handleSaveTemplate}
               onCancel={() => {
