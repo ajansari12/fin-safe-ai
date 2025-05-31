@@ -155,15 +155,46 @@ export const dependencyHealthService = {
         .from('propagation_chains')
         .select(`
           *,
-          source_dependency:source_dependency_id(dependency_name, criticality),
-          target_dependency:target_dependency_id(dependency_name, criticality),
-          business_functions:business_function_id(name)
+          source_dependency:dependencies!source_dependency_id(dependency_name, criticality),
+          target_dependency:dependencies!target_dependency_id(dependency_name, criticality),
+          business_functions(name)
         `)
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(item => ({
+        id: item.id,
+        org_id: item.org_id,
+        source_dependency_id: item.source_dependency_id,
+        target_dependency_id: item.target_dependency_id,
+        business_function_id: item.business_function_id,
+        propagation_type: item.propagation_type,
+        propagation_delay_minutes: item.propagation_delay_minutes,
+        impact_multiplier: item.impact_multiplier,
+        failure_probability: item.failure_probability,
+        business_impact_description: item.business_impact_description,
+        mitigation_actions: item.mitigation_actions,
+        last_simulated: item.last_simulated,
+        simulation_results: item.simulation_results || {},
+        created_by: item.created_by,
+        created_by_name: item.created_by_name,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        source_dependency: Array.isArray(item.source_dependency) && item.source_dependency.length > 0 
+          ? item.source_dependency[0] 
+          : undefined,
+        target_dependency: Array.isArray(item.target_dependency) && item.target_dependency.length > 0 
+          ? item.target_dependency[0] 
+          : undefined,
+        business_functions: Array.isArray(item.business_functions) && item.business_functions.length > 0 
+          ? item.business_functions[0] 
+          : undefined
+      }));
+
+      return transformedData;
     } catch (error) {
       console.error('Error fetching propagation chains:', error);
       return [];
@@ -211,9 +242,9 @@ export const dependencyHealthService = {
         .from('propagation_chains')
         .select(`
           *,
-          source_dependency:source_dependency_id(dependency_name, criticality),
-          target_dependency:target_dependency_id(dependency_name, criticality),
-          business_functions:business_function_id(name)
+          source_dependency:dependencies!source_dependency_id(dependency_name, criticality),
+          target_dependency:dependencies!target_dependency_id(dependency_name, criticality),
+          business_functions(name)
         `)
         .eq('org_id', profile.organization_id)
         .eq('source_dependency_id', sourceDependencyId);
