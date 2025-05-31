@@ -7,18 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Play, BarChart3 } from "lucide-react";
+import { Plus, Play, BarChart3, FileTemplate } from "lucide-react";
 import { createScenarioTest, updateScenarioTest, deleteScenarioTest, ScenarioTest } from "@/services/scenario-testing-service";
-import ScenarioBuilder from "@/components/scenario-testing/ScenarioBuilder";
+import EnhancedScenarioBuilder from "@/components/scenario-testing/EnhancedScenarioBuilder";
 import ScenarioTestsList from "@/components/scenario-testing/ScenarioTestsList";
 import ScenarioAnalyticsDashboard from "@/components/scenario-testing/ScenarioAnalyticsDashboard";
 import GuidedTestExecution from "@/components/scenario-testing/GuidedTestExecution";
+import ScenarioTemplateLibrary from "@/components/scenario-testing/ScenarioTemplateLibrary";
 
 const ScenarioTesting = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [isExecutionOpen, setIsExecutionOpen] = useState(false);
+  const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
   const [editingScenario, setEditingScenario] = useState<ScenarioTest | null>(null);
   const [executingScenario, setExecutingScenario] = useState<ScenarioTest | null>(null);
   const [activeTab, setActiveTab] = useState("tests");
@@ -148,16 +150,25 @@ const ScenarioTesting = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Scenario Testing</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Enhanced Scenario Testing</h1>
             <p className="text-muted-foreground">
-              Design, execute, and analyze scenario tests to evaluate operational resilience.
+              Design, execute, and analyze scenario tests with AI assistance and template library.
             </p>
           </div>
           
-          <Button onClick={startNewScenario}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Scenario Test
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setIsTemplateLibraryOpen(true)}
+            >
+              <FileTemplate className="h-4 w-4 mr-2" />
+              Template Library
+            </Button>
+            <Button onClick={startNewScenario}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Scenario Test
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -186,7 +197,7 @@ const ScenarioTesting = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Scenario Builder Dialog */}
+        {/* Enhanced Scenario Builder Dialog */}
         <Dialog open={isBuilderOpen} onOpenChange={setIsBuilderOpen}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -194,15 +205,34 @@ const ScenarioTesting = () => {
                 {editingScenario ? 'Edit Scenario Test' : 'Create New Scenario Test'}
               </DialogTitle>
               <DialogDescription>
-                Use the step-by-step builder to create comprehensive scenario tests.
+                Use templates, AI generation, or manual creation to build comprehensive scenario tests.
               </DialogDescription>
             </DialogHeader>
             
-            <ScenarioBuilder
+            <EnhancedScenarioBuilder
               scenario={editingScenario || undefined}
               onSave={handleSave}
               onComplete={handleComplete}
               onCancel={closeBuilder}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Template Library Dialog */}
+        <Dialog open={isTemplateLibraryOpen} onOpenChange={setIsTemplateLibraryOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Scenario Template Library</DialogTitle>
+              <DialogDescription>
+                Browse and manage scenario templates for quick test creation.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <ScenarioTemplateLibrary
+              onUseTemplate={(template) => {
+                setIsTemplateLibraryOpen(false);
+                // Handle template usage - you can implement this based on needs
+              }}
             />
           </DialogContent>
         </Dialog>
