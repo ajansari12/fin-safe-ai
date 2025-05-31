@@ -88,7 +88,11 @@ export async function getAppetiteBreachLogs(): Promise<AppetiteBreachLog[]> {
     .order('breach_date', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map(item => ({
+    ...item,
+    breach_severity: item.breach_severity as 'warning' | 'breach' | 'critical',
+    resolution_status: item.resolution_status as 'open' | 'acknowledged' | 'in_progress' | 'resolved'
+  }));
 }
 
 export async function updateBreachLog(id: string, updates: Partial<AppetiteBreachLog>): Promise<AppetiteBreachLog> {
@@ -100,7 +104,11 @@ export async function updateBreachLog(id: string, updates: Partial<AppetiteBreac
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    breach_severity: data.breach_severity as 'warning' | 'breach' | 'critical',
+    resolution_status: data.resolution_status as 'open' | 'acknowledged' | 'in_progress' | 'resolved'
+  };
 }
 
 export async function escalateBreach(breachId: string, escalationLevel: number, escalatedTo?: string): Promise<void> {
@@ -134,7 +142,10 @@ export async function getEscalationRules(): Promise<EscalationRule[]> {
     .order('escalation_level');
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map(item => ({
+    ...item,
+    trigger_condition: item.trigger_condition as 'single_breach' | 'multiple_breaches' | 'aggregated_score'
+  }));
 }
 
 export async function createEscalationRule(rule: Omit<EscalationRule, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Promise<EscalationRule> {
@@ -158,7 +169,10 @@ export async function createEscalationRule(rule: Omit<EscalationRule, 'id' | 'or
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    trigger_condition: data.trigger_condition as 'single_breach' | 'multiple_breaches' | 'aggregated_score'
+  };
 }
 
 export async function getBoardReports(): Promise<BoardReport[]> {
@@ -179,7 +193,11 @@ export async function getBoardReports(): Promise<BoardReport[]> {
     .order('report_period_end', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map(item => ({
+    ...item,
+    report_type: item.report_type as 'weekly' | 'monthly' | 'quarterly' | 'annual',
+    status: item.status as 'draft' | 'pending_approval' | 'approved' | 'published'
+  }));
 }
 
 export async function generateBoardReport(
@@ -241,7 +259,11 @@ export async function generateBoardReport(
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    report_type: data.report_type as 'weekly' | 'monthly' | 'quarterly' | 'annual',
+    status: data.status as 'draft' | 'pending_approval' | 'approved' | 'published'
+  };
 }
 
 export async function checkAggregatedKRIScore(): Promise<{ isBreached: boolean; score: number; threshold: number }> {

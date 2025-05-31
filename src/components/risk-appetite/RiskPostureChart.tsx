@@ -135,7 +135,10 @@ const RiskPostureChart: React.FC = () => {
               />
               <Tooltip 
                 cursor={{ strokeDasharray: '3 3' }}
-                formatter={(value, name) => [value?.toFixed(1), name]}
+                formatter={(value, name) => [
+                  typeof value === 'number' ? value.toFixed(1) : value, 
+                  name
+                ]}
                 labelFormatter={(label) => `Category: ${label}`}
               />
               <Scatter name="Risk Domains" dataKey="actual">
