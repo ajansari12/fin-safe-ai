@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -75,12 +76,15 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      // Simplified query to avoid TypeScript compilation issues
+      const query = supabase
         .from('settings')
         .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'user_roles')
         .order('setting_key');
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -238,12 +242,15 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      // Simplified query to avoid TypeScript compilation issues
+      const query = supabase
         .from('settings')
         .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
