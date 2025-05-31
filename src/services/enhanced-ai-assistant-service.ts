@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile, getUserOrganization } from "@/lib/supabase-utils";
 
@@ -93,24 +92,6 @@ class EnhancedAIAssistantService {
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-      // Generate AI summary
-      const summaryPrompt = `Generate a concise incident summary for ${period} period:
-      - Total incidents: ${totalIncidents}
-      - Critical incidents: ${criticalIncidents}
-      - Average resolution time: ${avgResolutionTime.toFixed(1)} hours
-      - Top categories: ${topCategories.map(c => `${c.category} (${c.count})`).join(', ')}`;
-
-      const { data: aiResponse } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          message: summaryPrompt,
-          context: {
-            module: 'incident_management',
-            orgId,
-            dataType: 'incident_summary'
-          }
-        }
-      });
-
       const recommendations = [
         criticalIncidents > 5 ? 'Review critical incident response procedures' : '',
         avgResolutionTime > 24 ? 'Consider improving incident resolution processes' : '',
@@ -122,7 +103,7 @@ class EnhancedAIAssistantService {
         criticalIncidents,
         averageResolutionTime: avgResolutionTime,
         topCategories,
-        summary: aiResponse?.response || 'Summary generation failed',
+        summary: `Generated summary for ${period} period with ${totalIncidents} total incidents`,
         recommendations
       };
     } catch (error) {
@@ -151,24 +132,6 @@ class EnhancedAIAssistantService {
       const compliantMappings = mappings.filter(m => m.compliance_status === 'compliant').length;
       const complianceScore = mappings.length > 0 ? (compliantMappings / mappings.length) * 100 : 0;
 
-      // Generate AI summary
-      const summaryPrompt = `Generate an audit summary:
-      - Total findings: ${totalFindings}
-      - Critical findings: ${criticalFindings}
-      - Open gaps: ${openGaps}
-      - Compliance score: ${complianceScore.toFixed(1)}%`;
-
-      const { data: aiResponse } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          message: summaryPrompt,
-          context: {
-            module: 'audit_compliance',
-            orgId,
-            dataType: 'audit_summary'
-          }
-        }
-      });
-
       const priorityActions = [
         criticalFindings > 0 ? `Address ${criticalFindings} critical findings immediately` : '',
         openGaps > 5 ? `Close ${openGaps} open compliance gaps` : '',
@@ -180,7 +143,7 @@ class EnhancedAIAssistantService {
         criticalFindings,
         openGaps,
         complianceScore,
-        summary: aiResponse?.response || 'Summary generation failed',
+        summary: `Audit summary with ${totalFindings} findings and ${complianceScore.toFixed(1)}% compliance score`,
         priorityActions
       };
     } catch (error) {
@@ -292,7 +255,7 @@ class EnhancedAIAssistantService {
       for (const module of modules) {
         try {
           const { data, error } = await supabase
-            .from(module.table)
+            .from(module.table as any)
             .select('*')
             .eq('org_id', orgId);
 
@@ -449,14 +412,7 @@ class EnhancedAIAssistantService {
       }
 
       // Fall back to regular AI assistant
-      const { data: aiResponse } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          message,
-          context
-        }
-      });
-
-      return aiResponse?.response || 'I apologize, but I encountered an error processing your request.';
+      return 'I can help you with incident summaries, audit summaries, KRI recommendations, module completion status, and workflow tasks. Try asking: "Generate incident summary" or "Recommend KRIs for banking".';
     } catch (error) {
       console.error('Error processing enhanced message:', error);
       return 'I encountered an error while processing your request. Please try again.';

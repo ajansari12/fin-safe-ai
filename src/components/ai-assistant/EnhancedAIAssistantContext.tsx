@@ -1,6 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { aiAssistantService, WorkflowAnalysis, RiskSummary, SectorThreshold } from "@/services/ai-assistant-service";
+import { enhancedAIAssistantService } from "@/services/enhanced-ai-assistant-service";
 import { getUserOrganization } from "@/lib/supabase-utils";
 
 // Keep existing types from original context
