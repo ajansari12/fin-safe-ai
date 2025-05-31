@@ -41,17 +41,6 @@ export interface ModuleSetting {
   updated_at: string;
 }
 
-// Define simplified types to avoid type instantiation issues
-interface SettingRecord {
-  id: string;
-  org_id: string;
-  setting_key: string;
-  setting_value: any;
-  created_at: string;
-  updated_at: string;
-  description?: string;
-}
-
 class EnhancedAdminService {
   private async logAdminAction(
     actionType: string,
@@ -87,37 +76,44 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Query with explicit column selection to avoid type issues
-      const query = supabase
+      // Use a simple query without complex type inference
+      const { data: settingsData, error } = await supabase
         .from('settings')
-        .select('id, org_id, setting_key, setting_value, created_at, updated_at')
+        .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'user_roles')
         .order('setting_key');
 
-      const { data, error } = await query;
-
       if (error) throw error;
       
-      // Transform settings data to UserRole format with explicit typing
+      // Transform settings data to UserRole format manually
       const roles: UserRole[] = [];
       
-      if (data) {
-        for (const setting of data) {
-          const settingValue = setting.setting_value as any;
+      if (settingsData) {
+        settingsData.forEach(setting => {
+          // Parse the setting_value safely
+          let settingValue: any = {};
+          try {
+            settingValue = typeof setting.setting_value === 'string' 
+              ? JSON.parse(setting.setting_value) 
+              : setting.setting_value || {};
+          } catch {
+            settingValue = {};
+          }
+          
           const role: UserRole = {
             id: setting.id,
             org_id: setting.org_id,
             role_name: setting.setting_key,
-            permissions: Array.isArray(settingValue?.permissions) ? settingValue.permissions : [],
-            description: settingValue?.description || null,
-            is_active: settingValue?.is_active !== false,
+            permissions: Array.isArray(settingValue.permissions) ? settingValue.permissions : [],
+            description: settingValue.description || null,
+            is_active: settingValue.is_active !== false,
             created_by: null, // settings table doesn't have created_by
             created_at: setting.created_at,
             updated_at: setting.updated_at
           };
           roles.push(role);
-        }
+        });
       }
       
       return roles;
@@ -182,11 +178,20 @@ class EnhancedAdminService {
 
       if (fetchError) throw fetchError;
 
-      const currentValue = currentRole.setting_value as any;
+      // Parse current value safely
+      let currentValue: any = {};
+      try {
+        currentValue = typeof currentRole.setting_value === 'string' 
+          ? JSON.parse(currentRole.setting_value) 
+          : currentRole.setting_value || {};
+      } catch {
+        currentValue = {};
+      }
+
       const updatedValue = {
-        permissions: updates.permissions || currentValue?.permissions || [],
-        description: updates.description !== undefined ? updates.description : currentValue?.description,
-        is_active: updates.is_active !== undefined ? updates.is_active : currentValue?.is_active
+        permissions: updates.permissions || currentValue.permissions || [],
+        description: updates.description !== undefined ? updates.description : currentValue.description,
+        is_active: updates.is_active !== undefined ? updates.is_active : currentValue.is_active
       };
 
       const { error } = await supabase
@@ -235,9 +240,9 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      const { data: settingsData, error } = await supabase
         .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
+        .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
@@ -246,8 +251,8 @@ class EnhancedAdminService {
       
       const moduleSettings: ModuleSetting[] = [];
       
-      if (data) {
-        for (const setting of data) {
+      if (settingsData) {
+        settingsData.forEach(setting => {
           const moduleSetting: ModuleSetting = {
             id: setting.id,
             org_id: setting.org_id,
@@ -260,7 +265,7 @@ class EnhancedAdminService {
             updated_at: setting.updated_at
           };
           moduleSettings.push(moduleSetting);
-        }
+        });
       }
       
       return moduleSettings;
@@ -306,9 +311,9 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      const { data: settingsData, error } = await supabase
         .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
+        .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'data_retention')
         .order('setting_key');
@@ -317,8 +322,8 @@ class EnhancedAdminService {
       
       const retentionSettings: ModuleSetting[] = [];
       
-      if (data) {
-        for (const setting of data) {
+      if (settingsData) {
+        settingsData.forEach(setting => {
           const retentionSetting: ModuleSetting = {
             id: setting.id,
             org_id: setting.org_id,
@@ -331,7 +336,7 @@ class EnhancedAdminService {
             updated_at: setting.updated_at
           };
           retentionSettings.push(retentionSetting);
-        }
+        });
       }
       
       return retentionSettings;
