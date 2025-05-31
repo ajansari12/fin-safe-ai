@@ -145,7 +145,7 @@ export async function getScenarioResults(scenarioTestId?: string): Promise<Scena
   return data || [];
 }
 
-export async function createScenarioResult(resultData: Omit<ScenarioResult, 'id' | 'created_at' | 'updated_at'>): Promise<ScenarioResult> {
+export async function createScenarioResult(resultData: Omit<ScenarioResult, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Promise<ScenarioResult> {
   const { data: profile } = await supabase
     .from('profiles')
     .select('organization_id')
