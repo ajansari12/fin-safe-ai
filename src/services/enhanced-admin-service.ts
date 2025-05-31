@@ -41,6 +41,17 @@ export interface ModuleSetting {
   updated_at: string;
 }
 
+// Define simplified types to avoid type instantiation issues
+interface SettingRecord {
+  id: string;
+  org_id: string;
+  setting_key: string;
+  setting_value: any;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+}
+
 class EnhancedAdminService {
   private async logAdminAction(
     actionType: string,
@@ -76,31 +87,40 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Use explicit typing to avoid type instantiation issues
-      const response = await supabase
+      // Query with explicit column selection to avoid type issues
+      const query = supabase
         .from('settings')
         .select('id, org_id, setting_key, setting_value, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'user_roles')
         .order('setting_key');
 
-      if (response.error) throw response.error;
+      const { data, error } = await query;
+
+      if (error) throw error;
       
-      // Transform settings data to UserRole format with proper type casting
-      return (response.data || []).map(setting => {
-        const settingValue = setting.setting_value as any;
-        return {
-          id: setting.id,
-          org_id: setting.org_id,
-          role_name: setting.setting_key,
-          permissions: Array.isArray(settingValue?.permissions) ? settingValue.permissions : [],
-          description: settingValue?.description || null,
-          is_active: settingValue?.is_active !== false,
-          created_by: null, // settings table doesn't have created_by
-          created_at: setting.created_at,
-          updated_at: setting.updated_at
-        };
-      });
+      // Transform settings data to UserRole format with explicit typing
+      const roles: UserRole[] = [];
+      
+      if (data) {
+        for (const setting of data) {
+          const settingValue = setting.setting_value as any;
+          const role: UserRole = {
+            id: setting.id,
+            org_id: setting.org_id,
+            role_name: setting.setting_key,
+            permissions: Array.isArray(settingValue?.permissions) ? settingValue.permissions : [],
+            description: settingValue?.description || null,
+            is_active: settingValue?.is_active !== false,
+            created_by: null, // settings table doesn't have created_by
+            created_at: setting.created_at,
+            updated_at: setting.updated_at
+          };
+          roles.push(role);
+        }
+      }
+      
+      return roles;
     } catch (error) {
       console.error('Error fetching roles:', error);
       return [];
@@ -215,19 +235,35 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const response = await supabase
+      const { data, error } = await supabase
         .from('settings')
         .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
 
-      if (response.error) throw response.error;
-      return (response.data || []).map(setting => ({
-        ...setting,
-        category: 'modules',
-        created_by: null // settings table doesn't have created_by
-      }));
+      if (error) throw error;
+      
+      const moduleSettings: ModuleSetting[] = [];
+      
+      if (data) {
+        for (const setting of data) {
+          const moduleSetting: ModuleSetting = {
+            id: setting.id,
+            org_id: setting.org_id,
+            setting_key: setting.setting_key,
+            setting_value: setting.setting_value,
+            description: setting.description,
+            category: 'modules',
+            created_by: null, // settings table doesn't have created_by
+            created_at: setting.created_at,
+            updated_at: setting.updated_at
+          };
+          moduleSettings.push(moduleSetting);
+        }
+      }
+      
+      return moduleSettings;
     } catch (error) {
       console.error('Error fetching module settings:', error);
       return [];
@@ -270,19 +306,35 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const response = await supabase
+      const { data, error } = await supabase
         .from('settings')
         .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'data_retention')
         .order('setting_key');
 
-      if (response.error) throw response.error;
-      return (response.data || []).map(setting => ({
-        ...setting,
-        category: 'data_retention',
-        created_by: null // settings table doesn't have created_by
-      }));
+      if (error) throw error;
+      
+      const retentionSettings: ModuleSetting[] = [];
+      
+      if (data) {
+        for (const setting of data) {
+          const retentionSetting: ModuleSetting = {
+            id: setting.id,
+            org_id: setting.org_id,
+            setting_key: setting.setting_key,
+            setting_value: setting.setting_value,
+            description: setting.description,
+            category: 'data_retention',
+            created_by: null, // settings table doesn't have created_by
+            created_at: setting.created_at,
+            updated_at: setting.updated_at
+          };
+          retentionSettings.push(retentionSetting);
+        }
+      }
+      
+      return retentionSettings;
     } catch (error) {
       console.error('Error fetching data retention settings:', error);
       return [];
