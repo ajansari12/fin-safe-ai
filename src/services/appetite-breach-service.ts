@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface AppetiteBreachLog {
@@ -144,7 +143,10 @@ export async function getEscalationRules(): Promise<EscalationRule[]> {
   if (error) throw error;
   return (data || []).map(item => ({
     ...item,
-    trigger_condition: item.trigger_condition as 'single_breach' | 'multiple_breaches' | 'aggregated_score'
+    trigger_condition: item.trigger_condition as 'single_breach' | 'multiple_breaches' | 'aggregated_score',
+    notification_recipients: Array.isArray(item.notification_recipients) ? item.notification_recipients : [],
+    escalation_delay_hours: item.escalation_delay_hours || 0,
+    auto_escalate: item.auto_escalate || false
   }));
 }
 
@@ -171,7 +173,10 @@ export async function createEscalationRule(rule: Omit<EscalationRule, 'id' | 'or
   if (error) throw error;
   return {
     ...data,
-    trigger_condition: data.trigger_condition as 'single_breach' | 'multiple_breaches' | 'aggregated_score'
+    trigger_condition: data.trigger_condition as 'single_breach' | 'multiple_breaches' | 'aggregated_score',
+    notification_recipients: Array.isArray(data.notification_recipients) ? data.notification_recipients : [],
+    escalation_delay_hours: data.escalation_delay_hours || 0,
+    auto_escalate: data.auto_escalate || false
   };
 }
 
