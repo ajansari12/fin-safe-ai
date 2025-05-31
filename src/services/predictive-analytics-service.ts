@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -334,7 +335,8 @@ class PredictiveAnalyticsService {
   }
 
   private calculateScorecardTrend(scores: any): 'improving' | 'stable' | 'declining' {
-    const avgScore = Object.values(scores).reduce((sum: number, score: any) => sum + Number(score), 0) / 5;
+    const scoreValues = Object.values(scores) as number[];
+    const avgScore = scoreValues.reduce((sum, score) => sum + score, 0) / scoreValues.length;
     if (avgScore >= 80) return 'improving';
     if (avgScore >= 60) return 'stable';
     return 'declining';
