@@ -2235,6 +2235,98 @@ export type Database = {
           },
         ]
       }
+      integration_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          integration_id: string | null
+          org_id: string
+          response_time_ms: number | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          integration_id?: string | null
+          org_id: string
+          response_time_ms?: number | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          integration_id?: string | null
+          org_id?: string
+          response_time_ms?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          configuration: Json
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          integration_name: string
+          integration_type: string
+          is_active: boolean
+          last_sync_at: string | null
+          org_id: string
+          provider: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          integration_name: string
+          integration_type: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          org_id: string
+          provider: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          integration_name?: string
+          integration_type?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          org_id?: string
+          provider?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       kri_appetite_variance: {
         Row: {
           actual_value: number

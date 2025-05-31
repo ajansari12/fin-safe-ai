@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -76,23 +75,21 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Simplified query to avoid TypeScript compilation issues
-      const query = supabase
+      // Use a more direct approach to avoid type inference issues
+      const { data: settingsData, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'user_roles')
         .order('setting_key');
-
-      const { data, error } = await query;
 
       if (error) throw error;
       
       // Transform settings data to UserRole format manually
       const roles: UserRole[] = [];
       
-      if (data) {
-        data.forEach((setting: any) => {
+      if (settingsData) {
+        settingsData.forEach((setting: any) => {
           // Parse the setting_value safely
           let settingValue: any = {};
           try {
@@ -242,22 +239,20 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Simplified query to avoid TypeScript compilation issues
-      const query = supabase
+      // Use a more direct approach to avoid type inference issues
+      const { data: settingsData, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
-
-      const { data, error } = await query;
 
       if (error) throw error;
       
       const moduleSettings: ModuleSetting[] = [];
       
-      if (data) {
-        data.forEach((setting: any) => {
+      if (settingsData) {
+        settingsData.forEach((setting: any) => {
           const moduleSetting: ModuleSetting = {
             id: setting.id,
             org_id: setting.org_id,
