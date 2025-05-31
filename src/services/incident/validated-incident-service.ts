@@ -67,8 +67,18 @@ export class ValidatedIncidentService {
       throw new Error('Organization not found');
     }
 
+    // Prepare data with required fields
     const incidentData = {
-      ...validation.data,
+      title: validation.data.title || data.title,
+      description: validation.data.description || data.description,
+      severity: validation.data.severity || data.severity,
+      category: validation.data.category || data.category,
+      business_function_id: validation.data.business_function_id || data.business_function_id,
+      assigned_to: validation.data.assigned_to || data.assigned_to,
+      status: validation.data.status || data.status || 'open',
+      impact_rating: validation.data.impact_rating || data.impact_rating,
+      max_response_time_hours: validation.data.max_response_time_hours || data.max_response_time_hours,
+      max_resolution_time_hours: validation.data.max_resolution_time_hours || data.max_resolution_time_hours,
       org_id: profile.organization_id,
       reported_by: profile.id,
       reported_at: new Date().toISOString(),
@@ -101,12 +111,14 @@ export class ValidatedIncidentService {
       throw new Error('Organization not found');
     }
 
+    const updateData = {
+      ...validation.data,
+      updated_at: new Date().toISOString(),
+    };
+
     const { data: incident, error } = await supabase
       .from('incident_logs')
-      .update({
-        ...validation.data,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
       .eq('org_id', profile.organization_id)
       .select()

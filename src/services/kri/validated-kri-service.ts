@@ -42,8 +42,16 @@ export class ValidatedKRIService {
       throw new Error('Organization not found');
     }
 
+    // Prepare data for database insert
     const kriData = {
-      ...validation.data,
+      name: validation.data.name || data.name || '',
+      description: validation.data.description || data.description,
+      measurement_frequency: validation.data.measurement_frequency || data.measurement_frequency || 'monthly',
+      target_value: validation.data.target_value || data.target_value,
+      warning_threshold: validation.data.warning_threshold || data.warning_threshold,
+      critical_threshold: validation.data.critical_threshold || data.critical_threshold,
+      control_id: validation.data.control_id || data.control_id,
+      status: validation.data.status || data.status || 'active',
       org_id: profile.organization_id,
     };
 
@@ -74,12 +82,14 @@ export class ValidatedKRIService {
       throw new Error('Organization not found');
     }
 
+    const updateData = {
+      ...validation.data,
+      updated_at: new Date().toISOString(),
+    };
+
     const { data: kri, error } = await supabase
       .from('kri_definitions')
-      .update({
-        ...validation.data,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', id)
       .eq('org_id', profile.organization_id)
       .select()
@@ -118,8 +128,11 @@ export class ValidatedKRIService {
     }
 
     const logData = {
-      ...validation.data,
+      kri_id: validation.data.kri_id,
       measurement_date: validation.data.measurement_date.toISOString().split('T')[0],
+      actual_value: validation.data.actual_value,
+      target_value: validation.data.target_value,
+      notes: validation.data.notes,
     };
 
     const { data: kriLog, error } = await supabase

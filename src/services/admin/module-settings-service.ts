@@ -6,7 +6,12 @@ export interface ModuleSetting {
   id: string;
   org_id: string;
   setting_key: string;
-  setting_value: { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any };
+  setting_value: {
+    enabled?: boolean;
+    retention_days?: number;
+    auto_delete?: boolean;
+    [key: string]: any;
+  };
   description: string | null;
   category: string;
   created_by: string | null;
@@ -70,7 +75,7 @@ class ModuleSettingsService {
 
   private transformSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any } {
     if (typeof value === 'object' && value !== null) {
-      return value as { enabled?: boolean; retention_days?: number; auto_delete?: boolean; [key: string]: any };
+      return value;
     }
     if (typeof value === 'boolean') {
       return { enabled: value };
