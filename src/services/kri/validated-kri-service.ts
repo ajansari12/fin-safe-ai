@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
-import { kriSchema, kriLogSchema, KRIFormData, KRILogFormData, validateWithSchema } from "@/lib/validations";
+import { kriSchema, kriLogSchema, KRIFormData, KRILogFormData } from "@/lib/validations";
+import { validateWithSchema } from "@/lib/validation-utils";
 
 export interface KRI {
   id: string;
@@ -34,7 +34,7 @@ export class ValidatedKRIService {
     // Client-side validation
     const validation = validateWithSchema(kriSchema, data);
     if (!validation.success) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      throw new Error(`Validation failed: ${validation.errors?.join(', ')}`);
     }
 
     const profile = await getCurrentUserProfile();
@@ -44,14 +44,14 @@ export class ValidatedKRIService {
 
     // Prepare data for database insert - include threshold_id as null since it's required
     const kriData = {
-      name: validation.data.name || '',
-      description: validation.data.description,
-      measurement_frequency: validation.data.measurement_frequency || 'monthly',
-      target_value: validation.data.target_value,
-      warning_threshold: validation.data.warning_threshold,
-      critical_threshold: validation.data.critical_threshold,
-      control_id: validation.data.control_id,
-      status: validation.data.status || 'active',
+      name: validation.data?.name || '',
+      description: validation.data?.description,
+      measurement_frequency: validation.data?.measurement_frequency || 'monthly',
+      target_value: validation.data?.target_value,
+      warning_threshold: validation.data?.warning_threshold,
+      critical_threshold: validation.data?.critical_threshold,
+      control_id: validation.data?.control_id,
+      status: validation.data?.status || 'active',
       org_id: profile.organization_id,
       threshold_id: null, // Required by database schema
     };
@@ -75,7 +75,7 @@ export class ValidatedKRIService {
     const updateSchema = kriSchema.partial();
     const validation = validateWithSchema(updateSchema, updates);
     if (!validation.success) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      throw new Error(`Validation failed: ${validation.errors?.join(', ')}`);
     }
 
     const profile = await getCurrentUserProfile();
@@ -108,7 +108,7 @@ export class ValidatedKRIService {
     // Client-side validation
     const validation = validateWithSchema(kriLogSchema, data);
     if (!validation.success) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      throw new Error(`Validation failed: ${validation.errors?.join(', ')}`);
     }
 
     const profile = await getCurrentUserProfile();
@@ -120,7 +120,7 @@ export class ValidatedKRIService {
     const { data: kri, error: kriError } = await supabase
       .from('kri_definitions')
       .select('id')
-      .eq('id', validation.data.kri_id)
+      .eq('id', validation.data?.kri_id)
       .eq('org_id', profile.organization_id)
       .single();
 
@@ -129,11 +129,11 @@ export class ValidatedKRIService {
     }
 
     const logData = {
-      kri_id: validation.data.kri_id,
-      measurement_date: validation.data.measurement_date.toISOString().split('T')[0],
-      actual_value: validation.data.actual_value,
-      target_value: validation.data.target_value,
-      notes: validation.data.notes,
+      kri_id: validation.data?.kri_id,
+      measurement_date: validation.data?.measurement_date.toISOString().split('T')[0],
+      actual_value: validation.data?.actual_value,
+      target_value: validation.data?.target_value,
+      notes: validation.data?.notes,
     };
 
     const { data: kriLog, error } = await supabase

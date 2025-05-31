@@ -13,6 +13,9 @@ import ControlsAndKRINavigation from "@/components/controls/ControlsAndKRINaviga
 import ControlsAndKRITabs from "@/components/controls/ControlsAndKRITabs";
 import ControlTestForm from "@/components/controls/ControlTestForm";
 import ControlTestsList from "@/components/controls/ControlTestsList";
+import ControlEffectivenessDashboard from "@/components/controls/ControlEffectivenessDashboard";
+import KRIAppetiteLinkForm from "@/components/controls/KRIAppetiteLinkForm";
+import KRIBreachNotifications from "@/components/controls/KRIBreachNotifications";
 
 const ControlsAndKri = () => {
   const { user } = useAuth();
@@ -61,6 +64,8 @@ const ControlsAndKri = () => {
   const [showKRILogs, setShowKRILogs] = useState(false);
   const [showControlTestForm, setShowControlTestForm] = useState(false);
   const [showControlTests, setShowControlTests] = useState(false);
+  const [showKRIAppetiteLinkForm, setShowKRIAppetiteLinkForm] = useState(false);
+  const [showControlEffectivenessDashboard, setShowControlEffectivenessDashboard] = useState(false);
   const [editingControl, setEditingControl] = useState<Control | undefined>();
   const [editingKRI, setEditingKRI] = useState<KRIDefinition | undefined>();
   const [selectedKRI, setSelectedKRI] = useState<{ id: string; name: string } | undefined>();
@@ -201,6 +206,23 @@ const ControlsAndKri = () => {
     }
   };
 
+  // KRI appetite link handlers
+  const handleLinkKRIToAppetite = (kri: KRIDefinition) => {
+    setSelectedKRI({ id: kri.id, name: kri.name });
+    setShowKRIAppetiteLinkForm(true);
+  };
+
+  const handleKRIAppetiteLinkSubmit = () => {
+    setShowKRIAppetiteLinkForm(false);
+    setSelectedKRI(undefined);
+    loadKRIs();
+  };
+
+  // Dashboard handlers
+  const handleShowControlEffectiveness = () => {
+    setShowControlEffectivenessDashboard(true);
+  };
+
   const handleCancelForm = () => {
     setShowControlForm(false);
     setShowKRIForm(false);
@@ -208,6 +230,8 @@ const ControlsAndKri = () => {
     setShowKRILogs(false);
     setShowControlTestForm(false);
     setShowControlTests(false);
+    setShowKRIAppetiteLinkForm(false);
+    setShowControlEffectivenessDashboard(false);
     setEditingControl(undefined);
     setEditingKRI(undefined);
     setSelectedKRI(undefined);
@@ -217,6 +241,42 @@ const ControlsAndKri = () => {
 
   // Show navigation components if any form is active
   const showNavigation = showControlForm || showKRIForm || showKRILogForm || showKRILogs;
+
+  // Show control effectiveness dashboard
+  if (showControlEffectivenessDashboard) {
+    return (
+      <AuthenticatedLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              onClick={handleCancelForm}
+            >
+              ← Back to Controls & KRIs
+            </Button>
+            <h2 className="text-2xl font-bold">Control Effectiveness Dashboard</h2>
+          </div>
+          <ControlEffectivenessDashboard />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  // Show KRI appetite link form
+  if (showKRIAppetiteLinkForm && selectedKRI) {
+    return (
+      <AuthenticatedLayout>
+        <div className="space-y-6">
+          <KRIAppetiteLinkForm
+            kriId={selectedKRI.id}
+            kriName={selectedKRI.name}
+            onSubmit={handleKRIAppetiteLinkSubmit}
+            onCancel={handleCancelForm}
+          />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   // Show control test form
   if (showControlTestForm && selectedControl) {
@@ -288,6 +348,9 @@ const ControlsAndKri = () => {
           </p>
         </div>
         
+        {/* Add breach notifications section */}
+        <KRIBreachNotifications />
+        
         <ControlsAndKRITabs
           activeTab={activeTab}
           controls={controls}
@@ -304,6 +367,8 @@ const ControlsAndKri = () => {
           onDeleteKRI={handleDeleteKRIClick}
           onCreateKRI={handleCreateKRIClick}
           onViewKRILogs={handleViewKRILogs}
+          onLinkKRIToAppetite={handleLinkKRIToAppetite}
+          onShowControlEffectiveness={handleShowControlEffectiveness}
         />
       </div>
     </AuthenticatedLayout>

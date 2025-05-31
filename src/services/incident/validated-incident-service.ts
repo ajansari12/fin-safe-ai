@@ -1,7 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
-import { incidentSchema, IncidentFormData, validateWithSchema } from "@/lib/validations";
+import { incidentSchema, IncidentFormData } from "@/lib/validations";
+import { validateWithSchema } from "@/lib/validation-utils";
 
 export interface Incident {
   id: string;
@@ -59,7 +59,7 @@ export class ValidatedIncidentService {
     // Client-side validation
     const validation = validateWithSchema(incidentSchema, data);
     if (!validation.success) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      throw new Error(`Validation failed: ${validation.errors?.join(', ')}`);
     }
 
     const profile = await getCurrentUserProfile();
@@ -69,16 +69,16 @@ export class ValidatedIncidentService {
 
     // Prepare data with required fields
     const incidentData = {
-      title: validation.data.title,
-      description: validation.data.description,
-      severity: validation.data.severity,
-      category: validation.data.category,
-      business_function_id: validation.data.business_function_id,
-      assigned_to: validation.data.assigned_to,
-      status: validation.data.status || 'open',
-      impact_rating: validation.data.impact_rating,
-      max_response_time_hours: validation.data.max_response_time_hours,
-      max_resolution_time_hours: validation.data.max_resolution_time_hours,
+      title: validation.data?.title,
+      description: validation.data?.description,
+      severity: validation.data?.severity,
+      category: validation.data?.category,
+      business_function_id: validation.data?.business_function_id,
+      assigned_to: validation.data?.assigned_to,
+      status: validation.data?.status || 'open',
+      impact_rating: validation.data?.impact_rating,
+      max_response_time_hours: validation.data?.max_response_time_hours,
+      max_resolution_time_hours: validation.data?.max_resolution_time_hours,
       org_id: profile.organization_id,
       reported_by: profile.id,
       reported_at: new Date().toISOString(),
@@ -103,7 +103,7 @@ export class ValidatedIncidentService {
     const updateSchema = incidentSchema.partial();
     const validation = validateWithSchema(updateSchema, updates);
     if (!validation.success) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+      throw new Error(`Validation failed: ${validation.errors?.join(', ')}`);
     }
 
     const profile = await getCurrentUserProfile();

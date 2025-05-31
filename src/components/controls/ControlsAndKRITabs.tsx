@@ -1,12 +1,14 @@
 
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Plus, BarChart3, Link } from "lucide-react";
 import { Control } from "@/services/controls";
 import { KRIDefinition } from "@/services/kri-definitions";
-import EnhancedControlsDashboard from "./EnhancedControlsDashboard";
+import { ControlTest } from "@/services/control-tests";
+import ControlsDashboard from "./ControlsDashboard";
 import ControlsList from "./ControlsList";
 import KRIsList from "./KRIsList";
-import { ControlTest } from "@/services/control-tests";
 
 interface ControlsAndKRITabsProps {
   activeTab: string;
@@ -14,7 +16,7 @@ interface ControlsAndKRITabsProps {
   kris: KRIDefinition[];
   controlTests: ControlTest[];
   isLoading: boolean;
-  onTabChange: (value: string) => void;
+  onTabChange: (tab: string) => void;
   onEditControl: (control: Control) => void;
   onDeleteControl: (id: string) => void;
   onCreateControl: () => void;
@@ -24,6 +26,8 @@ interface ControlsAndKRITabsProps {
   onDeleteKRI: (id: string) => void;
   onCreateKRI: () => void;
   onViewKRILogs: (kriId: string) => void;
+  onLinkKRIToAppetite?: (kri: KRIDefinition) => void;
+  onShowControlEffectiveness?: () => void;
 }
 
 const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
@@ -41,52 +45,71 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
   onEditKRI,
   onDeleteKRI,
   onCreateKRI,
-  onViewKRILogs
+  onViewKRILogs,
+  onLinkKRIToAppetite,
+  onShowControlEffectiveness,
 }) => {
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange}>
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-        <TabsTrigger value="controls">Controls</TabsTrigger>
-        <TabsTrigger value="kris">KRIs</TabsTrigger>
-        <TabsTrigger value="analytics">Analytics</TabsTrigger>
-      </TabsList>
+    <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="controls">Controls</TabsTrigger>
+          <TabsTrigger value="kris">KRIs</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="dashboard" className="space-y-6">
-        <EnhancedControlsDashboard
-          controls={controls}
-          controlTests={controlTests}
-          isLoading={isLoading}
-        />
+        <div className="flex gap-2">
+          {onShowControlEffectiveness && (
+            <Button
+              variant="outline"
+              onClick={onShowControlEffectiveness}
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Control Effectiveness
+            </Button>
+          )}
+          
+          {activeTab === "controls" && (
+            <Button onClick={onCreateControl} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              New Control
+            </Button>
+          )}
+          
+          {activeTab === "kris" && (
+            <Button onClick={onCreateKRI} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              New KRI
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <TabsContent value="dashboard">
+        <ControlsDashboard />
       </TabsContent>
 
-      <TabsContent value="controls" className="space-y-6">
+      <TabsContent value="controls">
         <ControlsList
           controls={controls}
+          isLoading={isLoading}
           onEdit={onEditControl}
           onDelete={onDeleteControl}
-          onCreate={onCreateControl}
           onTest={onTestControl}
           onViewTests={onViewControlTests}
-          isLoading={isLoading}
         />
       </TabsContent>
 
-      <TabsContent value="kris" className="space-y-6">
+      <TabsContent value="kris">
         <KRIsList
           kris={kris}
+          isLoading={isLoading}
           onEdit={onEditKRI}
           onDelete={onDeleteKRI}
-          onCreate={onCreateKRI}
           onViewLogs={onViewKRILogs}
-          isLoading={isLoading}
+          onLinkToAppetite={onLinkKRIToAppetite}
         />
-      </TabsContent>
-
-      <TabsContent value="analytics" className="space-y-6">
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Advanced analytics features coming soon...</p>
-        </div>
       </TabsContent>
     </Tabs>
   );
