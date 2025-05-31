@@ -64,10 +64,17 @@ const KRIAppetiteLinkForm: React.FC<KRIAppetiteLinkFormProps> = ({
   const handleSubmit = async (values: z.infer<typeof kriAppetiteLinkSchema>) => {
     try {
       setIsSubmitting(true);
-      await enhancedKRIService.createKRIAppetiteLink({
+      
+      // Ensure all required fields are present
+      const linkData = {
         kri_id: kriId,
-        ...values,
-      });
+        risk_appetite_statement_id: values.risk_appetite_statement_id,
+        appetite_threshold: values.appetite_threshold,
+        warning_percentage: values.warning_percentage,
+        breach_percentage: values.breach_percentage,
+      };
+      
+      await enhancedKRIService.createKRIAppetiteLink(linkData);
       toast({
         title: "Success",
         description: "KRI appetite link created successfully",

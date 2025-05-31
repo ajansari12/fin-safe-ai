@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 
 // Common validation patterns
@@ -41,33 +42,6 @@ export const incidentSchema = z.object({
 });
 
 export type IncidentFormData = z.infer<typeof incidentSchema>;
-
-// Enhanced KRI validation schema
-export const kriSchema = z.object({
-  name: requiredString.min(3, "Name must be at least 3 characters").max(100, "Name too long"),
-  description: z.string().max(500, "Description too long").optional(),
-  measurement_frequency: z.enum(["daily", "weekly", "monthly", "quarterly", "annually"], {
-    required_error: "Please select a measurement frequency"
-  }),
-  target_value: z.string().max(50, "Target value too long").optional(),
-  warning_threshold: z.string().max(50, "Warning threshold too long").optional(),
-  critical_threshold: z.string().max(50, "Critical threshold too long").optional(),
-  control_id: z.string().uuid().optional(),
-  status: z.enum(["active", "inactive", "draft"]).default("active"),
-});
-
-export type KRIFormData = z.infer<typeof kriSchema>;
-
-// KRI log validation
-export const kriLogSchema = z.object({
-  kri_id: z.string().uuid("Invalid KRI ID"),
-  measurement_date: z.date(),
-  actual_value: z.number(),
-  target_value: z.number().optional(),
-  notes: z.string().max(1000, "Notes too long").optional(),
-});
-
-export type KRILogFormData = z.infer<typeof kriLogSchema>;
 
 // Policy validation schema with enhanced validation
 export const policySchema = z.object({
@@ -212,6 +186,3 @@ export const commonValidations = {
   status: z.enum(["active", "inactive", "draft"]),
   criticality: z.enum(["low", "medium", "high", "critical"]),
 };
-
-// Re-export KRI schemas from the new validation service
-export { kriSchema, kriLogSchema, type KRIFormData, type KRILogFormData } from "@/services/kri/kri-validation-service";

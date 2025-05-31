@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
+import { Button } from "@/components/ui/button";
 import { Control } from "@/services/controls";
 import { KRIDefinition } from "@/services/kri-definitions";
 import { ControlTest, getControlTests } from "@/services/control-tests";

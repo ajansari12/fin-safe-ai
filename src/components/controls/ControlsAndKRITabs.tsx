@@ -98,6 +98,7 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
           onDelete={onDeleteControl}
           onTest={onTestControl}
           onViewTests={onViewControlTests}
+          onCreate={onCreateControl}
         />
       </TabsContent>
 
