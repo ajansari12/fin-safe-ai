@@ -113,6 +113,220 @@ export type Database = {
           },
         ]
       }
+      appetite_board_reports: {
+        Row: {
+          approval_date: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          created_at: string
+          executive_summary: string | null
+          generated_by: string | null
+          generated_by_name: string | null
+          id: string
+          key_findings: string | null
+          org_id: string
+          recommendations: string | null
+          report_data: Json
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          risk_posture_score: number | null
+          status: string
+          trend_analysis: string | null
+          updated_at: string
+        }
+        Insert: {
+          approval_date?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          executive_summary?: string | null
+          generated_by?: string | null
+          generated_by_name?: string | null
+          id?: string
+          key_findings?: string | null
+          org_id: string
+          recommendations?: string | null
+          report_data?: Json
+          report_period_end: string
+          report_period_start: string
+          report_type?: string
+          risk_posture_score?: number | null
+          status?: string
+          trend_analysis?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approval_date?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          executive_summary?: string | null
+          generated_by?: string | null
+          generated_by_name?: string | null
+          id?: string
+          key_findings?: string | null
+          org_id?: string
+          recommendations?: string | null
+          report_data?: Json
+          report_period_end?: string
+          report_period_start?: string
+          report_type?: string
+          risk_posture_score?: number | null
+          status?: string
+          trend_analysis?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      appetite_breach_logs: {
+        Row: {
+          actual_value: number
+          alert_sent: boolean | null
+          board_reported: boolean | null
+          breach_date: string
+          breach_severity: string
+          business_impact: string | null
+          created_at: string
+          escalated_at: string | null
+          escalated_to: string | null
+          escalated_to_name: string | null
+          escalation_level: number | null
+          id: string
+          org_id: string
+          remediation_actions: string | null
+          resolution_date: string | null
+          resolution_notes: string | null
+          resolution_status: string
+          risk_category_id: string | null
+          statement_id: string | null
+          threshold_id: string | null
+          threshold_value: number
+          updated_at: string
+          variance_percentage: number | null
+        }
+        Insert: {
+          actual_value: number
+          alert_sent?: boolean | null
+          board_reported?: boolean | null
+          breach_date?: string
+          breach_severity: string
+          business_impact?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalated_to_name?: string | null
+          escalation_level?: number | null
+          id?: string
+          org_id: string
+          remediation_actions?: string | null
+          resolution_date?: string | null
+          resolution_notes?: string | null
+          resolution_status?: string
+          risk_category_id?: string | null
+          statement_id?: string | null
+          threshold_id?: string | null
+          threshold_value: number
+          updated_at?: string
+          variance_percentage?: number | null
+        }
+        Update: {
+          actual_value?: number
+          alert_sent?: boolean | null
+          board_reported?: boolean | null
+          breach_date?: string
+          breach_severity?: string
+          business_impact?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalated_to_name?: string | null
+          escalation_level?: number | null
+          id?: string
+          org_id?: string
+          remediation_actions?: string | null
+          resolution_date?: string | null
+          resolution_notes?: string | null
+          resolution_status?: string
+          risk_category_id?: string | null
+          statement_id?: string | null
+          threshold_id?: string | null
+          threshold_value?: number
+          updated_at?: string
+          variance_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appetite_breach_logs_risk_category_id_fkey"
+            columns: ["risk_category_id"]
+            isOneToOne: false
+            referencedRelation: "risk_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appetite_breach_logs_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "risk_appetite_statements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appetite_breach_logs_threshold_id_fkey"
+            columns: ["threshold_id"]
+            isOneToOne: false
+            referencedRelation: "risk_thresholds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appetite_escalation_rules: {
+        Row: {
+          auto_escalate: boolean | null
+          created_at: string
+          escalation_delay_hours: number | null
+          escalation_level: number
+          id: string
+          is_active: boolean | null
+          notification_recipients: Json | null
+          org_id: string
+          rule_description: string | null
+          rule_name: string
+          threshold_value: number
+          trigger_condition: string
+          updated_at: string
+        }
+        Insert: {
+          auto_escalate?: boolean | null
+          created_at?: string
+          escalation_delay_hours?: number | null
+          escalation_level: number
+          id?: string
+          is_active?: boolean | null
+          notification_recipients?: Json | null
+          org_id: string
+          rule_description?: string | null
+          rule_name: string
+          threshold_value: number
+          trigger_condition: string
+          updated_at?: string
+        }
+        Update: {
+          auto_escalate?: boolean | null
+          created_at?: string
+          escalation_delay_hours?: number | null
+          escalation_level?: number
+          id?: string
+          is_active?: boolean | null
+          notification_recipients?: Json | null
+          org_id?: string
+          rule_description?: string | null
+          rule_name?: string
+          threshold_value?: number
+          trigger_condition?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_tasks: {
         Row: {
           assigned_to: string | null

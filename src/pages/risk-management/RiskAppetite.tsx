@@ -6,11 +6,14 @@ import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, BarChart3, FileText, Settings } from "lucide-react";
+import { PlusCircle, BarChart3, FileText, Settings, AlertTriangle, TrendingUp } from "lucide-react";
 import { getRiskAppetiteStatements } from "@/services/risk-management-service";
 import { RiskAppetiteStatement } from "./types";
 import RiskAppetiteDashboard from "@/components/risk-appetite/RiskAppetiteDashboard";
 import RiskAppetiteOverview from "@/components/risk-appetite/RiskAppetiteOverview";
+import AppetiteBreachAlerts from "@/components/risk-appetite/AppetiteBreachAlerts";
+import RiskPostureChart from "@/components/risk-appetite/RiskPostureChart";
+import BoardReportGenerator from "@/components/risk-appetite/BoardReportGenerator";
 
 export default function RiskAppetite() {
   const { user, profile } = useAuth();
@@ -45,9 +48,9 @@ export default function RiskAppetite() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Risk Appetite</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Risk Appetite Management</h1>
             <p className="text-muted-foreground">
-              Define and manage your organization's risk appetite statements and monitor risk levels.
+              Define, monitor, and manage your organization's risk appetite with automated breach detection and board reporting.
             </p>
           </div>
           <Button onClick={handleCreateNew}>
@@ -57,23 +60,43 @@ export default function RiskAppetite() {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="statements" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Statements
+            <TabsTrigger value="alerts" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Breach Alerts
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
+            <TabsTrigger value="posture" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Risk Posture
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Board Reports
+            </TabsTrigger>
+            <TabsTrigger value="statements" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Settings
+              Statements
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
             <RiskAppetiteDashboard />
+          </TabsContent>
+
+          <TabsContent value="alerts" className="space-y-6">
+            <AppetiteBreachAlerts />
+          </TabsContent>
+
+          <TabsContent value="posture" className="space-y-6">
+            <RiskPostureChart />
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+            <BoardReportGenerator />
           </TabsContent>
 
           <TabsContent value="statements" className="space-y-6">
@@ -93,9 +116,7 @@ export default function RiskAppetite() {
                 />
               </CardContent>
             </Card>
-          </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -126,30 +147,27 @@ export default function RiskAppetite() {
               
               <Card>
                 <CardHeader>
-                  <CardTitle>Risk Categories</CardTitle>
+                  <CardTitle>Enhanced Features</CardTitle>
                   <CardDescription>
-                    Standard risk categories for your organization
+                    Advanced risk appetite management capabilities
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
                   <div>
-                    <h4 className="font-medium mb-2">Primary Categories:</h4>
+                    <h4 className="font-medium mb-2">Automated Monitoring:</h4>
                     <ul className="list-disc list-inside space-y-1">
-                      <li><strong>Operational Risk:</strong> Process failures, human errors, system outages</li>
-                      <li><strong>Technology Risk:</strong> Cyber threats, system failures, data breaches</li>
-                      <li><strong>Third Party Risk:</strong> Vendor dependencies, supply chain disruptions</li>
-                      <li><strong>Compliance Risk:</strong> Regulatory violations, policy breaches</li>
-                      <li><strong>Financial Risk:</strong> Credit, market, liquidity risks</li>
-                      <li><strong>Reputational Risk:</strong> Brand damage, customer trust issues</li>
+                      <li><strong>Real-time Breach Detection:</strong> Automatic alerts when thresholds are exceeded</li>
+                      <li><strong>Escalation Workflows:</strong> Configurable escalation rules and notifications</li>
+                      <li><strong>Aggregated Scoring:</strong> Overall risk posture monitoring</li>
                     </ul>
                   </div>
                   
                   <div>
-                    <h4 className="font-medium mb-2">Tolerance Levels:</h4>
+                    <h4 className="font-medium mb-2">Board Reporting:</h4>
                     <ul className="list-disc list-inside space-y-1">
-                      <li><strong>Low:</strong> Minimal tolerance, immediate escalation</li>
-                      <li><strong>Medium:</strong> Moderate tolerance, managed response</li>
-                      <li><strong>High:</strong> Higher tolerance, monitored closely</li>
+                      <li><strong>Executive Dashboards:</strong> High-level risk posture summaries</li>
+                      <li><strong>Print-ready Reports:</strong> Professional board presentation format</li>
+                      <li><strong>Trend Analysis:</strong> Historical risk appetite performance</li>
                     </ul>
                   </div>
                 </CardContent>
