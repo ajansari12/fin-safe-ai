@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 // Common validation patterns
@@ -213,3 +212,6 @@ export const commonValidations = {
   status: z.enum(["active", "inactive", "draft"]),
   criticality: z.enum(["low", "medium", "high", "critical"]),
 };
+
+// Re-export KRI schemas from the new validation service
+export { kriSchema, kriLogSchema, type KRIFormData, type KRILogFormData } from "@/services/kri/kri-validation-service";
