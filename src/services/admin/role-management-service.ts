@@ -4,175 +4,126 @@ import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
 export interface UserRole {
   id: string;
-  org_id: string;
-  role_name: string;
+  user_id: string;
+  role: string;
   permissions: string[];
-  description: string | null;
-  is_active: boolean;
-  created_by: string | null;
   created_at: string;
   updated_at: string;
+  user_name?: string;
+  user_email?: string;
+}
+
+export interface RolePermission {
+  role: string;
+  permissions: string[];
+  description: string;
 }
 
 class RoleManagementService {
-  async getRoles(): Promise<UserRole[]> {
+  async getUserRoles(): Promise<UserRole[]> {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data: settingsData, error } = await supabase
-        .from('settings')
-        .select('id, org_id, setting_key, setting_value, created_at, updated_at')
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select(`
+          *,
+          profiles!inner(full_name, email)
+        `)
         .eq('org_id', profile.organization_id)
-        .eq('category', 'user_roles')
-        .order('setting_key');
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      const roles: UserRole[] = [];
-      
-      if (settingsData) {
-        settingsData.forEach((setting: any) => {
-          let settingValue: any = {};
-          try {
-            settingValue = typeof setting.setting_value === 'string' 
-              ? JSON.parse(setting.setting_value) 
-              : setting.setting_value || {};
-          } catch {
-            settingValue = {};
-          }
-          
-          const role: UserRole = {
-            id: setting.id,
-            org_id: setting.org_id,
-            role_name: setting.setting_key,
-            permissions: Array.isArray(settingValue.permissions) ? settingValue.permissions : [],
-            description: settingValue.description || null,
-            is_active: settingValue.is_active !== false,
-            created_by: null,
-            created_at: setting.created_at,
-            updated_at: setting.updated_at
-          };
-          roles.push(role);
-        });
-      }
-      
-      return roles;
+
+      return (data || []).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        role: item.role,
+        permissions: item.permissions || [],
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        user_name: item.profiles?.full_name || 'Unknown',
+        user_email: item.profiles?.email || 'Unknown'
+      }));
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      console.error('Error fetching user roles:', error);
       return [];
     }
   }
 
-  async createRole(roleData: {
-    role_name: string;
-    permissions: string[];
-    description?: string;
-  }): Promise<void> {
+  async updateUserRole(userId: string, role: string, permissions: string[]): Promise<void> {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
 
       const { error } = await supabase
-        .from('settings')
-        .insert({
+        .from('user_roles')
+        .upsert({
+          user_id: userId,
           org_id: profile.organization_id,
-          setting_key: roleData.role_name,
-          setting_value: {
-            permissions: roleData.permissions,
-            description: roleData.description,
-            is_active: true
-          },
-          category: 'user_roles',
-          description: `User role: ${roleData.role_name}`
+          role,
+          permissions,
+          updated_at: new Date().toISOString()
         });
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error creating role:', error);
+      console.error('Error updating user role:', error);
       throw error;
     }
   }
 
-  async updateRole(roleId: string, updates: {
-    role_name?: string;
-    permissions?: string[];
-    description?: string;
-    is_active?: boolean;
-  }): Promise<void> {
-    try {
-      const { data: currentRole, error: fetchError } = await supabase
-        .from('settings')
-        .select('id, setting_key, setting_value')
-        .eq('id', roleId)
-        .eq('category', 'user_roles')
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      let currentValue: any = {};
-      try {
-        currentValue = typeof currentRole.setting_value === 'string' 
-          ? JSON.parse(currentRole.setting_value) 
-          : currentRole.setting_value || {};
-      } catch {
-        currentValue = {};
-      }
-
-      const updatedValue = {
-        permissions: updates.permissions || currentValue.permissions || [],
-        description: updates.description !== undefined ? updates.description : currentValue.description,
-        is_active: updates.is_active !== undefined ? updates.is_active : currentValue.is_active
-      };
-
-      const { error } = await supabase
-        .from('settings')
-        .update({
-          setting_key: updates.role_name || currentRole.setting_key,
-          setting_value: updatedValue
-        })
-        .eq('id', roleId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error('Error updating role:', error);
-      throw error;
-    }
-  }
-
-  async deleteRole(roleId: string): Promise<void> {
+  async removeUserRole(userId: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from('settings')
+        .from('user_roles')
         .delete()
-        .eq('id', roleId)
-        .eq('category', 'user_roles');
+        .eq('user_id', userId);
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error deleting role:', error);
+      console.error('Error removing user role:', error);
       throw error;
     }
   }
 
-  getAvailablePermissions(): string[] {
+  getRoleDefinitions(): RolePermission[] {
     return [
-      'view_dashboard',
-      'manage_governance',
-      'manage_risk_appetite',
-      'manage_business_functions',
-      'manage_dependencies',
-      'manage_scenarios',
-      'manage_continuity',
-      'manage_third_party',
-      'manage_controls',
-      'manage_incidents',
-      'manage_audit',
-      'manage_workflows',
-      'view_analytics',
-      'manage_users',
-      'manage_settings',
-      'manage_reports'
+      {
+        role: 'admin',
+        permissions: ['*'],
+        description: 'Full system access and administration rights'
+      },
+      {
+        role: 'manager',
+        permissions: [
+          'incidents.manage',
+          'risks.manage',
+          'controls.manage',
+          'governance.view',
+          'reports.generate'
+        ],
+        description: 'Manage operational activities and generate reports'
+      },
+      {
+        role: 'analyst',
+        permissions: [
+          'incidents.view',
+          'risks.view',
+          'controls.view',
+          'governance.view'
+        ],
+        description: 'View and analyze operational data'
+      },
+      {
+        role: 'viewer',
+        permissions: [
+          'dashboard.view',
+          'reports.view'
+        ],
+        description: 'Read-only access to dashboards and reports'
+      }
     ];
   }
 }

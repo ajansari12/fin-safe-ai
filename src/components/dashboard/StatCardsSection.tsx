@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export default function StatCardsSection() {
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mb-6">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
       <StatCard
         title="Total Risk Items"
         value={124}
@@ -34,9 +34,9 @@ export default function StatCardsSection() {
         description="In the next 30 days"
         icon={Clock}
         footer={
-          <Button variant="ghost" size="sm" className="w-full" asChild>
+          <Button variant="ghost" size="sm" className="w-full text-xs" asChild>
             <Link to="/assessments">
-              View Schedule <ArrowRight className="ml-1 h-4 w-4" />
+              View Schedule <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
           </Button>
         }

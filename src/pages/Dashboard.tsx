@@ -13,14 +13,22 @@ import UnresolvedIncidents from "@/components/dashboard/UnresolvedIncidents";
 import GovernancePoliciesOverdue from "@/components/dashboard/GovernancePoliciesOverdue";
 import ThirdPartyReviewsDue from "@/components/dashboard/ThirdPartyReviewsDue";
 import MostSensitiveCBFs from "@/components/dashboard/MostSensitiveCBFs";
+import MobileDashboard from "@/components/dashboard/MobileDashboard";
 import { useAIAssistant } from "@/components/ai-assistant";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const DashboardContent = () => {
   const { setCurrentModule } = useAIAssistant();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     setCurrentModule("dashboard");
   }, [setCurrentModule]);
+  
+  // Show mobile dashboard on mobile devices
+  if (isMobile) {
+    return <MobileDashboard />;
+  }
   
   return (
     <div className="space-y-6">

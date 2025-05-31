@@ -11,12 +11,16 @@ interface MobileMenuToggleProps {
 export function MobileMenuToggle({ isOpen, onToggle }: MobileMenuToggleProps) {
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
-      className="md:hidden"
+      className="md:hidden relative z-50 h-10 w-10"
       onClick={onToggle}
     >
-      {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      {isOpen ? (
+        <X className="h-5 w-5 transition-transform duration-200" />
+      ) : (
+        <Menu className="h-5 w-5 transition-transform duration-200" />
+      )}
     </Button>
   );
 }

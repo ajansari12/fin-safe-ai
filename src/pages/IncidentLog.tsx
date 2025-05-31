@@ -8,17 +8,17 @@ import IncidentStatistics from "@/components/incident/IncidentStatistics";
 import IncidentForm from "@/components/incident/IncidentForm";
 import IncidentsList from "@/components/incident/IncidentsList";
 import IncidentDetailDialog from "@/components/incident/IncidentDetailDialog";
+import MobileIncidentLog from "@/components/incident/MobileIncidentLog";
 import { useIncidentSLAChecker } from "@/hooks/useIncidentSLAChecker";
 import { useIncidentOperations } from "@/hooks/useIncidentOperations";
-import { 
-  getIncidents,
-  Incident 
-} from "@/services/incident";
+import { getIncidents, Incident } from "@/services/incident";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const IncidentLog = () => {
   const { user } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const isMobile = useIsMobile();
 
   // Use custom hooks
   useIncidentSLAChecker();
@@ -38,6 +38,15 @@ const IncidentLog = () => {
   const handleViewIncident = (incident: Incident) => {
     setSelectedIncident(incident);
   };
+
+  // Show mobile version on mobile devices
+  if (isMobile) {
+    return (
+      <AuthenticatedLayout>
+        <MobileIncidentLog />
+      </AuthenticatedLayout>
+    );
+  }
 
   return (
     <AuthenticatedLayout>
