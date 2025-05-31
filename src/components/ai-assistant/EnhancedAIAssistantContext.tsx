@@ -92,7 +92,7 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm your enhanced ResilientFI assistant. I can now analyze workflows, summarize risks, and provide sector-specific guidance. How can I help you today?",
+      content: "Hello! I'm your enhanced ResilientFI assistant with new capabilities:\n\n🔍 **Auto-generate summaries** for incidents and audits\n📊 **Recommend KRIs** based on your organization type\n⚠️ **Flag modules** with low completion or stale entries\n📋 **Suggest next tasks** in workflows\n\nTry asking: 'Generate incident summary' or 'Recommend KRIs for banking'",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -114,7 +114,7 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     loadUserContext();
   }, [profile]);
 
-  // Enhanced methods
+  // Enhanced methods with new service integration
   const generateWorkflowReport = async () => {
     if (!profile?.organization_id) return;
     
@@ -123,7 +123,6 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
       const analysis = await aiAssistantService.analyzeWorkflowCompleteness(profile.organization_id);
       setWorkflowAnalysis(analysis);
       
-      // Generate message with workflow analysis
       const reportContent = analysis.length > 0 
         ? `**Workflow Completeness Analysis:**\n\n${analysis.map(a => 
             `**${a.module}:** ${a.completionPercentage.toFixed(1)}% complete (${a.completedSteps}/${a.totalSteps} steps)\n` +
@@ -156,7 +155,6 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
       const summary = await aiAssistantService.generateExecutiveRiskSummary(profile.organization_id);
       setRiskSummary(summary);
       
-      // Generate executive summary message
       const reportContent = `**Executive Risk Summary:**\n\n${summary.map(s => 
         `**${s.category}:** ${s.level.toUpperCase()} (${s.count} items)\n` +
         (s.topRisks.length > 0 ? `Top concerns: ${s.topRisks.map(r => r.name).join(', ')}\n` : '')
@@ -226,16 +224,14 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     }
   };
 
-  // Enhanced message handling
+  // Enhanced message handling with new service
   const addUserMessage = async (message: string) => {
     const messageId = `msg-${Date.now()}`;
     const startTime = performance.now();
     
     try {
-      // Log user message
       const userLogId = await aiAssistantService.logChatMessage('user', message, currentModule);
       
-      // Add user message to conversation
       setAssistantMessages(prev => [
         ...prev,
         {
@@ -249,48 +245,51 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
       
       setIsLoading(true);
       
-      // Check for special commands
-      if (message.toLowerCase().includes('workflow report') || message.toLowerCase().includes('workflow analysis')) {
-        await generateWorkflowReport();
-        return;
+      // Use enhanced AI service for processing
+      if (profile?.organization_id) {
+        const org = await getUserOrganization();
+        const aiResponse = await enhancedAIAssistantService.processEnhancedMessage(
+          message,
+          {
+            module: currentModule,
+            orgId: profile.organization_id,
+            orgSector: org?.sector || 'banking'
+          }
+        );
+        
+        const responseTime = performance.now() - startTime;
+        const assistantLogId = await aiAssistantService.logChatMessage(
+          'assistant', 
+          aiResponse, 
+          currentModule, 
+          ['enhanced_ai'], 
+          Math.round(responseTime)
+        );
+        
+        setAssistantMessages(prev => [
+          ...prev,
+          {
+            id: `response-${Date.now()}`,
+            role: "assistant",
+            content: aiResponse,
+            timestamp: new Date().toISOString(),
+            logId: assistantLogId,
+            knowledgeSources: ['enhanced_ai']
+          }
+        ]);
       }
-      
-      if (message.toLowerCase().includes('executive report') || message.toLowerCase().includes('risk summary')) {
-        await generateExecutiveReport();
-        return;
-      }
-      
-      if (message.toLowerCase().includes('sector recommendation') || message.toLowerCase().includes('threshold')) {
-        await getSectorGuidance(message);
-        return;
-      }
-      
-      // Generate regular AI response (simplified for now)
-      const responseTime = performance.now() - startTime;
-      const aiResponse = `I understand you're asking about: "${message}". I can help you with workflow analysis, risk summaries, and sector-specific guidance. Try asking for "workflow report" or "executive risk summary" to see my enhanced capabilities!`;
-      
-      const assistantLogId = await aiAssistantService.logChatMessage(
-        'assistant', 
-        aiResponse, 
-        currentModule, 
-        ['general_guidance'], 
-        Math.round(responseTime)
-      );
-      
+    } catch (error) {
+      console.error('Error processing message:', error);
       setAssistantMessages(prev => [
         ...prev,
         {
-          id: `response-${Date.now()}`,
+          id: `error-${Date.now()}`,
           role: "assistant",
-          content: aiResponse,
+          content: "I apologize, but I encountered an error processing your request. Please try again.",
           timestamp: new Date().toISOString(),
-          logId: assistantLogId,
-          knowledgeSources: ['general_guidance']
+          knowledgeSources: ['error']
         }
       ]);
-      
-    } catch (error) {
-      console.error('Error processing message:', error);
     } finally {
       setIsLoading(false);
     }

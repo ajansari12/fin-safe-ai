@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Dialog, 
   DialogContent, 
@@ -23,34 +24,83 @@ import {
   ThumbsDown,
   BarChart3,
   FileText,
-  Lightbulb
+  Lightbulb,
+  Zap
 } from "lucide-react";
 import { useEnhancedAIAssistant } from "./EnhancedAIAssistantContext";
+import { EnhancedAIQuickActions } from "./EnhancedAIQuickActions";
+import { EnhancedAIInsightsPanel } from "./EnhancedAIInsightsPanel";
+import { enhancedAIAssistantService } from "@/services/enhanced-ai-assistant-service";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserOrganization } from "@/lib/supabase-utils";
 
 export function EnhancedAIAssistantDialog() {
   const {
     isAssistantOpen,
     setIsAssistantOpen,
     assistantMessages,
-    addUserMessage,
     isLoading,
-    isAnalyzing,
     currentModule,
-    generateWorkflowReport,
-    generateExecutiveReport,
-    getSectorGuidance,
-    provideFeedback,
-    orgSector
+    orgSector,
+    provideFeedback
   } = useEnhancedAIAssistant();
 
+  const { profile } = useAuth();
   const [inputMessage, setInputMessage] = useState("");
-  const [feedbackMode, setFeedbackMode] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [messages, setMessages] = useState(assistantMessages);
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim()) {
-      addUserMessage(inputMessage);
+  const handleSendMessage = async () => {
+    if (inputMessage.trim() && profile?.organization_id) {
+      const userMessage = {
+        id: `user-${Date.now()}`,
+        role: "user" as const,
+        content: inputMessage,
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, userMessage]);
       setInputMessage("");
+      setIsProcessing(true);
+
+      try {
+        const org = await getUserOrganization();
+        const response = await enhancedAIAssistantService.processEnhancedMessage(
+          inputMessage,
+          {
+            module: currentModule,
+            orgId: profile.organization_id,
+            orgSector: org?.sector || 'banking'
+          }
+        );
+
+        const aiMessage = {
+          id: `ai-${Date.now()}`,
+          role: "assistant" as const,
+          content: response,
+          timestamp: new Date().toISOString(),
+          knowledgeSources: ['enhanced_ai']
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } catch (error) {
+        console.error('Error processing message:', error);
+        const errorMessage = {
+          id: `error-${Date.now()}`,
+          role: "assistant" as const,
+          content: "I apologize, but I encountered an error processing your request. Please try again.",
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      } finally {
+        setIsProcessing(false);
+      }
     }
+  };
+
+  const handleQuickAction = (command: string) => {
+    setInputMessage(command);
+    handleSendMessage();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -62,43 +112,7 @@ export function EnhancedAIAssistantDialog() {
 
   const handleFeedback = async (messageId: string, rating: number) => {
     await provideFeedback(messageId, rating);
-    setFeedbackMode(null);
   };
-
-  const QuickActions = () => (
-    <div className="flex flex-wrap gap-2 p-4 border-t">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={generateWorkflowReport}
-        disabled={isAnalyzing}
-        className="text-xs"
-      >
-        <BarChart3 className="w-3 h-3 mr-1" />
-        Workflow Report
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={generateExecutiveReport}
-        disabled={isAnalyzing}
-        className="text-xs"
-      >
-        <TrendingUp className="w-3 h-3 mr-1" />
-        Risk Summary
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => getSectorGuidance("RTO")}
-        disabled={isAnalyzing}
-        className="text-xs"
-      >
-        <Target className="w-3 h-3 mr-1" />
-        {orgSector} Guidelines
-      </Button>
-    </div>
-  );
 
   const MessageCard = ({ message }: { message: any }) => (
     <div className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -126,7 +140,7 @@ export function EnhancedAIAssistantDialog() {
             </div>
           )}
           
-          {message.role === "assistant" && message.logId && (
+          {message.role === "assistant" && message.id && (
             <div className="flex gap-2 mt-2">
               <Button
                 variant="ghost"
@@ -159,10 +173,10 @@ export function EnhancedAIAssistantDialog() {
 
   return (
     <Dialog open={isAssistantOpen} onOpenChange={setIsAssistantOpen}>
-      <DialogContent className="max-w-2xl h-[80vh] flex flex-col">
+      <DialogContent className="max-w-6xl h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-primary" />
+            <Zap className="w-5 h-5 text-primary" />
             Enhanced AI Assistant
             {currentModule && (
               <Badge variant="outline" className="text-xs">
@@ -172,57 +186,84 @@ export function EnhancedAIAssistantDialog() {
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {assistantMessages.map((message) => (
-                <MessageCard key={message.id} message={message} />
-              ))}
+        <div className="flex-1 flex gap-4 overflow-hidden">
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Tabs defaultValue="chat" className="flex-1 flex flex-col">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="chat">AI Chat</TabsTrigger>
+                <TabsTrigger value="actions">Quick Actions</TabsTrigger>
+              </TabsList>
               
-              {(isLoading || isAnalyzing) && (
-                <div className="flex gap-3 justify-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-primary animate-pulse" />
-                  </div>
-                  <Card className="bg-muted">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
-                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-                        <span className="text-sm text-muted-foreground ml-2">
-                          {isAnalyzing ? "Analyzing data..." : "Thinking..."}
-                        </span>
+              <TabsContent value="chat" className="flex-1 flex flex-col">
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4">
+                    {messages.map((message) => (
+                      <MessageCard key={message.id} message={message} />
+                    ))}
+                    
+                    {(isLoading || isProcessing) && (
+                      <div className="flex gap-3 justify-start">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Bot className="w-4 h-4 text-primary animate-pulse" />
+                        </div>
+                        <Card className="bg-muted">
+                          <CardContent className="p-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></div>
+                              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                              <span className="text-sm text-muted-foreground ml-2">
+                                Processing your request...
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+                  </div>
+                </ScrollArea>
+                
+                <Separator />
+                
+                <div className="p-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Ask about incidents, audits, KRIs, workflows, or any operational resilience topic..."
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={isLoading || isProcessing}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={handleSendMessage}
+                      disabled={isLoading || isProcessing || !inputMessage.trim()}
+                      size="icon"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </div>
-          </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="actions" className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full p-4">
+                  <EnhancedAIQuickActions 
+                    onQuickAction={handleQuickAction}
+                    currentModule={currentModule}
+                    isLoading={isLoading || isProcessing}
+                  />
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          </div>
           
-          <QuickActions />
-          
-          <Separator />
-          
-          <div className="p-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ask about workflows, risks, or sector guidelines..."
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={isLoading || isAnalyzing}
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={isLoading || isAnalyzing || !inputMessage.trim()}
-                size="icon"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+          {/* Insights Sidebar */}
+          <div className="w-80 border-l">
+            <ScrollArea className="h-full p-4">
+              <EnhancedAIInsightsPanel currentModule={currentModule} />
+            </ScrollArea>
           </div>
         </div>
       </DialogContent>
