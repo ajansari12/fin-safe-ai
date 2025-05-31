@@ -39,8 +39,10 @@ const RoleManagementMatrix: React.FC = () => {
     }
   };
 
-  const handleCreateRole = async (formData: FormData) => {
+  const handleCreateRole = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     try {
+      const formData = new FormData(event.currentTarget);
       const roleName = formData.get('role_name') as string;
       const description = formData.get('description') as string;
       const permissions = enhancedAdminService.getAvailablePermissions().filter(
@@ -62,10 +64,12 @@ const RoleManagementMatrix: React.FC = () => {
     }
   };
 
-  const handleUpdateRole = async (formData: FormData) => {
+  const handleUpdateRole = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!selectedRole) return;
 
     try {
+      const formData = new FormData(event.currentTarget);
       const roleName = formData.get('role_name') as string;
       const description = formData.get('description') as string;
       const isActive = formData.get('is_active') === 'on';
@@ -123,7 +127,7 @@ const RoleManagementMatrix: React.FC = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <form action={handleCreateRole}>
+              <form onSubmit={handleCreateRole}>
                 <DialogHeader>
                   <DialogTitle>Create New Role</DialogTitle>
                   <DialogDescription>Define a new role with specific permissions</DialogDescription>
@@ -224,7 +228,7 @@ const RoleManagementMatrix: React.FC = () => {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl">
             {selectedRole && (
-              <form action={handleUpdateRole}>
+              <form onSubmit={handleUpdateRole}>
                 <DialogHeader>
                   <DialogTitle>Edit Role</DialogTitle>
                   <DialogDescription>Update role permissions and settings</DialogDescription>

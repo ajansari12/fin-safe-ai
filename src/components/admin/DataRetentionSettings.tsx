@@ -47,8 +47,10 @@ const DataRetentionSettings: React.FC = () => {
     }
   };
 
-  const handleUpdateRetention = async (formData: FormData) => {
+  const handleUpdateRetention = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     try {
+      const formData = new FormData(event.currentTarget);
       const retentionDays = parseInt(formData.get('retention_days') as string);
       const autoDelete = formData.get('auto_delete') === 'on';
 
@@ -128,7 +130,7 @@ const DataRetentionSettings: React.FC = () => {
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
-                        <form action={handleUpdateRetention}>
+                        <form onSubmit={handleUpdateRetention}>
                           <DialogHeader>
                             <DialogTitle>Configure Data Retention</DialogTitle>
                             <DialogDescription>
