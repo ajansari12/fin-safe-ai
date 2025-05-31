@@ -6,7 +6,7 @@ import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, BarChart3, FileText, Settings, AlertTriangle, TrendingUp } from "lucide-react";
+import { PlusCircle, BarChart3, FileText, Settings, AlertTriangle, TrendingUp, Grid3X3 } from "lucide-react";
 import { getRiskAppetiteStatements } from "@/services/risk-management-service";
 import { RiskAppetiteStatement } from "./types";
 import RiskAppetiteDashboard from "@/components/risk-appetite/RiskAppetiteDashboard";
@@ -14,6 +14,9 @@ import RiskAppetiteOverview from "@/components/risk-appetite/RiskAppetiteOvervie
 import AppetiteBreachAlerts from "@/components/risk-appetite/AppetiteBreachAlerts";
 import RiskPostureChart from "@/components/risk-appetite/RiskPostureChart";
 import BoardReportGenerator from "@/components/risk-appetite/BoardReportGenerator";
+import TrendChart from "@/components/risk-appetite/TrendChart";
+import RiskPostureHeatmap from "@/components/risk-appetite/RiskPostureHeatmap";
+import EscalationWorkflow from "@/components/risk-appetite/EscalationWorkflow";
 
 export default function RiskAppetite() {
   const { user, profile } = useAuth();
@@ -50,7 +53,7 @@ export default function RiskAppetite() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Risk Appetite Management</h1>
             <p className="text-muted-foreground">
-              Define, monitor, and manage your organization's risk appetite with automated breach detection and board reporting.
+              Enhanced risk appetite monitoring with automated breach detection, trend analysis, and escalation workflows.
             </p>
           </div>
           <Button onClick={handleCreateNew}>
@@ -60,22 +63,30 @@ export default function RiskAppetite() {
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="trends" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Trends
+            </TabsTrigger>
+            <TabsTrigger value="heatmap" className="flex items-center gap-2">
+              <Grid3X3 className="h-4 w-4" />
+              Heatmap
+            </TabsTrigger>
             <TabsTrigger value="alerts" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
-              Breach Alerts
+              Alerts
             </TabsTrigger>
-            <TabsTrigger value="posture" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Risk Posture
+            <TabsTrigger value="escalation" className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4" />
+              Escalation
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Board Reports
+              Reports
             </TabsTrigger>
             <TabsTrigger value="statements" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -87,12 +98,21 @@ export default function RiskAppetite() {
             <RiskAppetiteDashboard />
           </TabsContent>
 
+          <TabsContent value="trends" className="space-y-6">
+            <TrendChart />
+            <RiskPostureChart />
+          </TabsContent>
+
+          <TabsContent value="heatmap" className="space-y-6">
+            <RiskPostureHeatmap />
+          </TabsContent>
+
           <TabsContent value="alerts" className="space-y-6">
             <AppetiteBreachAlerts />
           </TabsContent>
 
-          <TabsContent value="posture" className="space-y-6">
-            <RiskPostureChart />
+          <TabsContent value="escalation" className="space-y-6">
+            <EscalationWorkflow />
           </TabsContent>
 
           <TabsContent value="reports" className="space-y-6">
