@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -75,11 +74,7 @@ class ReportingService {
       // Transform the data to match our interface
       return (data || []).map(template => ({
         ...template,
-        data_blocks: Array.isArray(template.data_blocks) 
-          ? template.data_blocks as DataBlock[]
-          : typeof template.data_blocks === 'string' 
-            ? JSON.parse(template.data_blocks)
-            : []
+        data_blocks: this.parseDataBlocks(template.data_blocks)
       }));
     } catch (error) {
       console.error('Error fetching report templates:', error);
@@ -100,11 +95,7 @@ class ReportingService {
       // Transform the data to match our interface
       return {
         ...data,
-        data_blocks: Array.isArray(data.data_blocks) 
-          ? data.data_blocks as DataBlock[]
-          : typeof data.data_blocks === 'string' 
-            ? JSON.parse(data.data_blocks)
-            : []
+        data_blocks: this.parseDataBlocks(data.data_blocks)
       };
     } catch (error) {
       console.error('Error fetching report template:', error);
@@ -114,14 +105,11 @@ class ReportingService {
 
   async createReportTemplate(template: Omit<ReportTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<ReportTemplate> {
     try {
-      const profile = await getCurrentUserProfile();
-      if (!profile?.organization_id) throw new Error('No organization found');
-
       const { data, error } = await supabase
         .from('report_templates')
         .insert({
-          org_id: profile.organization_id,
-          created_by: profile.id,
+          org_id: template.org_id,
+          created_by: template.created_by,
           template_name: template.template_name,
           template_type: template.template_type,
           description: template.description,
@@ -138,11 +126,7 @@ class ReportingService {
       
       return {
         ...data,
-        data_blocks: Array.isArray(data.data_blocks) 
-          ? data.data_blocks as DataBlock[]
-          : typeof data.data_blocks === 'string' 
-            ? JSON.parse(data.data_blocks)
-            : []
+        data_blocks: this.parseDataBlocks(data.data_blocks)
       };
     } catch (error) {
       console.error('Error creating report template:', error);
@@ -205,11 +189,7 @@ class ReportingService {
       // Transform the data to match our interface
       return (data || []).map(instance => ({
         ...instance,
-        email_recipients: Array.isArray(instance.email_recipients) 
-          ? instance.email_recipients as string[]
-          : typeof instance.email_recipients === 'string' 
-            ? JSON.parse(instance.email_recipients)
-            : []
+        email_recipients: this.parseEmailRecipients(instance.email_recipients)
       }));
     } catch (error) {
       console.error('Error fetching report instances:', error);
@@ -219,18 +199,15 @@ class ReportingService {
 
   async createReportInstance(instance: Omit<ReportInstance, 'id' | 'created_at' | 'updated_at'>): Promise<ReportInstance> {
     try {
-      const profile = await getCurrentUserProfile();
-      if (!profile?.organization_id) throw new Error('No organization found');
-
       const { data, error } = await supabase
         .from('report_instances')
         .insert({
-          org_id: profile.organization_id,
+          org_id: instance.org_id,
           template_id: instance.template_id,
           instance_name: instance.instance_name,
           report_data: instance.report_data,
-          generated_by: profile.id,
-          generated_by_name: profile.full_name || 'Unknown User',
+          generated_by: instance.generated_by,
+          generated_by_name: instance.generated_by_name,
           generation_date: instance.generation_date,
           report_period_start: instance.report_period_start,
           report_period_end: instance.report_period_end,
@@ -247,11 +224,7 @@ class ReportingService {
       
       return {
         ...data,
-        email_recipients: Array.isArray(data.email_recipients) 
-          ? data.email_recipients as string[]
-          : typeof data.email_recipients === 'string' 
-            ? JSON.parse(data.email_recipients)
-            : []
+        email_recipients: this.parseEmailRecipients(data.email_recipients)
       };
     } catch (error) {
       console.error('Error creating report instance:', error);
@@ -294,6 +267,35 @@ class ReportingService {
     } catch (error) {
       console.error('Error generating report data:', error);
       throw error;
+    }
+  }
+
+  // Helper methods for parsing JSON data
+  private parseDataBlocks(dataBlocks: any): DataBlock[] {
+    try {
+      if (Array.isArray(dataBlocks)) {
+        return dataBlocks as DataBlock[];
+      }
+      if (typeof dataBlocks === 'string') {
+        return JSON.parse(dataBlocks) as DataBlock[];
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  }
+
+  private parseEmailRecipients(emailRecipients: any): string[] {
+    try {
+      if (Array.isArray(emailRecipients)) {
+        return emailRecipients as string[];
+      }
+      if (typeof emailRecipients === 'string') {
+        return JSON.parse(emailRecipients) as string[];
+      }
+      return [];
+    } catch {
+      return [];
     }
   }
 

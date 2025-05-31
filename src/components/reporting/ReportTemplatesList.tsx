@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Edit, Trash2, Copy, Search, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { reportingService, ReportTemplate } from "@/services/reporting-service";
+import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
 interface ReportTemplatesListProps {
   onEditTemplate: (templateId: string) => void;
@@ -49,7 +49,14 @@ const ReportTemplatesList: React.FC<ReportTemplatesListProps> = ({ onEditTemplat
 
   const handleDuplicateTemplate = async (template: ReportTemplate) => {
     try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) {
+        toast({ title: "Error", description: "No organization found", variant: "destructive" });
+        return;
+      }
+
       const duplicateTemplate = {
+        org_id: profile.organization_id,
         template_name: `${template.template_name} (Copy)`,
         template_type: template.template_type,
         description: template.description,
@@ -57,7 +64,8 @@ const ReportTemplatesList: React.FC<ReportTemplatesListProps> = ({ onEditTemplat
         data_blocks: template.data_blocks,
         layout_config: template.layout_config,
         is_system_template: false,
-        is_active: true
+        is_active: true,
+        created_by: profile.id
       };
 
       await reportingService.createReportTemplate(duplicateTemplate);
@@ -71,13 +79,20 @@ const ReportTemplatesList: React.FC<ReportTemplatesListProps> = ({ onEditTemplat
 
   const handleGenerateReport = async (template: ReportTemplate) => {
     try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) {
+        toast({ title: "Error", description: "No organization found", variant: "destructive" });
+        return;
+      }
+
       const reportData = await reportingService.generateReportData(template.id);
       const instance = {
+        org_id: profile.organization_id,
         template_id: template.id,
         instance_name: `${template.template_name} - ${new Date().toLocaleDateString()}`,
         report_data: reportData,
-        generated_by: null,
-        generated_by_name: null,
+        generated_by: profile.id,
+        generated_by_name: profile.full_name || 'Unknown User',
         generation_date: new Date().toISOString(),
         report_period_start: null,
         report_period_end: null,

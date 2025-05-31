@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -76,10 +75,9 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Direct query to avoid RPC issues
       const { data, error } = await supabase
         .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
+        .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'user_roles')
         .order('setting_key');
@@ -242,7 +240,7 @@ class EnhancedAdminService {
 
       const { data, error } = await supabase
         .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
+        .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
@@ -313,7 +311,7 @@ class EnhancedAdminService {
 
       const { data, error } = await supabase
         .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
+        .select('*')
         .eq('org_id', profile.organization_id)
         .eq('category', 'data_retention')
         .order('setting_key');
