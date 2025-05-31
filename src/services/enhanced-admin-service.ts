@@ -85,18 +85,21 @@ class EnhancedAdminService {
 
       if (error) throw error;
       
-      // Transform settings data to UserRole format
-      return (data || []).map(setting => ({
-        id: setting.id,
-        org_id: setting.org_id,
-        role_name: setting.setting_key,
-        permissions: setting.setting_value?.permissions || [],
-        description: setting.setting_value?.description || null,
-        is_active: setting.setting_value?.is_active !== false,
-        created_by: setting.created_by,
-        created_at: setting.created_at,
-        updated_at: setting.updated_at
-      }));
+      // Transform settings data to UserRole format with proper type casting
+      return (data || []).map(setting => {
+        const settingValue = setting.setting_value as any;
+        return {
+          id: setting.id,
+          org_id: setting.org_id,
+          role_name: setting.setting_key,
+          permissions: Array.isArray(settingValue?.permissions) ? settingValue.permissions : [],
+          description: settingValue?.description || null,
+          is_active: settingValue?.is_active !== false,
+          created_by: null, // settings table doesn't have created_by
+          created_at: setting.created_at,
+          updated_at: setting.updated_at
+        };
+      });
     } catch (error) {
       console.error('Error fetching roles:', error);
       return [];
@@ -123,8 +126,7 @@ class EnhancedAdminService {
             is_active: true
           },
           category: 'user_roles',
-          description: `User role: ${roleData.role_name}`,
-          created_by: profile.id
+          description: `User role: ${roleData.role_name}`
         });
 
       if (error) throw error;
@@ -159,11 +161,11 @@ class EnhancedAdminService {
 
       if (fetchError) throw fetchError;
 
+      const currentValue = currentRole.setting_value as any;
       const updatedValue = {
-        ...currentRole.setting_value,
-        permissions: updates.permissions || currentRole.setting_value.permissions,
-        description: updates.description !== undefined ? updates.description : currentRole.setting_value.description,
-        is_active: updates.is_active !== undefined ? updates.is_active : currentRole.setting_value.is_active
+        permissions: updates.permissions || currentValue?.permissions || [],
+        description: updates.description !== undefined ? updates.description : currentValue?.description,
+        is_active: updates.is_active !== undefined ? updates.is_active : currentValue?.is_active
       };
 
       const { error } = await supabase
@@ -222,8 +224,8 @@ class EnhancedAdminService {
       if (error) throw error;
       return (data || []).map(setting => ({
         ...setting,
-        category: setting.category || 'modules',
-        created_by: setting.created_by
+        category: 'modules',
+        created_by: null // settings table doesn't have created_by
       }));
     } catch (error) {
       console.error('Error fetching module settings:', error);
@@ -243,8 +245,7 @@ class EnhancedAdminService {
           setting_key: settingKey,
           setting_value: { enabled },
           category: 'modules',
-          description: `Module ${settingKey} activation setting`,
-          created_by: profile.id
+          description: `Module ${settingKey} activation setting`
         });
 
       if (error) throw error;
@@ -278,8 +279,8 @@ class EnhancedAdminService {
       if (error) throw error;
       return (data || []).map(setting => ({
         ...setting,
-        category: setting.category || 'data_retention',
-        created_by: setting.created_by
+        category: 'data_retention',
+        created_by: null // settings table doesn't have created_by
       }));
     } catch (error) {
       console.error('Error fetching data retention settings:', error);
@@ -304,8 +305,7 @@ class EnhancedAdminService {
           setting_key: settingKey,
           setting_value: { retention_days: retentionDays, auto_delete: autoDelete },
           category: 'data_retention',
-          description: `Data retention policy for ${module}`,
-          created_by: profile.id
+          description: `Data retention policy for ${module}`
         });
 
       if (error) throw error;
