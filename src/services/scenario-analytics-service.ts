@@ -129,7 +129,7 @@ export async function getScenarioResults(scenarioTestId?: string): Promise<Scena
     return [];
   }
 
-  let query = supabase
+  let query = (supabase as any)
     .from('scenario_results')
     .select('*')
     .eq('org_id', profile.organization_id)
@@ -145,7 +145,7 @@ export async function getScenarioResults(scenarioTestId?: string): Promise<Scena
   return data || [];
 }
 
-export async function createScenarioResult(resultData: Partial<ScenarioResult>): Promise<ScenarioResult> {
+export async function createScenarioResult(resultData: Omit<ScenarioResult, 'id' | 'created_at' | 'updated_at'>): Promise<ScenarioResult> {
   const { data: profile } = await supabase
     .from('profiles')
     .select('organization_id')
@@ -156,12 +156,15 @@ export async function createScenarioResult(resultData: Partial<ScenarioResult>):
     throw new Error('User organization not found');
   }
 
-  const { data, error } = await supabase
+  // Ensure org_id is set correctly
+  const insertData = {
+    ...resultData,
+    org_id: profile.organization_id
+  };
+
+  const { data, error } = await (supabase as any)
     .from('scenario_results')
-    .insert({
-      ...resultData,
-      org_id: profile.organization_id
-    })
+    .insert(insertData)
     .select()
     .single();
 
@@ -169,8 +172,8 @@ export async function createScenarioResult(resultData: Partial<ScenarioResult>):
   return data;
 }
 
-export async function updateScenarioResult(id: string, updates: Partial<ScenarioResult>): Promise<ScenarioResult> {
-  const { data, error } = await supabase
+export async function updateScenarioResult(id: string, updates: Partial<Omit<ScenarioResult, 'id' | 'created_at'>>): Promise<ScenarioResult> {
+  const { data, error } = await (supabase as any)
     .from('scenario_results')
     .update(updates)
     .eq('id', id)
@@ -182,29 +185,35 @@ export async function updateScenarioResult(id: string, updates: Partial<Scenario
 }
 
 export async function getExecutionSteps(scenarioResultId: string): Promise<ScenarioExecutionStep[]> {
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('scenario_execution_steps')
     .select('*')
     .eq('scenario_result_id', scenarioResultId)
     .order('step_number', { ascending: true });
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map((step: any) => ({
+    ...step,
+    status: step.status as ScenarioExecutionStep['status']
+  }));
 }
 
-export async function createExecutionStep(stepData: Partial<ScenarioExecutionStep>): Promise<ScenarioExecutionStep> {
-  const { data, error } = await supabase
+export async function createExecutionStep(stepData: Omit<ScenarioExecutionStep, 'id' | 'created_at' | 'updated_at'>): Promise<ScenarioExecutionStep> {
+  const { data, error } = await (supabase as any)
     .from('scenario_execution_steps')
     .insert(stepData)
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    status: data.status as ScenarioExecutionStep['status']
+  };
 }
 
-export async function updateExecutionStep(id: string, updates: Partial<ScenarioExecutionStep>): Promise<ScenarioExecutionStep> {
-  const { data, error } = await supabase
+export async function updateExecutionStep(id: string, updates: Partial<Omit<ScenarioExecutionStep, 'id' | 'created_at'>>): Promise<ScenarioExecutionStep> {
+  const { data, error } = await (supabase as any)
     .from('scenario_execution_steps')
     .update(updates)
     .eq('id', id)
@@ -212,7 +221,10 @@ export async function updateExecutionStep(id: string, updates: Partial<ScenarioE
     .single();
 
   if (error) throw error;
-  return data;
+  return {
+    ...data,
+    status: data.status as ScenarioExecutionStep['status']
+  };
 }
 
 export async function generateAIRecommendations(resultData: Partial<ScenarioResult>): Promise<string> {
