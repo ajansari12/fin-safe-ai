@@ -2659,6 +2659,122 @@ export type Database = {
           },
         ]
       }
+      report_instances: {
+        Row: {
+          created_at: string
+          email_recipients: Json | null
+          file_path: string | null
+          file_size: number | null
+          generated_by: string | null
+          generated_by_name: string | null
+          generation_date: string
+          id: string
+          instance_name: string
+          org_id: string
+          report_data: Json
+          report_period_end: string | null
+          report_period_start: string | null
+          scheduled_delivery: Json | null
+          status: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_recipients?: Json | null
+          file_path?: string | null
+          file_size?: number | null
+          generated_by?: string | null
+          generated_by_name?: string | null
+          generation_date?: string
+          id?: string
+          instance_name: string
+          org_id: string
+          report_data?: Json
+          report_period_end?: string | null
+          report_period_start?: string | null
+          scheduled_delivery?: Json | null
+          status?: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_recipients?: Json | null
+          file_path?: string | null
+          file_size?: number | null
+          generated_by?: string | null
+          generated_by_name?: string | null
+          generation_date?: string
+          id?: string
+          instance_name?: string
+          org_id?: string
+          report_data?: Json
+          report_period_end?: string | null
+          report_period_start?: string | null
+          scheduled_delivery?: Json | null
+          status?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_instances_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_blocks: Json
+          description: string | null
+          id: string
+          is_active: boolean
+          is_system_template: boolean
+          layout_config: Json
+          org_id: string
+          template_config: Json
+          template_name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_blocks?: Json
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system_template?: boolean
+          layout_config?: Json
+          org_id: string
+          template_config?: Json
+          template_name: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_blocks?: Json
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system_template?: boolean
+          layout_config?: Json
+          org_id?: string
+          template_config?: Json
+          template_name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       risk_appetite_statements: {
         Row: {
           created_at: string

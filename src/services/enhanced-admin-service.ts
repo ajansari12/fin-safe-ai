@@ -76,13 +76,19 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Use a simple query to avoid type inference issues
-      const { data, error } = await supabase
-        .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
-        .eq('org_id', profile.organization_id)
-        .eq('category', 'user_roles')
-        .order('setting_key');
+      // Use raw query to avoid type issues
+      const { data, error } = await supabase.rpc('get_settings_by_category', {
+        p_org_id: profile.organization_id,
+        p_category: 'user_roles'
+      }).catch(async () => {
+        // Fallback to direct query if RPC doesn't exist
+        return await supabase
+          .from('settings')
+          .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
+          .eq('org_id', profile.organization_id)
+          .eq('category', 'user_roles')
+          .order('setting_key');
+      });
 
       if (error) throw error;
       
@@ -90,7 +96,7 @@ class EnhancedAdminService {
       const roles: UserRole[] = [];
       
       if (data) {
-        data.forEach(setting => {
+        data.forEach((setting: any) => {
           // Parse the setting_value safely
           let settingValue: any = {};
           try {
@@ -240,19 +246,25 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
-        .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
-        .eq('org_id', profile.organization_id)
-        .eq('category', 'modules')
-        .order('setting_key');
+      const { data, error } = await supabase.rpc('get_settings_by_category', {
+        p_org_id: profile.organization_id,
+        p_category: 'modules'
+      }).catch(async () => {
+        // Fallback to direct query
+        return await supabase
+          .from('settings')
+          .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
+          .eq('org_id', profile.organization_id)
+          .eq('category', 'modules')
+          .order('setting_key');
+      });
 
       if (error) throw error;
       
       const moduleSettings: ModuleSetting[] = [];
       
       if (data) {
-        data.forEach(setting => {
+        data.forEach((setting: any) => {
           const moduleSetting: ModuleSetting = {
             id: setting.id,
             org_id: setting.org_id,
@@ -260,7 +272,7 @@ class EnhancedAdminService {
             setting_value: setting.setting_value,
             description: setting.description,
             category: 'modules',
-            created_by: null, // settings table doesn't have created_by
+            created_by: null,
             created_at: setting.created_at,
             updated_at: setting.updated_at
           };
@@ -424,7 +436,8 @@ class EnhancedAdminService {
       'manage_workflows',
       'view_analytics',
       'manage_users',
-      'manage_settings'
+      'manage_settings',
+      'manage_reports'
     ];
   }
 
