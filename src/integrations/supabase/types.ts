@@ -736,6 +736,51 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_settings: {
+        Row: {
+          allowed_auth_methods: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          ip_whitelist: Json | null
+          mfa_enforced: boolean
+          mfa_enforcement_date: string | null
+          org_id: string
+          password_policy: Json | null
+          session_timeout_minutes: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allowed_auth_methods?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ip_whitelist?: Json | null
+          mfa_enforced?: boolean
+          mfa_enforcement_date?: string | null
+          org_id: string
+          password_policy?: Json | null
+          session_timeout_minutes?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allowed_auth_methods?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          ip_whitelist?: Json | null
+          mfa_enforced?: boolean
+          mfa_enforcement_date?: string | null
+          org_id?: string
+          password_policy?: Json | null
+          session_timeout_minutes?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       business_functions: {
         Row: {
           category: string | null
@@ -3293,6 +3338,66 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          created_at: string
+          error_message: string | null
+          id: string
+          ip_address: unknown | null
+          org_id: string
+          resource_id: string | null
+          resource_name: string | null
+          resource_type: string
+          risk_score: number | null
+          session_id: string | null
+          status: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          org_id: string
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type: string
+          risk_score?: number | null
+          session_id?: string | null
+          status?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          ip_address?: unknown | null
+          org_id?: string
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type?: string
+          risk_score?: number | null
+          session_id?: string | null
+          status?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
         }
         Relationships: []
       }

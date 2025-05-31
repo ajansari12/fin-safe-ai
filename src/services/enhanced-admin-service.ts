@@ -3,6 +3,7 @@ import { roleManagementService, UserRole } from "./admin/role-management-service
 import { moduleSettingsService, ModuleSetting } from "./admin/module-settings-service";
 import { dataRetentionService } from "./admin/data-retention-service";
 import { adminLoggingService, AdminLog } from "./admin/admin-logging-service";
+import { securityLoggingService } from "./security/security-logging-service";
 
 class EnhancedAdminService {
   // Role Management
@@ -16,13 +17,24 @@ class EnhancedAdminService {
     description?: string;
   }): Promise<void> {
     await roleManagementService.createRole(roleData);
-    await adminLoggingService.logAdminAction(
-      'create',
-      'role',
-      undefined,
-      roleData.role_name,
-      { permissions: roleData.permissions }
-    );
+    await Promise.all([
+      adminLoggingService.logAdminAction(
+        'create',
+        'role',
+        undefined,
+        roleData.role_name,
+        { permissions: roleData.permissions }
+      ),
+      securityLoggingService.logSecurityAction(
+        'role_created',
+        'user_role',
+        {
+          resourceName: roleData.role_name,
+          actionDetails: { permissions: roleData.permissions },
+          riskScore: 3
+        }
+      )
+    ]);
   }
 
   async updateRole(roleId: string, updates: {
@@ -32,18 +44,41 @@ class EnhancedAdminService {
     is_active?: boolean;
   }): Promise<void> {
     await roleManagementService.updateRole(roleId, updates);
-    await adminLoggingService.logAdminAction(
-      'update',
-      'role',
-      roleId,
-      updates.role_name,
-      updates
-    );
+    await Promise.all([
+      adminLoggingService.logAdminAction(
+        'update',
+        'role',
+        roleId,
+        updates.role_name,
+        updates
+      ),
+      securityLoggingService.logSecurityAction(
+        'role_updated',
+        'user_role',
+        {
+          resourceId: roleId,
+          resourceName: updates.role_name,
+          actionDetails: updates,
+          riskScore: updates.is_active === false ? 5 : 3
+        }
+      )
+    ]);
   }
 
   async deleteRole(roleId: string, roleName: string): Promise<void> {
     await roleManagementService.deleteRole(roleId);
-    await adminLoggingService.logAdminAction('delete', 'role', roleId, roleName);
+    await Promise.all([
+      adminLoggingService.logAdminAction('delete', 'role', roleId, roleName),
+      securityLoggingService.logSecurityAction(
+        'role_deleted',
+        'user_role',
+        {
+          resourceId: roleId,
+          resourceName: roleName,
+          riskScore: 6
+        }
+      )
+    ]);
   }
 
   // Module Settings Management
@@ -53,13 +88,24 @@ class EnhancedAdminService {
 
   async updateModuleSetting(settingKey: string, enabled: boolean): Promise<void> {
     await moduleSettingsService.updateModuleSetting(settingKey, enabled);
-    await adminLoggingService.logAdminAction(
-      'update',
-      'module_setting',
-      undefined,
-      settingKey,
-      { enabled }
-    );
+    await Promise.all([
+      adminLoggingService.logAdminAction(
+        'update',
+        'module_setting',
+        undefined,
+        settingKey,
+        { enabled }
+      ),
+      securityLoggingService.logSecurityAction(
+        'module_setting_updated',
+        'system_setting',
+        {
+          resourceName: settingKey,
+          actionDetails: { enabled },
+          riskScore: 2
+        }
+      )
+    ]);
   }
 
   // Data Retention Settings
@@ -73,13 +119,24 @@ class EnhancedAdminService {
     autoDelete: boolean
   ): Promise<void> {
     await dataRetentionService.updateDataRetentionSetting(module, retentionDays, autoDelete);
-    await adminLoggingService.logAdminAction(
-      'update',
-      'data_retention_setting',
-      undefined,
-      `${module}_retention`,
-      { retention_days: retentionDays, auto_delete: autoDelete }
-    );
+    await Promise.all([
+      adminLoggingService.logAdminAction(
+        'update',
+        'data_retention_setting',
+        undefined,
+        `${module}_retention`,
+        { retention_days: retentionDays, auto_delete: autoDelete }
+      ),
+      securityLoggingService.logSecurityAction(
+        'data_retention_updated',
+        'data_policy',
+        {
+          resourceName: `${module}_retention`,
+          actionDetails: { retention_days: retentionDays, auto_delete: autoDelete },
+          riskScore: autoDelete ? 4 : 2
+        }
+      )
+    ]);
   }
 
   // Admin Audit Logs

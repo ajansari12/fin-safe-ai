@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, Database, Key, Shield, ToggleLeft, Clock, FileText } from "lucide-react";
+import { Users, Settings, Database, Key, Shield, ToggleLeft, Clock, FileText, Lock, Eye } from "lucide-react";
 import UserManagement from "./UserManagement";
 import OrganizationSettings from "./OrganizationSettings";
 import DataRetentionManager from "./DataRetentionManager";
@@ -10,6 +10,9 @@ import RoleManagementMatrix from "./RoleManagementMatrix";
 import ModuleToggleManager from "./ModuleToggleManager";
 import DataRetentionSettings from "./DataRetentionSettings";
 import AdminAuditLog from "./AdminAuditLog";
+import SecuritySettings from "../security/SecuritySettings";
+import SecurityAuditLog from "../security/SecurityAuditLog";
+import EncryptionPolicyManager from "../security/EncryptionPolicyManager";
 
 const AdminInterface: React.FC = () => {
   return (
@@ -17,12 +20,12 @@ const AdminInterface: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
         <p className="text-muted-foreground">
-          Comprehensive administration tools for managing users, roles, modules, and organizational settings
+          Comprehensive administration tools for managing users, roles, modules, security, and organizational settings
         </p>
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Users
@@ -30,6 +33,18 @@ const AdminInterface: React.FC = () => {
           <TabsTrigger value="roles" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Roles
+          </TabsTrigger>
+          <TabsTrigger value="security" className="flex items-center gap-2">
+            <Key className="h-4 w-4" />
+            Security
+          </TabsTrigger>
+          <TabsTrigger value="encryption" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Encryption
+          </TabsTrigger>
+          <TabsTrigger value="security-audit" className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            Security Log
           </TabsTrigger>
           <TabsTrigger value="modules" className="flex items-center gap-2">
             <ToggleLeft className="h-4 w-4" />
@@ -47,12 +62,8 @@ const AdminInterface: React.FC = () => {
             <Settings className="h-4 w-4" />
             Settings
           </TabsTrigger>
-          <TabsTrigger value="data" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Data Policies
-          </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center gap-2">
-            <Key className="h-4 w-4" />
+            <Database className="h-4 w-4" />
             Integrations
           </TabsTrigger>
         </TabsList>
@@ -63,6 +74,18 @@ const AdminInterface: React.FC = () => {
 
         <TabsContent value="roles" className="space-y-6">
           <RoleManagementMatrix />
+        </TabsContent>
+
+        <TabsContent value="security" className="space-y-6">
+          <SecuritySettings />
+        </TabsContent>
+
+        <TabsContent value="encryption" className="space-y-6">
+          <EncryptionPolicyManager />
+        </TabsContent>
+
+        <TabsContent value="security-audit" className="space-y-6">
+          <SecurityAuditLog />
         </TabsContent>
 
         <TabsContent value="modules" className="space-y-6">
@@ -81,11 +104,8 @@ const AdminInterface: React.FC = () => {
           <OrganizationSettings />
         </TabsContent>
 
-        <TabsContent value="data" className="space-y-6">
-          <DataRetentionManager />
-        </TabsContent>
-
         <TabsContent value="integrations" className="space-y-6">
+          <DataRetentionManager />
           <IntegrationManager />
         </TabsContent>
       </Tabs>
