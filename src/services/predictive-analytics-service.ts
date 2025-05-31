@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -159,7 +158,7 @@ class PredictiveAnalyticsService {
       return {
         overallScore: Math.round(overallScore),
         categories: scores,
-        trend: this.calculateScorecard Trend(scores),
+        trend: this.calculateScorecardTrend(scores),
         lastUpdated: new Date().toISOString()
       };
     } catch (error) {
