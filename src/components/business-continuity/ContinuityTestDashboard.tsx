@@ -60,9 +60,9 @@ const ContinuityTestDashboard: React.FC<ContinuityTestDashboardProps> = ({ orgId
     return "text-red-600";
   };
 
-  const getScoreBadge = (score: number) => {
-    if (score >= 80) return "success";
-    if (score >= 60) return "warning";
+  const getScoreBadgeVariant = (score: number): "default" | "destructive" | "outline" | "secondary" => {
+    if (score >= 80) return "default"; // Changed from "success" to "default"
+    if (score >= 60) return "outline"; // Changed from "warning" to "outline"
     return "destructive";
   };
 
@@ -253,7 +253,7 @@ const ContinuityTestDashboard: React.FC<ContinuityTestDashboardProps> = ({ orgId
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">Test Scorecard</CardTitle>
-                    <Badge variant={getScoreBadge(outcome.overall_score)}>
+                    <Badge variant={getScoreBadgeVariant(outcome.overall_score)}>
                       {outcome.overall_score.toFixed(1)}%
                     </Badge>
                   </div>
@@ -362,9 +362,9 @@ const ContinuityTestDashboard: React.FC<ContinuityTestDashboardProps> = ({ orgId
                           Overall Score: {outcome.overall_score.toFixed(1)}%
                         </div>
                       </div>
-                      <Badge variant={getScoreBadge(outcome.overall_score)}>
-                        {getScoreBadge(outcome.overall_score) === 'success' ? 'Passed' : 
-                         getScoreBadge(outcome.overall_score) === 'warning' ? 'Marginal' : 'Failed'}
+                      <Badge variant={getScoreBadgeVariant(outcome.overall_score)}>
+                        {getScoreBadgeVariant(outcome.overall_score) === 'default' ? 'Passed' : 
+                         getScoreBadgeVariant(outcome.overall_score) === 'outline' ? 'Marginal' : 'Failed'}
                       </Badge>
                     </div>
 

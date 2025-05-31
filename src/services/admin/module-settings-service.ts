@@ -27,37 +27,51 @@ class ModuleSettingsService {
       if (!profile?.organization_id) return [];
 
       // Use raw query to avoid type inference issues
-      const { data, error } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('org_id', profile.organization_id)
-        .eq('category', 'modules')
-        .order('setting_key');
+      const { data, error } = await supabase.rpc('get_module_settings', {
+        org_id_param: profile.organization_id
+      });
 
       if (error) throw error;
       
-      const settings: ModuleSetting[] = [];
-      
-      if (data) {
-        for (const item of data) {
-          settings.push({
-            id: item.id,
-            org_id: item.org_id,
-            setting_key: item.setting_key,
-            setting_value: this.transformSettingValue(item.setting_value),
-            description: item.description,
-            category: 'modules',
-            created_by: null,
-            created_at: item.created_at,
-            updated_at: item.updated_at
-          });
-        }
-      }
-      
-      return settings;
+      return data || [];
     } catch (error) {
       console.error('Error fetching module settings:', error);
-      return [];
+      
+      // Fallback to direct query if RPC doesn't exist
+      try {
+        const profile = await getCurrentUserProfile();
+        if (!profile?.organization_id) return [];
+
+        const { data: rawData } = await supabase
+          .from('settings')
+          .select('*')
+          .eq('org_id', profile.organization_id)
+          .eq('category', 'modules')
+          .order('setting_key');
+
+        const settings: ModuleSetting[] = [];
+        
+        if (rawData) {
+          for (const item of rawData) {
+            settings.push({
+              id: item.id,
+              org_id: item.org_id,
+              setting_key: item.setting_key,
+              setting_value: this.transformSettingValue(item.setting_value),
+              description: item.description,
+              category: 'modules',
+              created_by: null,
+              created_at: item.created_at,
+              updated_at: item.updated_at
+            });
+          }
+        }
+        
+        return settings;
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+        return [];
+      }
     }
   }
 
