@@ -76,10 +76,10 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Use a simple query without complex type inference
-      const { data: settingsData, error } = await supabase
+      // Use a simple query to avoid type inference issues
+      const { data, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'user_roles')
         .order('setting_key');
@@ -89,8 +89,8 @@ class EnhancedAdminService {
       // Transform settings data to UserRole format manually
       const roles: UserRole[] = [];
       
-      if (settingsData) {
-        settingsData.forEach(setting => {
+      if (data) {
+        data.forEach(setting => {
           // Parse the setting_value safely
           let settingValue: any = {};
           try {
@@ -168,10 +168,10 @@ class EnhancedAdminService {
     is_active?: boolean;
   }): Promise<void> {
     try {
-      // Get current role data
+      // Get current role data using simple select
       const { data: currentRole, error: fetchError } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, setting_key, setting_value')
         .eq('id', roleId)
         .eq('category', 'user_roles')
         .single();
@@ -240,9 +240,9 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data: settingsData, error } = await supabase
+      const { data, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
@@ -251,8 +251,8 @@ class EnhancedAdminService {
       
       const moduleSettings: ModuleSetting[] = [];
       
-      if (settingsData) {
-        settingsData.forEach(setting => {
+      if (data) {
+        data.forEach(setting => {
           const moduleSetting: ModuleSetting = {
             id: setting.id,
             org_id: setting.org_id,
@@ -311,9 +311,9 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data: settingsData, error } = await supabase
+      const { data, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'data_retention')
         .order('setting_key');
@@ -322,8 +322,8 @@ class EnhancedAdminService {
       
       const retentionSettings: ModuleSetting[] = [];
       
-      if (settingsData) {
-        settingsData.forEach(setting => {
+      if (data) {
+        data.forEach(setting => {
           const retentionSetting: ModuleSetting = {
             id: setting.id,
             org_id: setting.org_id,
