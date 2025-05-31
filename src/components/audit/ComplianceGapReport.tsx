@@ -70,7 +70,7 @@ const ComplianceGapReport: React.FC<ComplianceGapReportProps> = ({ orgId }) => {
 
   const severityChartData = Object.entries(reportData.gapsBySeverity).map(([severity, count]) => ({
     severity: severity,
-    count: count,
+    count: count as number,
     fill: severity === 'critical' ? '#ef4444' : 
           severity === 'high' ? '#f97316' :
           severity === 'medium' ? '#eab308' : '#22c55e'
@@ -211,7 +211,7 @@ const ComplianceGapReport: React.FC<ComplianceGapReportProps> = ({ orgId }) => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ severity, count }) => `${severity}: ${count}`}
+                      label={({ severity, count }: { severity: string; count: number }) => `${severity}: ${count}`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="count"

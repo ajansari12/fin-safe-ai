@@ -83,10 +83,18 @@ const AuditScheduleForm: React.FC<AuditScheduleFormProps> = ({
       setLoading(true);
       
       const auditData = {
-        ...data,
         org_id: orgId,
+        audit_name: data.audit_name,
+        audit_type: data.audit_type,
+        audit_scope: data.audit_scope || "",
         scheduled_start_date: format(data.scheduled_start_date, 'yyyy-MM-dd'),
         scheduled_end_date: format(data.scheduled_end_date, 'yyyy-MM-dd'),
+        assigned_auditor_name: data.assigned_auditor_name || "",
+        priority: data.priority,
+        regulatory_framework: data.regulatory_framework || "",
+        audit_frequency: data.audit_frequency || "",
+        estimated_hours: data.estimated_hours || 0,
+        notes: data.notes || "",
         status: schedule?.status || 'scheduled',
         completion_percentage: schedule?.completion_percentage || 0,
       };

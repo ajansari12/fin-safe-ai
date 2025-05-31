@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -108,10 +107,20 @@ const RegulatoryMappingForm: React.FC<RegulatoryMappingFormProps> = ({
       setLoading(true);
       
       const mappingData = {
-        ...data,
         org_id: orgId,
+        regulatory_framework: data.regulatory_framework,
+        requirement_section: data.requirement_section,
+        requirement_title: data.requirement_title,
+        requirement_description: data.requirement_description || "",
+        compliance_status: data.compliance_status,
+        gap_severity: data.gap_severity,
+        remediation_priority: data.remediation_priority,
+        finding_id: data.finding_id || "",
+        audit_upload_id: data.audit_upload_id || "",
         target_completion_date: data.target_completion_date ? 
-          format(data.target_completion_date, 'yyyy-MM-dd') : undefined,
+          format(data.target_completion_date, 'yyyy-MM-dd') : "",
+        responsible_party: data.responsible_party || "",
+        validation_evidence: data.validation_evidence || "",
         last_assessment_date: format(new Date(), 'yyyy-MM-dd'),
       };
 
