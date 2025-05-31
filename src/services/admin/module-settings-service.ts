@@ -6,7 +6,7 @@ export interface ModuleSetting {
   id: string;
   org_id: string;
   setting_key: string;
-  setting_value: any;
+  setting_value: boolean | Record<string, any>;
   description: string | null;
   category: string;
   created_by: string | null;
@@ -29,11 +29,11 @@ class ModuleSettingsService {
 
       if (error) throw error;
       
-      return (settingsData || []).map((setting: any) => ({
+      return (settingsData || []).map((setting) => ({
         id: setting.id,
         org_id: setting.org_id,
         setting_key: setting.setting_key,
-        setting_value: setting.setting_value,
+        setting_value: setting.setting_value as boolean | Record<string, any>,
         description: setting.description,
         category: 'modules',
         created_by: null,
