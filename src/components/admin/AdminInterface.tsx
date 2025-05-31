@@ -1,11 +1,15 @@
 
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Settings, Database, Key } from "lucide-react";
+import { Users, Settings, Database, Key, Shield, ToggleLeft, Clock, FileText } from "lucide-react";
 import UserManagement from "./UserManagement";
 import OrganizationSettings from "./OrganizationSettings";
 import DataRetentionManager from "./DataRetentionManager";
 import IntegrationManager from "./IntegrationManager";
+import RoleManagementMatrix from "./RoleManagementMatrix";
+import ModuleToggleManager from "./ModuleToggleManager";
+import DataRetentionSettings from "./DataRetentionSettings";
+import AdminAuditLog from "./AdminAuditLog";
 
 const AdminInterface: React.FC = () => {
   return (
@@ -13,23 +17,39 @@ const AdminInterface: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
         <p className="text-muted-foreground">
-          Manage users, organization settings, data policies, and integrations
+          Comprehensive administration tools for managing users, roles, modules, and organizational settings
         </p>
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Users & Roles
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="roles" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            Roles
+          </TabsTrigger>
+          <TabsTrigger value="modules" className="flex items-center gap-2">
+            <ToggleLeft className="h-4 w-4" />
+            Modules
+          </TabsTrigger>
+          <TabsTrigger value="retention" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Data Retention
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Audit Log
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Org Settings
+            Settings
           </TabsTrigger>
-          <TabsTrigger value="retention" className="flex items-center gap-2">
+          <TabsTrigger value="data" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Data Retention
+            Data Policies
           </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center gap-2">
             <Key className="h-4 w-4" />
@@ -41,11 +61,27 @@ const AdminInterface: React.FC = () => {
           <UserManagement />
         </TabsContent>
 
+        <TabsContent value="roles" className="space-y-6">
+          <RoleManagementMatrix />
+        </TabsContent>
+
+        <TabsContent value="modules" className="space-y-6">
+          <ModuleToggleManager />
+        </TabsContent>
+
+        <TabsContent value="retention" className="space-y-6">
+          <DataRetentionSettings />
+        </TabsContent>
+
+        <TabsContent value="audit" className="space-y-6">
+          <AdminAuditLog />
+        </TabsContent>
+
         <TabsContent value="settings" className="space-y-6">
           <OrganizationSettings />
         </TabsContent>
 
-        <TabsContent value="retention" className="space-y-6">
+        <TabsContent value="data" className="space-y-6">
           <DataRetentionManager />
         </TabsContent>
 
