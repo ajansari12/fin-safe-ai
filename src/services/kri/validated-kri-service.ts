@@ -42,7 +42,7 @@ export class ValidatedKRIService {
       throw new Error('Organization not found');
     }
 
-    // Prepare data for database insert - exclude threshold_id since it's not in our schema
+    // Prepare data for database insert - only include fields that exist in the database
     const kriData = {
       name: data.name || '',
       description: data.description,

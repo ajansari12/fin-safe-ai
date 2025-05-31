@@ -72,12 +72,13 @@ class ModuleSettingsService {
     }
   }
 
-  private transformSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean } {
+  private transformSettingValue(value: unknown): { enabled?: boolean; retention_days?: number; auto_delete?: boolean } {
     if (typeof value === 'object' && value !== null) {
+      const obj = value as Record<string, unknown>;
       return {
-        enabled: value.enabled,
-        retention_days: value.retention_days,
-        auto_delete: value.auto_delete
+        enabled: typeof obj.enabled === 'boolean' ? obj.enabled : undefined,
+        retention_days: typeof obj.retention_days === 'number' ? obj.retention_days : undefined,
+        auto_delete: typeof obj.auto_delete === 'boolean' ? obj.auto_delete : undefined
       };
     }
     if (typeof value === 'boolean') {
