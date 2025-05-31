@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, AlertTriangle, CheckSquare, FileText, Building2, History } from "lucide-react";
+import { Upload, AlertTriangle, CheckSquare, FileText, Building2, History, Calendar, MapPin, BarChart3, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AuditUploadForm from "@/components/audit/AuditUploadForm";
 import AuditDocumentsList from "@/components/audit/AuditDocumentsList";
@@ -15,6 +14,10 @@ import AuditTasksList from "@/components/audit/AuditTasksList";
 import AuditTrailExport from "@/components/audit/AuditTrailExport";
 import AuditTrailsList from "@/components/audit/AuditTrailsList";
 import AuditPDFExport from "@/components/audit/AuditPDFExport";
+import AuditScheduleCalendar from "@/components/audit/AuditScheduleCalendar";
+import RegulatoryMappingManager from "@/components/audit/RegulatoryMappingManager";
+import ComplianceGapReport from "@/components/audit/ComplianceGapReport";
+import AIAuditSummaryGenerator from "@/components/audit/AIAuditSummaryGenerator";
 import { auditService, AuditUpload, ComplianceFinding, AuditTask } from "@/services/audit-service";
 import { Button } from "@/components/ui/button";
 
@@ -230,12 +233,12 @@ const AuditAndCompliance = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Audit & Compliance</h1>
           <p className="text-muted-foreground">
-            Track regulatory compliance and manage audit activities.
+            Comprehensive audit management with regulatory mapping and AI-powered insights.
           </p>
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="documents" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Documents
@@ -248,9 +251,21 @@ const AuditAndCompliance = () => {
               <CheckSquare className="h-4 w-4" />
               Tasks
             </TabsTrigger>
-            <TabsTrigger value="trails" className="flex items-center gap-2">
-              <History className="h-4 w-4" />
-              Audit Trails
+            <TabsTrigger value="schedule" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Schedule
+            </TabsTrigger>
+            <TabsTrigger value="mapping" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Mapping
+            </TabsTrigger>
+            <TabsTrigger value="gaps" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Gap Report
+            </TabsTrigger>
+            <TabsTrigger value="ai-summary" className="flex items-center gap-2">
+              <Bot className="h-4 w-4" />
+              AI Summary
             </TabsTrigger>
             <TabsTrigger value="export" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -353,8 +368,20 @@ const AuditAndCompliance = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="trails" className="space-y-6">
-            <AuditTrailsList orgId={orgId} />
+          <TabsContent value="schedule" className="space-y-6">
+            <AuditScheduleCalendar orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="mapping" className="space-y-6">
+            <RegulatoryMappingManager orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="gaps" className="space-y-6">
+            <ComplianceGapReport orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="ai-summary" className="space-y-6">
+            <AIAuditSummaryGenerator orgId={orgId} />
           </TabsContent>
 
           <TabsContent value="export" className="space-y-6">
@@ -389,6 +416,7 @@ const AuditAndCompliance = () => {
                   </div>
                 </CardContent>
               </Card>
+              <AuditTrailsList orgId={orgId} />
             </div>
           </TabsContent>
         </Tabs>

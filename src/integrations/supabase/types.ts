@@ -327,6 +327,197 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_gap_logs: {
+        Row: {
+          actual_closure_date: string | null
+          actual_effort_hours: number | null
+          assigned_to: string | null
+          assigned_to_name: string | null
+          business_impact_score: number | null
+          cost_to_remediate: number | null
+          created_at: string
+          current_status: string
+          estimated_effort_hours: number | null
+          gap_description: string | null
+          gap_title: string
+          gap_type: string
+          id: string
+          identified_by: string | null
+          identified_by_name: string | null
+          identified_date: string
+          impact_assessment: string | null
+          org_id: string
+          regulatory_mapping_id: string | null
+          regulatory_risk_score: number | null
+          resolution_date: string | null
+          resolution_plan: string | null
+          root_cause_analysis: string | null
+          target_closure_date: string | null
+          updated_at: string
+          verification_date: string | null
+          verified_by: string | null
+          verified_by_name: string | null
+        }
+        Insert: {
+          actual_closure_date?: string | null
+          actual_effort_hours?: number | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          business_impact_score?: number | null
+          cost_to_remediate?: number | null
+          created_at?: string
+          current_status?: string
+          estimated_effort_hours?: number | null
+          gap_description?: string | null
+          gap_title: string
+          gap_type?: string
+          id?: string
+          identified_by?: string | null
+          identified_by_name?: string | null
+          identified_date?: string
+          impact_assessment?: string | null
+          org_id: string
+          regulatory_mapping_id?: string | null
+          regulatory_risk_score?: number | null
+          resolution_date?: string | null
+          resolution_plan?: string | null
+          root_cause_analysis?: string | null
+          target_closure_date?: string | null
+          updated_at?: string
+          verification_date?: string | null
+          verified_by?: string | null
+          verified_by_name?: string | null
+        }
+        Update: {
+          actual_closure_date?: string | null
+          actual_effort_hours?: number | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          business_impact_score?: number | null
+          cost_to_remediate?: number | null
+          created_at?: string
+          current_status?: string
+          estimated_effort_hours?: number | null
+          gap_description?: string | null
+          gap_title?: string
+          gap_type?: string
+          id?: string
+          identified_by?: string | null
+          identified_by_name?: string | null
+          identified_date?: string
+          impact_assessment?: string | null
+          org_id?: string
+          regulatory_mapping_id?: string | null
+          regulatory_risk_score?: number | null
+          resolution_date?: string | null
+          resolution_plan?: string | null
+          root_cause_analysis?: string | null
+          target_closure_date?: string | null
+          updated_at?: string
+          verification_date?: string | null
+          verified_by?: string | null
+          verified_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_audit_gap_logs_mapping"
+            columns: ["regulatory_mapping_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_mapping"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_audit_gap_logs_org"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_schedules: {
+        Row: {
+          actual_hours: number | null
+          assigned_auditor_id: string | null
+          assigned_auditor_name: string | null
+          audit_frequency: string | null
+          audit_name: string
+          audit_scope: string | null
+          audit_type: string
+          completion_percentage: number | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          estimated_hours: number | null
+          id: string
+          next_audit_date: string | null
+          notes: string | null
+          org_id: string
+          priority: string
+          regulatory_framework: string | null
+          scheduled_end_date: string
+          scheduled_start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_auditor_id?: string | null
+          assigned_auditor_name?: string | null
+          audit_frequency?: string | null
+          audit_name: string
+          audit_scope?: string | null
+          audit_type?: string
+          completion_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          estimated_hours?: number | null
+          id?: string
+          next_audit_date?: string | null
+          notes?: string | null
+          org_id: string
+          priority?: string
+          regulatory_framework?: string | null
+          scheduled_end_date: string
+          scheduled_start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_auditor_id?: string | null
+          assigned_auditor_name?: string | null
+          audit_frequency?: string | null
+          audit_name?: string
+          audit_scope?: string | null
+          audit_type?: string
+          completion_percentage?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          estimated_hours?: number | null
+          id?: string
+          next_audit_date?: string | null
+          notes?: string | null
+          org_id?: string
+          priority?: string
+          regulatory_framework?: string | null
+          scheduled_end_date?: string
+          scheduled_start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_audit_schedules_org"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_tasks: {
         Row: {
           assigned_to: string | null
@@ -2280,6 +2471,97 @@ export type Database = {
             columns: ["continuity_plan_id"]
             isOneToOne: false
             referencedRelation: "continuity_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_mapping: {
+        Row: {
+          audit_upload_id: string | null
+          compliance_status: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          finding_id: string | null
+          gap_severity: string
+          id: string
+          last_assessment_date: string | null
+          next_review_date: string | null
+          org_id: string
+          regulatory_framework: string
+          remediation_priority: string
+          requirement_description: string | null
+          requirement_section: string
+          requirement_title: string
+          responsible_party: string | null
+          target_completion_date: string | null
+          updated_at: string
+          validation_evidence: string | null
+        }
+        Insert: {
+          audit_upload_id?: string | null
+          compliance_status?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          finding_id?: string | null
+          gap_severity?: string
+          id?: string
+          last_assessment_date?: string | null
+          next_review_date?: string | null
+          org_id: string
+          regulatory_framework: string
+          remediation_priority?: string
+          requirement_description?: string | null
+          requirement_section: string
+          requirement_title: string
+          responsible_party?: string | null
+          target_completion_date?: string | null
+          updated_at?: string
+          validation_evidence?: string | null
+        }
+        Update: {
+          audit_upload_id?: string | null
+          compliance_status?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          finding_id?: string | null
+          gap_severity?: string
+          id?: string
+          last_assessment_date?: string | null
+          next_review_date?: string | null
+          org_id?: string
+          regulatory_framework?: string
+          remediation_priority?: string
+          requirement_description?: string | null
+          requirement_section?: string
+          requirement_title?: string
+          responsible_party?: string | null
+          target_completion_date?: string | null
+          updated_at?: string
+          validation_evidence?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_regulatory_mapping_finding"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_findings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_regulatory_mapping_org"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_regulatory_mapping_upload"
+            columns: ["audit_upload_id"]
+            isOneToOne: false
+            referencedRelation: "audit_uploads"
             referencedColumns: ["id"]
           },
         ]
