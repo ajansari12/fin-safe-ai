@@ -76,17 +76,18 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      // Use explicit typing to avoid type instantiation issues
+      const response = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'user_roles')
         .order('setting_key');
 
-      if (error) throw error;
+      if (response.error) throw response.error;
       
       // Transform settings data to UserRole format with proper type casting
-      return (data || []).map(setting => {
+      return (response.data || []).map(setting => {
         const settingValue = setting.setting_value as any;
         return {
           id: setting.id,
@@ -214,15 +215,15 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      const response = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
 
-      if (error) throw error;
-      return (data || []).map(setting => ({
+      if (response.error) throw response.error;
+      return (response.data || []).map(setting => ({
         ...setting,
         category: 'modules',
         created_by: null // settings table doesn't have created_by
@@ -269,15 +270,15 @@ class EnhancedAdminService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      const response = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'data_retention')
         .order('setting_key');
 
-      if (error) throw error;
-      return (data || []).map(setting => ({
+      if (response.error) throw response.error;
+      return (response.data || []).map(setting => ({
         ...setting,
         category: 'data_retention',
         created_by: null // settings table doesn't have created_by
