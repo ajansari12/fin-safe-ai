@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -58,7 +57,7 @@ class CustomDashboardService {
           dashboard_name: dashboard.name || 'New Dashboard',
           dashboard_type: dashboard.type || 'standard',
           layout_config: dashboard.layoutConfig || {},
-          widget_config: dashboard.widgets || [],
+          widget_config: (dashboard.widgets || []) as any,
           is_shared: dashboard.isShared || false,
           shared_with: dashboard.sharedWith || [],
           created_by: profile.id
@@ -81,7 +80,7 @@ class CustomDashboardService {
         .update({
           dashboard_name: updates.name,
           layout_config: updates.layoutConfig,
-          widget_config: updates.widgets,
+          widget_config: (updates.widgets || []) as any,
           is_shared: updates.isShared,
           shared_with: updates.sharedWith,
           updated_at: new Date().toISOString()
@@ -229,7 +228,7 @@ class CustomDashboardService {
       name: data.dashboard_name,
       type: data.dashboard_type,
       layoutConfig: data.layout_config,
-      widgets: data.widget_config,
+      widgets: data.widget_config || [],
       isDefault: data.is_default,
       isShared: data.is_shared,
       sharedWith: data.shared_with || []

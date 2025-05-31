@@ -146,7 +146,7 @@ class PredictiveAnalyticsService {
         reputational: this.calculateReputationalScore(incidents, findings)
       };
 
-      const overallScore = Object.values(scores).reduce((sum, score) => sum + score, 0) / 5;
+      const overallScore = Object.values(scores).reduce((sum, score) => sum + Number(score), 0) / 5;
       
       // Store insight in analytics_insights table
       await this.storeAnalyticsInsight(orgId, 'risk_scorecard', {
@@ -212,7 +212,7 @@ class PredictiveAnalyticsService {
     const firstAvg = first.reduce((sum, val) => sum + val, 0) / first.length;
     const secondAvg = second.reduce((sum, val) => sum + val, 0) / second.length;
     
-    const change = (secondAvg - firstAvg) / firstAvg;
+    const change = firstAvg === 0 ? 0 : (secondAvg - firstAvg) / firstAvg;
     
     if (change > 0.1) return 'increasing';
     if (change < -0.1) return 'decreasing';
@@ -229,7 +229,7 @@ class PredictiveAnalyticsService {
     
     const variance = this.calculateVariance(data);
     const mean = data.reduce((sum, val) => sum + val, 0) / data.length;
-    const cv = Math.sqrt(variance) / mean;
+    const cv = mean === 0 ? 0 : Math.sqrt(variance) / mean;
     
     // Lower coefficient of variation = higher confidence
     return Math.max(0.1, Math.min(0.9, 1 - cv));
@@ -334,7 +334,7 @@ class PredictiveAnalyticsService {
   }
 
   private calculateScorecardTrend(scores: any): 'improving' | 'stable' | 'declining' {
-    const avgScore = Object.values(scores).reduce((sum: number, score: any) => sum + score, 0) / 5;
+    const avgScore = Object.values(scores).reduce((sum: number, score: any) => sum + Number(score), 0) / 5;
     if (avgScore >= 80) return 'improving';
     if (avgScore >= 60) return 'stable';
     return 'declining';
