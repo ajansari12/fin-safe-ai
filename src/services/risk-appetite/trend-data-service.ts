@@ -9,25 +9,26 @@ export const trendDataService = {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
+      // Use appetite_breach_logs as the data source since risk_appetite_logs doesn't exist
       const { data, error } = await supabase
-        .from('risk_appetite_logs')
+        .from('appetite_breach_logs')
         .select(`
-          log_date,
-          appetite_value,
+          breach_date,
           actual_value,
+          threshold_value,
           variance_percentage,
-          risk_category:risk_categories(name)
+          risk_category_id
         `)
         .eq('org_id', profile.organization_id)
-        .gte('log_date', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        .order('log_date', { ascending: true });
+        .gte('breach_date', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
+        .order('breach_date', { ascending: true });
 
       if (error) throw error;
 
       return (data || []).map(item => ({
-        date: item.log_date,
-        category: item.risk_category?.name || 'Unknown',
-        appetite_value: item.appetite_value,
+        date: item.breach_date.split('T')[0],
+        category: item.risk_category_id || 'Unknown',
+        appetite_value: item.threshold_value,
         actual_value: item.actual_value,
         variance_percentage: item.variance_percentage || 0
       }));

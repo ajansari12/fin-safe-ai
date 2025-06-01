@@ -1,15 +1,26 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
-import type { QueryOptions, PaginatedResult } from "@/lib/supabase/types";
 
-export interface OptimizedQueryOptions extends QueryOptions {
+export interface OptimizedQueryOptions {
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
   fromDate?: string;
   toDate?: string;
   categories?: string[];
   severities?: string[];
   statuses?: string[];
   useCache?: boolean;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export interface TimeSeriesData {
@@ -39,7 +50,6 @@ export const optimizedAnalyticsService = {
       const { page = 1, pageSize = 20, sortBy = 'reported_at', sortOrder = 'desc' } = options;
       const offset = (page - 1) * pageSize;
 
-      // Build optimized query with indexes
       let query = supabase
         .from('incident_logs')
         .select('*', { count: 'exact' })
@@ -62,7 +72,6 @@ export const optimizedAnalyticsService = {
         query = query.in('status', options.statuses);
       }
 
-      // Apply sorting and pagination
       query = query.order(sortBy, { ascending: sortOrder === 'asc' });
       query = query.range(offset, offset + pageSize - 1);
 
@@ -95,26 +104,17 @@ export const optimizedAnalyticsService = {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Use simpler query that works with existing structure
       const validTables = ['incident_logs', 'kri_logs', 'compliance_findings'];
       if (!validTables.includes(table)) {
         console.warn(`Invalid table name: ${table}`);
         return [];
       }
 
-      let query = supabase
+      const { data, error } = await supabase
         .from(table as any)
         .select('*')
         .eq('org_id', profile.organization_id);
 
-      if (options.fromDate) {
-        query = query.gte(dateColumn, options.fromDate);
-      }
-      if (options.toDate) {
-        query = query.lte(dateColumn, options.toDate);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
 
       // Group data by date on the client side
@@ -167,7 +167,6 @@ export const optimizedAnalyticsService = {
         const recentCount = recentIncidents.length;
         const historicalCount = historicalIncidents.length;
         
-        // Simple linear trend extrapolation
         const trend = recentCount - historicalCount;
         const predictedValue = Math.max(0, recentCount + trend);
         const confidence = Math.min(90, Math.max(60, 100 - Math.abs(trend * 5)));
@@ -275,7 +274,6 @@ export const optimizedAnalyticsService = {
       return result;
     } catch (error) {
       console.error('Error with cached analytics:', error);
-      // Fallback to direct query execution
       return await queryFn();
     }
   },
@@ -285,22 +283,6 @@ export const optimizedAnalyticsService = {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return {};
-
-      const { fromDate, toDate } = options;
-      
-      // Build filters for date range
-      const incidentFilter: any = { org_id: profile.organization_id };
-      const kriFilter: any = { org_id: profile.organization_id };
-      const complianceFilter: any = { org_id: profile.organization_id };
-
-      if (fromDate && toDate) {
-        incidentFilter.reported_at = `gte.${fromDate}`;
-        incidentFilter.reported_at = `lte.${toDate}`;
-        kriFilter.measurement_date = `gte.${fromDate.split('T')[0]}`;
-        kriFilter.measurement_date = `lte.${toDate.split('T')[0]}`;
-        complianceFilter.created_at = `gte.${fromDate}`;
-        complianceFilter.created_at = `lte.${toDate}`;
-      }
 
       // Use Promise.all for parallel execution
       const [incidentStats, kriStats, complianceStats] = await Promise.all([

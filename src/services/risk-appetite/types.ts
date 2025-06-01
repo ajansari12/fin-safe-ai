@@ -3,17 +3,10 @@ export interface RiskAppetiteLog {
   id: string;
   org_id: string;
   risk_category_id: string;
-  statement_id: string;
-  threshold_id: string;
   log_date: string;
-  appetite_value: number;
   actual_value: number;
   variance_percentage: number;
-  variance_status: 'within_appetite' | 'warning' | 'breach';
-  kri_data: any;
-  notes?: string;
-  created_by?: string;
-  created_by_name?: string;
+  breach_severity: 'warning' | 'breach' | 'critical';
   created_at: string;
   updated_at: string;
   risk_category?: {
@@ -25,12 +18,10 @@ export interface AppetiteBreach {
   id: string;
   org_id: string;
   risk_category_id: string;
-  statement_id: string;
-  threshold_id: string;
   breach_date: string;
   breach_severity: 'warning' | 'breach' | 'critical';
   actual_value: number;
-  appetite_value: number;
+  threshold_value: number;
   variance_percentage: number;
   escalation_level: number;
   escalated_at?: string;
@@ -39,11 +30,6 @@ export interface AppetiteBreach {
   resolution_status: 'open' | 'acknowledged' | 'in_progress' | 'resolved';
   resolution_date?: string;
   resolution_notes?: string;
-  business_impact?: string;
-  remediation_plan?: string;
-  board_notified: boolean;
-  board_notification_date?: string;
-  auto_escalated: boolean;
   created_at: string;
   updated_at: string;
   risk_category?: {
@@ -62,7 +48,7 @@ export interface KRILogEntry {
   critical_threshold?: number;
   variance_from_target?: number;
   variance_percentage?: number;
-  status: 'normal' | 'warning' | 'critical';
+  threshold_breached: 'yes' | 'no' | 'none';
   measurement_source: string;
   measurement_notes?: string;
   measured_by?: string;

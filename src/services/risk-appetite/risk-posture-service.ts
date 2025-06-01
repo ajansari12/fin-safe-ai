@@ -10,11 +10,11 @@ export const riskPostureService = {
       if (!profile?.organization_id) return [];
 
       const { data, error } = await supabase
-        .from('appetite_breaches')
+        .from('appetite_breach_logs')
         .select(`
           breach_severity,
           variance_percentage,
-          risk_category:risk_categories(name)
+          risk_category_id
         `)
         .eq('org_id', profile.organization_id)
         .eq('resolution_status', 'open');
@@ -24,7 +24,7 @@ export const riskPostureService = {
       const heatmapData: Record<string, RiskPostureData> = {};
 
       (data || []).forEach(breach => {
-        const category = breach.risk_category?.name || 'Unknown';
+        const category = breach.risk_category_id || 'Unknown';
         const severity = breach.breach_severity as 'warning' | 'breach' | 'critical';
         const key = `${category}-${severity}`;
 

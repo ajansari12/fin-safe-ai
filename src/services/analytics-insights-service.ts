@@ -75,13 +75,11 @@ export const analyticsInsightsService = {
         query = query.eq('insight_type', insightType);
       }
 
-      // Only get valid insights
       query = query.or('valid_until.is.null,valid_until.gte.' + new Date().toISOString());
 
       const { data, error } = await query;
       if (error) throw error;
       
-      // Transform the data to match our interface
       return (data || []).map(item => ({
         id: item.id,
         org_id: item.org_id,
@@ -107,7 +105,6 @@ export const analyticsInsightsService = {
       const insights: AnalyticsInsight[] = [];
       const now = new Date();
       const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const twoMonthsAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
       // Get incident trends
       const { data: currentIncidents } = await supabase
@@ -116,35 +113,24 @@ export const analyticsInsightsService = {
         .eq('org_id', profile.organization_id)
         .gte('reported_at', oneMonthAgo.toISOString());
 
-      const { data: previousIncidents } = await supabase
-        .from('incident_logs')
-        .select('*')
-        .eq('org_id', profile.organization_id)
-        .gte('reported_at', twoMonthsAgo.toISOString())
-        .lt('reported_at', oneMonthAgo.toISOString());
-
-      if (currentIncidents && previousIncidents) {
+      if (currentIncidents) {
         const currentCount = currentIncidents.length;
-        const previousCount = previousIncidents.length;
-        const changePercentage = previousCount > 0 ? ((currentCount - previousCount) / previousCount) * 100 : 0;
-
+        
         insights.push({
           id: `incident-trend-${Date.now()}`,
           org_id: profile.organization_id,
           insight_type: 'trend',
           insight_data: {
-            title: 'Incident Rate Trend',
-            description: `Incident rate ${changePercentage > 0 ? 'increased' : 'decreased'} by ${Math.abs(changePercentage).toFixed(1)}% vs last month`,
+            title: 'Incident Rate Analysis',
+            description: `${currentCount} incidents reported in the last 30 days`,
             metric: 'incidents',
             value: currentCount,
-            change_percentage: changePercentage,
             period: 'last_30_days',
-            trend_direction: changePercentage > 5 ? 'up' : changePercentage < -5 ? 'down' : 'stable',
-            severity: changePercentage > 20 ? 'high' : changePercentage > 10 ? 'medium' : 'low',
-            actionable_items: changePercentage > 10 ? [
+            trend_direction: currentCount > 10 ? 'up' : currentCount < 5 ? 'down' : 'stable',
+            severity: currentCount > 20 ? 'high' : currentCount > 10 ? 'medium' : 'low',
+            actionable_items: currentCount > 10 ? [
               'Review incident response procedures',
-              'Analyze common incident patterns',
-              'Consider additional preventive controls'
+              'Analyze common incident patterns'
             ] : []
           },
           confidence_score: 85,
@@ -155,7 +141,7 @@ export const analyticsInsightsService = {
         });
       }
 
-      // Get KRI breach trends using existing kri_logs structure
+      // Get KRI breach trends using threshold_breached field
       const { data: kriLogs } = await supabase
         .from('kri_logs')
         .select('*')
@@ -163,7 +149,6 @@ export const analyticsInsightsService = {
         .gte('measurement_date', oneMonthAgo.toISOString().split('T')[0]);
 
       if (kriLogs) {
-        // Use threshold_breached field instead of status
         const breachCount = kriLogs.filter(log => log.threshold_breached === 'yes').length;
         const totalCount = kriLogs.length;
         const breachRate = totalCount > 0 ? (breachCount / totalCount) * 100 : 0;
@@ -181,8 +166,7 @@ export const analyticsInsightsService = {
             severity: breachRate > 30 ? 'critical' : breachRate > 20 ? 'high' : breachRate > 10 ? 'medium' : 'low',
             actionable_items: breachRate > 20 ? [
               'Review KRI thresholds',
-              'Investigate root causes',
-              'Implement corrective actions'
+              'Investigate root causes'
             ] : []
           },
           confidence_score: 90,
@@ -268,7 +252,14 @@ export const dashboardTemplatesService = {
         template_type: item.dashboard_type as 'system' | 'custom' | 'shared',
         description: `Custom dashboard: ${item.dashboard_name}`,
         layout_config: typeof item.layout_config === 'object' ? item.layout_config as any : { columns: 12, rows: 8, gaps: 16 },
-        widget_configs: Array.isArray(item.widget_config) ? item.widget_config : [],
+        widget_configs: Array.isArray(item.widget_config) ? item.widget_config.map((widget: any) => ({
+          id: widget.id || Math.random().toString(36),
+          type: widget.type || 'chart',
+          title: widget.title || 'Widget',
+          position: widget.position || { x: 0, y: 0, w: 4, h: 3 },
+          data_source: widget.data_source || 'default',
+          config: widget.config || {}
+        })) : [],
         data_sources: ['incidents', 'kri', 'compliance'],
         filters_config: {},
         refresh_interval_minutes: 15,

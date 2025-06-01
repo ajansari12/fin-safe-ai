@@ -28,12 +28,11 @@ export const riskAppetiteLogsService = {
       return (data || []).map(item => ({
         id: item.id,
         org_id: item.org_id,
-        risk_category_id: item.risk_category_id,
+        risk_category_id: item.risk_category_id || '',
         log_date: item.breach_date.split('T')[0],
         actual_value: item.actual_value,
-        threshold_value: item.threshold_value,
-        variance_percentage: item.variance_percentage,
-        breach_severity: item.breach_severity,
+        variance_percentage: item.variance_percentage || 0,
+        breach_severity: item.breach_severity as 'warning' | 'breach' | 'critical',
         created_at: item.created_at,
         updated_at: item.updated_at
       }));
@@ -48,13 +47,6 @@ export const riskAppetiteLogsService = {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
 
-      const { data: user } = await supabase.auth.getUser();
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.user?.id)
-        .single();
-
       // Create entry in appetite_breach_logs table
       const { data, error } = await supabase
         .from('appetite_breach_logs')
@@ -63,7 +55,7 @@ export const riskAppetiteLogsService = {
           risk_category_id: log.risk_category_id,
           breach_date: `${log.log_date}T00:00:00Z`,
           actual_value: log.actual_value,
-          threshold_value: log.threshold_value,
+          threshold_value: log.actual_value, // Use actual value as threshold for now
           variance_percentage: log.variance_percentage,
           breach_severity: log.breach_severity || 'warning',
           resolution_status: 'open'
@@ -76,12 +68,11 @@ export const riskAppetiteLogsService = {
       return {
         id: data.id,
         org_id: data.org_id,
-        risk_category_id: data.risk_category_id,
+        risk_category_id: data.risk_category_id || '',
         log_date: data.breach_date.split('T')[0],
         actual_value: data.actual_value,
-        threshold_value: data.threshold_value,
-        variance_percentage: data.variance_percentage,
-        breach_severity: data.breach_severity,
+        variance_percentage: data.variance_percentage || 0,
+        breach_severity: data.breach_severity as 'warning' | 'breach' | 'critical',
         created_at: data.created_at,
         updated_at: data.updated_at
       };
