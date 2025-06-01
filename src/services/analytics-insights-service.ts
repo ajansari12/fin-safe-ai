@@ -80,7 +80,19 @@ export const analyticsInsightsService = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      
+      // Transform the data to match our interface
+      return (data || []).map(item => ({
+        id: item.id,
+        org_id: item.org_id,
+        insight_type: item.insight_type as AnalyticsInsight['insight_type'],
+        insight_data: typeof item.insight_data === 'object' ? item.insight_data as AnalyticsInsight['insight_data'] : { title: '', description: '' },
+        confidence_score: item.confidence_score || 0,
+        generated_at: item.generated_at,
+        valid_until: item.valid_until || undefined,
+        forecast_period: item.forecast_period as AnalyticsInsight['forecast_period'],
+        tags: item.tags || []
+      }));
     } catch (error) {
       console.error('Error fetching analytics insights:', error);
       return [];
@@ -143,7 +155,7 @@ export const analyticsInsightsService = {
         });
       }
 
-      // Get KRI breach trends
+      // Get KRI breach trends using existing kri_logs structure
       const { data: kriLogs } = await supabase
         .from('kri_logs')
         .select('*')
@@ -151,7 +163,8 @@ export const analyticsInsightsService = {
         .gte('measurement_date', oneMonthAgo.toISOString().split('T')[0]);
 
       if (kriLogs) {
-        const breachCount = kriLogs.filter(log => log.status === 'critical' || log.status === 'warning').length;
+        // Use threshold_breached field instead of status
+        const breachCount = kriLogs.filter(log => log.threshold_breached === 'yes').length;
         const totalCount = kriLogs.length;
         const breachRate = totalCount > 0 ? (breachCount / totalCount) * 100 : 0;
 
@@ -161,7 +174,7 @@ export const analyticsInsightsService = {
           insight_type: 'prediction',
           insight_data: {
             title: 'KRI Breach Risk',
-            description: `${breachRate.toFixed(1)}% of KRIs are showing warning or critical status`,
+            description: `${breachRate.toFixed(1)}% of KRIs are showing threshold breaches`,
             metric: 'kri_breach_rate',
             value: breachRate,
             period: 'current',
@@ -187,7 +200,7 @@ export const analyticsInsightsService = {
     }
   },
 
-  async createInsight(insight: Omit<AnalyticsInsight, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Promise<AnalyticsInsight | null> {
+  async createInsight(insight: Omit<AnalyticsInsight, 'id'>): Promise<AnalyticsInsight | null> {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
@@ -195,15 +208,32 @@ export const analyticsInsightsService = {
       const { data, error } = await supabase
         .from('analytics_insights')
         .insert({
-          ...insight,
           org_id: profile.organization_id,
+          insight_type: insight.insight_type,
+          insight_data: insight.insight_data,
+          confidence_score: insight.confidence_score,
+          generated_at: insight.generated_at,
+          valid_until: insight.valid_until,
+          forecast_period: insight.forecast_period,
+          tags: insight.tags,
           created_by: (await supabase.auth.getUser()).data.user?.id
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        id: data.id,
+        org_id: data.org_id,
+        insight_type: data.insight_type as AnalyticsInsight['insight_type'],
+        insight_data: data.insight_data as AnalyticsInsight['insight_data'],
+        confidence_score: data.confidence_score,
+        generated_at: data.generated_at,
+        valid_until: data.valid_until,
+        forecast_period: data.forecast_period as AnalyticsInsight['forecast_period'],
+        tags: data.tags
+      };
     } catch (error) {
       console.error('Error creating analytics insight:', error);
       return null;
@@ -211,6 +241,7 @@ export const analyticsInsightsService = {
   }
 };
 
+// Simplified dashboard templates service using custom_dashboards table
 export const dashboardTemplatesService = {
   async getTemplates(templateType?: string): Promise<DashboardTemplate[]> {
     try {
@@ -218,21 +249,39 @@ export const dashboardTemplatesService = {
       if (!profile?.organization_id) return [];
 
       let query = supabase
-        .from('dashboard_templates')
+        .from('custom_dashboards')
         .select('*')
-        .eq('is_active', true)
-        .order('usage_count', { ascending: false });
+        .eq('org_id', profile.organization_id);
 
-      if (templateType) {
-        query = query.eq('template_type', templateType);
+      if (templateType && templateType !== 'all') {
+        query = query.eq('dashboard_type', templateType);
       }
-
-      // Get org templates and public templates
-      query = query.or(`org_id.eq.${profile.organization_id},is_public.eq.true`);
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      
+      // Transform custom_dashboards to DashboardTemplate format
+      return (data || []).map(item => ({
+        id: item.id,
+        org_id: item.org_id,
+        template_name: item.dashboard_name,
+        template_type: item.dashboard_type as 'system' | 'custom' | 'shared',
+        description: `Custom dashboard: ${item.dashboard_name}`,
+        layout_config: typeof item.layout_config === 'object' ? item.layout_config as any : { columns: 12, rows: 8, gaps: 16 },
+        widget_configs: Array.isArray(item.widget_config) ? item.widget_config : [],
+        data_sources: ['incidents', 'kri', 'compliance'],
+        filters_config: {},
+        refresh_interval_minutes: 15,
+        is_public: item.is_shared || false,
+        is_active: true,
+        created_by: item.created_by,
+        created_by_name: 'User',
+        shared_with: item.shared_with || [],
+        usage_count: 0,
+        last_used_at: item.updated_at,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
     } catch (error) {
       console.error('Error fetching dashboard templates:', error);
       return [];
@@ -245,26 +294,45 @@ export const dashboardTemplatesService = {
       if (!profile?.organization_id) throw new Error('No organization found');
 
       const { data: user } = await supabase.auth.getUser();
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.user?.id)
-        .single();
 
       const { data, error } = await supabase
-        .from('dashboard_templates')
+        .from('custom_dashboards')
         .insert({
-          ...template,
           org_id: profile.organization_id,
+          dashboard_name: template.template_name,
+          dashboard_type: template.template_type,
+          layout_config: template.layout_config,
+          widget_config: template.widget_configs,
+          is_shared: template.is_public,
           created_by: user.user?.id,
-          created_by_name: userProfile?.full_name || 'Unknown User',
-          usage_count: 0
+          user_id: user.user?.id
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        id: data.id,
+        org_id: data.org_id,
+        template_name: data.dashboard_name,
+        template_type: data.dashboard_type as 'system' | 'custom' | 'shared',
+        description: template.description,
+        layout_config: data.layout_config as any,
+        widget_configs: data.widget_config as any,
+        data_sources: template.data_sources,
+        filters_config: template.filters_config,
+        refresh_interval_minutes: template.refresh_interval_minutes,
+        is_public: data.is_shared || false,
+        is_active: true,
+        created_by: data.created_by,
+        created_by_name: template.created_by_name,
+        shared_with: template.shared_with,
+        usage_count: 0,
+        last_used_at: data.updated_at,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
     } catch (error) {
       console.error('Error creating dashboard template:', error);
       return null;
@@ -274,10 +342,9 @@ export const dashboardTemplatesService = {
   async updateTemplateUsage(templateId: string): Promise<void> {
     try {
       const { error } = await supabase
-        .from('dashboard_templates')
+        .from('custom_dashboards')
         .update({
-          usage_count: supabase.rpc('increment_usage_count'),
-          last_used_at: new Date().toISOString()
+          updated_at: new Date().toISOString()
         })
         .eq('id', templateId);
 

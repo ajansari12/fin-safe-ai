@@ -84,7 +84,7 @@ export const optimizedAnalyticsService = {
     }
   },
 
-  // Time-series data for trend analysis
+  // Time-series data for trend analysis using simpler queries
   async getTimeSeriesData(
     table: string,
     dateColumn: string,
@@ -95,14 +95,10 @@ export const optimizedAnalyticsService = {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Use date_trunc for efficient grouping
+      // Use simpler query that works with existing structure
       let query = supabase
         .from(table)
-        .select(`
-          date_trunc('day', ${dateColumn})::date as date,
-          count(*) as value,
-          ${valueColumn}
-        `)
+        .select('*')
         .eq('org_id', profile.organization_id);
 
       if (options.fromDate) {
@@ -115,10 +111,20 @@ export const optimizedAnalyticsService = {
       const { data, error } = await query;
       if (error) throw error;
 
-      return (data || []).map(item => ({
-        date: item.date,
-        value: item.value,
-        metadata: { [valueColumn]: item[valueColumn] }
+      // Group data by date on the client side
+      const groupedData: Record<string, any[]> = {};
+      (data || []).forEach(item => {
+        const date = new Date(item[dateColumn]).toISOString().split('T')[0];
+        if (!groupedData[date]) {
+          groupedData[date] = [];
+        }
+        groupedData[date].push(item);
+      });
+
+      return Object.entries(groupedData).map(([date, items]) => ({
+        date,
+        value: items.length,
+        metadata: { items: items.length }
       }));
     } catch (error) {
       console.error('Error fetching time series data:', error);
@@ -175,16 +181,16 @@ export const optimizedAnalyticsService = {
         });
       }
 
-      // KRI breach prediction
+      // KRI breach prediction using existing structure
       const { data: kriLogs } = await supabase
         .from('kri_logs')
-        .select('measurement_date, actual_value, status')
+        .select('measurement_date, actual_value, threshold_breached')
         .eq('org_id', profile.organization_id)
         .gte('measurement_date', thirtyDaysAgo.toISOString().split('T')[0])
         .order('measurement_date', { ascending: true });
 
       if (kriLogs && kriLogs.length > 5) {
-        const breachCount = kriLogs.filter(log => log.status === 'critical' || log.status === 'warning').length;
+        const breachCount = kriLogs.filter(log => log.threshold_breached === 'yes').length;
         const totalCount = kriLogs.length;
         const currentBreachRate = (breachCount / totalCount) * 100;
         
@@ -193,8 +199,8 @@ export const optimizedAnalyticsService = {
         const firstHalf = kriLogs.slice(0, midPoint);
         const secondHalf = kriLogs.slice(midPoint);
         
-        const firstHalfBreaches = firstHalf.filter(log => log.status === 'critical' || log.status === 'warning').length;
-        const secondHalfBreaches = secondHalf.filter(log => log.status === 'critical' || log.status === 'warning').length;
+        const firstHalfBreaches = firstHalf.filter(log => log.threshold_breached === 'yes').length;
+        const secondHalfBreaches = secondHalf.filter(log => log.threshold_breached === 'yes').length;
         
         const firstHalfRate = (firstHalfBreaches / firstHalf.length) * 100;
         const secondHalfRate = (secondHalfBreaches / secondHalf.length) * 100;
@@ -224,7 +230,7 @@ export const optimizedAnalyticsService = {
     }
   },
 
-  // Cached analytics for performance
+  // Cached analytics for performance using analytics_insights table
   async getCachedAnalytics(cacheKey: string, queryFn: () => Promise<any>, ttlMinutes: number = 15): Promise<any> {
     try {
       const cacheExpiry = new Date(Date.now() - ttlMinutes * 60 * 1000);
@@ -233,12 +239,12 @@ export const optimizedAnalyticsService = {
       const { data: cached } = await supabase
         .from('analytics_insights')
         .select('insight_data')
-        .eq('insight_type', 'cache')
-        .eq('tags', [cacheKey])
+        .eq('insight_type', 'correlation')
+        .contains('tags', [cacheKey])
         .gte('generated_at', cacheExpiry.toISOString())
-        .single();
+        .maybeSingle();
 
-      if (cached) {
+      if (cached?.insight_data) {
         return cached.insight_data;
       }
 
@@ -252,7 +258,7 @@ export const optimizedAnalyticsService = {
           .from('analytics_insights')
           .insert({
             org_id: profile.organization_id,
-            insight_type: 'cache',
+            insight_type: 'correlation',
             insight_data: result,
             confidence_score: 100,
             valid_until: new Date(Date.now() + ttlMinutes * 60 * 1000).toISOString(),
@@ -275,26 +281,37 @@ export const optimizedAnalyticsService = {
       if (!profile?.organization_id) return {};
 
       const { fromDate, toDate } = options;
-      const orgFilter = { org_id: profile.organization_id };
-      const dateFilter = fromDate && toDate ? 
-        { created_at: `gte.${fromDate},lte.${toDate}` } : {};
+      
+      // Build filters for date range
+      const incidentFilter: any = { org_id: profile.organization_id };
+      const kriFilter: any = { org_id: profile.organization_id };
+      const complianceFilter: any = { org_id: profile.organization_id };
+
+      if (fromDate && toDate) {
+        incidentFilter.reported_at = `gte.${fromDate}`;
+        incidentFilter.reported_at = `lte.${toDate}`;
+        kriFilter.measurement_date = `gte.${fromDate.split('T')[0]}`;
+        kriFilter.measurement_date = `lte.${toDate.split('T')[0]}`;
+        complianceFilter.created_at = `gte.${fromDate}`;
+        complianceFilter.created_at = `lte.${toDate}`;
+      }
 
       // Use Promise.all for parallel execution
       const [incidentStats, kriStats, complianceStats] = await Promise.all([
         supabase
           .from('incident_logs')
           .select('status, severity')
-          .match({ ...orgFilter, ...dateFilter }),
+          .eq('org_id', profile.organization_id),
         
         supabase
           .from('kri_logs')
-          .select('status')
-          .match({ ...orgFilter, ...dateFilter }),
+          .select('threshold_breached')
+          .eq('org_id', profile.organization_id),
         
         supabase
           .from('compliance_findings')
           .select('status, severity')
-          .match({ ...orgFilter, ...dateFilter })
+          .eq('org_id', profile.organization_id)
       ]);
 
       return {
@@ -305,7 +322,7 @@ export const optimizedAnalyticsService = {
         },
         kri: {
           total: kriStats.data?.length || 0,
-          by_status: this.groupBy(kriStats.data || [], 'status')
+          by_status: this.groupBy(kriStats.data || [], 'threshold_breached')
         },
         compliance: {
           total: complianceStats.data?.length || 0,
