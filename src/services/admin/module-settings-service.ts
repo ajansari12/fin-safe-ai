@@ -24,14 +24,16 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('settings')
         .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
 
-      return (data || []).map(item => ({
+      if (error) throw error;
+
+      return (data || []).map((item: any) => ({
         id: item.id,
         org_id: item.org_id,
         setting_key: item.setting_key,

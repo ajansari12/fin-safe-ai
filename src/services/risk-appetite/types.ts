@@ -1,4 +1,3 @@
-
 export interface RiskAppetiteLog {
   id: string;
   org_id: string;
@@ -30,6 +29,7 @@ export interface AppetiteBreach {
   resolution_status: 'open' | 'acknowledged' | 'in_progress' | 'resolved';
   resolution_date?: string;
   resolution_notes?: string;
+  business_impact?: string;
   created_at: string;
   updated_at: string;
   risk_category?: {

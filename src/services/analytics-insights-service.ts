@@ -81,12 +81,13 @@ export class AnalyticsInsightsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('analytics_insights')
         .select('*')
         .eq('org_id', profile.organization_id)
         .order('generated_at', { ascending: false });
 
+      if (error) throw error;
       return data || [];
     } catch (error) {
       console.error('Error fetching insights:', error);
@@ -99,13 +100,14 @@ export class AnalyticsInsightsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('analytics_insights')
         .select('*')
         .eq('org_id', profile.organization_id)
         .eq('insight_type', insightType)
         .order('generated_at', { ascending: false });
 
+      if (error) throw error;
       return data || [];
     } catch (error) {
       console.error('Error fetching insights:', error);
@@ -115,12 +117,13 @@ export class AnalyticsInsightsService {
 
   async createInsight(insight: Omit<AnalyticsInsight, 'id' | 'created_at' | 'updated_at'>): Promise<AnalyticsInsight | null> {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('analytics_insights')
         .insert(insight)
         .select()
         .single();
 
+      if (error) throw error;
       return data;
     } catch (error) {
       console.error('Error creating insight:', error);
@@ -246,13 +249,15 @@ export class AnalyticsInsightsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('custom_dashboards')
         .select('*')
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false });
 
-      return (data || []).map(item => ({
+      if (error) throw error;
+
+      return (data || []).map((item: any) => ({
         id: item.id,
         template_name: item.dashboard_name,
         template_type: item.dashboard_type || 'custom',
@@ -297,7 +302,7 @@ export const dashboardTemplatesService = {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return null;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('custom_dashboards')
       .insert({
         org_id: profile.organization_id,
@@ -310,6 +315,7 @@ export const dashboardTemplatesService = {
       .select()
       .single();
 
+    if (error) throw error;
     return data;
   },
   updateTemplateUsage: (templateId: string) => analyticsInsightsService.incrementTemplateUsage(templateId)

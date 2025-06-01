@@ -39,6 +39,7 @@ export const appetiteBreachesService = {
         resolution_status: item.resolution_status as 'open' | 'acknowledged' | 'in_progress' | 'resolved',
         resolution_date: item.resolution_date,
         resolution_notes: item.resolution_notes,
+        business_impact: item.business_impact,
         created_at: item.created_at,
         updated_at: item.updated_at
       }));
