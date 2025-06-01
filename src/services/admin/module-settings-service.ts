@@ -18,11 +18,11 @@ export interface ModuleSetting {
   updated_at: string;
 }
 
-interface RawDatabaseSetting {
+interface DatabaseSetting {
   id: string;
   org_id: string;
   setting_key: string;
-  setting_value: unknown;
+  setting_value: any;
   description: string | null;
   created_at: string;
   updated_at: string;
@@ -43,7 +43,7 @@ class ModuleSettingsService {
 
       if (error) throw error;
 
-      return (data || []).map((item: RawDatabaseSetting): ModuleSetting => ({
+      return (data || []).map((item: DatabaseSetting): ModuleSetting => ({
         id: item.id,
         org_id: item.org_id,
         setting_key: item.setting_key,
@@ -80,7 +80,7 @@ class ModuleSettingsService {
     }
   }
 
-  private parseSettingValue(value: unknown): { enabled?: boolean; retention_days?: number; auto_delete?: boolean } {
+  private parseSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean } {
     if (!value) return { enabled: false };
     
     if (typeof value === 'boolean') {
@@ -88,11 +88,10 @@ class ModuleSettingsService {
     }
     
     if (typeof value === 'object' && value !== null) {
-      const objValue = value as Record<string, unknown>;
       return {
-        enabled: Boolean(objValue.enabled),
-        retention_days: typeof objValue.retention_days === 'number' ? objValue.retention_days : undefined,
-        auto_delete: Boolean(objValue.auto_delete)
+        enabled: Boolean(value.enabled),
+        retention_days: typeof value.retention_days === 'number' ? value.retention_days : undefined,
+        auto_delete: Boolean(value.auto_delete)
       };
     }
     

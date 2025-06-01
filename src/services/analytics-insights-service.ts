@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -6,7 +5,13 @@ export interface AnalyticsInsight {
   id: string;
   org_id: string;
   insight_type: string;
-  insight_data: Record<string, unknown>;
+  insight_data: {
+    title?: string;
+    description?: string;
+    severity?: string;
+    actionable_items?: string[];
+    [key: string]: any;
+  };
   confidence_score?: number;
   generated_at: string;
   valid_until?: string;
@@ -22,8 +27,8 @@ export interface DashboardTemplate {
   template_name: string;
   template_type: string;
   description: string;
-  layout_config: Record<string, unknown>;
-  widget_configs: Record<string, unknown>[];
+  layout_config: Record<string, any>;
+  widget_configs: Record<string, any>[];
   data_sources: string[];
   tags: string[];
   usage_count: number;
@@ -74,11 +79,11 @@ export interface RecommendationInsight {
   suggested_actions: string[];
 }
 
-interface RawDatabaseInsight {
+interface DatabaseInsight {
   id: string;
   org_id: string;
   insight_type: string;
-  insight_data: unknown;
+  insight_data: any;
   confidence_score?: number | null;
   generated_at: string;
   valid_until?: string | null;
@@ -89,13 +94,13 @@ interface RawDatabaseInsight {
   updated_at: string;
 }
 
-interface RawDatabaseDashboard {
+interface DatabaseDashboard {
   id: string;
   org_id: string;
   dashboard_name: string;
   dashboard_type?: string | null;
-  layout_config: unknown;
-  widget_config: unknown;
+  layout_config: any;
+  widget_config: any;
   shared_with?: string[] | null;
   created_by?: string | null;
   created_at: string;
@@ -116,7 +121,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => this.transformDatabaseInsight(item as RawDatabaseInsight));
+      return (data || []).map(item => this.transformDatabaseInsight(item));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -137,7 +142,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => this.transformDatabaseInsight(item as RawDatabaseInsight));
+      return (data || []).map(item => this.transformDatabaseInsight(item));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -149,29 +154,39 @@ export class AnalyticsInsightsService {
       const { data, error } = await supabase
         .from('analytics_insights')
         .insert({
-          ...insight,
-          insight_data: JSON.stringify(insight.insight_data)
+          org_id: insight.org_id,
+          insight_type: insight.insight_type,
+          insight_data: insight.insight_data,
+          confidence_score: insight.confidence_score,
+          generated_at: insight.generated_at,
+          valid_until: insight.valid_until,
+          tags: insight.tags,
+          created_by: insight.created_by,
+          forecast_period: insight.forecast_period
         })
         .select()
         .single();
 
       if (error) throw error;
       
-      return data ? this.transformDatabaseInsight(data as RawDatabaseInsight) : null;
+      return data ? this.transformDatabaseInsight(data) : null;
     } catch (error) {
       console.error('Error creating insight:', error);
       return null;
     }
   }
 
-  async generatePredictiveInsights(): Promise<Record<string, unknown>[]> {
+  async generatePredictiveInsights(): Promise<Omit<AnalyticsInsight, 'id' | 'created_at' | 'updated_at'>[]> {
     try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) return [];
+
       const trendInsights = await this.generateTrendInsights();
       const anomalyInsights = await this.generateAnomalyInsights();
       
-      const insights = [
+      const insights: Omit<AnalyticsInsight, 'id' | 'created_at' | 'updated_at'>[] = [
         ...trendInsights.map(insight => ({
-          org_id: '',
+          org_id: profile.organization_id,
           insight_type: 'trend',
           insight_data: {
             title: `Trend Analysis: ${insight.metric}`,
@@ -184,7 +199,7 @@ export class AnalyticsInsightsService {
           tags: ['trend', 'prediction']
         })),
         ...anomalyInsights.map(insight => ({
-          org_id: '',
+          org_id: profile.organization_id,
           insight_type: 'anomaly',
           insight_data: {
             title: `Anomaly Detected: ${insight.metric}`,
@@ -287,7 +302,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
 
-      return (data || []).map((item): DashboardTemplate => this.transformDatabaseDashboard(item as RawDatabaseDashboard));
+      return (data || []).map((item): DashboardTemplate => this.transformDatabaseDashboard(item));
     } catch (error) {
       console.error('Error fetching dashboard templates:', error);
       return [];
@@ -302,12 +317,12 @@ export class AnalyticsInsightsService {
     }
   }
 
-  private transformDatabaseInsight(item: RawDatabaseInsight): AnalyticsInsight {
+  private transformDatabaseInsight(item: DatabaseInsight): AnalyticsInsight {
     return {
       id: item.id,
       org_id: item.org_id,
       insight_type: item.insight_type,
-      insight_data: this.safeParseJson(item.insight_data),
+      insight_data: this.safeParseInsightData(item.insight_data),
       confidence_score: item.confidence_score || undefined,
       generated_at: item.generated_at,
       valid_until: item.valid_until || undefined,
@@ -319,7 +334,7 @@ export class AnalyticsInsightsService {
     };
   }
 
-  private transformDatabaseDashboard(item: RawDatabaseDashboard): DashboardTemplate {
+  private transformDatabaseDashboard(item: DatabaseDashboard): DashboardTemplate {
     return {
       id: item.id,
       template_name: item.dashboard_name,
@@ -327,7 +342,7 @@ export class AnalyticsInsightsService {
       description: `Dashboard: ${item.dashboard_name}`,
       layout_config: this.safeParseJson(item.layout_config),
       widget_configs: Array.isArray(item.widget_config) 
-        ? (item.widget_config as unknown[]).map(w => this.safeParseJson(w))
+        ? (item.widget_config as any[]).map(w => this.safeParseJson(w))
         : [],
       data_sources: [],
       tags: item.shared_with || [],
@@ -339,9 +354,24 @@ export class AnalyticsInsightsService {
     };
   }
 
-  private safeParseJson(value: unknown): Record<string, unknown> {
+  private safeParseInsightData(value: any): { title?: string; description?: string; severity?: string; actionable_items?: string[]; [key: string]: any } {
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      return value as Record<string, unknown>;
+      return value;
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  }
+
+  private safeParseJson(value: any): Record<string, any> {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      return value;
     }
     if (typeof value === 'string') {
       try {
@@ -365,7 +395,7 @@ export const analyticsInsightsService = new AnalyticsInsightsService();
 
 export const dashboardTemplatesService = {
   getTemplates: () => analyticsInsightsService.getDashboardTemplates(),
-  createTemplate: async (template: Record<string, unknown>) => {
+  createTemplate: async (template: Record<string, any>) => {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return null;
 

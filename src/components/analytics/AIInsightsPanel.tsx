@@ -131,27 +131,27 @@ const AIInsightsPanel: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     {getInsightIcon(insight.insight_type)}
-                    <h4 className="font-semibold">{insight.insight_data.title}</h4>
+                    <h4 className="font-semibold">{insight.insight_data.title || 'Insight'}</h4>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={getSeverityColor(insight.insight_data.severity)}>
                       {insight.insight_data.severity || 'info'}
                     </Badge>
                     <Badge variant="outline">
-                      {insight.confidence_score}% confidence
+                      {insight.confidence_score || 0}% confidence
                     </Badge>
                   </div>
                 </div>
                 
                 <p className="text-sm text-muted-foreground">
-                  {insight.insight_data.description}
+                  {insight.insight_data.description || 'No description available'}
                 </p>
                 
-                {insight.insight_data.actionable_items && insight.insight_data.actionable_items.length > 0 && (
+                {insight.insight_data.actionable_items && Array.isArray(insight.insight_data.actionable_items) && insight.insight_data.actionable_items.length > 0 && (
                   <div className="space-y-2">
                     <h5 className="text-sm font-medium">Recommended Actions:</h5>
                     <ul className="text-sm space-y-1">
-                      {insight.insight_data.actionable_items.map((item, index) => (
+                      {insight.insight_data.actionable_items.map((item: string, index: number) => (
                         <li key={index} className="flex items-start gap-2">
                           <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0"></span>
                           {item}

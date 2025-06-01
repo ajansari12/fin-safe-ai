@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ interface WidgetConfig {
   title: string;
   position: { x: number; y: number; w: number; h: number };
   data_source: string;
-  config: any;
+  config: Record<string, any>;
 }
 
 const DashboardBuilder: React.FC = () => {
@@ -306,11 +305,11 @@ const DashboardBuilder: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {selectedTemplate.widget_configs.map((widget) => (
-                <div key={widget.id} className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-2">{widget.title}</h4>
+              {selectedTemplate.widget_configs.map((widget, index) => (
+                <div key={`${selectedTemplate.id}-widget-${index}`} className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-2">{widget.title || 'Widget'}</h4>
                   <div className="text-sm text-muted-foreground">
-                    Type: {widget.type} | Source: {widget.data_source}
+                    Type: {widget.type || 'unknown'} | Source: {widget.data_source || 'unknown'}
                   </div>
                   <div className="mt-2 h-20 bg-gray-100 rounded flex items-center justify-center text-xs text-muted-foreground">
                     Widget Preview
