@@ -18,13 +18,6 @@ export interface ModuleSetting {
   updated_at: string;
 }
 
-interface DatabaseSettingValue {
-  enabled?: boolean;
-  retention_days?: number;
-  auto_delete?: boolean;
-  [key: string]: any;
-}
-
 class ModuleSettingsService {
   async getModuleSettings(): Promise<ModuleSetting[]> {
     try {
@@ -44,7 +37,7 @@ class ModuleSettingsService {
         id: item.id,
         org_id: item.org_id,
         setting_key: item.setting_key,
-        setting_value: this.parseSettingValue(item.setting_value),
+        setting_value: this.parseSettingValue(item.setting_value as any),
         description: item.description,
         category: 'modules',
         created_by: null,
@@ -85,11 +78,10 @@ class ModuleSettingsService {
     }
     
     if (typeof value === 'object') {
-      const typedValue = value as DatabaseSettingValue;
       return {
-        enabled: Boolean(typedValue.enabled),
-        retention_days: typeof typedValue.retention_days === 'number' ? typedValue.retention_days : undefined,
-        auto_delete: Boolean(typedValue.auto_delete)
+        enabled: Boolean(value.enabled),
+        retention_days: typeof value.retention_days === 'number' ? value.retention_days : undefined,
+        auto_delete: Boolean(value.auto_delete)
       };
     }
     

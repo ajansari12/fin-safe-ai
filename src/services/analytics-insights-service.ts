@@ -74,13 +74,11 @@ export interface RecommendationInsight {
   suggested_actions: string[];
 }
 
-type DatabaseJson = string | number | boolean | null | { [key: string]: DatabaseJson } | DatabaseJson[];
-
 interface DatabaseInsight {
   id: string;
   org_id: string;
   insight_type: string;
-  insight_data: DatabaseJson;
+  insight_data: any;
   confidence_score?: number | null;
   generated_at: string;
   valid_until?: string | null;
@@ -96,8 +94,8 @@ interface DatabaseDashboard {
   org_id: string;
   dashboard_name: string;
   dashboard_type?: string | null;
-  layout_config: DatabaseJson;
-  widget_config: DatabaseJson;
+  layout_config: any;
+  widget_config: any;
   shared_with?: string[] | null;
   created_by?: string | null;
   created_at: string;
@@ -341,7 +339,7 @@ export class AnalyticsInsightsService {
     };
   }
 
-  private parseJson(value: DatabaseJson): Record<string, any> {
+  private parseJson(value: any): Record<string, any> {
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       return value as Record<string, any>;
     }
@@ -360,75 +358,6 @@ export class AnalyticsInsightsService {
     const year = date.getFullYear();
     const week = Math.floor((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
     return `${year}-W${week}`;
-  }
-
-  async generateTrendInsights(): Promise<TrendInsight[]> {
-    try {
-      const profile = await getCurrentUserProfile();
-      if (!profile?.organization_id) return [];
-
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      const { data: incidents } = await supabase
-        .from('incident_logs')
-        .select('reported_at, severity')
-        .eq('org_id', profile.organization_id)
-        .gte('reported_at', thirtyDaysAgo.toISOString());
-
-      if (!incidents) return [];
-
-      const weeklyIncidents: Record<string, number> = {};
-      incidents.forEach(incident => {
-        const week = this.getWeekKey(new Date(incident.reported_at));
-        weeklyIncidents[week] = (weeklyIncidents[week] || 0) + 1;
-      });
-
-      const weeks = Object.keys(weeklyIncidents).sort();
-      if (weeks.length < 2) return [];
-
-      const trend = weeklyIncidents[weeks[weeks.length - 1]] - weeklyIncidents[weeks[0]];
-      const direction = trend > 2 ? 'increasing' : trend < -2 ? 'decreasing' : 'stable';
-
-      return [{
-        metric: 'Incident Volume',
-        direction,
-        magnitude: Math.abs(trend),
-        period: '30d',
-        significance: Math.min(100, Math.abs(trend) * 10)
-      }];
-    } catch (error) {
-      console.error('Error generating trend insights:', error);
-      return [];
-    }
-  }
-
-  async generateAnomalyInsights(): Promise<AnomalyInsight[]> {
-    try {
-      const profile = await getCurrentUserProfile();
-      if (!profile?.organization_id) return [];
-
-      const { data: kriLogs } = await supabase
-        .from('kri_logs')
-        .select('measurement_date, actual_value, threshold_breached')
-        .eq('org_id', profile.organization_id)
-        .eq('threshold_breached', 'yes')
-        .gte('measurement_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        .order('measurement_date', { ascending: false });
-
-      if (!kriLogs || kriLogs.length === 0) return [];
-
-      return kriLogs.slice(0, 5).map(log => ({
-        metric: 'KRI Threshold',
-        anomaly_type: 'spike' as const,
-        severity: 'high' as const,
-        detected_at: log.measurement_date,
-        confidence: 90
-      }));
-    } catch (error) {
-      console.error('Error generating anomaly insights:', error);
-      return [];
-    }
   }
 }
 
