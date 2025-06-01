@@ -2,12 +2,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
-// Simplified types to avoid TypeScript depth issues
 export interface AnalyticsInsight {
   id: string;
   org_id: string;
   insight_type: string;
-  insight_data: Record<string, any>;
+  insight_data: any;
   confidence_score?: number;
   generated_at: string;
   valid_until?: string;
@@ -23,8 +22,8 @@ export interface DashboardTemplate {
   template_name: string;
   template_type: string;
   description: string;
-  layout_config: Record<string, any>;
-  widget_configs: Record<string, any>[];
+  layout_config: any;
+  widget_configs: any[];
   data_sources: string[];
   tags: string[];
   usage_count: number;
@@ -89,11 +88,10 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      // Safe type conversion
       return (data || []).map(item => ({
         ...item,
         insight_data: this.safeJsonParse(item.insight_data)
-      }));
+      })) as AnalyticsInsight[];
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -114,11 +112,10 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      // Safe type conversion
       return (data || []).map(item => ({
         ...item,
         insight_data: this.safeJsonParse(item.insight_data)
-      }));
+      })) as AnalyticsInsight[];
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -131,7 +128,7 @@ export class AnalyticsInsightsService {
         .from('analytics_insights')
         .insert({
           ...insight,
-          insight_data: this.safeJsonParse(insight.insight_data)
+          insight_data: JSON.stringify(insight.insight_data)
         })
         .select()
         .single();
@@ -141,7 +138,7 @@ export class AnalyticsInsightsService {
       return data ? {
         ...data,
         insight_data: this.safeJsonParse(data.insight_data)
-      } : null;
+      } as AnalyticsInsight : null;
     } catch (error) {
       console.error('Error creating insight:', error);
       return null;
@@ -194,7 +191,6 @@ export class AnalyticsInsightsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Get incident data for trend analysis
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -206,7 +202,6 @@ export class AnalyticsInsightsService {
 
       if (!incidents) return [];
 
-      // Simple trend analysis
       const weeklyIncidents: Record<string, number> = {};
       incidents.forEach(incident => {
         const week = this.getWeekKey(new Date(incident.reported_at));
@@ -237,7 +232,6 @@ export class AnalyticsInsightsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // Check for KRI threshold breaches as anomalies
       const { data: kriLogs } = await supabase
         .from('kri_logs')
         .select('measurement_date, actual_value, threshold_breached')
@@ -288,7 +282,7 @@ export class AnalyticsInsightsService {
         created_by: item.created_by || '',
         created_at: item.created_at,
         updated_at: item.updated_at
-      }));
+      })) as DashboardTemplate[];
     } catch (error) {
       console.error('Error fetching dashboard templates:', error);
       return [];
@@ -309,7 +303,7 @@ export class AnalyticsInsightsService {
     return `${year}-W${week}`;
   }
 
-  private safeJsonParse(value: any): Record<string, any> {
+  private safeJsonParse(value: any): any {
     if (typeof value === 'object' && value !== null) {
       return value;
     }
@@ -326,10 +320,9 @@ export class AnalyticsInsightsService {
 
 export const analyticsInsightsService = new AnalyticsInsightsService();
 
-// Dashboard templates service
 export const dashboardTemplatesService = {
   getTemplates: () => analyticsInsightsService.getDashboardTemplates(),
-  createTemplate: async (template: Record<string, any>) => {
+  createTemplate: async (template: any) => {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return null;
 
