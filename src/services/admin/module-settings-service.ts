@@ -24,17 +24,12 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('settings')
         .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');
-
-      if (error) {
-        console.error('Error fetching module settings:', error);
-        return [];
-      }
 
       return (data || []).map(item => ({
         id: item.id,
@@ -58,7 +53,7 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
 
-      const { error } = await supabase
+      await supabase
         .from('settings')
         .upsert({
           org_id: profile.organization_id,
@@ -67,8 +62,6 @@ class ModuleSettingsService {
           category: 'modules',
           description: `Module ${settingKey} activation setting`
         });
-
-      if (error) throw error;
     } catch (error) {
       console.error('Error updating module setting:', error);
       throw error;

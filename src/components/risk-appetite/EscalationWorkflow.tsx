@@ -161,7 +161,7 @@ const EscalationWorkflow: React.FC = () => {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium">
-                          {breach.risk_category?.name || 'Unknown Category'}
+                          Risk Category: {breach.risk_category_id || 'Unknown Category'}
                         </h4>
                         <Badge variant={getSeverityColor(breach.breach_severity)}>
                           {breach.breach_severity.toUpperCase()}
@@ -221,9 +221,9 @@ const EscalationWorkflow: React.FC = () => {
                     </div>
                   </div>
                   
-                  {breach.remediation_actions && (
+                  {breach.business_impact && (
                     <div className="text-sm bg-muted p-2 rounded">
-                      <strong>Remediation Actions:</strong> {breach.remediation_actions}
+                      <strong>Business Impact:</strong> {breach.business_impact}
                     </div>
                   )}
                 </div>
@@ -242,7 +242,7 @@ const EscalationWorkflow: React.FC = () => {
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-2">
-                Resolving breach for: {selectedBreach?.risk_category?.name}
+                Resolving breach for: Risk Category {selectedBreach?.risk_category_id}
               </p>
               <p className="text-sm">
                 Variance: {selectedBreach?.variance_percentage?.toFixed(1)}%

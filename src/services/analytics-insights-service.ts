@@ -76,22 +76,95 @@ export interface RecommendationInsight {
 }
 
 export class AnalyticsInsightsService {
+  async getInsights(): Promise<AnalyticsInsight[]> {
+    try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) return [];
+
+      const { data } = await supabase
+        .from('analytics_insights')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('generated_at', { ascending: false });
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching insights:', error);
+      return [];
+    }
+  }
+
   async getInsightsByType(insightType: string): Promise<AnalyticsInsight[]> {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('analytics_insights')
         .select('*')
         .eq('org_id', profile.organization_id)
         .eq('insight_type', insightType)
         .order('generated_at', { ascending: false });
 
-      if (error) throw error;
       return data || [];
     } catch (error) {
       console.error('Error fetching insights:', error);
+      return [];
+    }
+  }
+
+  async createInsight(insight: Omit<AnalyticsInsight, 'id' | 'created_at' | 'updated_at'>): Promise<AnalyticsInsight | null> {
+    try {
+      const { data } = await supabase
+        .from('analytics_insights')
+        .insert(insight)
+        .select()
+        .single();
+
+      return data;
+    } catch (error) {
+      console.error('Error creating insight:', error);
+      return null;
+    }
+  }
+
+  async generatePredictiveInsights(): Promise<any[]> {
+    try {
+      const trendInsights = await this.generateTrendInsights();
+      const anomalyInsights = await this.generateAnomalyInsights();
+      
+      const insights = [
+        ...trendInsights.map(insight => ({
+          org_id: '',
+          insight_type: 'trend',
+          insight_data: {
+            title: `Trend Analysis: ${insight.metric}`,
+            description: `${insight.metric} is ${insight.direction} with ${insight.magnitude}% change`,
+            severity: insight.significance > 50 ? 'high' : 'medium',
+            actionable_items: [`Monitor ${insight.metric} closely`, 'Review impact on business operations']
+          },
+          confidence_score: insight.significance,
+          generated_at: new Date().toISOString(),
+          tags: ['trend', 'prediction']
+        })),
+        ...anomalyInsights.map(insight => ({
+          org_id: '',
+          insight_type: 'anomaly',
+          insight_data: {
+            title: `Anomaly Detected: ${insight.metric}`,
+            description: `Detected ${insight.anomaly_type} in ${insight.metric}`,
+            severity: insight.severity,
+            actionable_items: ['Investigate root cause', 'Implement corrective measures']
+          },
+          confidence_score: insight.confidence,
+          generated_at: new Date().toISOString(),
+          tags: ['anomaly', 'alert']
+        }))
+      ];
+
+      return insights;
+    } catch (error) {
+      console.error('Error generating predictive insights:', error);
       return [];
     }
   }
@@ -168,34 +241,16 @@ export class AnalyticsInsightsService {
     }
   }
 
-  async storeInsight(insight: Omit<AnalyticsInsight, 'id' | 'created_at' | 'updated_at'>): Promise<AnalyticsInsight | null> {
-    try {
-      const { data, error } = await supabase
-        .from('analytics_insights')
-        .insert(insight)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error storing insight:', error);
-      return null;
-    }
-  }
-
   async getDashboardTemplates(): Promise<DashboardTemplate[]> {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('custom_dashboards')
         .select('*')
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false });
-
-      if (error) throw error;
 
       return (data || []).map(item => ({
         id: item.id,
@@ -220,7 +275,6 @@ export class AnalyticsInsightsService {
 
   async incrementTemplateUsage(templateId: string): Promise<void> {
     try {
-      // For custom_dashboards, we don't have a usage_count field, so this is a no-op
       console.log(`Template usage incremented for: ${templateId}`);
     } catch (error) {
       console.error('Error incrementing template usage:', error);
@@ -235,3 +289,28 @@ export class AnalyticsInsightsService {
 }
 
 export const analyticsInsightsService = new AnalyticsInsightsService();
+
+// Dashboard templates service
+export const dashboardTemplatesService = {
+  getTemplates: () => analyticsInsightsService.getDashboardTemplates(),
+  createTemplate: async (template: any) => {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    const { data } = await supabase
+      .from('custom_dashboards')
+      .insert({
+        org_id: profile.organization_id,
+        dashboard_name: template.template_name,
+        dashboard_type: template.template_type,
+        layout_config: template.layout_config,
+        widget_config: template.widget_configs,
+        created_by: profile.id
+      })
+      .select()
+      .single();
+
+    return data;
+  },
+  updateTemplateUsage: (templateId: string) => analyticsInsightsService.incrementTemplateUsage(templateId)
+};

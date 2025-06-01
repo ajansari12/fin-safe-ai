@@ -13,6 +13,12 @@ export { appetiteBreachesService } from './appetite-breaches-service';
 export { trendDataService } from './trend-data-service';
 export { riskPostureService } from './risk-posture-service';
 
+// Import services for the main service object
+import { riskAppetiteLogsService } from './risk-appetite-logs-service';
+import { appetiteBreachesService } from './appetite-breaches-service';
+import { trendDataService } from './trend-data-service';
+import { riskPostureService } from './risk-posture-service';
+
 // Main service object that combines all services for backward compatibility
 export const enhancedRiskAppetiteService = {
   // Risk appetite logs
