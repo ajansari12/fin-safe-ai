@@ -41,7 +41,14 @@ export const continuityPlansService = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Type-safe conversion with proper status casting
+      return (data || []).map(item => ({
+        ...item,
+        status: (item.status === 'draft' || item.status === 'active' || item.status === 'archived') 
+          ? item.status 
+          : 'draft' as const
+      }));
     } catch (error) {
       console.error('Error fetching continuity plans:', error);
       return [];
@@ -57,7 +64,14 @@ export const continuityPlansService = {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Type-safe conversion
+      return data ? {
+        ...data,
+        status: (data.status === 'draft' || data.status === 'active' || data.status === 'archived') 
+          ? data.status 
+          : 'draft' as const
+      } : null;
     } catch (error) {
       console.error('Error creating continuity plan:', error);
       return null;
@@ -74,7 +88,14 @@ export const continuityPlansService = {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Type-safe conversion
+      return data ? {
+        ...data,
+        status: (data.status === 'draft' || data.status === 'active' || data.status === 'archived') 
+          ? data.status 
+          : 'draft' as const
+      } : null;
     } catch (error) {
       console.error('Error updating continuity plan:', error);
       return null;

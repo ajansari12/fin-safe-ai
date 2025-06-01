@@ -88,7 +88,12 @@ export class AnalyticsInsightsService {
         .order('generated_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Safe type conversion
+      return (data || []).map(item => ({
+        ...item,
+        insight_data: this.safeJsonParse(item.insight_data)
+      }));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -108,7 +113,12 @@ export class AnalyticsInsightsService {
         .order('generated_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Safe type conversion
+      return (data || []).map(item => ({
+        ...item,
+        insight_data: this.safeJsonParse(item.insight_data)
+      }));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -119,12 +129,19 @@ export class AnalyticsInsightsService {
     try {
       const { data, error } = await supabase
         .from('analytics_insights')
-        .insert(insight)
+        .insert({
+          ...insight,
+          insight_data: this.safeJsonParse(insight.insight_data)
+        })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return data ? {
+        ...data,
+        insight_data: this.safeJsonParse(data.insight_data)
+      } : null;
     } catch (error) {
       console.error('Error creating insight:', error);
       return null;
@@ -262,8 +279,8 @@ export class AnalyticsInsightsService {
         template_name: item.dashboard_name,
         template_type: item.dashboard_type || 'custom',
         description: `Dashboard: ${item.dashboard_name}`,
-        layout_config: item.layout_config || {},
-        widget_configs: Array.isArray(item.widget_config) ? item.widget_config : [],
+        layout_config: this.safeJsonParse(item.layout_config),
+        widget_configs: Array.isArray(item.widget_config) ? item.widget_config.map(w => this.safeJsonParse(w)) : [],
         data_sources: [],
         tags: item.shared_with || [],
         usage_count: 1,
@@ -290,6 +307,20 @@ export class AnalyticsInsightsService {
     const year = date.getFullYear();
     const week = Math.floor((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
     return `${year}-W${week}`;
+  }
+
+  private safeJsonParse(value: any): Record<string, any> {
+    if (typeof value === 'object' && value !== null) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return {};
+      }
+    }
+    return {};
   }
 }
 
