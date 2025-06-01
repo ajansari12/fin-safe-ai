@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,9 @@ import MobileBusinessContinuity from "@/components/business-continuity/MobileBus
 import DRSimulationDashboard from "@/components/business-continuity/DRSimulationDashboard";
 import BusinessImpactCalculator from "@/components/business-continuity/BusinessImpactCalculator";
 import ContinuityTestDashboard from "@/components/business-continuity/ContinuityTestDashboard";
+import ContinuityPlansManager from "@/components/business-continuity/ContinuityPlansManager";
+import RecoveryContactsManager from "@/components/business-continuity/RecoveryContactsManager";
+import AIAssistantContinuityBuilder from "@/components/business-continuity/AIAssistantContinuityBuilder";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -16,6 +18,7 @@ const BusinessContinuityContent = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [showAIBuilder, setShowAIBuilder] = useState(false);
 
   if (isMobile) {
     return <MobileBusinessContinuity />;
@@ -24,22 +27,41 @@ const BusinessContinuityContent = () => {
   // Mock org ID - in a real app this would come from the user's profile
   const orgId = user?.user_metadata?.organization_id || "mock-org-id";
 
+  const handleAIGeneratedPlan = (planData: any) => {
+    console.log('AI Generated Plan:', planData);
+    setShowAIBuilder(false);
+    setActiveTab("plans");
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Business Continuity</h1>
-        <p className="text-muted-foreground">
-          Comprehensive disaster recovery planning, testing, and impact assessment.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Business Continuity</h1>
+          <p className="text-muted-foreground">
+            Comprehensive disaster recovery planning, testing, and impact assessment.
+          </p>
+        </div>
+        <Button onClick={() => setShowAIBuilder(true)} variant="outline">
+          <Activity className="h-4 w-4 mr-2" />
+          AI Plan Builder
+        </Button>
       </div>
 
+      {showAIBuilder && (
+        <AIAssistantContinuityBuilder
+          onPlanGenerated={handleAIGeneratedPlan}
+        />
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="plans">Plans</TabsTrigger>
+          <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="dr-simulation">DR Simulation</TabsTrigger>
           <TabsTrigger value="impact-calculator">Impact Calculator</TabsTrigger>
           <TabsTrigger value="test-dashboard">Test Dashboard</TabsTrigger>
-          <TabsTrigger value="plans">Plans & Contacts</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
@@ -201,6 +223,14 @@ const BusinessContinuityContent = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="plans">
+          <ContinuityPlansManager orgId={orgId} />
+        </TabsContent>
+
+        <TabsContent value="contacts">
+          <RecoveryContactsManager orgId={orgId} />
+        </TabsContent>
+
         <TabsContent value="dr-simulation">
           <DRSimulationDashboard orgId={orgId} />
         </TabsContent>
@@ -211,40 +241,6 @@ const BusinessContinuityContent = () => {
 
         <TabsContent value="test-dashboard">
           <ContinuityTestDashboard orgId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="plans">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Continuity Plans</CardTitle>
-                <CardDescription>
-                  Detailed plans for maintaining operations during disruptions.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Business continuity planning features are coming soon. This will include
-                  plan creation, RTO/RPO management, and recovery procedures.
-                </p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Emergency Contacts</CardTitle>
-                <CardDescription>
-                  Key personnel and external contacts for crisis response.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Emergency contact management features are coming soon. This will include
-                  contact directories, escalation trees, and communication templates.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
     </div>

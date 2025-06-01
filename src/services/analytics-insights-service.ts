@@ -7,7 +7,7 @@ export interface AnalyticsInsight {
   id: string;
   org_id: string;
   insight_type: string;
-  insight_data: any;
+  insight_data: Record<string, any>;
   confidence_score?: number;
   generated_at: string;
   valid_until?: string;
@@ -23,8 +23,8 @@ export interface DashboardTemplate {
   template_name: string;
   template_type: string;
   description: string;
-  layout_config: any;
-  widget_configs: any[];
+  layout_config: Record<string, any>;
+  widget_configs: Record<string, any>[];
   data_sources: string[];
   tags: string[];
   usage_count: number;
@@ -257,7 +257,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
 
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item) => ({
         id: item.id,
         template_name: item.dashboard_name,
         template_type: item.dashboard_type || 'custom',
@@ -298,7 +298,7 @@ export const analyticsInsightsService = new AnalyticsInsightsService();
 // Dashboard templates service
 export const dashboardTemplatesService = {
   getTemplates: () => analyticsInsightsService.getDashboardTemplates(),
-  createTemplate: async (template: any) => {
+  createTemplate: async (template: Record<string, any>) => {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return null;
 

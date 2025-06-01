@@ -33,7 +33,7 @@ class ModuleSettingsService {
 
       if (error) throw error;
 
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item) => ({
         id: item.id,
         org_id: item.org_id,
         setting_key: item.setting_key,
