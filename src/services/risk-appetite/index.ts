@@ -16,19 +16,17 @@ export { riskPostureService } from './risk-posture-service';
 // Main service object that combines all services for backward compatibility
 export const enhancedRiskAppetiteService = {
   // Risk appetite logs
-  getRiskAppetiteLogs: () => riskAppetiteLogsService.getRiskAppetiteLogs(),
-  createRiskAppetiteLog: (log: any) => riskAppetiteLogsService.createRiskAppetiteLog(log),
+  getRiskAppetiteLogs: riskAppetiteLogsService.getRiskAppetiteLogs,
+  createRiskAppetiteLog: riskAppetiteLogsService.createRiskAppetiteLog,
   
-  // Appetite breaches - use existing appetite_breach_logs table
-  getAppetiteBreaches: () => appetiteBreachesService.getAppetiteBreaches(),
-  escalateBreach: (breachId: string, escalationLevel: number, escalatedTo?: string) => 
-    appetiteBreachesService.escalateBreach(breachId, escalationLevel, escalatedTo),
-  updateBreachStatus: (breachId: string, status: string, notes?: string) => 
-    appetiteBreachesService.updateBreachStatus(breachId, status, notes),
+  // Appetite breaches 
+  getAppetiteBreaches: appetiteBreachesService.getAppetiteBreaches,
+  escalateBreach: appetiteBreachesService.escalateBreach,
+  updateBreachStatus: appetiteBreachesService.updateBreachStatus,
   
   // Trend data
-  getTrendData: () => trendDataService.getTrendData(),
+  getTrendData: trendDataService.getTrendData,
   
   // Risk posture
-  getRiskPostureHeatmap: () => riskPostureService.getRiskPostureHeatmap()
+  getRiskPostureHeatmap: riskPostureService.getRiskPostureHeatmap
 };

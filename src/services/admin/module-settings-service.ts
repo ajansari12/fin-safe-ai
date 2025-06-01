@@ -26,7 +26,7 @@ class ModuleSettingsService {
 
       const { data, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
         .eq('category', 'modules')
         .order('setting_key');

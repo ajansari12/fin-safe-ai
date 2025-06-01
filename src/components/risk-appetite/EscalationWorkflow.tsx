@@ -174,7 +174,7 @@ const EscalationWorkflow: React.FC = () => {
                       <div className="text-sm text-muted-foreground space-y-1">
                         <p>
                           Variance: {breach.variance_percentage?.toFixed(1)}% 
-                          (Actual: {breach.actual_value}, Appetite: {breach.appetite_value})
+                          (Actual: {breach.actual_value}, Threshold: {breach.threshold_value})
                         </p>
                         <p className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -221,9 +221,9 @@ const EscalationWorkflow: React.FC = () => {
                     </div>
                   </div>
                   
-                  {breach.business_impact && (
+                  {breach.remediation_actions && (
                     <div className="text-sm bg-muted p-2 rounded">
-                      <strong>Business Impact:</strong> {breach.business_impact}
+                      <strong>Remediation Actions:</strong> {breach.remediation_actions}
                     </div>
                   )}
                 </div>
