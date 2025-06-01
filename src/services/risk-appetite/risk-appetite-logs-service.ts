@@ -9,15 +9,13 @@ export const riskAppetiteLogsService = {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
+      // Use appetite_breach_logs as the main source for risk appetite data
       let query = supabase
-        .from('risk_appetite_logs')
-        .select(`
-          *,
-          risk_category:risk_categories(name)
-        `)
+        .from('appetite_breach_logs')
+        .select('*')
         .eq('org_id', profile.organization_id)
-        .gte('log_date', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-        .order('log_date', { ascending: false });
+        .gte('breach_date', new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString())
+        .order('breach_date', { ascending: false });
 
       if (categoryId) {
         query = query.eq('risk_category_id', categoryId);
@@ -25,7 +23,20 @@ export const riskAppetiteLogsService = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      
+      // Transform data to match RiskAppetiteLog interface
+      return (data || []).map(item => ({
+        id: item.id,
+        org_id: item.org_id,
+        risk_category_id: item.risk_category_id,
+        log_date: item.breach_date.split('T')[0],
+        actual_value: item.actual_value,
+        threshold_value: item.threshold_value,
+        variance_percentage: item.variance_percentage,
+        breach_severity: item.breach_severity,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
     } catch (error) {
       console.error('Error fetching risk appetite logs:', error);
       return [];
@@ -44,19 +55,36 @@ export const riskAppetiteLogsService = {
         .eq('id', user.user?.id)
         .single();
 
+      // Create entry in appetite_breach_logs table
       const { data, error } = await supabase
-        .from('risk_appetite_logs')
+        .from('appetite_breach_logs')
         .insert({
-          ...log,
           org_id: profile.organization_id,
-          created_by: user.user?.id,
-          created_by_name: userProfile?.full_name || 'Unknown User'
+          risk_category_id: log.risk_category_id,
+          breach_date: `${log.log_date}T00:00:00Z`,
+          actual_value: log.actual_value,
+          threshold_value: log.threshold_value,
+          variance_percentage: log.variance_percentage,
+          breach_severity: log.breach_severity || 'warning',
+          resolution_status: 'open'
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return {
+        id: data.id,
+        org_id: data.org_id,
+        risk_category_id: data.risk_category_id,
+        log_date: data.breach_date.split('T')[0],
+        actual_value: data.actual_value,
+        threshold_value: data.threshold_value,
+        variance_percentage: data.variance_percentage,
+        breach_severity: data.breach_severity,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
     } catch (error) {
       console.error('Error creating risk appetite log:', error);
       return null;

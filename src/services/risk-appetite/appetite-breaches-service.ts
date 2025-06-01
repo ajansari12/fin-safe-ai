@@ -10,11 +10,8 @@ export const appetiteBreachesService = {
       if (!profile?.organization_id) return [];
 
       let query = supabase
-        .from('appetite_breaches')
-        .select(`
-          *,
-          risk_category:risk_categories(name)
-        `)
+        .from('appetite_breach_logs')
+        .select('*')
         .eq('org_id', profile.organization_id)
         .order('breach_date', { ascending: false });
 
@@ -24,7 +21,25 @@ export const appetiteBreachesService = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      
+      // Transform data to match AppetiteBreach interface
+      return (data || []).map(item => ({
+        id: item.id,
+        org_id: item.org_id,
+        risk_category_id: item.risk_category_id,
+        breach_date: item.breach_date,
+        breach_severity: item.breach_severity,
+        actual_value: item.actual_value,
+        threshold_value: item.threshold_value,
+        variance_percentage: item.variance_percentage,
+        resolution_status: item.resolution_status,
+        escalation_level: item.escalation_level,
+        escalated_at: item.escalated_at,
+        escalated_to: item.escalated_to,
+        resolution_date: item.resolution_date,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
     } catch (error) {
       console.error('Error fetching appetite breaches:', error);
       return [];
@@ -41,7 +56,7 @@ export const appetiteBreachesService = {
         .single();
 
       const { error } = await supabase
-        .from('appetite_breaches')
+        .from('appetite_breach_logs')
         .update({
           escalation_level: escalationLevel,
           escalated_at: new Date().toISOString(),
@@ -72,7 +87,7 @@ export const appetiteBreachesService = {
       }
 
       const { error } = await supabase
-        .from('appetite_breaches')
+        .from('appetite_breach_logs')
         .update(updateData)
         .eq('id', breachId);
 

@@ -96,8 +96,14 @@ export const optimizedAnalyticsService = {
       if (!profile?.organization_id) return [];
 
       // Use simpler query that works with existing structure
+      const validTables = ['incident_logs', 'kri_logs', 'compliance_findings'];
+      if (!validTables.includes(table)) {
+        console.warn(`Invalid table name: ${table}`);
+        return [];
+      }
+
       let query = supabase
-        .from(table)
+        .from(table as any)
         .select('*')
         .eq('org_id', profile.organization_id);
 
