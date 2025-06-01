@@ -6,7 +6,7 @@ export interface AnalyticsInsight {
   id: string;
   org_id: string;
   insight_type: string;
-  insight_data: any;
+  insight_data: Record<string, any>;
   confidence_score?: number;
   generated_at: string;
   valid_until?: string;
@@ -22,8 +22,8 @@ export interface DashboardTemplate {
   template_name: string;
   template_type: string;
   description: string;
-  layout_config: any;
-  widget_configs: any[];
+  layout_config: Record<string, any>;
+  widget_configs: Record<string, any>[];
   data_sources: string[];
   tags: string[];
   usage_count: number;
@@ -74,6 +74,36 @@ export interface RecommendationInsight {
   suggested_actions: string[];
 }
 
+type DatabaseJson = string | number | boolean | null | { [key: string]: DatabaseJson } | DatabaseJson[];
+
+interface DatabaseInsight {
+  id: string;
+  org_id: string;
+  insight_type: string;
+  insight_data: DatabaseJson;
+  confidence_score?: number | null;
+  generated_at: string;
+  valid_until?: string | null;
+  tags?: string[] | null;
+  created_by?: string | null;
+  forecast_period?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DatabaseDashboard {
+  id: string;
+  org_id: string;
+  dashboard_name: string;
+  dashboard_type?: string | null;
+  layout_config: DatabaseJson;
+  widget_config: DatabaseJson;
+  shared_with?: string[] | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export class AnalyticsInsightsService {
   async getInsights(): Promise<AnalyticsInsight[]> {
     try {
@@ -88,10 +118,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => ({
-        ...item,
-        insight_data: this.safeJsonParse(item.insight_data)
-      })) as AnalyticsInsight[];
+      return (data || []).map(item => this.transformDatabaseInsight(item as DatabaseInsight));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -112,10 +139,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => ({
-        ...item,
-        insight_data: this.safeJsonParse(item.insight_data)
-      })) as AnalyticsInsight[];
+      return (data || []).map(item => this.transformDatabaseInsight(item as DatabaseInsight));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -135,10 +159,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return data ? {
-        ...data,
-        insight_data: this.safeJsonParse(data.insight_data)
-      } as AnalyticsInsight : null;
+      return data ? this.transformDatabaseInsight(data as DatabaseInsight) : null;
     } catch (error) {
       console.error('Error creating insight:', error);
       return null;
@@ -268,21 +289,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
 
-      return (data || []).map((item) => ({
-        id: item.id,
-        template_name: item.dashboard_name,
-        template_type: item.dashboard_type || 'custom',
-        description: `Dashboard: ${item.dashboard_name}`,
-        layout_config: this.safeJsonParse(item.layout_config),
-        widget_configs: Array.isArray(item.widget_config) ? item.widget_config.map(w => this.safeJsonParse(w)) : [],
-        data_sources: [],
-        tags: item.shared_with || [],
-        usage_count: 1,
-        org_id: item.org_id,
-        created_by: item.created_by || '',
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      })) as DashboardTemplate[];
+      return (data || []).map((item): DashboardTemplate => this.transformDatabaseDashboard(item as DatabaseDashboard));
     } catch (error) {
       console.error('Error fetching dashboard templates:', error);
       return [];
@@ -297,24 +304,131 @@ export class AnalyticsInsightsService {
     }
   }
 
+  private transformDatabaseInsight(item: DatabaseInsight): AnalyticsInsight {
+    return {
+      id: item.id,
+      org_id: item.org_id,
+      insight_type: item.insight_type,
+      insight_data: this.parseJson(item.insight_data),
+      confidence_score: item.confidence_score || undefined,
+      generated_at: item.generated_at,
+      valid_until: item.valid_until || undefined,
+      tags: item.tags || undefined,
+      created_by: item.created_by || undefined,
+      forecast_period: item.forecast_period || undefined,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    };
+  }
+
+  private transformDatabaseDashboard(item: DatabaseDashboard): DashboardTemplate {
+    return {
+      id: item.id,
+      template_name: item.dashboard_name,
+      template_type: item.dashboard_type || 'custom',
+      description: `Dashboard: ${item.dashboard_name}`,
+      layout_config: this.parseJson(item.layout_config),
+      widget_configs: Array.isArray(item.widget_config) 
+        ? (item.widget_config as any[]).map(w => this.parseJson(w))
+        : [],
+      data_sources: [],
+      tags: item.shared_with || [],
+      usage_count: 1,
+      org_id: item.org_id,
+      created_by: item.created_by || '',
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    };
+  }
+
+  private parseJson(value: DatabaseJson): Record<string, any> {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      return value as Record<string, any>;
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        return typeof parsed === 'object' && parsed !== null ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  }
+
   private getWeekKey(date: Date): string {
     const year = date.getFullYear();
     const week = Math.floor((date.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000));
     return `${year}-W${week}`;
   }
 
-  private safeJsonParse(value: any): any {
-    if (typeof value === 'object' && value !== null) {
-      return value;
+  async generateTrendInsights(): Promise<TrendInsight[]> {
+    try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) return [];
+
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: incidents } = await supabase
+        .from('incident_logs')
+        .select('reported_at, severity')
+        .eq('org_id', profile.organization_id)
+        .gte('reported_at', thirtyDaysAgo.toISOString());
+
+      if (!incidents) return [];
+
+      const weeklyIncidents: Record<string, number> = {};
+      incidents.forEach(incident => {
+        const week = this.getWeekKey(new Date(incident.reported_at));
+        weeklyIncidents[week] = (weeklyIncidents[week] || 0) + 1;
+      });
+
+      const weeks = Object.keys(weeklyIncidents).sort();
+      if (weeks.length < 2) return [];
+
+      const trend = weeklyIncidents[weeks[weeks.length - 1]] - weeklyIncidents[weeks[0]];
+      const direction = trend > 2 ? 'increasing' : trend < -2 ? 'decreasing' : 'stable';
+
+      return [{
+        metric: 'Incident Volume',
+        direction,
+        magnitude: Math.abs(trend),
+        period: '30d',
+        significance: Math.min(100, Math.abs(trend) * 10)
+      }];
+    } catch (error) {
+      console.error('Error generating trend insights:', error);
+      return [];
     }
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return {};
-      }
+  }
+
+  async generateAnomalyInsights(): Promise<AnomalyInsight[]> {
+    try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) return [];
+
+      const { data: kriLogs } = await supabase
+        .from('kri_logs')
+        .select('measurement_date, actual_value, threshold_breached')
+        .eq('org_id', profile.organization_id)
+        .eq('threshold_breached', 'yes')
+        .gte('measurement_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+        .order('measurement_date', { ascending: false });
+
+      if (!kriLogs || kriLogs.length === 0) return [];
+
+      return kriLogs.slice(0, 5).map(log => ({
+        metric: 'KRI Threshold',
+        anomaly_type: 'spike' as const,
+        severity: 'high' as const,
+        detected_at: log.measurement_date,
+        confidence: 90
+      }));
+    } catch (error) {
+      console.error('Error generating anomaly insights:', error);
+      return [];
     }
-    return {};
   }
 }
 
