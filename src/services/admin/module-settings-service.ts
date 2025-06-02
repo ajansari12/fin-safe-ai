@@ -18,17 +18,6 @@ export interface ModuleSetting {
   updated_at: string;
 }
 
-// Simplified database interface to avoid type recursion
-interface RawDatabaseSetting {
-  id: string;
-  org_id: string;
-  setting_key: string;
-  setting_value: any;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 class ModuleSettingsService {
   async getModuleSettings(): Promise<ModuleSetting[]> {
     try {
@@ -44,18 +33,22 @@ class ModuleSettingsService {
 
       if (error) throw error;
 
-      // Safe transformation with explicit typing
-      return (data || []).map((item: RawDatabaseSetting): ModuleSetting => ({
-        id: item.id,
-        org_id: item.org_id,
-        setting_key: item.setting_key,
-        setting_value: this.parseSettingValue(item.setting_value),
-        description: item.description,
-        category: 'modules',
-        created_by: null,
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      }));
+      // Manual transformation to avoid type inference issues
+      const results: ModuleSetting[] = [];
+      for (const item of data || []) {
+        results.push({
+          id: item.id,
+          org_id: item.org_id,
+          setting_key: item.setting_key,
+          setting_value: this.parseSettingValue(item.setting_value),
+          description: item.description,
+          category: 'modules',
+          created_by: null,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        });
+      }
+      return results;
     } catch (error) {
       console.error('Error in getModuleSettings:', error);
       return [];

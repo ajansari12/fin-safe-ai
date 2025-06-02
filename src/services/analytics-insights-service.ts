@@ -122,7 +122,12 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => this.transformDatabaseInsight(item as RawInsightData));
+      // Manual transformation to avoid type inference issues
+      const results: AnalyticsInsight[] = [];
+      for (const item of data || []) {
+        results.push(this.transformDatabaseInsight(item));
+      }
+      return results;
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -143,7 +148,12 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => this.transformDatabaseInsight(item as RawInsightData));
+      // Manual transformation to avoid type inference issues
+      const results: AnalyticsInsight[] = [];
+      for (const item of data || []) {
+        results.push(this.transformDatabaseInsight(item));
+      }
+      return results;
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -170,7 +180,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return data ? this.transformDatabaseInsight(data as RawInsightData) : null;
+      return data ? this.transformDatabaseInsight(data) : null;
     } catch (error) {
       console.error('Error creating insight:', error);
       return null;
@@ -303,7 +313,12 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
 
-      return (data || []).map((item): DashboardTemplate => this.transformDatabaseDashboard(item as RawDashboardData));
+      // Manual transformation to avoid type inference issues
+      const results: DashboardTemplate[] = [];
+      for (const item of data || []) {
+        results.push(this.transformDatabaseDashboard(item));
+      }
+      return results;
     } catch (error) {
       console.error('Error fetching dashboard templates:', error);
       return [];
@@ -318,7 +333,7 @@ export class AnalyticsInsightsService {
     }
   }
 
-  private transformDatabaseInsight(item: RawInsightData): AnalyticsInsight {
+  private transformDatabaseInsight(item: any): AnalyticsInsight {
     return {
       id: item.id,
       org_id: item.org_id,
@@ -335,7 +350,7 @@ export class AnalyticsInsightsService {
     };
   }
 
-  private transformDatabaseDashboard(item: RawDashboardData): DashboardTemplate {
+  private transformDatabaseDashboard(item: any): DashboardTemplate {
     return {
       id: item.id,
       template_name: item.dashboard_name,
