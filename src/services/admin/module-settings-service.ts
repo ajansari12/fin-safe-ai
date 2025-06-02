@@ -24,7 +24,8 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { data, error } = await (supabase as any)
         .from('settings')
         .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
         .eq('org_id', profile.organization_id)
@@ -60,7 +61,8 @@ class ModuleSettingsService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
 
-      await supabase
+      // Use type assertion to bypass complex type inference
+      await (supabase as any)
         .from('settings')
         .upsert({
           org_id: profile.organization_id,
