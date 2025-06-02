@@ -18,7 +18,8 @@ export interface ModuleSetting {
   updated_at: string;
 }
 
-interface DatabaseSetting {
+// Simplified database interface to avoid type recursion
+interface RawDatabaseSetting {
   id: string;
   org_id: string;
   setting_key: string;
@@ -43,7 +44,8 @@ class ModuleSettingsService {
 
       if (error) throw error;
 
-      return (data || []).map((item: DatabaseSetting): ModuleSetting => ({
+      // Safe transformation with explicit typing
+      return (data || []).map((item: RawDatabaseSetting): ModuleSetting => ({
         id: item.id,
         org_id: item.org_id,
         setting_key: item.setting_key,

@@ -79,7 +79,8 @@ export interface RecommendationInsight {
   suggested_actions: string[];
 }
 
-interface DatabaseInsight {
+// Simplified raw database interfaces to avoid type recursion
+interface RawInsightData {
   id: string;
   org_id: string;
   insight_type: string;
@@ -94,7 +95,7 @@ interface DatabaseInsight {
   updated_at: string;
 }
 
-interface DatabaseDashboard {
+interface RawDashboardData {
   id: string;
   org_id: string;
   dashboard_name: string;
@@ -121,7 +122,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => this.transformDatabaseInsight(item));
+      return (data || []).map(item => this.transformDatabaseInsight(item as RawInsightData));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -142,7 +143,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return (data || []).map(item => this.transformDatabaseInsight(item));
+      return (data || []).map(item => this.transformDatabaseInsight(item as RawInsightData));
     } catch (error) {
       console.error('Error fetching insights:', error);
       return [];
@@ -169,7 +170,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
       
-      return data ? this.transformDatabaseInsight(data) : null;
+      return data ? this.transformDatabaseInsight(data as RawInsightData) : null;
     } catch (error) {
       console.error('Error creating insight:', error);
       return null;
@@ -302,7 +303,7 @@ export class AnalyticsInsightsService {
 
       if (error) throw error;
 
-      return (data || []).map((item): DashboardTemplate => this.transformDatabaseDashboard(item));
+      return (data || []).map((item): DashboardTemplate => this.transformDatabaseDashboard(item as RawDashboardData));
     } catch (error) {
       console.error('Error fetching dashboard templates:', error);
       return [];
@@ -317,7 +318,7 @@ export class AnalyticsInsightsService {
     }
   }
 
-  private transformDatabaseInsight(item: DatabaseInsight): AnalyticsInsight {
+  private transformDatabaseInsight(item: RawInsightData): AnalyticsInsight {
     return {
       id: item.id,
       org_id: item.org_id,
@@ -334,7 +335,7 @@ export class AnalyticsInsightsService {
     };
   }
 
-  private transformDatabaseDashboard(item: DatabaseDashboard): DashboardTemplate {
+  private transformDatabaseDashboard(item: RawDashboardData): DashboardTemplate {
     return {
       id: item.id,
       template_name: item.dashboard_name,
