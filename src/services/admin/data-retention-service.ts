@@ -9,7 +9,8 @@ class DataRetentionService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      const { data, error } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { data, error } = await (supabase as any)
         .from('settings')
         .select('*')
         .eq('org_id', profile.organization_id)
@@ -21,7 +22,7 @@ class DataRetentionService {
       const retentionSettings: ModuleSetting[] = [];
       
       if (data) {
-        data.forEach(setting => {
+        data.forEach((setting: any) => {
           const retentionSetting: ModuleSetting = {
             id: setting.id,
             org_id: setting.org_id,
@@ -54,7 +55,8 @@ class DataRetentionService {
       if (!profile?.organization_id) throw new Error('No organization found');
 
       const settingKey = `${module}_retention`;
-      const { error } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { error } = await (supabase as any)
         .from('settings')
         .upsert({
           org_id: profile.organization_id,
