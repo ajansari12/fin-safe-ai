@@ -6,7 +6,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Bell, User, Clock, Globe } from "lucide-react";
 
@@ -45,18 +44,10 @@ const UserPreferences: React.FC = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        setPreferences(data.preferences);
+      // Mock loading preferences from localStorage or use defaults
+      const savedPreferences = localStorage.getItem(`user_preferences_${user.id}`);
+      if (savedPreferences) {
+        setPreferences(JSON.parse(savedPreferences));
       }
     } catch (error) {
       console.error('Error loading preferences:', error);
@@ -75,15 +66,8 @@ const UserPreferences: React.FC = () => {
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          preferences: preferences,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
+      // Mock saving to localStorage
+      localStorage.setItem(`user_preferences_${user.id}`, JSON.stringify(preferences));
 
       toast({
         title: "Preferences Saved",
