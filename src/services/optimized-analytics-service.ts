@@ -50,7 +50,8 @@ export const optimizedAnalyticsService = {
       const { page = 1, pageSize = 20, sortBy = 'reported_at', sortOrder = 'desc' } = options;
       const offset = (page - 1) * pageSize;
 
-      let query = supabase
+      // Use type assertion to bypass complex type inference
+      let query = (supabase as any)
         .from('incident_logs')
         .select('*', { count: 'exact' })
         .eq('org_id', profile.organization_id);
@@ -110,7 +111,8 @@ export const optimizedAnalyticsService = {
         return [];
       }
 
-      const { data, error } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { data, error } = await (supabase as any)
         .from(table as any)
         .select('*')
         .eq('org_id', profile.organization_id);
@@ -119,7 +121,7 @@ export const optimizedAnalyticsService = {
 
       // Group data by date on the client side
       const groupedData: Record<string, any[]> = {};
-      (data || []).forEach(item => {
+      (data || []).forEach((item: any) => {
         const date = new Date(item[dateColumn]).toISOString().split('T')[0];
         if (!groupedData[date]) {
           groupedData[date] = [];
@@ -150,13 +152,15 @@ export const optimizedAnalyticsService = {
       const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
       // Incident rate prediction
-      const { data: recentIncidents } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { data: recentIncidents } = await (supabase as any)
         .from('incident_logs')
         .select('reported_at, severity')
         .eq('org_id', profile.organization_id)
         .gte('reported_at', thirtyDaysAgo.toISOString());
 
-      const { data: historicalIncidents } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { data: historicalIncidents } = await (supabase as any)
         .from('incident_logs')
         .select('reported_at, severity')
         .eq('org_id', profile.organization_id)
@@ -187,7 +191,8 @@ export const optimizedAnalyticsService = {
       }
 
       // KRI breach prediction using existing structure
-      const { data: kriLogs } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { data: kriLogs } = await (supabase as any)
         .from('kri_logs')
         .select('measurement_date, actual_value, threshold_breached')
         .eq('org_id', profile.organization_id)
@@ -195,7 +200,7 @@ export const optimizedAnalyticsService = {
         .order('measurement_date', { ascending: true });
 
       if (kriLogs && kriLogs.length > 5) {
-        const breachCount = kriLogs.filter(log => log.threshold_breached === 'yes').length;
+        const breachCount = kriLogs.filter((log: any) => log.threshold_breached === 'yes').length;
         const totalCount = kriLogs.length;
         const currentBreachRate = (breachCount / totalCount) * 100;
         
@@ -204,8 +209,8 @@ export const optimizedAnalyticsService = {
         const firstHalf = kriLogs.slice(0, midPoint);
         const secondHalf = kriLogs.slice(midPoint);
         
-        const firstHalfBreaches = firstHalf.filter(log => log.threshold_breached === 'yes').length;
-        const secondHalfBreaches = secondHalf.filter(log => log.threshold_breached === 'yes').length;
+        const firstHalfBreaches = firstHalf.filter((log: any) => log.threshold_breached === 'yes').length;
+        const secondHalfBreaches = secondHalf.filter((log: any) => log.threshold_breached === 'yes').length;
         
         const firstHalfRate = (firstHalfBreaches / firstHalf.length) * 100;
         const secondHalfRate = (secondHalfBreaches / secondHalf.length) * 100;
@@ -241,7 +246,8 @@ export const optimizedAnalyticsService = {
       const cacheExpiry = new Date(Date.now() - ttlMinutes * 60 * 1000);
       
       // Try to get from cache first
-      const { data: cached } = await supabase
+      // Use type assertion to bypass complex type inference
+      const { data: cached } = await (supabase as any)
         .from('analytics_insights')
         .select('insight_data')
         .eq('insight_type', 'correlation')
@@ -259,7 +265,8 @@ export const optimizedAnalyticsService = {
       // Store in cache
       const profile = await getCurrentUserProfile();
       if (profile?.organization_id) {
-        await supabase
+        // Use type assertion to bypass complex type inference
+        await (supabase as any)
           .from('analytics_insights')
           .insert({
             org_id: profile.organization_id,
@@ -284,19 +291,19 @@ export const optimizedAnalyticsService = {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return {};
 
-      // Use Promise.all for parallel execution
+      // Use Promise.all for parallel execution with type assertions
       const [incidentStats, kriStats, complianceStats] = await Promise.all([
-        supabase
+        (supabase as any)
           .from('incident_logs')
           .select('status, severity')
           .eq('org_id', profile.organization_id),
         
-        supabase
+        (supabase as any)
           .from('kri_logs')
           .select('threshold_breached')
           .eq('org_id', profile.organization_id),
         
-        supabase
+        (supabase as any)
           .from('compliance_findings')
           .select('status, severity')
           .eq('org_id', profile.organization_id)
