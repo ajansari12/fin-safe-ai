@@ -8,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Target, BarChart3, FileText, Settings } from "lucide-react";
 import RiskAppetiteOverview from "./RiskAppetiteOverview";
-import RiskCategoryForm from "./RiskCategoryForm";
-import KRIList from "./KRIList";
+import { KRIList } from "./KRIList";
 import AppetiteBreachAlerts from "./AppetiteBreachAlerts";
 import BoardReportGenerator from "./BoardReportGenerator";
 import EscalationWorkflow from "./EscalationWorkflow";
@@ -163,14 +162,10 @@ const UnifiedRiskAppetite: React.FC = () => {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
-          </TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Categories
           </TabsTrigger>
           <TabsTrigger value="kris" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
@@ -191,27 +186,22 @@ const UnifiedRiskAppetite: React.FC = () => {
         </TabsList>
 
         <TabsContent value="overview">
-          <RiskAppetiteOverview />
-        </TabsContent>
-
-        <TabsContent value="categories">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Risk Categories</CardTitle>
-                <CardDescription>
-                  Define and manage risk categories and their appetite levels
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RiskCategoryForm />
-              </CardContent>
-            </Card>
-          </div>
+          <RiskAppetiteOverview 
+            statements={[]}
+            onViewStatement={() => {}}
+            onCreateNew={() => {}}
+            isLoading={false}
+          />
         </TabsContent>
 
         <TabsContent value="kris">
-          <KRIList />
+          <KRIList 
+            thresholdId="mock-threshold"
+            kris={[]}
+            onAddKRI={() => {}}
+            onUpdateKRI={() => {}}
+            onDeleteKRI={() => {}}
+          />
         </TabsContent>
 
         <TabsContent value="breaches">
