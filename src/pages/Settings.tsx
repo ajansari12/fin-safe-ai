@@ -4,8 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Shield } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield, User, Bell, Building, Database, Lock } from "lucide-react";
 import AdminInterface from "@/components/admin/AdminInterface";
+import UserPreferences from "@/components/settings/UserPreferences";
+import NotificationSettings from "@/components/settings/NotificationSettings";
+import OrganizationManagement from "@/components/settings/OrganizationManagement";
+import SecuritySettings from "@/components/security/SecuritySettings";
 import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
@@ -53,57 +58,88 @@ const Settings = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">
-            Manage your account and application settings.
+            Manage your account, organization, and application settings.
           </p>
         </div>
 
-        {isAdmin ? (
-          <AdminInterface />
-        ) : (
-          <div className="grid gap-6">
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertDescription>
-                You need admin privileges to access the full settings panel. Contact your administrator for access.
-              </AlertDescription>
-            </Alert>
+        <Tabs defaultValue="preferences" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="preferences" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              User
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger value="organization" className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              Organization
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center gap-2">
+              <Lock className="h-4 w-4" />
+              Security
+            </TabsTrigger>
+            {isAdmin && (
+              <>
+                <TabsTrigger value="admin" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </TabsTrigger>
+                <TabsTrigger value="data" className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Data
+                </TabsTrigger>
+              </>
+            )}
+          </TabsList>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>
-                  Update your account information and preferences.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Content for account settings will go here.</p>
-              </CardContent>
-            </Card>
+          <TabsContent value="preferences">
+            <UserPreferences />
+          </TabsContent>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Organization Settings</CardTitle>
-                <CardDescription>
-                  Manage organization profile and user permissions.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Content for organization settings will go here.</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Notifications</CardTitle>
-                <CardDescription>
-                  Configure your notification preferences.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p>Content for notification settings will go here.</p>
-              </CardContent>
-            </Card>
-          </div>
+          <TabsContent value="notifications">
+            <NotificationSettings />
+          </TabsContent>
+
+          <TabsContent value="organization">
+            <OrganizationManagement />
+          </TabsContent>
+
+          <TabsContent value="security">
+            <SecuritySettings />
+          </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="admin">
+              <AdminInterface />
+            </TabsContent>
+          )}
+
+          {isAdmin && (
+            <TabsContent value="data">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Data Management</CardTitle>
+                  <CardDescription>
+                    Manage data retention, exports, and compliance
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Data management tools will be implemented here.</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+        </Tabs>
+
+        {!isAdmin && (
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              You need admin privileges to access advanced settings. Contact your administrator for access.
+            </AlertDescription>
+          </Alert>
         )}
       </div>
     </AuthenticatedLayout>
