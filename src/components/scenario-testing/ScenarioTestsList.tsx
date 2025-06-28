@@ -4,230 +4,228 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, Download, Play, FileDown, PlayCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, Play, Edit, Trash2, Filter, Search } from "lucide-react";
 import { getScenarioTests, ScenarioTest } from "@/services/scenario-testing-service";
-import { generateScenarioTestPDF } from "@/services/scenario-pdf-service";
-import { format } from "date-fns";
-import { toast } from "sonner";
-
-const SEVERITY_COLORS = {
-  low: 'secondary',
-  medium: 'default',
-  high: 'destructive',
-  critical: 'destructive'
-} as const;
-
-const STATUS_COLORS = {
-  draft: 'secondary',
-  in_progress: 'default',
-  completed: 'default',
-  archived: 'outline'
-} as const;
-
-const OUTCOME_COLORS = {
-  successful: 'default',
-  partial: 'secondary',
-  failed: 'destructive'
-} as const;
 
 interface ScenarioTestsListProps {
   onEdit: (scenario: ScenarioTest) => void;
-  onDelete: (id: string) => void;
-  onContinue: (scenario: ScenarioTest) => void;
-  onExecute?: (scenario: ScenarioTest) => void;
+  onExecute: (scenario: ScenarioTest) => void;
 }
 
 const ScenarioTestsList: React.FC<ScenarioTestsListProps> = ({
   onEdit,
-  onDelete,
-  onContinue,
   onExecute
 }) => {
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState("all");
+  const [typeFilter, setTypeFilter] = React.useState("all");
+
   const { data: scenarios = [], isLoading } = useQuery({
     queryKey: ['scenarioTests'],
     queryFn: getScenarioTests
   });
 
-  const handleExport = async (scenario: ScenarioTest) => {
-    try {
-      await generateScenarioTestPDF(scenario);
-      toast.success("Scenario test report exported successfully");
-    } catch (error) {
-      console.error("Export failed:", error);
-      toast.error("Failed to export scenario test report");
+  const filteredScenarios = scenarios.filter(scenario => {
+    const matchesSearch = scenario.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         scenario.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || scenario.status === statusFilter;
+    const matchesType = typeFilter === "all" || scenario.disruption_type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'draft': return 'secondary';
+      case 'scheduled': return 'default';
+      case 'in_progress': return 'outline';
+      case 'completed': return 'default';
+      case 'cancelled': return 'destructive';
+      default: return 'secondary';
     }
   };
 
-  const handleExportAll = async () => {
-    try {
-      for (const scenario of scenarios.slice(0, 5)) { // Limit to first 5
-        await generateScenarioTestPDF(scenario);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Add delay
-      }
-      toast.success(`Exported ${Math.min(scenarios.length, 5)} scenario test reports`);
-    } catch (error) {
-      console.error("Bulk export failed:", error);
-      toast.error("Failed to export scenario test reports");
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'low': return 'secondary';
+      case 'medium': return 'default';
+      case 'high': return 'destructive';
+      case 'critical': return 'destructive';
+      default: return 'secondary';
     }
   };
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="animate-pulse">
+            <CardContent className="p-6">
+              <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-muted rounded w-1/2"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Scenario Tests</CardTitle>
-            <CardDescription>
-              Manage and review your scenario testing activities.
-            </CardDescription>
+    <div className="space-y-6">
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search scenarios..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="Cyber Attack">Cyber Attack</SelectItem>
+                <SelectItem value="Natural Disaster">Natural Disaster</SelectItem>
+                <SelectItem value="System Failure">System Failure</SelectItem>
+                <SelectItem value="Third-Party Failure">Third-Party Failure</SelectItem>
+                <SelectItem value="Pandemic">Pandemic</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="text-sm text-muted-foreground flex items-center">
+              {filteredScenarios.length} of {scenarios.length} scenarios
+            </div>
           </div>
-          {scenarios.length > 0 && (
-            <Button variant="outline" onClick={handleExportAll} className="flex items-center gap-2">
-              <FileDown className="h-4 w-4" />
-              Export All
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      
-      <CardContent>
-        {scenarios.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">No scenario tests created yet.</p>
-          </div>
+        </CardContent>
+      </Card>
+
+      {/* Scenarios List */}
+      <div className="space-y-4">
+        {filteredScenarios.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">
+                {scenarios.length === 0 
+                  ? "No scenario tests found. Create your first scenario test to get started."
+                  : "No scenarios match your current filters."
+                }
+              </p>
+            </CardContent>
+          </Card>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Disruption Type</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Outcome</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {scenarios.map((scenario) => (
-                <TableRow key={scenario.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{scenario.title}</div>
-                      {scenario.description && (
-                        <div className="text-sm text-muted-foreground truncate max-w-xs">
-                          {scenario.description}
+          filteredScenarios.map((scenario) => (
+            <Card key={scenario.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold">{scenario.title}</h3>
+                      <Badge variant={getStatusColor(scenario.status)}>
+                        {scenario.status.replace('_', ' ')}
+                      </Badge>
+                      <Badge variant={getSeverityColor(scenario.severity_level)}>
+                        {scenario.severity_level}
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-muted-foreground mb-3">
+                      {scenario.description}
+                    </p>
+                    
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        Created: {new Date(scenario.created_at).toLocaleDateString()}
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        Type: {scenario.disruption_type}
+                      </div>
+                      
+                      {scenario.completed_at && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          Completed: {new Date(scenario.completed_at).toLocaleDateString()}
                         </div>
                       )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{scenario.disruption_type}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={SEVERITY_COLORS[scenario.severity_level as keyof typeof SEVERITY_COLORS]}>
-                      {scenario.severity_level}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={STATUS_COLORS[scenario.status as keyof typeof STATUS_COLORS]}>
-                      {scenario.status.replace('_', ' ')}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      Step {scenario.current_step} of 6
-                    </div>
-                  </TableCell>
-                  <TableCell>
+
                     {scenario.outcome && (
-                      <Badge variant={OUTCOME_COLORS[scenario.outcome as keyof typeof OUTCOME_COLORS]}>
-                        {scenario.outcome}
-                      </Badge>
+                      <div className="mt-3 p-3 bg-muted rounded-lg">
+                        <h4 className="font-medium text-sm mb-1">Test Outcome</h4>
+                        <p className="text-sm text-muted-foreground">{scenario.outcome}</p>
+                      </div>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {format(new Date(scenario.created_at), 'MMM dd, yyyy')}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {/* Execute button - only show if scenario is completed and onExecute is provided */}
-                      {scenario.status === 'completed' && onExecute && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onExecute(scenario)}
-                          title="Execute Test"
-                        >
-                          <PlayCircle className="h-3 w-3" />
-                          <span className="sr-only">Execute</span>
-                        </Button>
-                      )}
-                      
-                      {scenario.status !== 'completed' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onContinue(scenario)}
-                          title="Continue"
-                        >
-                          <Play className="h-3 w-3" />
-                          <span className="sr-only">Continue</span>
-                        </Button>
-                      )}
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                  </div>
+                  
+                  <div className="flex flex-col gap-2 ml-4">
+                    {scenario.status === 'draft' && (
+                      <Button size="sm" onClick={() => onEdit(scenario)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
+                    
+                    {['draft', 'scheduled'].includes(scenario.status) && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => onExecute(scenario)}
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Execute
+                      </Button>
+                    )}
+                    
+                    {scenario.status === 'completed' && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
                         onClick={() => onEdit(scenario)}
-                        title="Edit"
                       >
-                        <Edit className="h-3 w-3" />
-                        <span className="sr-only">Edit</span>
+                        View Results
                       </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleExport(scenario)}
-                        title="Export PDF"
-                      >
-                        <Download className="h-3 w-3" />
-                        <span className="sr-only">Export PDF</span>
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDelete(scenario.id)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        <span className="sr-only">Delete</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

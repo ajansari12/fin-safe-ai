@@ -7,13 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Play, BarChart3, File } from "lucide-react";
-import { createScenarioTest, updateScenarioTest, deleteScenarioTest, ScenarioTest } from "@/services/scenario-testing-service";
-import EnhancedScenarioBuilder from "@/components/scenario-testing/EnhancedScenarioBuilder";
+import { Plus, Play, BarChart3, File, Settings } from "lucide-react";
+import ScenarioBuilder from "@/components/scenario-testing/ScenarioBuilder";
 import ScenarioTestsList from "@/components/scenario-testing/ScenarioTestsList";
 import ScenarioAnalyticsDashboard from "@/components/scenario-testing/ScenarioAnalyticsDashboard";
-import GuidedTestExecution from "@/components/scenario-testing/GuidedTestExecution";
 import ScenarioTemplateLibrary from "@/components/scenario-testing/ScenarioTemplateLibrary";
+import TestExecutionCenter from "@/components/scenario-testing/TestExecutionCenter";
+import { createScenarioTest, updateScenarioTest, deleteScenarioTest, ScenarioTest } from "@/services/scenario-testing-service";
 
 const ScenarioTesting = () => {
   const { user } = useAuth();
@@ -44,79 +44,14 @@ const ScenarioTesting = () => {
     }
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ScenarioTest> }) => 
-      updateScenarioTest(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scenarioTests'] });
-      queryClient.invalidateQueries({ queryKey: ['scenarioAnalytics'] });
-      toast({
-        title: "Success",
-        description: "Scenario test updated successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to update scenario test",
-        variant: "destructive",
-      });
-      console.error('Update error:', error);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteScenarioTest,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['scenarioTests'] });
-      queryClient.invalidateQueries({ queryKey: ['scenarioAnalytics'] });
-      toast({
-        title: "Success",
-        description: "Scenario test deleted successfully",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete scenario test",
-        variant: "destructive",
-      });
-      console.error('Delete error:', error);
-    }
-  });
-
   const handleSave = (data: Partial<ScenarioTest>) => {
     if (editingScenario) {
-      updateMutation.mutate({ id: editingScenario.id, data });
+      // Update existing scenario
     } else {
       createMutation.mutate(data as Omit<ScenarioTest, 'id' | 'org_id' | 'created_at' | 'updated_at'>);
     }
-  };
-
-  const handleComplete = (data: Partial<ScenarioTest>) => {
-    if (editingScenario) {
-      updateMutation.mutate({ 
-        id: editingScenario.id, 
-        data: { ...data, status: 'completed' }
-      });
-    } else {
-      createMutation.mutate({ 
-        ...data, 
-        status: 'completed' 
-      } as Omit<ScenarioTest, 'id' | 'org_id' | 'created_at' | 'updated_at'>);
-    }
     setIsBuilderOpen(false);
     setEditingScenario(null);
-  };
-
-  const handleEdit = (scenario: ScenarioTest) => {
-    setEditingScenario(scenario);
-    setIsBuilderOpen(true);
-  };
-
-  const handleContinue = (scenario: ScenarioTest) => {
-    setEditingScenario(scenario);
-    setIsBuilderOpen(true);
   };
 
   const handleExecute = (scenario: ScenarioTest) => {
@@ -124,25 +59,10 @@ const ScenarioTesting = () => {
     setIsExecutionOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteMutation.mutate(id);
-  };
-
-  const closeBuilder = () => {
-    setIsBuilderOpen(false);
-    setEditingScenario(null);
-  };
-
   const closeExecution = () => {
     setIsExecutionOpen(false);
     setExecutingScenario(null);
     queryClient.invalidateQueries({ queryKey: ['scenarioTests'] });
-    queryClient.invalidateQueries({ queryKey: ['scenarioAnalytics'] });
-  };
-
-  const startNewScenario = () => {
-    setEditingScenario(null);
-    setIsBuilderOpen(true);
   };
 
   return (
@@ -150,9 +70,9 @@ const ScenarioTesting = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Enhanced Scenario Testing</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Scenario Testing</h1>
             <p className="text-muted-foreground">
-              Design, execute, and analyze scenario tests with AI assistance and template library.
+              OSFI E-21 compliant scenario testing for operational resilience validation.
             </p>
           </div>
           
@@ -164,7 +84,7 @@ const ScenarioTesting = () => {
               <File className="h-4 w-4 mr-2" />
               Template Library
             </Button>
-            <Button onClick={startNewScenario}>
+            <Button onClick={() => setIsBuilderOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               New Scenario Test
             </Button>
@@ -177,6 +97,10 @@ const ScenarioTesting = () => {
               <Play className="h-4 w-4" />
               Tests
             </TabsTrigger>
+            <TabsTrigger value="execution" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Execution Center
+            </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Analytics
@@ -185,11 +109,16 @@ const ScenarioTesting = () => {
 
           <TabsContent value="tests">
             <ScenarioTestsList
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onContinue={handleContinue}
+              onEdit={(scenario) => {
+                setEditingScenario(scenario);
+                setIsBuilderOpen(true);
+              }}
               onExecute={handleExecute}
             />
+          </TabsContent>
+
+          <TabsContent value="execution">
+            <TestExecutionCenter />
           </TabsContent>
 
           <TabsContent value="analytics">
@@ -197,7 +126,7 @@ const ScenarioTesting = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Enhanced Scenario Builder Dialog */}
+        {/* Scenario Builder Dialog */}
         <Dialog open={isBuilderOpen} onOpenChange={setIsBuilderOpen}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -205,15 +134,17 @@ const ScenarioTesting = () => {
                 {editingScenario ? 'Edit Scenario Test' : 'Create New Scenario Test'}
               </DialogTitle>
               <DialogDescription>
-                Use templates, AI generation, or manual creation to build comprehensive scenario tests.
+                Use templates or create custom scenario tests for operational resilience validation.
               </DialogDescription>
             </DialogHeader>
             
-            <EnhancedScenarioBuilder
+            <ScenarioBuilder
               scenario={editingScenario || undefined}
               onSave={handleSave}
-              onComplete={handleComplete}
-              onCancel={closeBuilder}
+              onCancel={() => {
+                setIsBuilderOpen(false);
+                setEditingScenario(null);
+              }}
             />
           </DialogContent>
         </Dialog>
@@ -224,31 +155,32 @@ const ScenarioTesting = () => {
             <DialogHeader>
               <DialogTitle>Scenario Template Library</DialogTitle>
               <DialogDescription>
-                Browse and manage scenario templates for quick test creation.
+                Browse pre-built scenario templates for common operational disruptions.
               </DialogDescription>
             </DialogHeader>
             
             <ScenarioTemplateLibrary
               onUseTemplate={(template) => {
                 setIsTemplateLibraryOpen(false);
-                // Handle template usage - you can implement this based on needs
+                setEditingScenario(template as any);
+                setIsBuilderOpen(true);
               }}
             />
           </DialogContent>
         </Dialog>
 
-        {/* Guided Test Execution Dialog */}
+        {/* Test Execution Dialog */}
         <Dialog open={isExecutionOpen} onOpenChange={setIsExecutionOpen}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Guided Test Execution</DialogTitle>
+              <DialogTitle>Test Execution</DialogTitle>
               <DialogDescription>
-                Execute the scenario test with step-by-step guidance and real-time tracking.
+                Real-time monitoring and coordination during scenario test execution.
               </DialogDescription>
             </DialogHeader>
             
             {executingScenario && (
-              <GuidedTestExecution
+              <TestExecutionCenter
                 scenario={executingScenario}
                 onComplete={closeExecution}
                 onCancel={closeExecution}
