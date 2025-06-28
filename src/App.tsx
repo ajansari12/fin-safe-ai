@@ -6,7 +6,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import UpdateProfile from './pages/auth/UpdatePassword';
-import PrivateRoute from './components/auth/ProtectedRoute';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import BusinessFunctions from './pages/BusinessFunctions';
 import RiskManagement from './pages/risk-management/RiskAppetite';
@@ -33,142 +33,25 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route
-              path="/"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/update-profile"
-              element={
-                <PrivateRoute>
-                  <UpdateProfile />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/business-functions"
-              element={
-                <PrivateRoute>
-                  <BusinessFunctions />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/risk-management"
-              element={
-                <PrivateRoute>
-                  <RiskManagement />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/compliance-management"
-              element={
-                <PrivateRoute>
-                  <ComplianceManagement />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/incident-log"
-              element={
-                <PrivateRoute>
-                  <IncidentLog />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <PrivateRoute>
-                  <Settings />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/business-impact-analysis"
-              element={
-                <PrivateRoute>
-                  <BusinessImpactAnalysis />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/continuity-plans"
-              element={
-                <PrivateRoute>
-                  <ContinuityPlans />
-                </PrivateRoute>
-              }
-            />
-             <Route
-              path="/analytics"
-              element={
-                <PrivateRoute>
-                  <AnalyticsHub />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/organization-management"
-              element={
-                <PrivateRoute>
-                  <OrganizationManagement />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/user-preferences"
-              element={
-                <PrivateRoute>
-                  <UserPreferences />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/regulatory-compliance"
-              element={
-                <PrivateRoute>
-                  <RegulatoryCompliance />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/third-party-management"
-              element={
-                <PrivateRoute>
-                  <ThirdPartyManagement />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/vulnerability-management"
-              element={
-                <PrivateRoute>
-                  <VulnerabilityManagement />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/risk-appetite"
-              element={
-                <PrivateRoute>
-                  <RiskAppetite />
-                </PrivateRoute>
-              }
-            />
-            <Route 
-              path="/scenario-testing" 
-              element={
-                <PrivateRoute>
-                  <ScenarioTesting />
-                </PrivateRoute>
-              } 
-            />
+            <Route path="/" element={<ProtectedRoute />}>
+              <Route index element={<Dashboard />} />
+              <Route path="update-profile" element={<UpdateProfile />} />
+              <Route path="business-functions" element={<BusinessFunctions />} />
+              <Route path="risk-management" element={<RiskManagement />} />
+              <Route path="compliance-management" element={<ComplianceManagement />} />
+              <Route path="incident-log" element={<IncidentLog />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="business-impact-analysis" element={<BusinessImpactAnalysis />} />
+              <Route path="continuity-plans" element={<ContinuityPlans />} />
+              <Route path="analytics" element={<AnalyticsHub />} />
+              <Route path="organization-management" element={<OrganizationManagement />} />
+              <Route path="user-preferences" element={<UserPreferences />} />
+              <Route path="regulatory-compliance" element={<RegulatoryCompliance />} />
+              <Route path="third-party-management" element={<ThirdPartyManagement />} />
+              <Route path="vulnerability-management" element={<VulnerabilityManagement />} />
+              <Route path="risk-appetite" element={<RiskAppetite />} />
+              <Route path="scenario-testing" element={<ScenarioTesting />} />
+            </Route>
           </Routes>
         </div>
       </Router>
