@@ -8,7 +8,6 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AIAssistantProvider } from '@/components/ai-assistant';
 import { EnhancedAIAssistantProvider } from '@/components/ai-assistant/EnhancedAIAssistantContext';
 import { EnhancedAIAssistantButton } from '@/components/ai-assistant/EnhancedAIAssistantButton';
-import EnhancedAIAssistantDialog from '@/components/ai-assistant/EnhancedAIAssistantDialog';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
@@ -138,7 +137,6 @@ function App() {
                       />
                     </Routes>
                     <EnhancedAIAssistantButton />
-                    <EnhancedAIAssistantDialog />
                   </div>
                 </Router>
               </EnhancedAIAssistantProvider>

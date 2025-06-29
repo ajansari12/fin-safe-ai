@@ -1,13 +1,15 @@
 
-import React, { useEffect } from "react";
-import { Navigate, useLocation, Outlet } from "react-router-dom";
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProtectedRouteProps {
+  children: React.ReactNode;
   requiredRole?: string;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children,
   requiredRole 
 }) => {
   const { isAuthenticated, isLoading, profile } = useAuth();
@@ -31,7 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <Outlet />;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
