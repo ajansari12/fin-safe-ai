@@ -1,5 +1,3 @@
-
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -486,15 +484,17 @@ class PredictiveRiskModelingService {
     return { strength, causality };
   }
 
-  private calculateNetworkEffect(correlatedRisks: any[]): number {
+  private calculateNetworkEffect(correlatedRisks: Array<{ correlationStrength: number }>): number {
     const totalCorrelations = correlatedRisks.length;
     if (totalCorrelations === 0) return 0;
     
-    // Properly type and validate correlationStrength as number
-    const avgStrength = correlatedRisks.reduce((sum: number, risk) => {
+    // Calculate average strength with proper typing
+    const totalStrength = correlatedRisks.reduce((sum: number, risk: { correlationStrength: number }) => {
       const strength = Number(risk.correlationStrength) || 0;
       return sum + strength;
-    }, 0) / totalCorrelations;
+    }, 0);
+    
+    const avgStrength = totalStrength / totalCorrelations;
     
     // Network effect increases with number of correlations and their strength
     return Math.min(1, (totalCorrelations * avgStrength) / 5);
