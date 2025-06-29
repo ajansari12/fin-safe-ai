@@ -9,7 +9,7 @@ import { AIAssistantProvider } from '@/components/ai-assistant';
 import { EnhancedAIAssistantProvider } from '@/components/ai-assistant/EnhancedAIAssistantContext';
 import { EnhancedAIAssistantButton } from '@/components/ai-assistant/EnhancedAIAssistantButton';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
 // Page imports
 import Index from '@/pages/Index';
