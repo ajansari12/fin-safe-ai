@@ -8,7 +8,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { AIAssistantProvider } from '@/components/ai-assistant';
 import { EnhancedAIAssistantProvider } from '@/components/ai-assistant/EnhancedAIAssistantContext';
 import { EnhancedAIAssistantButton } from '@/components/ai-assistant/EnhancedAIAssistantButton';
-import { EnhancedAIAssistantDialog } from '@/components/ai-assistant/EnhancedAIAssistantDialog';
+import EnhancedAIAssistantDialog from '@/components/ai-assistant/EnhancedAIAssistantDialog';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
@@ -21,7 +21,7 @@ import FrameworkDetail from '@/pages/governance/FrameworkDetail';
 import BusinessContinuity from '@/pages/BusinessContinuity';
 import ThirdPartyRisk from '@/pages/ThirdPartyRisk';
 import Dependencies from '@/pages/Dependencies';
-import ControlsAndKRI from '@/pages/ControlsAndKRI';
+import ControlsAndKRI from '@/pages/ControlsAndKri';
 import WorkflowCenter from '@/pages/WorkflowCenter';
 import RiskAppetite from '@/pages/RiskAppetite';
 
