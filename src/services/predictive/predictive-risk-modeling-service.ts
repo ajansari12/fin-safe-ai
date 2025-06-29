@@ -390,11 +390,11 @@ class PredictiveRiskModelingService {
       return acc;
     }, {} as Record<string, number>);
     
-    const counts = Object.values(dailyCounts);
+    const counts: number[] = Object.values(dailyCounts);
     if (counts.length === 0) return null;
     
-    const mean = counts.reduce((sum, count) => sum + count, 0) / counts.length;
-    const maxCount = Math.max(...counts);
+    const mean: number = counts.reduce((sum: number, count: number) => sum + count, 0) / counts.length;
+    const maxCount: number = Math.max(...counts);
     
     if (maxCount > mean * 3) {
       return {
