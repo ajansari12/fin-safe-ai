@@ -40,10 +40,10 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <AuthProvider>
-            <AIAssistantProvider>
-              <EnhancedAIAssistantProvider>
-                <Router>
+          <Router>
+            <AuthProvider>
+              <AIAssistantProvider>
+                <EnhancedAIAssistantProvider>
                   <div className="min-h-screen bg-background">
                     <Routes>
                       <Route path="/" element={<Index />} />
@@ -138,10 +138,10 @@ function App() {
                     </Routes>
                     <EnhancedAIAssistantButton />
                   </div>
-                </Router>
-              </EnhancedAIAssistantProvider>
-            </AIAssistantProvider>
-          </AuthProvider>
+                </EnhancedAIAssistantProvider>
+              </AIAssistantProvider>
+            </AuthProvider>
+          </Router>
         </ThemeProvider>
         <Toaster />
       </QueryClientProvider>
