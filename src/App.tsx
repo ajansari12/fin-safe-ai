@@ -1,105 +1,152 @@
+
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import ForgotPassword from './pages/auth/ForgotPassword';
-import UpdateProfile from './pages/auth/UpdatePassword';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import Dashboard from './pages/Dashboard';
-import BusinessFunctions from './pages/BusinessFunctions';
-import RiskManagement from './pages/risk-management/RiskAppetite';
-import ComplianceManagement from './pages/AuditAndCompliance';
-import IncidentLog from './pages/IncidentLog';
-import Settings from './pages/Settings';
-import BusinessImpactAnalysis from './pages/BusinessContinuity';
-import ContinuityPlans from './pages/BusinessContinuity';
-import AnalyticsHub from './components/analytics/AnalyticsHub';
-import OrganizationManagement from './components/settings/OrganizationManagement';
-import UserPreferences from './components/settings/UserPreferences';
-import RegulatoryCompliance from './pages/AuditAndCompliance';
-import ThirdPartyManagement from './pages/ThirdPartyRisk';
-import VulnerabilityManagement from './pages/ThirdPartyRisk';
-import RiskAppetite from './pages/RiskAppetite';
-import ScenarioTesting from "@/pages/ScenarioTesting";
-import ToleranceFramework from "@/pages/ToleranceFramework";
-import Index from './pages/Index';
-import ErrorBoundary from './components/ErrorBoundary';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
+import { ThemeProvider } from 'next-themes';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { AIAssistantProvider } from '@/components/ai-assistant';
+import { EnhancedAIAssistantProvider } from '@/components/ai-assistant/EnhancedAIAssistantContext';
+import { EnhancedAIAssistantButton } from '@/components/ai-assistant/EnhancedAIAssistantButton';
+import { EnhancedAIAssistantDialog } from '@/components/ai-assistant/EnhancedAIAssistantDialog';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ErrorBoundary from '@/components/ErrorBoundary';
+
+// Page imports
+import Index from '@/pages/Index';
+import Dashboard from '@/pages/Dashboard';
+import IncidentLog from '@/pages/IncidentLog';
+import GovernanceFramework from '@/pages/GovernanceFramework';
+import FrameworkDetail from '@/pages/governance/FrameworkDetail';
+import BusinessContinuity from '@/pages/BusinessContinuity';
+import ThirdPartyRisk from '@/pages/ThirdPartyRisk';
+import Dependencies from '@/pages/Dependencies';
+import ControlsAndKRI from '@/pages/ControlsAndKRI';
+import WorkflowCenter from '@/pages/WorkflowCenter';
+import RiskAppetite from '@/pages/RiskAppetite';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
+
+console.log('App component rendering');
 
 function App() {
-  console.log("App component rendering");
-  
   return (
     <ErrorBoundary>
-      <Router>
-        <AuthProvider>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              
-              {/* Protected routes */}
-              <Route path="/dashboard" element={<ProtectedRoute />}>
-                <Route index element={<Dashboard />} />
-              </Route>
-              <Route path="/update-profile" element={<ProtectedRoute />}>
-                <Route index element={<UpdateProfile />} />
-              </Route>
-              <Route path="/business-functions" element={<ProtectedRoute />}>
-                <Route index element={<BusinessFunctions />} />
-              </Route>
-              <Route path="/risk-management" element={<ProtectedRoute />}>
-                <Route index element={<RiskManagement />} />
-              </Route>
-              <Route path="/compliance-management" element={<ProtectedRoute />}>
-                <Route index element={<ComplianceManagement />} />
-              </Route>
-              <Route path="/incident-log" element={<ProtectedRoute />}>
-                <Route index element={<IncidentLog />} />
-              </Route>
-              <Route path="/settings" element={<ProtectedRoute />}>
-                <Route index element={<Settings />} />
-              </Route>
-              <Route path="/business-impact-analysis" element={<ProtectedRoute />}>
-                <Route index element={<BusinessImpactAnalysis />} />
-              </Route>
-              <Route path="/continuity-plans" element={<ProtectedRoute />}>
-                <Route index element={<ContinuityPlans />} />
-              </Route>
-              <Route path="/analytics" element={<ProtectedRoute />}>
-                <Route index element={<AnalyticsHub />} />
-              </Route>
-              <Route path="/organization-management" element={<ProtectedRoute />}>
-                <Route index element={<OrganizationManagement />} />
-              </Route>
-              <Route path="/user-preferences" element={<ProtectedRoute />}>
-                <Route index element={<UserPreferences />} />
-              </Route>
-              <Route path="/regulatory-compliance" element={<ProtectedRoute />}>
-                <Route index element={<RegulatoryCompliance />} />
-              </Route>
-              <Route path="/third-party-management" element={<ProtectedRoute />}>
-                <Route index element={<ThirdPartyManagement />} />
-              </Route>
-              <Route path="/vulnerability-management" element={<ProtectedRoute />}>
-                <Route index element={<VulnerabilityManagement />} />
-              </Route>
-              <Route path="/risk-appetite" element={<ProtectedRoute />}>
-                <Route index element={<RiskAppetite />} />
-              </Route>
-              <Route path="/scenario-testing" element={<ProtectedRoute />}>
-                <Route index element={<ScenarioTesting />} />
-              </Route>
-              <Route path="/tolerance-framework" element={<ProtectedRoute />}>
-                <Route index element={<ToleranceFramework />} />
-              </Route>
-            </Routes>
-          </div>
-        </AuthProvider>
-      </Router>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <AuthProvider>
+            <AIAssistantProvider>
+              <EnhancedAIAssistantProvider>
+                <Router>
+                  <div className="min-h-screen bg-background">
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <ProtectedRoute>
+                            <Dashboard />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/incident-log"
+                        element={
+                          <ProtectedRoute>
+                            <IncidentLog />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/governance-framework"
+                        element={
+                          <ProtectedRoute>
+                            <GovernanceFramework />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/governance-framework/:frameworkId"
+                        element={
+                          <ProtectedRoute>
+                            <FrameworkDetail />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/governance-framework/new"
+                        element={
+                          <ProtectedRoute>
+                            <FrameworkDetail />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/business-continuity"
+                        element={
+                          <ProtectedRoute>
+                            <BusinessContinuity />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/third-party-risk"
+                        element={
+                          <ProtectedRoute>
+                            <ThirdPartyRisk />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/dependencies"
+                        element={
+                          <ProtectedRoute>
+                            <Dependencies />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/controls-and-kri"
+                        element={
+                          <ProtectedRoute>
+                            <ControlsAndKRI />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/workflow-center"
+                        element={
+                          <ProtectedRoute>
+                            <WorkflowCenter />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/risk-appetite"
+                        element={
+                          <ProtectedRoute>
+                            <RiskAppetite />
+                          </ProtectedRoute>
+                        }
+                      />
+                    </Routes>
+                    <EnhancedAIAssistantButton />
+                    <EnhancedAIAssistantDialog />
+                  </div>
+                </Router>
+              </EnhancedAIAssistantProvider>
+            </AIAssistantProvider>
+          </AuthProvider>
+        </ThemeProvider>
+        <Toaster />
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
