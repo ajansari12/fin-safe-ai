@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -23,6 +23,7 @@ import ThirdPartyManagement from './pages/ThirdPartyRisk';
 import VulnerabilityManagement from './pages/ThirdPartyRisk';
 import RiskAppetite from './pages/RiskAppetite';
 import ScenarioTesting from "@/pages/ScenarioTesting";
+import Index from './pages/Index';
 
 function App() {
   return (
@@ -30,27 +31,63 @@ function App() {
       <Router>
         <div className="min-h-screen bg-background">
           <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/" element={<ProtectedRoute />}>
+            
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<ProtectedRoute />}>
               <Route index element={<Dashboard />} />
-              <Route path="update-profile" element={<UpdateProfile />} />
-              <Route path="business-functions" element={<BusinessFunctions />} />
-              <Route path="risk-management" element={<RiskManagement />} />
-              <Route path="compliance-management" element={<ComplianceManagement />} />
-              <Route path="incident-log" element={<IncidentLog />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="business-impact-analysis" element={<BusinessImpactAnalysis />} />
-              <Route path="continuity-plans" element={<ContinuityPlans />} />
-              <Route path="analytics" element={<AnalyticsHub />} />
-              <Route path="organization-management" element={<OrganizationManagement />} />
-              <Route path="user-preferences" element={<UserPreferences />} />
-              <Route path="regulatory-compliance" element={<RegulatoryCompliance />} />
-              <Route path="third-party-management" element={<ThirdPartyManagement />} />
-              <Route path="vulnerability-management" element={<VulnerabilityManagement />} />
-              <Route path="risk-appetite" element={<RiskAppetite />} />
-              <Route path="scenario-testing" element={<ScenarioTesting />} />
+            </Route>
+            <Route path="/update-profile" element={<ProtectedRoute />}>
+              <Route index element={<UpdateProfile />} />
+            </Route>
+            <Route path="/business-functions" element={<ProtectedRoute />}>
+              <Route index element={<BusinessFunctions />} />
+            </Route>
+            <Route path="/risk-management" element={<ProtectedRoute />}>
+              <Route index element={<RiskManagement />} />
+            </Route>
+            <Route path="/compliance-management" element={<ProtectedRoute />}>
+              <Route index element={<ComplianceManagement />} />
+            </Route>
+            <Route path="/incident-log" element={<ProtectedRoute />}>
+              <Route index element={<IncidentLog />} />
+            </Route>
+            <Route path="/settings" element={<ProtectedRoute />}>
+              <Route index element={<Settings />} />
+            </Route>
+            <Route path="/business-impact-analysis" element={<ProtectedRoute />}>
+              <Route index element={<BusinessImpactAnalysis />} />
+            </Route>
+            <Route path="/continuity-plans" element={<ProtectedRoute />}>
+              <Route index element={<ContinuityPlans />} />
+            </Route>
+            <Route path="/analytics" element={<ProtectedRoute />}>
+              <Route index element={<AnalyticsHub />} />
+            </Route>
+            <Route path="/organization-management" element={<ProtectedRoute />}>
+              <Route index element={<OrganizationManagement />} />
+            </Route>
+            <Route path="/user-preferences" element={<ProtectedRoute />}>
+              <Route index element={<UserPreferences />} />
+            </Route>
+            <Route path="/regulatory-compliance" element={<ProtectedRoute />}>
+              <Route index element={<RegulatoryCompliance />} />
+            </Route>
+            <Route path="/third-party-management" element={<ProtectedRoute />}>
+              <Route index element={<ThirdPartyManagement />} />
+            </Route>
+            <Route path="/vulnerability-management" element={<ProtectedRoute />}>
+              <Route index element={<VulnerabilityManagement />} />
+            </Route>
+            <Route path="/risk-appetite" element={<ProtectedRoute />}>
+              <Route index element={<RiskAppetite />} />
+            </Route>
+            <Route path="/scenario-testing" element={<ProtectedRoute />}>
+              <Route index element={<ScenarioTesting />} />
             </Route>
           </Routes>
         </div>
