@@ -1,4 +1,5 @@
 
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -281,7 +282,9 @@ class PredictiveRiskModelingService {
     }, {} as Record<string, number[]>);
     
     for (const [kriName, values] of Object.entries(kriGroups)) {
-      const trend = this.calculateTrend(values);
+      // Ensure values is a number array before passing to calculateTrend
+      const numericValues = Array.isArray(values) ? values : [];
+      const trend = this.calculateTrend(numericValues);
       if (trend === 'increasing') {
         factors.push({
           factor: `${kriName} Trend`,
@@ -485,7 +488,11 @@ class PredictiveRiskModelingService {
     const totalCorrelations = correlatedRisks.length;
     if (totalCorrelations === 0) return 0;
     
-    const avgStrength = correlatedRisks.reduce((sum, risk) => sum + risk.correlationStrength, 0) / totalCorrelations;
+    // Ensure correlationStrength is properly typed as number
+    const avgStrength = correlatedRisks.reduce((sum, risk) => {
+      const strength = typeof risk.correlationStrength === 'number' ? risk.correlationStrength : 0;
+      return sum + strength;
+    }, 0) / totalCorrelations;
     
     // Network effect increases with number of correlations and their strength
     return Math.min(1, (totalCorrelations * avgStrength) / 5);
