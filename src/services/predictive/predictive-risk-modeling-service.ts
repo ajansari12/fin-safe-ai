@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -488,9 +489,9 @@ class PredictiveRiskModelingService {
     const totalCorrelations = correlatedRisks.length;
     if (totalCorrelations === 0) return 0;
     
-    // Calculate average strength with proper typing
+    // Calculate average strength with explicit typing
     const totalStrength = correlatedRisks.reduce((sum: number, risk: { correlationStrength: number }) => {
-      const strength = Number(risk.correlationStrength) || 0;
+      const strength = typeof risk.correlationStrength === 'number' ? risk.correlationStrength : 0;
       return sum + strength;
     }, 0);
     
