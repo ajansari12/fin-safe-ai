@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile, getUserOrganization } from "@/lib/supabase-utils";
 
@@ -279,7 +278,7 @@ class RecommendationsEngineService {
   private async buildMitigationRecommendation(
     strategy: any,
     riskCategory: string,
-    riskLevel: string,
+    riskLevel: 'low' | 'medium' | 'high' | 'critical',
     org: any,
     currentControls: any[],
     recentIncidents: any[]
@@ -717,79 +716,60 @@ class RecommendationsEngineService {
       suggestedProviders: this.getSuggestedProviders(gap.skill),
       estimatedDuration: this.getEstimatedDuration(gap.skill),
       cost: this.getTrainingCost(gap.skill),
-      competencyMapping: this.getCompetencyMapping(gap.skill, gap.affectedRoles)
+      competencyMapping: this.getCompetencyMapping(gap.skill)
     };
   }
 
-  private getTrainingPriority(businessImpact: string, gapLevel: string): 'urgent' | 'high' | 'medium' | 'low' {
-    if (businessImpact === 'critical' && gapLevel === 'high') return 'urgent';
-    if (businessImpact === 'critical' || gapLevel === 'high') return 'high';
-    if (businessImpact === 'high' || gapLevel === 'medium') return 'medium';
+  private getTrainingPriority(businessImpact: string, gap: string): 'urgent' | 'high' | 'medium' | 'low' {
+    if (businessImpact === 'critical' && gap === 'high') return 'urgent';
+    if (businessImpact === 'high' || gap === 'high') return 'high';
+    if (businessImpact === 'medium' || gap === 'medium') return 'medium';
     return 'low';
   }
 
   private getTrainingType(skill: string): 'online' | 'workshop' | 'certification' | 'mentoring' {
-    if (skill.includes('Analytics') || skill.includes('Data')) return 'online';
-    if (skill.includes('Leadership') || skill.includes('Management')) return 'workshop';
-    if (skill.includes('Cybersecurity') || skill.includes('Compliance')) return 'certification';
-    return 'workshop';
+    if (skill.toLowerCase().includes('analytics')) return 'certification';
+    if (skill.toLowerCase().includes('response')) return 'workshop';
+    if (skill.toLowerCase().includes('compliance')) return 'online';
+    return 'mentoring';
   }
 
   private getLearningObjectives(skill: string): string[] {
-    const objectives: Record<string, string[]> = {
-      'Advanced Risk Analytics': [
-        'Master statistical analysis techniques',
-        'Implement predictive risk models',
-        'Create advanced risk visualizations',
-        'Interpret complex risk data'
-      ],
-      'Cybersecurity Incident Response': [
-        'Develop incident response procedures',
-        'Master forensic analysis techniques',
-        'Implement threat hunting capabilities',
-        'Coordinate multi-team responses'
-      ]
-    };
-
-    return objectives[skill] || [`Develop ${skill} capabilities`, `Apply ${skill} in practice`];
+    return [
+      `Understand fundamentals of ${skill}`,
+      `Apply ${skill} techniques in practical scenarios`,
+      `Demonstrate proficiency in ${skill} assessment`
+    ];
   }
 
   private getSuggestedProviders(skill: string): string[] {
-    const providers: Record<string, string[]> = {
-      'Advanced Risk Analytics': ['Coursera', 'edX', 'Risk Management Association'],
-      'Cybersecurity Incident Response': ['SANS Institute', 'Cybrary', 'ISC2'],
-      'Regulatory Compliance': ['Thomson Reuters', 'PwC Academy', 'Deloitte University']
-    };
-
-    return providers[skill] || ['Industry associations', 'Professional training companies'];
+    return ['Internal Training Team', 'External Certification Body', 'Industry Association'];
   }
 
   private getEstimatedDuration(skill: string): string {
-    const durations: Record<string, string> = {
-      'Advanced Risk Analytics': '6-8 weeks',
-      'Cybersecurity Incident Response': '3-4 weeks',
-      'Regulatory Compliance': '2-3 weeks'
-    };
-
-    return durations[skill] || '4-6 weeks';
+    if (skill.toLowerCase().includes('advanced')) return '40-60 hours';
+    if (skill.toLowerCase().includes('response')) return '16-24 hours';
+    return '8-16 hours';
   }
 
   private getTrainingCost(skill: string): string {
-    const costs: Record<string, string> = {
-      'Advanced Risk Analytics': '$2,500-$5,000',
-      'Cybersecurity Incident Response': '$3,000-$6,000',
-      'Regulatory Compliance': '$1,500-$3,000'
-    };
-
-    return costs[skill] || '$2,000-$4,000';
+    if (skill.toLowerCase().includes('advanced')) return '$2,000-$5,000';
+    if (skill.toLowerCase().includes('certification')) return '$1,000-$3,000';
+    return '$500-$1,500';
   }
 
-  private getCompetencyMapping(skill: string, roles: string[]) {
-    return roles.map(role => ({
-      skill: skill,
-      currentLevel: Math.floor(Math.random() * 3) + 1, // Simulate current level 1-3
-      targetLevel: Math.floor(Math.random() * 2) + 4 // Target level 4-5
-    }));
+  private getCompetencyMapping(skill: string): Array<{
+    skill: string;
+    currentLevel: number;
+    targetLevel: number;
+  }> {
+    return [
+      {
+        skill,
+        currentLevel: 2,
+        targetLevel: 4
+      }
+    ];
   }
 }
 

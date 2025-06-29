@@ -60,7 +60,7 @@ class PredictiveRiskModelingService {
       // Analyze incident trends
       const incidentCategories = this.groupIncidentsByCategory(incidents);
       for (const [category, categoryIncidents] of Object.entries(incidentCategories)) {
-        const trend = this.calculateTrend(categoryIncidents.map(i => i.impact_rating || 3));
+        const trend = this.calculateTrend(categoryIncidents.map(i => Number(i.impact_rating) || 3));
         const prediction = this.predictRiskScore(categoryIncidents, trend, timeHorizon);
         
         predictions.push({

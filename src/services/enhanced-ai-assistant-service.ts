@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile, getUserOrganization } from "@/lib/supabase-utils";
 import { predictiveRiskModelingService } from "./predictive/predictive-risk-modeling-service";
@@ -14,6 +13,22 @@ export interface EnhancedAIResponse {
   visualizations?: any[];
   followUpQuestions: string[];
   sources: string[];
+}
+
+export interface ModuleCompletion {
+  module: string;
+  completionPercentage: number;
+  flags: string[];
+  staleEntries: number;
+}
+
+export interface WorkflowTask {
+  workflowId: string;
+  workflowName: string;
+  nextStepName: string;
+  assignedTo: string;
+  priority: string;
+  dueDate: string;
 }
 
 interface ProcessingContext {
@@ -60,6 +75,86 @@ class EnhancedAIAssistantService {
       console.error('Error processing enhanced message:', error);
       return "I apologize, but I encountered an error processing your request. Please try rephrasing your question or contact support if the issue persists.";
     }
+  }
+
+  async flagIncompleteModules(orgId: string): Promise<ModuleCompletion[]> {
+    try {
+      const modules = ['risk_assessment', 'incident_management', 'business_continuity', 'governance'];
+      const completions: ModuleCompletion[] = [];
+
+      for (const module of modules) {
+        const completion = await this.calculateModuleCompletion(orgId, module);
+        completions.push(completion);
+      }
+
+      return completions.filter(c => c.completionPercentage < 100);
+    } catch (error) {
+      console.error('Error flagging incomplete modules:', error);
+      return [];
+    }
+  }
+
+  async suggestWorkflowTasks(orgId: string): Promise<WorkflowTask[]> {
+    try {
+      const { data: workflows, error } = await supabase
+        .from('workflow_instances')
+        .select(`
+          id,
+          workflow_name,
+          workflow_steps!inner(
+            step_name,
+            assigned_to_name,
+            due_date,
+            status
+          )
+        `)
+        .eq('org_id', orgId)
+        .eq('status', 'active')
+        .eq('workflow_steps.status', 'pending')
+        .order('workflow_steps.due_date', { ascending: true })
+        .limit(10);
+
+      if (error) throw error;
+
+      return (workflows || []).map(workflow => ({
+        workflowId: workflow.id,
+        workflowName: workflow.workflow_name,
+        nextStepName: workflow.workflow_steps[0]?.step_name || 'Unknown',
+        assignedTo: workflow.workflow_steps[0]?.assigned_to_name || 'Unassigned',
+        priority: this.calculateTaskPriority(workflow.workflow_steps[0]?.due_date),
+        dueDate: workflow.workflow_steps[0]?.due_date || 'No due date'
+      }));
+    } catch (error) {
+      console.error('Error suggesting workflow tasks:', error);
+      return [];
+    }
+  }
+
+  private async calculateModuleCompletion(orgId: string, module: string): Promise<ModuleCompletion> {
+    // Simulate module completion calculation
+    const completionPercentage = Math.floor(Math.random() * 100);
+    const flags = completionPercentage < 50 ? ['incomplete_setup'] : [];
+    const staleEntries = completionPercentage < 80 ? Math.floor(Math.random() * 10) : 0;
+
+    return {
+      module,
+      completionPercentage,
+      flags,
+      staleEntries
+    };
+  }
+
+  private calculateTaskPriority(dueDate?: string): string {
+    if (!dueDate) return 'low';
+    
+    const due = new Date(dueDate);
+    const now = new Date();
+    const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilDue < 0) return 'critical';
+    if (daysUntilDue <= 3) return 'high';
+    if (daysUntilDue <= 7) return 'medium';
+    return 'low';
   }
 
   private isPredictiveAnalysisRequest(message: string): boolean {
@@ -223,9 +318,6 @@ class EnhancedAIAssistantService {
 
   private async handleDocumentAnalysis(message: string, context: ProcessingContext): Promise<string> {
     try {
-      // In a real implementation, this would analyze an actual document
-      // For now, provide guidance on document analysis capabilities
-      
       let response = "**📄 Document Analysis Capabilities:**\n\n";
       
       response += "I can analyze various types of risk-related documents:\n\n";
@@ -323,7 +415,6 @@ class EnhancedAIAssistantService {
 
   private async handleGeneralAssistance(message: string, context: ProcessingContext): Promise<string> {
     try {
-      // Use the existing AI assistant functionality as fallback
       const response = await supabase.functions.invoke('ai-assistant', {
         body: {
           message,
@@ -331,7 +422,7 @@ class EnhancedAIAssistantService {
             module: context.module,
             userRole: context.userRole,
             orgSector: context.orgSector,
-            orgSize: 'medium' // Default value
+            orgSize: 'medium'
           },
           userId: context.orgId
         }

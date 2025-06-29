@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DocumentAnalysis {
@@ -554,6 +553,21 @@ class NaturalLanguageProcessingService {
     }
     
     return recommendations;
+  }
+
+  private calculateROI(riskExposure: number, effectiveness: number, budgetMultiplier: number): number {
+    const riskReduction = Math.min(0.5, riskExposure * 0.3 * budgetMultiplier);
+    const costIncrease = Math.abs(budgetMultiplier - 1);
+    
+    return costIncrease > 0 ? riskReduction / costIncrease : riskReduction;
+  }
+
+  private isSignificantOptimization(optimization: any): boolean {
+    const budgetChange = Math.abs(
+      Number(optimization.recommendedAllocation.budget) - Number(optimization.currentAllocation.budget)
+    ) / Number(optimization.currentAllocation.budget);
+    
+    return budgetChange > 0.1; // 10% threshold
   }
 
   private classifyPrimaryCategory(words: string[]): string {
