@@ -31,8 +31,8 @@ function App() {
   
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <Router>
+      <Router>
+        <AuthProvider>
           <div className="min-h-screen bg-background">
             <Routes>
               {/* Public routes */}
@@ -95,8 +95,8 @@ function App() {
               </Route>
             </Routes>
           </div>
-        </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </Router>
     </ErrorBoundary>
   );
 }
