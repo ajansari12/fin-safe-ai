@@ -488,12 +488,11 @@ class PredictiveRiskModelingService {
     const totalCorrelations = correlatedRisks.length;
     if (totalCorrelations === 0) return 0;
     
-    // Calculate average strength with explicit number handling
-    let totalStrength = 0;
-    for (const risk of correlatedRisks) {
+    // Calculate average strength with explicit number handling and type safety
+    const totalStrength = correlatedRisks.reduce((sum, risk) => {
       const strength = Number(risk.correlationStrength) || 0;
-      totalStrength += strength;
-    }
+      return sum + strength;
+    }, 0);
     
     const avgStrength = totalStrength / totalCorrelations;
     
