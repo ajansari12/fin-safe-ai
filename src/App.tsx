@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
@@ -23,6 +22,7 @@ import ThirdPartyManagement from './pages/ThirdPartyRisk';
 import VulnerabilityManagement from './pages/ThirdPartyRisk';
 import RiskAppetite from './pages/RiskAppetite';
 import ScenarioTesting from "@/pages/ScenarioTesting";
+import ToleranceFramework from "@/pages/ToleranceFramework";
 import Index from './pages/Index';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -92,6 +92,9 @@ function App() {
               </Route>
               <Route path="/scenario-testing" element={<ProtectedRoute />}>
                 <Route index element={<ScenarioTesting />} />
+              </Route>
+              <Route path="/tolerance-framework" element={<ProtectedRoute />}>
+                <Route index element={<ToleranceFramework />} />
               </Route>
             </Routes>
           </div>
