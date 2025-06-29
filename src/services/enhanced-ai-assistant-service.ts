@@ -1,421 +1,356 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile, getUserOrganization } from "@/lib/supabase-utils";
+import { predictiveRiskModelingService } from "./predictive/predictive-risk-modeling-service";
+import { intelligentRiskAssessmentService } from "./predictive/intelligent-risk-assessment-service";
+import { recommendationsEngineService } from "./predictive/recommendations-engine-service";
+import { naturalLanguageProcessingService } from "./nlp/natural-language-processing-service";
 
-export interface IncidentSummary {
-  totalIncidents: number;
-  criticalIncidents: number;
-  averageResolutionTime: number;
-  topCategories: Array<{
-    category: string;
-    count: number;
-  }>;
-  summary: string;
+export interface EnhancedAIResponse {
+  response: string;
+  confidence: number;
+  reasoning: string[];
   recommendations: string[];
+  visualizations?: any[];
+  followUpQuestions: string[];
+  sources: string[];
 }
 
-export interface AuditSummary {
-  totalFindings: number;
-  criticalFindings: number;
-  openGaps: number;
-  complianceScore: number;
-  summary: string;
-  priorityActions: string[];
-}
-
-export interface KRIRecommendation {
-  name: string;
-  description: string;
-  category: string;
-  targetValue: string;
-  warningThreshold: string;
-  criticalThreshold: string;
-  measurementFrequency: string;
-  rationale: string;
-}
-
-export interface ModuleCompletion {
-  module: string;
-  completionPercentage: number;
-  staleEntries: number;
-  lastActivity: string;
-  flags: string[];
-  recommendations: string[];
-}
-
-export interface WorkflowTask {
-  workflowId: string;
-  workflowName: string;
-  nextStepName: string;
-  assignedTo: string;
-  dueDate: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  description: string;
+interface ProcessingContext {
+  module?: string;
+  orgId: string;
+  orgSector?: string;
+  userRole?: string;
 }
 
 class EnhancedAIAssistantService {
-  // Auto-generate incident summaries
-  async generateIncidentSummary(orgId: string, period: 'week' | 'month' | 'quarter' = 'month'): Promise<IncidentSummary> {
-    try {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - (period === 'week' ? 7 : period === 'month' ? 30 : 90));
-
-      const { data: incidents, error } = await supabase
-        .from('incident_logs')
-        .select('*')
-        .eq('org_id', orgId)
-        .gte('reported_at', startDate.toISOString());
-
-      if (error) throw error;
-
-      const totalIncidents = incidents?.length || 0;
-      const criticalIncidents = incidents?.filter(i => i.severity === 'critical').length || 0;
-
-      // Calculate average resolution time
-      const resolvedIncidents = incidents?.filter(i => i.resolved_at) || [];
-      const avgResolutionTime = resolvedIncidents.length > 0 
-        ? resolvedIncidents.reduce((sum, incident) => {
-            const resolution = new Date(incident.resolved_at!).getTime();
-            const reported = new Date(incident.reported_at).getTime();
-            return sum + (resolution - reported);
-          }, 0) / resolvedIncidents.length / (1000 * 60 * 60) // Convert to hours
-        : 0;
-
-      // Top categories
-      const categoryCount = incidents?.reduce((acc, incident) => {
-        const category = incident.category || 'Unknown';
-        acc[category] = (acc[category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>) || {};
-
-      const topCategories = Object.entries(categoryCount)
-        .map(([category, count]) => ({ category, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-      const recommendations = [
-        criticalIncidents > 5 ? 'Review critical incident response procedures' : '',
-        avgResolutionTime > 24 ? 'Consider improving incident resolution processes' : '',
-        topCategories[0]?.count > totalIncidents * 0.3 ? `Focus on preventing ${topCategories[0]?.category} incidents` : ''
-      ].filter(Boolean);
-
-      return {
-        totalIncidents,
-        criticalIncidents,
-        averageResolutionTime: avgResolutionTime,
-        topCategories,
-        summary: `Generated summary for ${period} period with ${totalIncidents} total incidents`,
-        recommendations
-      };
-    } catch (error) {
-      console.error('Error generating incident summary:', error);
-      throw error;
-    }
-  }
-
-  // Auto-generate audit summaries
-  async generateAuditSummary(orgId: string): Promise<AuditSummary> {
-    try {
-      const [findingsResponse, gapsResponse, mappingsResponse] = await Promise.all([
-        supabase.from('compliance_findings').select('*').eq('org_id', orgId),
-        supabase.from('audit_gap_logs').select('*').eq('org_id', orgId),
-        supabase.from('regulatory_mapping').select('*').eq('org_id', orgId)
-      ]);
-
-      const findings = findingsResponse.data || [];
-      const gaps = gapsResponse.data || [];
-      const mappings = mappingsResponse.data || [];
-
-      const totalFindings = findings.length;
-      const criticalFindings = findings.filter(f => f.severity === 'critical').length;
-      const openGaps = gaps.filter(g => g.current_status === 'open').length;
-      
-      const compliantMappings = mappings.filter(m => m.compliance_status === 'compliant').length;
-      const complianceScore = mappings.length > 0 ? (compliantMappings / mappings.length) * 100 : 0;
-
-      const priorityActions = [
-        criticalFindings > 0 ? `Address ${criticalFindings} critical findings immediately` : '',
-        openGaps > 5 ? `Close ${openGaps} open compliance gaps` : '',
-        complianceScore < 80 ? 'Improve overall compliance posture' : ''
-      ].filter(Boolean);
-
-      return {
-        totalFindings,
-        criticalFindings,
-        openGaps,
-        complianceScore,
-        summary: `Audit summary with ${totalFindings} findings and ${complianceScore.toFixed(1)}% compliance score`,
-        priorityActions
-      };
-    } catch (error) {
-      console.error('Error generating audit summary:', error);
-      throw error;
-    }
-  }
-
-  // Recommend KRIs based on organization type
-  async recommendKRIs(orgSector: string, module?: string): Promise<KRIRecommendation[]> {
-    const kriDatabase: Record<string, KRIRecommendation[]> = {
-      banking: [
-        {
-          name: 'System Availability',
-          description: 'Percentage of critical system uptime',
-          category: 'operational',
-          targetValue: '99.9%',
-          warningThreshold: '99.5%',
-          criticalThreshold: '99.0%',
-          measurementFrequency: 'daily',
-          rationale: 'OSFI requires high availability for critical banking systems'
-        },
-        {
-          name: 'Transaction Processing Errors',
-          description: 'Number of failed transactions per 10,000',
-          category: 'operational',
-          targetValue: '<5',
-          warningThreshold: '10',
-          criticalThreshold: '20',
-          measurementFrequency: 'daily',
-          rationale: 'Critical for customer trust and regulatory compliance'
-        },
-        {
-          name: 'Cyber Security Incidents',
-          description: 'Number of confirmed security breaches',
-          category: 'security',
-          targetValue: '0',
-          warningThreshold: '1',
-          criticalThreshold: '2',
-          measurementFrequency: 'monthly',
-          rationale: 'Essential for protecting customer data and financial assets'
-        }
-      ],
-      insurance: [
-        {
-          name: 'Claims Processing Time',
-          description: 'Average days to process claims',
-          category: 'operational',
-          targetValue: '<7 days',
-          warningThreshold: '10 days',
-          criticalThreshold: '14 days',
-          measurementFrequency: 'weekly',
-          rationale: 'Customer satisfaction and regulatory requirements'
-        },
-        {
-          name: 'Policy Renewal Rate',
-          description: 'Percentage of policies renewed',
-          category: 'business',
-          targetValue: '>85%',
-          warningThreshold: '80%',
-          criticalThreshold: '75%',
-          measurementFrequency: 'monthly',
-          rationale: 'Key indicator of customer satisfaction and business sustainability'
-        }
-      ],
-      fintech: [
-        {
-          name: 'API Response Time',
-          description: 'Average API response time in milliseconds',
-          category: 'operational',
-          targetValue: '<200ms',
-          warningThreshold: '500ms',
-          criticalThreshold: '1000ms',
-          measurementFrequency: 'real-time',
-          rationale: 'Critical for user experience in digital financial services'
-        },
-        {
-          name: 'User Onboarding Completion',
-          description: 'Percentage of users completing onboarding',
-          category: 'business',
-          targetValue: '>80%',
-          warningThreshold: '70%',
-          criticalThreshold: '60%',
-          measurementFrequency: 'weekly',
-          rationale: 'Key metric for growth and regulatory compliance'
-        }
-      ]
-    };
-
-    return kriDatabase[orgSector] || kriDatabase.banking;
-  }
-
-  // Flag modules with low completion or stale entries
-  async flagIncompleteModules(orgId: string): Promise<ModuleCompletion[]> {
-    try {
-      const modules = [
-        { name: 'incident_management', table: 'incident_logs', dateField: 'updated_at' },
-        { name: 'governance', table: 'governance_policies', dateField: 'updated_at' },
-        { name: 'controls_kri', table: 'controls', dateField: 'updated_at' },
-        { name: 'business_continuity', table: 'continuity_plans', dateField: 'updated_at' },
-        { name: 'third_party_risk', table: 'third_party_profiles', dateField: 'updated_at' },
-        { name: 'audit_compliance', table: 'compliance_findings', dateField: 'updated_at' }
-      ];
-
-      const moduleCompletions: ModuleCompletion[] = [];
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-      for (const module of modules) {
-        try {
-          const { data, error } = await supabase
-            .from(module.table as any)
-            .select('*')
-            .eq('org_id', orgId);
-
-          if (error && error.code !== 'PGRST116') continue; // Skip if table doesn't exist
-
-          const records = data || [];
-          const totalRecords = records.length;
-          
-          // Calculate stale entries (not updated in 30 days)
-          const staleEntries = records.filter(record => {
-            const updateDate = new Date(record[module.dateField]);
-            return updateDate < thirtyDaysAgo;
-          }).length;
-
-          // Calculate completion percentage (simplified logic)
-          const completionPercentage = totalRecords > 0 ? Math.max(0, ((totalRecords - staleEntries) / totalRecords) * 100) : 0;
-
-          const lastActivity = records.length > 0 
-            ? Math.max(...records.map(r => new Date(r[module.dateField]).getTime()))
-            : 0;
-
-          const flags: string[] = [];
-          const recommendations: string[] = [];
-
-          if (completionPercentage < 50) {
-            flags.push('Low Completion');
-            recommendations.push(`Increase activity in ${module.name} module`);
-          }
-
-          if (staleEntries > totalRecords * 0.3) {
-            flags.push('Stale Entries');
-            recommendations.push(`Review and update ${staleEntries} outdated entries`);
-          }
-
-          if (totalRecords === 0) {
-            flags.push('No Data');
-            recommendations.push(`Set up initial data for ${module.name}`);
-          }
-
-          moduleCompletions.push({
-            module: module.name,
-            completionPercentage: Math.round(completionPercentage),
-            staleEntries,
-            lastActivity: lastActivity ? new Date(lastActivity).toISOString() : 'Never',
-            flags,
-            recommendations
-          });
-        } catch (moduleError) {
-          console.error(`Error checking module ${module.name}:`, moduleError);
-        }
-      }
-
-      return moduleCompletions.sort((a, b) => a.completionPercentage - b.completionPercentage);
-    } catch (error) {
-      console.error('Error flagging incomplete modules:', error);
-      return [];
-    }
-  }
-
-  // Suggest next tasks in workflows
-  async suggestWorkflowTasks(orgId: string): Promise<WorkflowTask[]> {
-    try {
-      const { data: workflows, error } = await supabase
-        .from('workflow_instances')
-        .select(`
-          *,
-          template:workflow_templates(*),
-          steps:workflow_steps(*)
-        `)
-        .eq('org_id', orgId)
-        .in('status', ['in_progress', 'pending']);
-
-      if (error) throw error;
-
-      const tasks: WorkflowTask[] = [];
-
-      workflows?.forEach(workflow => {
-        const pendingSteps = workflow.steps
-          ?.filter(step => step.status === 'pending')
-          ?.sort((a, b) => a.step_number - b.step_number) || [];
-
-        const nextStep = pendingSteps[0];
-        if (nextStep) {
-          const dueDate = nextStep.due_date ? new Date(nextStep.due_date) : null;
-          const now = new Date();
-          
-          let priority: 'low' | 'medium' | 'high' | 'critical' = 'medium';
-          if (dueDate) {
-            const hoursUntilDue = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-            if (hoursUntilDue < 0) priority = 'critical';
-            else if (hoursUntilDue < 24) priority = 'high';
-            else if (hoursUntilDue < 72) priority = 'medium';
-            else priority = 'low';
-          }
-
-          tasks.push({
-            workflowId: workflow.id,
-            workflowName: workflow.name,
-            nextStepName: nextStep.step_name,
-            assignedTo: nextStep.assigned_to_name || 'Unassigned',
-            dueDate: nextStep.due_date || 'No due date',
-            priority,
-            description: nextStep.step_description || 'No description available'
-          });
-        }
-      });
-
-      return tasks.sort((a, b) => {
-        const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-        return priorityOrder[b.priority] - priorityOrder[a.priority];
-      });
-    } catch (error) {
-      console.error('Error suggesting workflow tasks:', error);
-      return [];
-    }
-  }
-
-  // Enhanced chat with new capabilities
   async processEnhancedMessage(
-    message: string, 
-    context: { module?: string; orgId: string; orgSector?: string }
+    message: string,
+    context: ProcessingContext
   ): Promise<string> {
     try {
-      // Check for specific command patterns
-      if (message.toLowerCase().includes('incident summary')) {
-        const summary = await this.generateIncidentSummary(context.orgId);
-        return `**Incident Summary:**\n\n${summary.summary}\n\n**Key Metrics:**\n- Total: ${summary.totalIncidents}\n- Critical: ${summary.criticalIncidents}\n- Avg Resolution: ${summary.averageResolutionTime.toFixed(1)} hours\n\n**Recommendations:**\n${summary.recommendations.map(r => `• ${r}`).join('\n')}`;
+      // Analyze the message using NLP
+      const messageAnalysis = await naturalLanguageProcessingService.classifyDocument(message);
+      
+      // Route to appropriate processing based on message type
+      if (this.isPredictiveAnalysisRequest(message)) {
+        return await this.handlePredictiveAnalysis(message, context);
       }
-
-      if (message.toLowerCase().includes('audit summary')) {
-        const summary = await this.generateAuditSummary(context.orgId);
-        return `**Audit Summary:**\n\n${summary.summary}\n\n**Key Metrics:**\n- Total Findings: ${summary.totalFindings}\n- Critical: ${summary.criticalFindings}\n- Open Gaps: ${summary.openGaps}\n- Compliance Score: ${summary.complianceScore.toFixed(1)}%\n\n**Priority Actions:**\n${summary.priorityActions.map(a => `• ${a}`).join('\n')}`;
+      
+      if (this.isRiskAssessmentRequest(message)) {
+        return await this.handleRiskAssessment(message, context);
       }
-
-      if (message.toLowerCase().includes('recommend kri') || message.toLowerCase().includes('kri recommendation')) {
-        const kris = await this.recommendKRIs(context.orgSector || 'banking', context.module);
-        return `**KRI Recommendations for ${context.orgSector}:**\n\n${kris.map(kri => 
-          `**${kri.name}**\n- ${kri.description}\n- Target: ${kri.targetValue}\n- Warning: ${kri.warningThreshold}\n- Critical: ${kri.criticalThreshold}\n- Frequency: ${kri.measurementFrequency}\n- Rationale: ${kri.rationale}\n`
-        ).join('\n')}`;
+      
+      if (this.isRecommendationRequest(message)) {
+        return await this.handleRecommendations(message, context);
       }
-
-      if (message.toLowerCase().includes('module completion') || message.toLowerCase().includes('stale entries')) {
-        const modules = await this.flagIncompleteModules(context.orgId);
-        return `**Module Completion Status:**\n\n${modules.map(m => 
-          `**${m.module}:** ${m.completionPercentage}% complete\n- Stale entries: ${m.staleEntries}\n- Last activity: ${new Date(m.lastActivity).toLocaleDateString()}\n- Flags: ${m.flags.join(', ') || 'None'}\n- Recommendations: ${m.recommendations.join(', ') || 'None'}\n`
-        ).join('\n')}`;
+      
+      if (this.isDocumentAnalysisRequest(message)) {
+        return await this.handleDocumentAnalysis(message, context);
       }
-
-      if (message.toLowerCase().includes('workflow task') || message.toLowerCase().includes('next task')) {
-        const tasks = await this.suggestWorkflowTasks(context.orgId);
-        return `**Suggested Workflow Tasks:**\n\n${tasks.slice(0, 5).map(t => 
-          `**${t.workflowName}** (${t.priority.toUpperCase()})\n- Next: ${t.nextStepName}\n- Assigned: ${t.assignedTo}\n- Due: ${new Date(t.dueDate).toLocaleDateString()}\n- ${t.description}\n`
-        ).join('\n')}`;
+      
+      if (this.isAnomalyDetectionRequest(message)) {
+        return await this.handleAnomalyDetection(message, context);
       }
-
-      // Fall back to regular AI assistant
-      return 'I can help you with incident summaries, audit summaries, KRI recommendations, module completion status, and workflow tasks. Try asking: "Generate incident summary" or "Recommend KRIs for banking".';
+      
+      // Default to general AI assistance
+      return await this.handleGeneralAssistance(message, context);
+      
     } catch (error) {
       console.error('Error processing enhanced message:', error);
-      return 'I encountered an error while processing your request. Please try again.';
+      return "I apologize, but I encountered an error processing your request. Please try rephrasing your question or contact support if the issue persists.";
+    }
+  }
+
+  private isPredictiveAnalysisRequest(message: string): boolean {
+    const keywords = ['predict', 'forecast', 'trend', 'future', 'probability', 'likelihood', 'projection'];
+    return keywords.some(keyword => message.toLowerCase().includes(keyword));
+  }
+
+  private isRiskAssessmentRequest(message: string): boolean {
+    const keywords = ['assess', 'evaluation', 'score', 'rating', 'risk level', 'severity'];
+    return keywords.some(keyword => message.toLowerCase().includes(keyword));
+  }
+
+  private isRecommendationRequest(message: string): boolean {
+    const keywords = ['recommend', 'suggest', 'advice', 'best practice', 'should', 'optimize'];
+    return keywords.some(keyword => message.toLowerCase().includes(keyword));
+  }
+
+  private isDocumentAnalysisRequest(message: string): boolean {
+    const keywords = ['analyze', 'review', 'document', 'policy', 'procedure', 'extract', 'summarize'];
+    return keywords.some(keyword => message.toLowerCase().includes(keyword));
+  }
+
+  private isAnomalyDetectionRequest(message: string): boolean {
+    const keywords = ['anomaly', 'unusual', 'outlier', 'abnormal', 'irregular', 'deviation'];
+    return keywords.some(keyword => message.toLowerCase().includes(keyword));
+  }
+
+  private async handlePredictiveAnalysis(message: string, context: ProcessingContext): Promise<string> {
+    try {
+      const [predictions, correlations] = await Promise.all([
+        predictiveRiskModelingService.generateRiskPredictions(context.orgId),
+        predictiveRiskModelingService.analyzeRiskCorrelations(context.orgId)
+      ]);
+
+      let response = "**🔮 Predictive Risk Analysis:**\n\n";
+      
+      if (predictions.length > 0) {
+        response += "**Risk Predictions:**\n";
+        predictions.slice(0, 3).forEach(pred => {
+          response += `• **${pred.riskName}:** Current score ${pred.currentScore} → Predicted ${pred.predictedScore} (${pred.timeHorizon})\n`;
+          response += `  Confidence: ${(pred.confidenceInterval.lower)}-${(pred.confidenceInterval.upper)}\n`;
+          if (pred.recommendedActions.length > 0) {
+            response += `  Recommended: ${pred.recommendedActions[0]}\n`;
+          }
+          response += "\n";
+        });
+      }
+
+      if (correlations.length > 0) {
+        response += "**Risk Correlations:**\n";
+        correlations.slice(0, 2).forEach(corr => {
+          response += `• **${corr.primaryRisk}** shows ${corr.networkEffect > 0.7 ? 'strong' : 'moderate'} correlation with:\n`;
+          corr.correlatedRisks.slice(0, 2).forEach(related => {
+            response += `  - ${related.riskName} (${Math.round(related.correlationStrength * 100)}% correlation)\n`;
+          });
+          response += "\n";
+        });
+      }
+
+      response += "**Key Insights:**\n";
+      response += "• Predictive models show emerging patterns in your risk landscape\n";
+      response += "• Risk correlations indicate potential cascade effects\n";
+      response += "• Early intervention can significantly reduce predicted risk materialization\n";
+
+      return response;
+    } catch (error) {
+      console.error('Error in predictive analysis:', error);
+      return "I encountered an issue generating the predictive analysis. Please check your data sources and try again.";
+    }
+  }
+
+  private async handleRiskAssessment(message: string, context: ProcessingContext): Promise<string> {
+    try {
+      const riskScores = await intelligentRiskAssessmentService.generateIntelligentRiskScores(context.orgId);
+      
+      let response = "**📊 Intelligent Risk Assessment:**\n\n";
+      
+      if (riskScores.length > 0) {
+        response += "**Current Risk Scores:**\n";
+        riskScores.forEach(score => {
+          const trendEmoji = score.trendDirection === 'increasing' ? '📈' : 
+                            score.trendDirection === 'decreasing' ? '📉' : '➡️';
+          
+          response += `• **${score.riskName}:** ${score.currentScore}/10 ${trendEmoji}\n`;
+          response += `  Historical: ${score.historicalScore}/10 | Confidence: ${Math.round(score.confidence * 100)}%\n`;
+          response += `  ${score.explanation}\n\n`;
+        });
+        
+        response += "**Benchmark Comparison:**\n";
+        const firstScore = riskScores[0];
+        if (firstScore.benchmarkComparison) {
+          response += `• Industry Average: ${firstScore.benchmarkComparison.industry}\n`;
+          response += `• Similar Organizations: ${firstScore.benchmarkComparison.size}\n`;
+          response += `• Regional Average: ${firstScore.benchmarkComparison.region}\n\n`;
+        }
+      }
+
+      response += "**Assessment Methodology:**\n";
+      response += "• Multi-factor analysis incorporating incident data, KRIs, and control effectiveness\n";
+      response += "• Machine learning algorithms trained on industry benchmarks\n";
+      response += "• Real-time adjustment based on current business environment\n";
+
+      return response;
+    } catch (error) {
+      console.error('Error in risk assessment:', error);
+      return "I encountered an issue with the risk assessment. Please ensure your risk data is up to date and try again.";
+    }
+  }
+
+  private async handleRecommendations(message: string, context: ProcessingContext): Promise<string> {
+    try {
+      const [mitigationRecs, bestPractices, trainingRecs] = await Promise.all([
+        recommendationsEngineService.generateMitigationRecommendations('operational', 'medium', context.orgId),
+        recommendationsEngineService.generateBestPracticeRecommendations(context.orgId),
+        recommendationsEngineService.generateTrainingRecommendations(context.orgId)
+      ]);
+
+      let response = "**💡 AI-Powered Recommendations:**\n\n";
+      
+      if (mitigationRecs.length > 0) {
+        response += "**Risk Mitigation Strategies:**\n";
+        mitigationRecs.slice(0, 3).forEach(rec => {
+          response += `• **${rec.strategy}** (Priority: ${rec.priority}/10)\n`;
+          response += `  Expected Impact: ${Math.round(rec.expectedImpact * 100)}% risk reduction\n`;
+          response += `  Implementation: ${rec.timeframe} | Cost: ${rec.implementationCost}\n`;
+          response += `  ${rec.description}\n\n`;
+        });
+      }
+
+      if (bestPractices.length > 0) {
+        response += "**Best Practice Opportunities:**\n";
+        bestPractices.slice(0, 2).forEach(practice => {
+          if (practice.currentGap !== 'none') {
+            response += `• **${practice.title}**\n`;
+            response += `  Current Gap: ${practice.currentGap} | Target: ${practice.maturityLevel}\n`;
+            response += `  ${practice.description}\n\n`;
+          }
+        });
+      }
+
+      if (trainingRecs.length > 0) {
+        response += "**Training Recommendations:**\n";
+        trainingRecs.slice(0, 2).forEach(training => {
+          response += `• **${training.skillGap}** (${training.priority} priority)\n`;
+          response += `  Target: ${training.targetAudience.join(', ')}\n`;
+          response += `  Duration: ${training.estimatedDuration} | Cost: ${training.cost}\n\n`;
+        });
+      }
+
+      response += "**Implementation Guidance:**\n";
+      response += "• Prioritize high-impact, low-cost initiatives first\n";
+      response += "• Consider resource constraints and change management requirements\n";
+      response += "• Monitor implementation progress with defined success metrics\n";
+
+      return response;
+    } catch (error) {
+      console.error('Error generating recommendations:', error);
+      return "I encountered an issue generating recommendations. Please check your organizational data and try again.";
+    }
+  }
+
+  private async handleDocumentAnalysis(message: string, context: ProcessingContext): Promise<string> {
+    try {
+      // In a real implementation, this would analyze an actual document
+      // For now, provide guidance on document analysis capabilities
+      
+      let response = "**📄 Document Analysis Capabilities:**\n\n";
+      
+      response += "I can analyze various types of risk-related documents:\n\n";
+      
+      response += "**Supported Document Types:**\n";
+      response += "• Risk assessments and audit reports\n";
+      response += "• Policies and procedures\n";
+      response += "• Incident reports and post-mortems\n";
+      response += "• Regulatory compliance documents\n";
+      response += "• Business continuity plans\n\n";
+      
+      response += "**Analysis Features:**\n";
+      response += "• **Risk Extraction:** Automatically identify and categorize risks\n";
+      response += "• **Sentiment Analysis:** Assess tone and confidence levels\n";
+      response += "• **Compliance Mapping:** Link requirements to regulations\n";
+      response += "• **Action Item Extraction:** Identify required actions and deadlines\n";
+      response += "• **Entity Recognition:** Extract key entities and relationships\n\n";
+      
+      response += "**How to Use:**\n";
+      response += "1. Upload your document to the system\n";
+      response += "2. Ask me to 'analyze the uploaded document'\n";
+      response += "3. I'll provide detailed insights and recommendations\n\n";
+      
+      response += "Would you like to upload a document for analysis, or do you have specific questions about document analysis capabilities?";
+
+      return response;
+    } catch (error) {
+      console.error('Error in document analysis:', error);
+      return "I encountered an issue with document analysis. Please try again or contact support.";
+    }
+  }
+
+  private async handleAnomalyDetection(message: string, context: ProcessingContext): Promise<string> {
+    try {
+      const anomalies = await predictiveRiskModelingService.detectAnomalies(context.orgId);
+      
+      let response = "**🚨 Anomaly Detection Results:**\n\n";
+      
+      if (anomalies.length > 0) {
+        response += "**Detected Anomalies:**\n";
+        anomalies.forEach(anomaly => {
+          const severityEmoji = {
+            critical: '🔴',
+            high: '🟠',
+            medium: '🟡',
+            low: '🟢'
+          }[anomaly.severity];
+          
+          response += `${severityEmoji} **${anomaly.metric}**\n`;
+          response += `  Current Value: ${anomaly.value}\n`;
+          response += `  Expected Range: ${anomaly.expectedRange.min} - ${anomaly.expectedRange.max}\n`;
+          response += `  Anomaly Score: ${Math.round(anomaly.anomalyScore * 100)}%\n`;
+          response += `  ${anomaly.explanation}\n\n`;
+          
+          if (anomaly.suggestedInvestigation.length > 0) {
+            response += `  **Recommended Actions:**\n`;
+            anomaly.suggestedInvestigation.forEach(action => {
+              response += `  • ${action}\n`;
+            });
+            response += "\n";
+          }
+        });
+        
+        response += "**Summary:**\n";
+        const criticalCount = anomalies.filter(a => a.severity === 'critical').length;
+        const highCount = anomalies.filter(a => a.severity === 'high').length;
+        
+        if (criticalCount > 0) {
+          response += `• ${criticalCount} critical anomalies require immediate attention\n`;
+        }
+        if (highCount > 0) {
+          response += `• ${highCount} high-severity anomalies need investigation within 24 hours\n`;
+        }
+        
+        response += "• Regular monitoring is recommended to prevent future anomalies\n";
+        
+      } else {
+        response += "✅ **No significant anomalies detected** in your current data.\n\n";
+        response += "**What this means:**\n";
+        response += "• Your risk metrics are within expected ranges\n";
+        response += "• Current patterns align with historical baselines\n";
+        response += "• No immediate investigation required\n\n";
+        response += "**Recommendations:**\n";
+        response += "• Continue regular monitoring of key metrics\n";
+        response += "• Review anomaly detection thresholds quarterly\n";
+        response += "• Consider expanding monitoring to additional data sources\n";
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error in anomaly detection:', error);
+      return "I encountered an issue with anomaly detection. Please check your data sources and try again.";
+    }
+  }
+
+  private async handleGeneralAssistance(message: string, context: ProcessingContext): Promise<string> {
+    try {
+      // Use the existing AI assistant functionality as fallback
+      const response = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          message,
+          context: {
+            module: context.module,
+            userRole: context.userRole,
+            orgSector: context.orgSector,
+            orgSize: 'medium' // Default value
+          },
+          userId: context.orgId
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      return response.data?.response || "I'm here to help with your operational resilience questions. You can ask me about risk management, compliance, predictions, recommendations, or document analysis.";
+    } catch (error) {
+      console.error('Error in general assistance:', error);
+      return "I'm your enhanced AI assistant for operational resilience. I can help with:\n\n" +
+             "🔮 **Predictive Analysis** - Risk forecasting and trend analysis\n" +
+             "📊 **Risk Assessment** - Intelligent scoring and benchmarking\n" +
+             "💡 **Recommendations** - Personalized mitigation strategies\n" +
+             "📄 **Document Analysis** - Extract insights from reports and policies\n" +
+             "🚨 **Anomaly Detection** - Identify unusual patterns in your data\n\n" +
+             "What would you like to explore today?";
     }
   }
 }

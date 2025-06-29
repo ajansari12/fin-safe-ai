@@ -94,7 +94,7 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm your enhanced ResilientFI assistant with new capabilities:\n\n🔍 **Auto-generate summaries** for incidents and audits\n📊 **Recommend KRIs** based on your organization type\n⚠️ **Flag modules** with low completion or stale entries\n📋 **Suggest next tasks** in workflows\n\nTry asking: 'Generate incident summary' or 'Recommend KRIs for banking'",
+      content: "Hello! I'm your enhanced ResilientFI assistant with advanced AI capabilities:\n\n🔮 **Predictive Analytics** - Forecast risks and identify emerging patterns\n📊 **Intelligent Assessment** - AI-powered risk scoring with benchmarking\n💡 **Proactive Recommendations** - Personalized mitigation strategies\n📄 **Document Analysis** - Extract insights from reports and policies\n🚨 **Anomaly Detection** - Identify unusual patterns in your data\n\nTry asking: 'Predict next quarter risks' or 'Recommend mitigation strategies'",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -255,7 +255,8 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
           {
             module: currentModule,
             orgId: profile.organization_id,
-            orgSector: org?.sector || 'banking'
+            orgSector: org?.sector || 'banking',
+            userRole: profile.role
           }
         );
         
