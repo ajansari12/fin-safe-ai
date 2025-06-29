@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          admin_user_id: string
+          admin_user_name: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          org_id: string
+          resource_id: string | null
+          resource_name: string | null
+          resource_type: string
+          user_agent: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          admin_user_id: string
+          admin_user_name: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          org_id: string
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type: string
+          user_agent?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          admin_user_id?: string
+          admin_user_name?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          org_id?: string
+          resource_id?: string | null
+          resource_name?: string | null
+          resource_type?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       ai_chat_logs: {
         Row: {
           created_at: string

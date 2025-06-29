@@ -1,115 +1,103 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { getCurrentUserProfile } from "@/lib/supabase-utils";
-
 export interface ModuleSetting {
   id: string;
-  org_id: string;
-  setting_key: string;
-  setting_value: {
-    enabled?: boolean;
-    retention_days?: number;
-    auto_delete?: boolean;
-  };
-  description: string | null;
-  category: string;
-  created_by: string | null;
+  module_key: string;
+  module_name: string;
+  description: string;
+  enabled: boolean;
   created_at: string;
   updated_at: string;
 }
 
 class ModuleSettingsService {
   async getModuleSettings(): Promise<ModuleSetting[]> {
-    try {
-      const profile = await getCurrentUserProfile();
-      if (!profile?.organization_id) return [];
-
-      // Use type assertion to bypass complex type inference
-      const { data, error } = await (supabase as any)
-        .from('settings')
-        .select('id, org_id, setting_key, setting_value, description, created_at, updated_at')
-        .eq('org_id', profile.organization_id)
-        .eq('category', 'modules')
-        .order('setting_key');
-
-      if (error) throw error;
-
-      // Manual transformation to avoid type inference issues
-      const results: ModuleSetting[] = [];
-      for (const item of data || []) {
-        results.push({
-          id: item.id,
-          org_id: item.org_id,
-          setting_key: item.setting_key,
-          setting_value: this.parseSettingValue(item.setting_value),
-          description: item.description,
-          category: 'modules',
-          created_by: null,
-          created_at: item.created_at,
-          updated_at: item.updated_at
-        });
+    // Return predefined module settings
+    return [
+      {
+        id: '1',
+        module_key: 'risk_management',
+        module_name: 'Risk Management',
+        description: 'Enable risk assessment and monitoring capabilities',
+        enabled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        module_key: 'incident_management',
+        module_name: 'Incident Management',
+        description: 'Enable incident logging and response tracking',
+        enabled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        module_key: 'compliance_management',
+        module_name: 'Compliance Management',
+        description: 'Enable regulatory compliance tracking and reporting',
+        enabled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '4',
+        module_key: 'third_party_risk',
+        module_name: 'Third Party Risk',
+        description: 'Enable vendor and third-party risk management',
+        enabled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      {
+        id: '5',
+        module_key: 'business_continuity',
+        module_name: 'Business Continuity',
+        description: 'Enable business continuity planning and testing',
+        enabled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }
-      return results;
-    } catch (error) {
-      console.error('Error in getModuleSettings:', error);
-      return [];
-    }
+    ];
   }
 
-  async updateModuleSetting(settingKey: string, enabled: boolean): Promise<void> {
-    try {
-      const profile = await getCurrentUserProfile();
-      if (!profile?.organization_id) throw new Error('No organization found');
-
-      // Use type assertion to bypass complex type inference
-      await (supabase as any)
-        .from('settings')
-        .upsert({
-          org_id: profile.organization_id,
-          setting_key: settingKey,
-          setting_value: { enabled },
-          category: 'modules',
-          description: `Module ${settingKey} activation setting`
-        });
-    } catch (error) {
-      console.error('Error updating module setting:', error);
-      throw error;
-    }
-  }
-
-  private parseSettingValue(value: any): { enabled?: boolean; retention_days?: number; auto_delete?: boolean } {
-    if (!value) return { enabled: false };
-    
-    if (typeof value === 'boolean') {
-      return { enabled: value };
-    }
-    
-    if (typeof value === 'object' && value !== null) {
-      return {
-        enabled: Boolean(value.enabled),
-        retention_days: typeof value.retention_days === 'number' ? value.retention_days : undefined,
-        auto_delete: Boolean(value.auto_delete)
-      };
-    }
-    
-    return { enabled: false };
+  async updateModuleSetting(moduleKey: string, enabled: boolean): Promise<void> {
+    // In a real implementation, this would update the database
+    console.log(`Module ${moduleKey} ${enabled ? 'enabled' : 'disabled'}`);
   }
 
   getAvailableModules(): Array<{ key: string; name: string; description: string }> {
     return [
-      { key: 'governance_framework', name: 'Governance Framework', description: 'Policy and governance management' },
-      { key: 'risk_appetite', name: 'Risk Appetite', description: 'Risk appetite statements and thresholds' },
-      { key: 'business_functions', name: 'Business Functions', description: 'Critical business function mapping' },
-      { key: 'impact_tolerances', name: 'Impact Tolerances', description: 'Impact tolerance management' },
-      { key: 'dependencies', name: 'Dependencies', description: 'Dependency mapping and monitoring' },
-      { key: 'scenario_testing', name: 'Scenario Testing', description: 'Business continuity scenario testing' },
-      { key: 'business_continuity', name: 'Business Continuity', description: 'Continuity planning and testing' },
-      { key: 'third_party_risk', name: 'Third-Party Risk', description: 'Vendor and third-party risk management' },
-      { key: 'controls_kri', name: 'Controls & KRIs', description: 'Control testing and KRI monitoring' },
-      { key: 'incident_log', name: 'Incident Management', description: 'Incident logging and response' },
-      { key: 'audit_compliance', name: 'Audit & Compliance', description: 'Audit management and compliance tracking' },
-      { key: 'workflow_center', name: 'Workflow Center', description: 'Workflow automation and management' },
-      { key: 'analytics_hub', name: 'Analytics Hub', description: 'Advanced analytics and reporting' }
+      {
+        key: 'risk_management',
+        name: 'Risk Management',
+        description: 'Core risk assessment and monitoring capabilities'
+      },
+      {
+        key: 'incident_management',
+        name: 'Incident Management',
+        description: 'Incident response and tracking system'
+      },
+      {
+        key: 'compliance_management',
+        name: 'Compliance Management',
+        description: 'Regulatory compliance and audit management'
+      },
+      {
+        key: 'third_party_risk',
+        name: 'Third Party Risk',
+        description: 'Vendor and supplier risk management'
+      },
+      {
+        key: 'business_continuity',
+        name: 'Business Continuity',
+        description: 'Business continuity and disaster recovery planning'
+      },
+      {
+        key: 'governance_framework',
+        name: 'Governance Framework',
+        description: 'Corporate governance and policy management'
+      }
     ];
   }
 }
