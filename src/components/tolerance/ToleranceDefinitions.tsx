@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +23,17 @@ interface ToleranceDefinition {
   status: 'active' | 'draft' | 'archived';
   createdAt: string;
   lastUpdated: string;
+}
+
+interface FormData {
+  operationName: string;
+  classification: 'critical' | 'high' | 'medium' | 'low';
+  rto: number;
+  rpo: number;
+  serviceLevel: number;
+  customerImpact: 'none' | 'minimal' | 'moderate' | 'significant' | 'severe';
+  financialThreshold: number;
+  description: string;
 }
 
 const ToleranceDefinitions = () => {
@@ -62,13 +72,13 @@ const ToleranceDefinitions = () => {
   const [editingTolerance, setEditingTolerance] = useState<ToleranceDefinition | null>(null);
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     operationName: '',
-    classification: 'medium' as const,
+    classification: 'medium',
     rto: 240,
     rpo: 60,
     serviceLevel: 85,
-    customerImpact: 'moderate' as const,
+    customerImpact: 'moderate',
     financialThreshold: 100000,
     description: ''
   });
@@ -194,7 +204,7 @@ const ToleranceDefinitions = () => {
                 </div>
                 <div>
                   <Label htmlFor="classification">Classification</Label>
-                  <Select value={formData.classification} onValueChange={(value: any) => setFormData(prev => ({ ...prev, classification: value }))}>
+                  <Select value={formData.classification} onValueChange={(value: 'critical' | 'high' | 'medium' | 'low') => setFormData(prev => ({ ...prev, classification: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -246,7 +256,7 @@ const ToleranceDefinitions = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="customerImpact">Customer Impact Level</Label>
-                  <Select value={formData.customerImpact} onValueChange={(value: any) => setFormData(prev => ({ ...prev, customerImpact: value }))}>
+                  <Select value={formData.customerImpact} onValueChange={(value: 'none' | 'minimal' | 'moderate' | 'significant' | 'severe') => setFormData(prev => ({ ...prev, customerImpact: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
