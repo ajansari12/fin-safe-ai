@@ -209,14 +209,12 @@ class RecommendationsEngineService {
 
       // Analyze control investment efficiency
       const controlOptimizations = this.analyzeControlInvestments(controlEffectiveness, incidentCosts);
-      optimizations.push(...controlOptimizations);
-
-      // Analyze staffing efficiency
       const staffingOptimizations = this.analyzeStaffingEfficiency(riskExposure);
-      optimizations.push(...staffingOptimizations);
+      const technologyOptimizations = await this.analyzeTechnologyInvestments(orgId);
 
-      // Technology investment analysis
-      const technologyOptimizations = this.analyzeTechnologyInvestments(orgId);
+      // Await all async operations and spread the results
+      optimizations.push(...controlOptimizations);
+      optimizations.push(...staffingOptimizations);
       optimizations.push(...technologyOptimizations);
 
       return optimizations
