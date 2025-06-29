@@ -1,108 +1,99 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentUserProfile, getUserOrganization } from "@/lib/supabase-utils";
 
 export interface MitigationRecommendation {
-  id: string;
-  riskCategory: string;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
   strategy: string;
   description: string;
-  implementationSteps: string[];
-  expectedImpact: number; // 0-1 scale
+  priority: number;
+  expectedImpact: number;
   implementationCost: 'low' | 'medium' | 'high';
   timeframe: string;
-  priority: number; // 1-10 scale
+  requiredResources: string[];
   successMetrics: string[];
-  prerequisites: string[];
-  resources: string[];
-}
-
-export interface BestPracticeRecommendation {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  industryBenchmark: string;
-  currentGap: string;
-  implementationGuidance: string[];
-  expectedBenefits: string[];
-  kpiTargets: Array<{
-    metric: string;
-    currentValue: string;
-    targetValue: string;
-  }>;
-  maturityLevel: 'basic' | 'intermediate' | 'advanced' | 'leading';
-}
-
-export interface ResourceOptimization {
-  area: string;
-  currentAllocation: {
-    budget: number;
-    personnel: number;
-    tools: number;
-  };
-  recommendedAllocation: {
-    budget: number;
-    personnel: number;
-    tools: number;
-  };
-  reallocationPlan: Array<{
-    action: string;
-    impact: string;
-    timeline: string;
-  }>;
-  expectedROI: number;
   riskReduction: number;
 }
 
-export interface TrainingRecommendation {
-  id: string;
-  targetAudience: string[];
-  skillGap: string;
-  trainingType: 'online' | 'workshop' | 'certification' | 'mentoring';
-  priority: 'urgent' | 'high' | 'medium' | 'low';
+export interface BestPracticeRecommendation {
+  title: string;
   description: string;
-  learningObjectives: string[];
-  suggestedProviders: string[];
+  category: string;
+  maturityLevel: 'basic' | 'intermediate' | 'advanced' | 'expert';
+  currentGap: 'none' | 'minor' | 'moderate' | 'significant';
+  implementationEffort: 'low' | 'medium' | 'high';
+  businessValue: number;
+  compliance: string[];
+  prerequisites: string[];
+}
+
+export interface TrainingRecommendation {
+  skillGap: string;
+  trainingType: 'workshop' | 'certification' | 'online' | 'mentoring';
+  targetAudience: string[];
+  priority: 'low' | 'medium' | 'high' | 'critical';
   estimatedDuration: string;
-  cost: string;
-  competencyMapping: Array<{
-    skill: string;
-    currentLevel: number;
-    targetLevel: number;
-  }>;
+  cost: 'low' | 'medium' | 'high';
+  vendor: string | null;
+  outcomes: string[];
+  assessmentMethod: string;
+}
+
+export interface ResourceOptimization {
+  resource: string;
+  currentAllocation: {
+    budget: string;
+    personnel: number;
+    tools: string[];
+  };
+  recommendedAllocation: {
+    budget: string;
+    personnel: number;
+    tools: string[];
+  };
+  rationale: string;
+  expectedROI: number;
+  riskImpact: 'positive' | 'neutral' | 'negative';
+  implementationPlan: string[];
 }
 
 class RecommendationsEngineService {
   async generateMitigationRecommendations(
-    riskCategory: string,
-    riskLevel: 'low' | 'medium' | 'high' | 'critical',
+    riskCategory: 'operational' | 'cyber' | 'compliance' | 'financial' | 'reputational',
+    severity: 'low' | 'medium' | 'high' | 'critical',
     orgId: string
   ): Promise<MitigationRecommendation[]> {
     try {
-      const [org, currentControls, recentIncidents] = await Promise.all([
-        getUserOrganization(),
-        this.getCurrentControls(orgId, riskCategory),
-        this.getRecentIncidents(orgId, riskCategory)
+      // Get organization data for context
+      const [incidents, controls, kris] = await Promise.all([
+        this.getRecentIncidents(orgId, riskCategory),
+        this.getControlEffectiveness(orgId),
+        this.getKRITrends(orgId)
       ]);
 
-      const recommendations = [];
-      const mitigationStrategies = this.getMitigationStrategies(riskCategory, riskLevel);
+      const recommendations: MitigationRecommendation[] = [];
 
-      for (const strategy of mitigationStrategies) {
-        const recommendation = await this.buildMitigationRecommendation(
-          strategy,
-          riskCategory,
-          riskLevel,
-          org,
-          currentControls,
-          recentIncidents
-        );
-        recommendations.push(recommendation);
+      // Generate category-specific recommendations
+      switch (riskCategory) {
+        case 'operational':
+          recommendations.push(...this.generateOperationalRecommendations(severity, incidents));
+          break;
+        case 'cyber':
+          recommendations.push(...this.generateCyberRecommendations(severity, incidents));
+          break;
+        case 'compliance':
+          recommendations.push(...this.generateComplianceRecommendations(severity, incidents));
+          break;
+        case 'financial':
+          recommendations.push(...this.generateFinancialRecommendations(severity, incidents));
+          break;
+        case 'reputational':
+          recommendations.push(...this.generateReputationalRecommendations(severity, incidents));
+          break;
       }
 
-      // Sort by priority
-      return recommendations.sort((a, b) => b.priority - a.priority);
+      // Prioritize based on severity and organizational context
+      return recommendations
+        .sort((a, b) => b.priority - a.priority)
+        .slice(0, 10);
+
     } catch (error) {
       console.error('Error generating mitigation recommendations:', error);
       return [];
@@ -111,665 +102,531 @@ class RecommendationsEngineService {
 
   async generateBestPracticeRecommendations(orgId: string): Promise<BestPracticeRecommendation[]> {
     try {
-      const [org, maturityAssessment, industryBenchmarks] = await Promise.all([
-        getUserOrganization(),
-        this.assessOrganizationalMaturity(orgId),
-        this.getIndustryBenchmarks(orgId)
+      // Assess current maturity across different areas
+      const [controls, frameworks, incidents] = await Promise.all([
+        this.getControlsMaturity(orgId),
+        this.getGovernanceMaturity(orgId),
+        this.getIncidentManagementMaturity(orgId)
       ]);
 
-      const recommendations = [];
-      const practiceAreas = [
-        'risk_governance',
-        'incident_management',
-        'business_continuity',
-        'third_party_risk',
-        'cyber_security',
-        'compliance_management'
-      ];
+      const recommendations: BestPracticeRecommendation[] = [];
 
-      for (const area of practiceAreas) {
-        const recommendation = this.buildBestPracticeRecommendation(
-          area,
-          maturityAssessment[area],
-          industryBenchmarks[area],
-          org
-        );
-        recommendations.push(recommendation);
+      // Risk Management Best Practices
+      recommendations.push({
+        title: 'Implement Risk Heat Mapping',
+        description: 'Create visual risk heat maps to better communicate risk exposure across the organization',
+        category: 'Risk Management',
+        maturityLevel: 'intermediate',
+        currentGap: this.assessGap(controls, 'heat_mapping'),
+        implementationEffort: 'medium',
+        businessValue: 0.75,
+        compliance: ['OSFI E-21', 'ISO 31000'],
+        prerequisites: ['Risk register', 'Risk categorization']
+      });
+
+      // Governance Best Practices
+      recommendations.push({
+        title: 'Establish Risk Appetite Framework',
+        description: 'Define and implement quantitative risk appetite statements with clear thresholds',
+        category: 'Governance',
+        maturityLevel: 'advanced',
+        currentGap: this.assessGap(frameworks, 'risk_appetite'),
+        implementationEffort: 'high',
+        businessValue: 0.9,
+        compliance: ['OSFI E-21', 'COSO ERM'],
+        prerequisites: ['Board governance', 'Risk strategy']
+      });
+
+      // Operational Resilience Best Practices
+      if (incidents.length > 0) {
+        recommendations.push({
+          title: 'Implement Predictive Analytics',
+          description: 'Use machine learning to predict potential operational disruptions',
+          category: 'Operational Resilience',
+          maturityLevel: 'expert',
+          currentGap: 'significant',
+          implementationEffort: 'high',
+          businessValue: 0.85,
+          compliance: ['OSFI E-21'],
+          prerequisites: ['Data infrastructure', 'Analytics capabilities']
+        });
       }
 
-      return recommendations.filter(r => r.currentGap !== 'none');
+      return recommendations
+        .filter(r => r.currentGap !== 'none')
+        .sort((a, b) => b.businessValue - a.businessValue)
+        .slice(0, 8);
+
     } catch (error) {
       console.error('Error generating best practice recommendations:', error);
       return [];
     }
   }
 
-  async optimizeResourceAllocation(orgId: string): Promise<ResourceOptimization[]> {
-    try {
-      const [currentSpending, riskExposure, effectiveness] = await Promise.all([
-        this.getCurrentResourceAllocation(orgId),
-        this.getRiskExposureByArea(orgId),
-        this.getControlEffectiveness(orgId)
-      ]);
-
-      const optimizations = [];
-      const riskAreas = Object.keys(currentSpending);
-
-      for (const area of riskAreas) {
-        const optimization = this.calculateOptimalAllocation(
-          area,
-          currentSpending[area],
-          riskExposure[area],
-          effectiveness[area]
-        );
-        
-        if (this.isSignificantOptimization(optimization)) {
-          optimizations.push(optimization);
-        }
-      }
-
-      return optimizations;
-    } catch (error) {
-      console.error('Error optimizing resource allocation:', error);
-      return [];
-    }
-  }
-
   async generateTrainingRecommendations(orgId: string): Promise<TrainingRecommendation[]> {
     try {
-      const [skillGaps, roleCompetencies, trainingHistory] = await Promise.all([
-        this.identifySkillGaps(orgId),
-        this.getRoleCompetencies(orgId),
-        this.getTrainingHistory(orgId)
+      // Analyze skill gaps based on incident patterns and control weaknesses
+      const [incidents, controlTests, profiles] = await Promise.all([
+        this.getRecentIncidents(orgId),
+        this.getControlTestResults(orgId),
+        this.getOrganizationProfiles(orgId)
       ]);
 
-      const recommendations = [];
+      const recommendations: TrainingRecommendation[] = [];
 
-      for (const gap of skillGaps) {
-        const recommendation = this.buildTrainingRecommendation(
-          gap,
-          roleCompetencies,
-          trainingHistory
-        );
-        recommendations.push(recommendation);
-      }
+      // Identify skill gaps from incident analysis
+      const incidentSkillGaps = this.analyzeIncidentSkillGaps(incidents);
+      recommendations.push(...incidentSkillGaps);
 
-      return recommendations.sort((a, b) => {
-        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-        return priorityOrder[b.priority] - priorityOrder[a.priority];
-      });
+      // Identify skill gaps from control testing
+      const controlSkillGaps = this.analyzeControlSkillGaps(controlTests);
+      recommendations.push(...controlSkillGaps);
+
+      // Role-specific training recommendations
+      const roleBasedTraining = this.generateRoleBasedTraining(profiles);
+      recommendations.push(...roleBasedTraining);
+
+      return recommendations
+        .sort((a, b) => this.getPriorityScore(b.priority) - this.getPriorityScore(a.priority))
+        .slice(0, 6);
+
     } catch (error) {
       console.error('Error generating training recommendations:', error);
       return [];
     }
   }
 
-  private async getCurrentControls(orgId: string, riskCategory: string) {
-    const { data, error } = await supabase
-      .from('controls')
-      .select('*')
-      .eq('org_id', orgId)
-      .ilike('control_description', `%${riskCategory}%`);
+  async optimizeResourceAllocation(orgId: string): Promise<ResourceOptimization[]> {
+    try {
+      // Get current resource allocation data
+      const [controlEffectiveness, incidentCosts, riskExposure] = await Promise.all([
+        this.getControlEffectiveness(orgId),
+        this.calculateIncidentCosts(orgId),
+        this.calculateRiskExposure(orgId)
+      ]);
 
-    return data || [];
+      const optimizations: ResourceOptimization[] = [];
+
+      // Analyze control investment efficiency
+      const controlOptimizations = this.analyzeControlInvestments(controlEffectiveness, incidentCosts);
+      optimizations.push(...controlOptimizations);
+
+      // Analyze staffing efficiency
+      const staffingOptimizations = this.analyzeStaffingEfficiency(riskExposure);
+      optimizations.push(...staffingOptimizations);
+
+      // Technology investment analysis
+      const technologyOptimizations = this.analyzeTechnologyInvestments(orgId);
+      optimizations.push(...technologyOptimizations);
+
+      return optimizations
+        .filter(opt => opt.expectedROI > 0.1) // Only show optimizations with >10% ROI
+        .sort((a, b) => b.expectedROI - a.expectedROI)
+        .slice(0, 5);
+
+    } catch (error) {
+      console.error('Error optimizing resource allocation:', error);
+      return [];
+    }
   }
 
-  private async getRecentIncidents(orgId: string, riskCategory: string) {
-    const { data, error } = await supabase
+  // Private helper methods
+  private async getRecentIncidents(orgId: string, category?: string) {
+    let query = supabase
       .from('incident_logs')
       .select('*')
       .eq('org_id', orgId)
-      .eq('category', riskCategory)
-      .gte('reported_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
-      .order('reported_at', { ascending: false });
+      .gte('reported_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
 
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query;
     return data || [];
-  }
-
-  private getMitigationStrategies(riskCategory: string, riskLevel: string) {
-    const strategies: Record<string, Record<string, any[]>> = {
-      operational: {
-        low: [
-          { name: 'Process Documentation', type: 'preventive' },
-          { name: 'Regular Reviews', type: 'detective' }
-        ],
-        medium: [
-          { name: 'Automated Monitoring', type: 'detective' },
-          { name: 'Backup Procedures', type: 'corrective' },
-          { name: 'Staff Training', type: 'preventive' }
-        ],
-        high: [
-          { name: 'Redundant Systems', type: 'preventive' },
-          { name: 'Real-time Monitoring', type: 'detective' },
-          { name: 'Incident Response Team', type: 'corrective' }
-        ],
-        critical: [
-          { name: 'Business Continuity Plan', type: 'corrective' },
-          { name: 'Crisis Management', type: 'corrective' },
-          { name: 'Emergency Procedures', type: 'corrective' }
-        ]
-      },
-      cyber: {
-        low: [
-          { name: 'Security Awareness Training', type: 'preventive' },
-          { name: 'Basic Firewalls', type: 'preventive' }
-        ],
-        medium: [
-          { name: 'Multi-Factor Authentication', type: 'preventive' },
-          { name: 'Security Monitoring', type: 'detective' },
-          { name: 'Regular Patching', type: 'preventive' }
-        ],
-        high: [
-          { name: 'Advanced Threat Detection', type: 'detective' },
-          { name: 'Incident Response Plan', type: 'corrective' },
-          { name: 'Security Operations Center', type: 'detective' }
-        ],
-        critical: [
-          { name: 'Zero Trust Architecture', type: 'preventive' },
-          { name: 'Cyber Insurance', type: 'corrective' },
-          { name: 'Threat Intelligence', type: 'detective' }
-        ]
-      }
-    };
-
-    return strategies[riskCategory]?.[riskLevel] || [];
-  }
-
-  private async buildMitigationRecommendation(
-    strategy: any,
-    riskCategory: string,
-    riskLevel: 'low' | 'medium' | 'high' | 'critical',
-    org: any,
-    currentControls: any[],
-    recentIncidents: any[]
-  ): Promise<MitigationRecommendation> {
-    const strategyDetails = this.getStrategyDetails(strategy.name, riskCategory);
-    const priority = this.calculatePriority(strategy, riskLevel, recentIncidents);
-    const expectedImpact = this.calculateExpectedImpact(strategy, riskCategory, riskLevel);
-
-    return {
-      id: `${riskCategory}-${strategy.name.toLowerCase().replace(/\s+/g, '-')}`,
-      riskCategory,
-      riskLevel,
-      strategy: strategy.name,
-      description: strategyDetails.description,
-      implementationSteps: strategyDetails.steps,
-      expectedImpact,
-      implementationCost: strategyDetails.cost,
-      timeframe: strategyDetails.timeframe,
-      priority,
-      successMetrics: strategyDetails.metrics,
-      prerequisites: strategyDetails.prerequisites,
-      resources: strategyDetails.resources
-    };
-  }
-
-  private getStrategyDetails(strategyName: string, riskCategory: string) {
-    const strategyMap: Record<string, any> = {
-      'Process Documentation': {
-        description: 'Establish comprehensive documentation of critical processes to reduce operational risk',
-        steps: [
-          'Identify critical business processes',
-          'Document current state processes',
-          'Define process ownership and responsibilities',
-          'Create process flow diagrams',
-          'Establish review and update procedures'
-        ],
-        cost: 'low',
-        timeframe: '2-3 months',
-        metrics: ['Process documentation coverage %', 'Process compliance rate', 'Error reduction %'],
-        prerequisites: ['Process mapping tools', 'Subject matter experts'],
-        resources: ['Process analysts', 'Documentation tools', 'Training materials']
-      },
-      'Automated Monitoring': {
-        description: 'Implement automated monitoring systems to detect operational issues early',
-        steps: [
-          'Define monitoring requirements',
-          'Select monitoring tools',
-          'Configure alerting thresholds',
-          'Set up dashboards',
-          'Train monitoring team'
-        ],
-        cost: 'medium',
-        timeframe: '3-4 months',
-        metrics: ['Alert response time', 'False positive rate', 'Issue detection rate'],
-        prerequisites: ['Monitoring infrastructure', 'Technical expertise'],
-        resources: ['Monitoring tools', 'Technical staff', 'Infrastructure']
-      },
-      'Multi-Factor Authentication': {
-        description: 'Implement MFA to strengthen access controls and reduce cyber risk',
-        steps: [
-          'Assess current authentication methods',
-          'Select MFA solution',
-          'Deploy MFA infrastructure',
-          'Configure user enrollment',
-          'Train users and support staff'
-        ],
-        cost: 'low',
-        timeframe: '1-2 months',
-        metrics: ['MFA adoption rate', 'Authentication success rate', 'Security incidents reduction'],
-        prerequisites: ['Identity management system', 'User devices'],
-        resources: ['MFA solution', 'IT support', 'User training']
-      }
-    };
-
-    return strategyMap[strategyName] || {
-      description: `Implement ${strategyName} to mitigate ${riskCategory} risks`,
-      steps: ['Assess current state', 'Plan implementation', 'Execute plan', 'Monitor results'],
-      cost: 'medium',
-      timeframe: '2-3 months',
-      metrics: ['Risk reduction', 'Implementation success'],
-      prerequisites: ['Management approval', 'Resource allocation'],
-      resources: ['Project team', 'Budget', 'Tools']
-    };
-  }
-
-  private calculatePriority(strategy: any, riskLevel: string, recentIncidents: any[]): number {
-    let priority = 5; // Base priority
-    
-    // Adjust for risk level
-    const riskLevelMultiplier = { low: 1, medium: 1.2, high: 1.5, critical: 2 };
-    priority *= riskLevelMultiplier[riskLevel as keyof typeof riskLevelMultiplier];
-    
-    // Adjust for recent incidents
-    if (recentIncidents.length > 0) {
-      priority *= 1.3;
-    }
-    
-    // Adjust for strategy type
-    if (strategy.type === 'preventive') {
-      priority *= 1.2; // Preventive measures get higher priority
-    }
-    
-    return Math.min(10, Math.round(priority));
-  }
-
-  private calculateExpectedImpact(strategy: any, riskCategory: string, riskLevel: string): number {
-    const baseImpact = 0.3; // 30% base impact
-    
-    // Adjust for risk level
-    const riskLevelMultiplier = { low: 0.8, medium: 1.0, high: 1.2, critical: 1.5 };
-    const adjustedImpact = baseImpact * riskLevelMultiplier[riskLevel as keyof typeof riskLevelMultiplier];
-    
-    // Adjust for strategy effectiveness
-    const strategyEffectiveness: Record<string, number> = {
-      'Business Continuity Plan': 0.8,
-      'Zero Trust Architecture': 0.9,
-      'Automated Monitoring': 0.7,
-      'Multi-Factor Authentication': 0.6,
-      'Process Documentation': 0.5
-    };
-    
-    const effectiveness = strategyEffectiveness[strategy.name] || 0.6;
-    
-    return Math.min(1, adjustedImpact * effectiveness);
-  }
-
-  private async assessOrganizationalMaturity(orgId: string) {
-    // This would assess maturity across different areas
-    // For now, we'll simulate based on available data
-    const [controls, incidents, policies] = await Promise.all([
-      this.getControlsCount(orgId),
-      this.getIncidentsCount(orgId),
-      this.getPoliciesCount(orgId)
-    ]);
-
-    return {
-      risk_governance: this.calculateMaturityLevel(policies, 'policies'),
-      incident_management: this.calculateMaturityLevel(incidents, 'incidents'),
-      business_continuity: this.calculateMaturityLevel(controls, 'controls'),
-      third_party_risk: 'intermediate',
-      cyber_security: 'intermediate',
-      compliance_management: 'intermediate'
-    };
-  }
-
-  private async getIndustryBenchmarks(orgId: string) {
-    const org = await getUserOrganization();
-    
-    // Industry benchmarks based on sector
-    const benchmarks: Record<string, any> = {
-      banking: {
-        risk_governance: 'advanced',
-        incident_management: 'intermediate',
-        business_continuity: 'advanced',
-        third_party_risk: 'intermediate',
-        cyber_security: 'advanced',
-        compliance_management: 'advanced'
-      },
-      insurance: {
-        risk_governance: 'intermediate',
-        incident_management: 'intermediate',
-        business_continuity: 'intermediate',
-        third_party_risk: 'basic',
-        cyber_security: 'intermediate',
-        compliance_management: 'intermediate'
-      }
-    };
-
-    return benchmarks[org?.sector || 'banking'];
-  }
-
-  private buildBestPracticeRecommendation(
-    area: string,
-    currentMaturity: string,
-    benchmarkMaturity: string,
-    org: any
-  ): BestPracticeRecommendation {
-    const areaDetails = this.getBestPracticeDetails(area);
-    const gap = this.calculateMaturityGap(currentMaturity, benchmarkMaturity);
-
-    return {
-      id: `bp-${area}`,
-      title: areaDetails.title,
-      category: area,
-      description: areaDetails.description,
-      industryBenchmark: benchmarkMaturity,
-      currentGap: gap,
-      implementationGuidance: areaDetails.guidance,
-      expectedBenefits: areaDetails.benefits,
-      kpiTargets: areaDetails.kpiTargets,
-      maturityLevel: benchmarkMaturity as any
-    };
-  }
-
-  private getBestPracticeDetails(area: string) {
-    const details: Record<string, any> = {
-      risk_governance: {
-        title: 'Risk Governance Framework',
-        description: 'Establish comprehensive risk governance with clear roles, responsibilities, and oversight',
-        guidance: [
-          'Define risk governance structure',
-          'Establish risk committee',
-          'Create risk policies and procedures',
-          'Implement risk reporting framework'
-        ],
-        benefits: [
-          'Improved risk oversight',
-          'Clear accountability',
-          'Better decision making',
-          'Regulatory compliance'
-        ],
-        kpiTargets: [
-          { metric: 'Risk Committee Meetings', currentValue: '4/year', targetValue: '12/year' },
-          { metric: 'Risk Policy Coverage', currentValue: '60%', targetValue: '95%' }
-        ]
-      },
-      incident_management: {
-        title: 'Incident Management Excellence',
-        description: 'Implement world-class incident management processes and capabilities',
-        guidance: [
-          'Establish incident response team',
-          'Define incident classification',
-          'Create response procedures',
-          'Implement lessons learned process'
-        ],
-        benefits: [
-          'Faster incident resolution',
-          'Reduced business impact',
-          'Improved customer satisfaction',
-          'Better regulatory compliance'
-        ],
-        kpiTargets: [
-          { metric: 'Mean Time to Response', currentValue: '2 hours', targetValue: '30 minutes' },
-          { metric: 'Incident Resolution Rate', currentValue: '85%', targetValue: '95%' }
-        ]
-      }
-    };
-
-    return details[area] || {
-      title: `${area} Best Practices`,
-      description: `Implement industry best practices for ${area}`,
-      guidance: ['Assess current state', 'Define target state', 'Create implementation plan'],
-      benefits: ['Improved performance', 'Better risk management'],
-      kpiTargets: []
-    };
-  }
-
-  private calculateMaturityGap(current: string, benchmark: string): string {
-    const levels = ['basic', 'intermediate', 'advanced', 'leading'];
-    const currentIndex = levels.indexOf(current);
-    const benchmarkIndex = levels.indexOf(benchmark);
-    
-    if (currentIndex >= benchmarkIndex) return 'none';
-    if (benchmarkIndex - currentIndex === 1) return 'minor';
-    if (benchmarkIndex - currentIndex === 2) return 'moderate';
-    return 'significant';
-  }
-
-  private async getControlsCount(orgId: string): Promise<number> {
-    const { count, error } = await supabase
-      .from('controls')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId);
-
-    return count || 0;
-  }
-
-  private async getIncidentsCount(orgId: string): Promise<number> {
-    const { count, error } = await supabase
-      .from('incident_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId);
-
-    return count || 0;
-  }
-
-  private async getPoliciesCount(orgId: string): Promise<number> {
-    const { count, error } = await supabase
-      .from('governance_policies')
-      .select('*', { count: 'exact', head: true })
-      .eq('org_id', orgId);
-
-    return count || 0;
-  }
-
-  private calculateMaturityLevel(count: number, type: string): string {
-    const thresholds: Record<string, number[]> = {
-      policies: [5, 15, 30], // basic, intermediate, advanced
-      controls: [10, 25, 50],
-      incidents: [20, 50, 100] // More incidents = better tracking (mature)
-    };
-
-    const levels = ['basic', 'intermediate', 'advanced', 'leading'];
-    const threshold = thresholds[type] || [5, 15, 30];
-
-    if (count >= threshold[2]) return 'leading';
-    if (count >= threshold[1]) return 'advanced';
-    if (count >= threshold[0]) return 'intermediate';
-    return 'basic';
-  }
-
-  private async getCurrentResourceAllocation(orgId: string) {
-    // This would fetch actual budget and resource data
-    // For now, simulate based on organization data
-    return {
-      operational: { budget: 100000, personnel: 5, tools: 3 },
-      cyber: { budget: 150000, personnel: 3, tools: 5 },
-      compliance: { budget: 80000, personnel: 2, tools: 2 }
-    };
-  }
-
-  private async getRiskExposureByArea(orgId: string) {
-    // Calculate risk exposure based on incidents and assessments
-    return {
-      operational: 0.7,
-      cyber: 0.8,
-      compliance: 0.5
-    };
   }
 
   private async getControlEffectiveness(orgId: string) {
-    // Calculate control effectiveness by area
+    const { data, error } = await supabase
+      .from('control_tests')
+      .select('*')
+      .eq('org_id', orgId)
+      .gte('test_date', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+    return data || [];
+  }
+
+  private async getKRITrends(orgId: string) {
+    const { data, error } = await supabase
+      .from('kri_logs')
+      .select(`
+        *,
+        kri_definitions!inner(org_id, name)
+      `)
+      .eq('kri_definitions.org_id', orgId)
+      .gte('measurement_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+    return data || [];
+  }
+
+  private generateOperationalRecommendations(severity: string, incidents: any[]): MitigationRecommendation[] {
+    const recommendations: MitigationRecommendation[] = [];
+
+    if (severity === 'critical' || severity === 'high') {
+      recommendations.push({
+        strategy: 'Implement Real-time Monitoring',
+        description: 'Deploy comprehensive monitoring tools to detect operational issues before they escalate',
+        priority: severity === 'critical' ? 10 : 8,
+        expectedImpact: 0.8,
+        implementationCost: 'high',
+        timeframe: '3-6 months',
+        requiredResources: ['Monitoring tools', 'Technical staff', 'Integration support'],
+        successMetrics: ['Mean time to detection', 'Alert accuracy', 'Incident prevention rate'],
+        riskReduction: 0.7
+      });
+    }
+
+    recommendations.push({
+      strategy: 'Enhance Process Documentation',
+      description: 'Create detailed process documentation with clear escalation procedures',
+      priority: 6,
+      expectedImpact: 0.6,
+      implementationCost: 'low',
+      timeframe: '1-2 months',
+      requiredResources: ['Process analysts', 'Documentation templates'],
+      successMetrics: ['Process adherence rate', 'Training completion', 'Error reduction'],
+      riskReduction: 0.4
+    });
+
+    return recommendations;
+  }
+
+  private generateCyberRecommendations(severity: string, incidents: any[]): MitigationRecommendation[] {
+    const recommendations: MitigationRecommendation[] = [];
+
+    recommendations.push({
+      strategy: 'Multi-Factor Authentication',
+      description: 'Implement MFA across all critical systems and applications',
+      priority: severity === 'critical' ? 10 : 7,
+      expectedImpact: 0.85,
+      implementationCost: 'medium',
+      timeframe: '2-3 months',
+      requiredResources: ['MFA solution', 'IT support', 'User training'],
+      successMetrics: ['MFA adoption rate', 'Security incidents', 'User satisfaction'],
+      riskReduction: 0.8
+    });
+
+    if (incidents.length > 5) {
+      recommendations.push({
+        strategy: 'Security Awareness Training',
+        description: 'Comprehensive cybersecurity training program for all employees',
+        priority: 8,
+        expectedImpact: 0.7,
+        implementationCost: 'medium',
+        timeframe: '1-2 months',
+        requiredResources: ['Training platform', 'Security experts', 'Training content'],
+        successMetrics: ['Training completion', 'Phishing test results', 'Incident reduction'],
+        riskReduction: 0.6
+      });
+    }
+
+    return recommendations;
+  }
+
+  private generateComplianceRecommendations(severity: string, incidents: any[]): MitigationRecommendation[] {
+    return [{
+      strategy: 'Automated Compliance Monitoring',
+      description: 'Implement automated tools to monitor compliance with regulatory requirements',
+      priority: severity === 'critical' ? 9 : 6,
+      expectedImpact: 0.75,
+      implementationCost: 'high',
+      timeframe: '4-6 months',
+      requiredResources: ['Compliance software', 'Legal expertise', 'Process mapping'],
+      successMetrics: ['Compliance score', 'Audit findings', 'Regulatory feedback'],
+      riskReduction: 0.7
+    }];
+  }
+
+  private generateFinancialRecommendations(severity: string, incidents: any[]): MitigationRecommendation[] {
+    return [{
+      strategy: 'Financial Risk Analytics',
+      description: 'Deploy advanced analytics to monitor financial risk indicators in real-time',
+      priority: severity === 'critical' ? 10 : 7,
+      expectedImpact: 0.8,
+      implementationCost: 'high',
+      timeframe: '3-6 months',
+      requiredResources: ['Analytics platform', 'Risk analysts', 'Data integration'],
+      successMetrics: ['Risk prediction accuracy', 'Loss prevention', 'Decision speed'],
+      riskReduction: 0.75
+    }];
+  }
+
+  private generateReputationalRecommendations(severity: string, incidents: any[]): MitigationRecommendation[] {
+    return [{
+      strategy: 'Crisis Communication Plan',
+      description: 'Develop comprehensive crisis communication strategy and response team',
+      priority: severity === 'critical' ? 9 : 6,
+      expectedImpact: 0.7,
+      implementationCost: 'medium',
+      timeframe: '2-3 months',
+      requiredResources: ['Communications team', 'PR expertise', 'Media templates'],
+      successMetrics: ['Response time', 'Message consistency', 'Stakeholder sentiment'],
+      riskReduction: 0.6
+    }];
+  }
+
+  private async getControlsMaturity(orgId: string) {
+    const { data, error } = await supabase
+      .from('controls')
+      .select('*')
+      .eq('org_id', orgId);
+
+    return data || [];
+  }
+
+  private async getGovernanceMaturity(orgId: string) {
+    const { data, error } = await supabase
+      .from('governance_frameworks')
+      .select('*')
+      .eq('org_id', orgId);
+
+    return data || [];
+  }
+
+  private async getIncidentManagementMaturity(orgId: string) {
+    const { data, error } = await supabase
+      .from('incident_logs')
+      .select('*')
+      .eq('org_id', orgId)
+      .gte('reported_at', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString());
+
+    return data || [];
+  }
+
+  private assessGap(data: any[], feature: string): 'none' | 'minor' | 'moderate' | 'significant' {
+    // Simplified gap assessment - in reality this would be more sophisticated
+    const maturityScore = data.length > 0 ? Math.min(data.length / 10, 1) : 0;
+    
+    if (maturityScore > 0.8) return 'none';
+    if (maturityScore > 0.6) return 'minor';
+    if (maturityScore > 0.3) return 'moderate';
+    return 'significant';
+  }
+
+  private async getControlTestResults(orgId: string) {
+    const { data, error } = await supabase
+      .from('control_tests')
+      .select('*')
+      .eq('org_id', orgId)
+      .gte('test_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+    return data || [];
+  }
+
+  private async getOrganizationProfiles(orgId: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('organization_id', orgId);
+
+    return data || [];
+  }
+
+  private analyzeIncidentSkillGaps(incidents: any[]): TrainingRecommendation[] {
+    const recommendations: TrainingRecommendation[] = [];
+
+    // Analyze incident categories to identify skill gaps
+    const categoryCount = incidents.reduce((acc, incident) => {
+      acc[incident.category] = (acc[incident.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    if (categoryCount.cyber > 3) {
+      recommendations.push({
+        skillGap: 'Cybersecurity Incident Response',
+        trainingType: 'certification',
+        targetAudience: ['IT Security', 'Incident Response Team'],
+        priority: 'high',
+        estimatedDuration: '40 hours',
+        cost: 'high',
+        vendor: 'SANS Institute',
+        outcomes: ['Improved incident response time', 'Better threat detection'],
+        assessmentMethod: 'Practical simulation'
+      });
+    }
+
+    return recommendations;
+  }
+
+  private analyzeControlSkillGaps(controlTests: any[]): TrainingRecommendation[] {
+    const recommendations: TrainingRecommendation[] = [];
+
+    // Find controls with low effectiveness ratings
+    const lowEffectivenessTests = controlTests.filter(test => 
+      (test.effectiveness_rating || 0) < 3
+    );
+
+    if (lowEffectivenessTests.length > 2) {
+      recommendations.push({
+        skillGap: 'Control Testing and Assessment',
+        trainingType: 'workshop',
+        targetAudience: ['Risk Analysts', 'Internal Audit'],
+        priority: 'medium',
+        estimatedDuration: '16 hours',
+        cost: 'medium',
+        vendor: 'IIA',
+        outcomes: ['Improved control testing quality', 'Better risk assessment'],
+        assessmentMethod: 'Case study review'
+      });
+    }
+
+    return recommendations;
+  }
+
+  private generateRoleBasedTraining(profiles: any[]): TrainingRecommendation[] {
+    const recommendations: TrainingRecommendation[] = [];
+
+    // Count roles to determine training needs
+    const roleCounts = profiles.reduce((acc, profile) => {
+      acc[profile.role] = (acc[profile.role] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    if (roleCounts.analyst > 2) {
+      recommendations.push({
+        skillGap: 'Advanced Risk Analytics',
+        trainingType: 'online',
+        targetAudience: ['Risk Analysts'],
+        priority: 'medium',
+        estimatedDuration: '20 hours',
+        cost: 'low',
+        vendor: 'Coursera',
+        outcomes: ['Enhanced analytical capabilities', 'Better risk modeling'],
+        assessmentMethod: 'Project-based assessment'
+      });
+    }
+
+    return recommendations;
+  }
+
+  private getPriorityScore(priority: string): number {
+    const scores = { critical: 4, high: 3, medium: 2, low: 1 };
+    return scores[priority as keyof typeof scores] || 0;
+  }
+
+  private async calculateIncidentCosts(orgId: string) {
+    // Simplified cost calculation - would be more sophisticated in practice
+    const { data: incidents } = await supabase
+      .from('incident_logs')
+      .select('*')
+      .eq('org_id', orgId)
+      .gte('reported_at', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString());
+
+    return incidents?.map(incident => ({
+      category: incident.category,
+      estimatedCost: this.estimateIncidentCost(incident.severity),
+      frequency: 1
+    })) || [];
+  }
+
+  private estimateIncidentCost(severity: string): number {
+    const costs = { low: 1000, medium: 5000, high: 25000, critical: 100000 };
+    return costs[severity as keyof typeof costs] || 5000;
+  }
+
+  private async calculateRiskExposure(orgId: string) {
+    // Simplified risk exposure calculation
     return {
-      operational: 0.75,
-      cyber: 0.65,
-      compliance: 0.85
+      operational: 0.7,
+      cyber: 0.8,
+      compliance: 0.5,
+      financial: 0.6,
+      reputational: 0.4
     };
   }
 
-  private calculateOptimalAllocation(
-    area: string,
-    currentAllocation: any,
-    riskExposure: number,
-    effectiveness: number
-  ): ResourceOptimization {
-    const riskAdjustment = riskExposure * 1.2;
-    const effectivenessGap = 1 - effectiveness;
-    
-    const budgetMultiplier = riskAdjustment + effectivenessGap;
-    const recommendedBudget = Math.round(currentAllocation.budget * budgetMultiplier);
-    
-    return {
-      area,
-      currentAllocation,
+  private analyzeControlInvestments(controlEffectiveness: any[], incidentCosts: any[]): ResourceOptimization[] {
+    const optimizations: ResourceOptimization[] = [];
+
+    // Find controls with low effectiveness but high investment
+    const inefficientControls = controlEffectiveness.filter(control => 
+      (control.effectiveness_rating || 0) < 3
+    );
+
+    if (inefficientControls.length > 0) {
+      optimizations.push({
+        resource: 'Control Testing Budget',
+        currentAllocation: {
+          budget: '$50,000',
+          personnel: 2,
+          tools: ['Manual testing', 'Spreadsheets']
+        },
+        recommendedAllocation: {
+          budget: '$75,000',
+          personnel: 3,
+          tools: ['Automated testing tools', 'Risk management platform']
+        },
+        rationale: 'Increase investment in automated testing to improve control effectiveness',
+        expectedROI: 0.35,
+        riskImpact: 'positive',
+        implementationPlan: [
+          'Evaluate automated testing tools',
+          'Train staff on new procedures',
+          'Implement phased rollout'
+        ]
+      });
+    }
+
+    return optimizations;
+  }
+
+  private analyzeStaffingEfficiency(riskExposure: any): ResourceOptimization[] {
+    return [{
+      resource: 'Risk Management Team',
+      currentAllocation: {
+        budget: '$200,000',
+        personnel: 3,
+        tools: ['Basic risk tools']
+      },
       recommendedAllocation: {
-        budget: recommendedBudget,
-        personnel: Math.round(currentAllocation.personnel * budgetMultiplier),
-        tools: Math.round(currentAllocation.tools * budgetMultiplier)
+        budget: '$250,000',
+        personnel: 4,
+        tools: ['Advanced analytics platform', 'Automated reporting']
       },
-      reallocationPlan: [
-        {
-          action: `${budgetMultiplier > 1 ? 'Increase' : 'Decrease'} budget allocation`,
-          impact: `${Math.abs(budgetMultiplier - 1) * 100}% change in resources`,
-          timeline: '3-6 months'
-        }
-      ],
-      expectedROI: this.calculateROI(riskExposure, effectiveness, budgetMultiplier),
-      riskReduction: Math.min(0.5, riskExposure * 0.3 * budgetMultiplier)
-    };
+      rationale: 'Increase staffing to handle growing risk complexity and regulatory requirements',
+      expectedROI: 0.25,
+      riskImpact: 'positive',
+      implementationPlan: [
+        'Define new role requirements',
+        'Recruit experienced risk professional',
+        'Implement advanced tooling'
+      ]
+    }];
   }
 
-  private calculateROI(riskExposure: number, effectiveness: number, budgetMultiplier: number): number {
-    const riskReduction = Math.min(0.5, riskExposure * 0.3 * budgetMultiplier);
-    const costIncrease = Math.abs(budgetMultiplier - 1);
-    
-    return costIncrease > 0 ? riskReduction / costIncrease : riskReduction;
-  }
-
-  private isSignificantOptimization(optimization: ResourceOptimization): boolean {
-    const budgetChange = Math.abs(
-      optimization.recommendedAllocation.budget - optimization.currentAllocation.budget
-    ) / optimization.currentAllocation.budget;
-    
-    return budgetChange > 0.1; // 10% threshold
-  }
-
-  private async identifySkillGaps(orgId: string) {
-    // This would analyze current skills vs required skills
-    // For now, simulate common gaps
-    return [
-      {
-        skill: 'Advanced Risk Analytics',
-        gap: 'high',
-        affectedRoles: ['Risk Analyst', 'Risk Manager'],
-        businessImpact: 'high'
+  private async analyzeTechnologyInvestments(orgId: string): Promise<ResourceOptimization[]> {
+    return [{
+      resource: 'Risk Technology Stack',
+      currentAllocation: {
+        budget: '$100,000',
+        personnel: 1,
+        tools: ['Spreadsheets', 'Basic reporting']
       },
-      {
-        skill: 'Cybersecurity Incident Response',
-        gap: 'medium',
-        affectedRoles: ['IT Staff', 'Security Team'],
-        businessImpact: 'critical'
+      recommendedAllocation: {
+        budget: '$150,000',
+        personnel: 2,
+        tools: ['Integrated risk platform', 'AI/ML analytics', 'Real-time dashboards']
       },
-      {
-        skill: 'Regulatory Compliance',
-        gap: 'low',
-        affectedRoles: ['Compliance Officer'],
-        businessImpact: 'medium'
-      }
-    ];
-  }
-
-  private async getRoleCompetencies(orgId: string) {
-    // This would fetch role competency requirements
-    return {
-      'Risk Analyst': ['Risk Assessment', 'Data Analysis', 'Reporting'],
-      'Risk Manager': ['Risk Strategy', 'Team Leadership', 'Stakeholder Management'],
-      'Compliance Officer': ['Regulatory Knowledge', 'Audit Management', 'Policy Development']
-    };
-  }
-
-  private async getTrainingHistory(orgId: string) {
-    // This would fetch training completion history
-    return {
-      completedTraining: [],
-      plannedTraining: [],
-      budget: 50000
-    };
-  }
-
-  private buildTrainingRecommendation(
-    gap: any,
-    competencies: any,
-    history: any
-  ): TrainingRecommendation {
-    const priority = this.getTrainingPriority(gap.businessImpact, gap.gap);
-    
-    return {
-      id: `training-${gap.skill.toLowerCase().replace(/\s+/g, '-')}`,
-      targetAudience: gap.affectedRoles,
-      skillGap: gap.skill,
-      trainingType: this.getTrainingType(gap.skill),
-      priority,
-      description: `Address ${gap.skill} skill gap to improve ${gap.businessImpact} business impact areas`,
-      learningObjectives: this.getLearningObjectives(gap.skill),
-      suggestedProviders: this.getSuggestedProviders(gap.skill),
-      estimatedDuration: this.getEstimatedDuration(gap.skill),
-      cost: this.getTrainingCost(gap.skill),
-      competencyMapping: this.getCompetencyMapping(gap.skill)
-    };
-  }
-
-  private getTrainingPriority(businessImpact: string, gap: string): 'urgent' | 'high' | 'medium' | 'low' {
-    if (businessImpact === 'critical' && gap === 'high') return 'urgent';
-    if (businessImpact === 'high' || gap === 'high') return 'high';
-    if (businessImpact === 'medium' || gap === 'medium') return 'medium';
-    return 'low';
-  }
-
-  private getTrainingType(skill: string): 'online' | 'workshop' | 'certification' | 'mentoring' {
-    if (skill.toLowerCase().includes('analytics')) return 'certification';
-    if (skill.toLowerCase().includes('response')) return 'workshop';
-    if (skill.toLowerCase().includes('compliance')) return 'online';
-    return 'mentoring';
-  }
-
-  private getLearningObjectives(skill: string): string[] {
-    return [
-      `Understand fundamentals of ${skill}`,
-      `Apply ${skill} techniques in practical scenarios`,
-      `Demonstrate proficiency in ${skill} assessment`
-    ];
-  }
-
-  private getSuggestedProviders(skill: string): string[] {
-    return ['Internal Training Team', 'External Certification Body', 'Industry Association'];
-  }
-
-  private getEstimatedDuration(skill: string): string {
-    if (skill.toLowerCase().includes('advanced')) return '40-60 hours';
-    if (skill.toLowerCase().includes('response')) return '16-24 hours';
-    return '8-16 hours';
-  }
-
-  private getTrainingCost(skill: string): string {
-    if (skill.toLowerCase().includes('advanced')) return '$2,000-$5,000';
-    if (skill.toLowerCase().includes('certification')) return '$1,000-$3,000';
-    return '$500-$1,500';
-  }
-
-  private getCompetencyMapping(skill: string): Array<{
-    skill: string;
-    currentLevel: number;
-    targetLevel: number;
-  }> {
-    return [
-      {
-        skill,
-        currentLevel: 2,
-        targetLevel: 4
-      }
-    ];
+      rationale: 'Modernize technology stack to enable predictive risk management and real-time monitoring',
+      expectedROI: 0.4,
+      riskImpact: 'positive',
+      implementationPlan: [
+        'Evaluate integrated risk platforms',
+        'Plan data migration strategy',
+        'Train team on new tools',
+        'Implement in phases'
+      ]
+    }];
   }
 }
 

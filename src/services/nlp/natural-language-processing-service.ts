@@ -207,6 +207,30 @@ class NaturalLanguageProcessingService {
       .filter(word => word.length > 2);
   }
 
+  private calculateClassificationConfidence(words: string[], primaryCategory: string): number {
+    const keywords = this.riskKeywords[primaryCategory as keyof typeof this.riskKeywords] || [];
+    const matches = keywords.filter(keyword => words.includes(keyword)).length;
+    return Math.min(1, matches / Math.max(keywords.length, 1));
+  }
+
+  private calculateROI(riskExposure: number, effectiveness: number, budgetMultiplier: number): number {
+    const riskReduction = Math.min(0.5, riskExposure * 0.3 * budgetMultiplier);
+    const costIncrease = Math.abs(budgetMultiplier - 1);
+    
+    return costIncrease > 0 ? riskReduction / costIncrease : riskReduction;
+  }
+
+  private isSignificantOptimization(optimization: any): boolean {
+    // Type-safe calculation
+    const currentBudget = Number(optimization.currentAllocation?.budget || 0);
+    const recommendedBudget = Number(optimization.recommendedAllocation?.budget || 0);
+    
+    if (currentBudget === 0) return false;
+    
+    const budgetChange = Math.abs(recommendedBudget - currentBudget) / currentBudget;
+    return budgetChange > 0.1; // 10% threshold
+  }
+
   private extractKeyRiskIndicators(sentences: string[]): Array<{
     indicator: string;
     relevance: number;
@@ -239,7 +263,7 @@ class NaturalLanguageProcessingService {
     indicators: Array<{ relevance: number }>,
     sentences: string[]
   ): 'low' | 'medium' | 'high' | 'critical' {
-    const avgRelevance = indicators.reduce((sum, ind) => sum + ind.relevance, 0) / indicators.length;
+    const avgRelevance = indicators.reduce((sum, ind) => sum + ind.relevance, 0) / Math.max(indicators.length, 1);
     const criticalWords = ['critical', 'severe', 'major', 'urgent', 'immediate'];
     const hasCriticalWords = sentences.some(sentence => 
       criticalWords.some(word => sentence.toLowerCase().includes(word))
@@ -297,7 +321,7 @@ class NaturalLanguageProcessingService {
       .map(([theme, frequency]) => ({
         theme,
         frequency,
-        importance: frequency / sentences.length
+        importance: frequency / Math.max(sentences.length, 1)
       }))
       .sort((a, b) => b.importance - a.importance)
       .slice(0, 5);
@@ -335,7 +359,7 @@ class NaturalLanguageProcessingService {
       if (relevantSentences.length > 0) {
         compliance.push({
           regulation,
-          relevance: relevantSentences.length / sentences.length,
+          relevance: relevantSentences.length / Math.max(sentences.length, 1),
           requirements: relevantSentences.slice(0, 3)
         });
       }
@@ -426,7 +450,7 @@ class NaturalLanguageProcessingService {
       if (intensity > 0) {
         emotionalTone.push({
           emotion,
-          intensity: intensity / sentences.length
+          intensity: intensity / Math.max(sentences.length, 1)
         });
       }
     }
@@ -555,23 +579,8 @@ class NaturalLanguageProcessingService {
     return recommendations;
   }
 
-  private calculateROI(riskExposure: number, effectiveness: number, budgetMultiplier: number): number {
-    const riskReduction = Math.min(0.5, riskExposure * 0.3 * budgetMultiplier);
-    const costIncrease = Math.abs(budgetMultiplier - 1);
-    
-    return costIncrease > 0 ? riskReduction / costIncrease : riskReduction;
-  }
-
-  private isSignificantOptimization(optimization: any): boolean {
-    const budgetChange = Math.abs(
-      Number(optimization.recommendedAllocation.budget) - Number(optimization.currentAllocation.budget)
-    ) / Number(optimization.currentAllocation.budget);
-    
-    return budgetChange > 0.1; // 10% threshold
-  }
-
   private classifyPrimaryCategory(words: string[]): string {
-    const categoryScores = {};
+    const categoryScores: Record<string, number> = {};
     
     for (const [category, keywords] of Object.entries(this.riskKeywords)) {
       const score = keywords.filter(keyword => words.includes(keyword)).length;
@@ -585,7 +594,7 @@ class NaturalLanguageProcessingService {
   }
 
   private classifySecondaryCategories(words: string[]): string[] {
-    const categoryScores = {};
+    const categoryScores: Record<string, number> = {};
     
     for (const [category, keywords] of Object.entries(this.riskKeywords)) {
       const score = keywords.filter(keyword => words.includes(keyword)).length;
@@ -598,12 +607,6 @@ class NaturalLanguageProcessingService {
       .sort(([,a], [,b]) => b - a)
       .slice(1, 4) // Skip primary category
       .map(([category]) => category);
-  }
-
-  private calculateClassificationConfidence(words: string[], primaryCategory: string): number {
-    const keywords = this.riskKeywords[primaryCategory] || [];
-    const matches = keywords.filter(keyword => words.includes(keyword)).length;
-    return Math.min(1, matches / keywords.length);
   }
 
   private generateTags(words: string[], sentences: string[]): string[] {

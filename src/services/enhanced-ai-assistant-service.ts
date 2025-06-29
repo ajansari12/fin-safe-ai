@@ -96,33 +96,35 @@ class EnhancedAIAssistantService {
 
   async suggestWorkflowTasks(orgId: string): Promise<WorkflowTask[]> {
     try {
-      const { data: workflows, error } = await supabase
-        .from('workflow_instances')
+      // Updated query to match actual table structure
+      const { data: workflowSteps, error } = await supabase
+        .from('workflow_steps')
         .select(`
           id,
-          workflow_name,
-          workflow_steps!inner(
-            step_name,
-            assigned_to_name,
-            due_date,
-            status
+          step_name,
+          assigned_to_name,
+          due_date,
+          status,
+          workflow_instance_id,
+          workflow_instances!inner(
+            id,
+            org_id
           )
         `)
-        .eq('org_id', orgId)
-        .eq('status', 'active')
-        .eq('workflow_steps.status', 'pending')
-        .order('workflow_steps.due_date', { ascending: true })
+        .eq('workflow_instances.org_id', orgId)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: true })
         .limit(10);
 
       if (error) throw error;
 
-      return (workflows || []).map(workflow => ({
-        workflowId: workflow.id,
-        workflowName: workflow.workflow_name,
-        nextStepName: workflow.workflow_steps[0]?.step_name || 'Unknown',
-        assignedTo: workflow.workflow_steps[0]?.assigned_to_name || 'Unassigned',
-        priority: this.calculateTaskPriority(workflow.workflow_steps[0]?.due_date),
-        dueDate: workflow.workflow_steps[0]?.due_date || 'No due date'
+      return (workflowSteps || []).map(step => ({
+        workflowId: step.workflow_instance_id || '',
+        workflowName: step.step_name || 'Unknown Workflow',
+        nextStepName: step.step_name || 'Unknown',
+        assignedTo: step.assigned_to_name || 'Unassigned',
+        priority: this.calculateTaskPriority(step.due_date),
+        dueDate: step.due_date || 'No due date'
       }));
     } catch (error) {
       console.error('Error suggesting workflow tasks:', error);
@@ -131,17 +133,68 @@ class EnhancedAIAssistantService {
   }
 
   private async calculateModuleCompletion(orgId: string, module: string): Promise<ModuleCompletion> {
-    // Simulate module completion calculation
-    const completionPercentage = Math.floor(Math.random() * 100);
-    const flags = completionPercentage < 50 ? ['incomplete_setup'] : [];
-    const staleEntries = completionPercentage < 80 ? Math.floor(Math.random() * 10) : 0;
+    // Simulate module completion calculation based on actual data
+    try {
+      let completionPercentage = 0;
+      const flags: string[] = [];
+      let staleEntries = 0;
 
-    return {
-      module,
-      completionPercentage,
-      flags,
-      staleEntries
-    };
+      // Check different modules for actual completion data
+      switch (module) {
+        case 'risk_assessment':
+          const { data: controls } = await supabase
+            .from('controls')
+            .select('id')
+            .eq('org_id', orgId);
+          completionPercentage = controls ? Math.min(100, controls.length * 10) : 0;
+          break;
+        case 'incident_management':
+          const { data: incidents } = await supabase
+            .from('incident_logs')
+            .select('id')
+            .eq('org_id', orgId);
+          completionPercentage = incidents ? Math.min(100, incidents.length * 5) : 0;
+          break;
+        case 'business_continuity':
+          const { data: plans } = await supabase
+            .from('continuity_plans')
+            .select('id')
+            .eq('org_id', orgId);
+          completionPercentage = plans ? Math.min(100, plans.length * 20) : 0;
+          break;
+        case 'governance':
+          const { data: frameworks } = await supabase
+            .from('governance_frameworks')
+            .select('id')
+            .eq('org_id', orgId);
+          completionPercentage = frameworks ? Math.min(100, frameworks.length * 25) : 0;
+          break;
+        default:
+          completionPercentage = Math.floor(Math.random() * 100);
+      }
+
+      if (completionPercentage < 50) {
+        flags.push('incomplete_setup');
+      }
+      if (completionPercentage < 80) {
+        staleEntries = Math.floor(Math.random() * 10);
+      }
+
+      return {
+        module,
+        completionPercentage,
+        flags,
+        staleEntries
+      };
+    } catch (error) {
+      console.error(`Error calculating completion for ${module}:`, error);
+      return {
+        module,
+        completionPercentage: 0,
+        flags: ['error'],
+        staleEntries: 0
+      };
+    }
   }
 
   private calculateTaskPriority(dueDate?: string): string {

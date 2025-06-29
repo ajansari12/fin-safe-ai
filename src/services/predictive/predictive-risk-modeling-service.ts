@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -57,20 +56,21 @@ class PredictiveRiskModelingService {
       // Simulate ML model predictions based on historical data
       const predictions: RiskPrediction[] = [];
 
-      // Analyze incident trends
-      const incidentCategories = this.groupIncidentsByCategory(incidents);
+      // Analyze incident trends with proper type casting
+      const incidentCategories = this.groupIncidentsByCategory(incidents as any[]);
       for (const [category, categoryIncidents] of Object.entries(incidentCategories)) {
-        const trend = this.calculateTrend(categoryIncidents.map(i => Number(i.impact_rating) || 3));
-        const prediction = this.predictRiskScore(categoryIncidents, trend, timeHorizon);
+        const incidentArray = categoryIncidents as any[];
+        const trend = this.calculateTrend(incidentArray.map(i => Number(i.impact_rating) || 3));
+        const prediction = this.predictRiskScore(incidentArray, trend, timeHorizon);
         
         predictions.push({
           riskId: `risk-${category}`,
           riskName: `${category} Risk`,
-          currentScore: this.calculateCurrentScore(categoryIncidents),
+          currentScore: this.calculateCurrentScore(incidentArray),
           predictedScore: prediction.score,
           confidenceInterval: prediction.confidence,
           timeHorizon,
-          factors: this.identifyRiskFactors(categoryIncidents, kriLogs),
+          factors: this.identifyRiskFactors(incidentArray, kriLogs as any[]),
           recommendedActions: this.generateRecommendations(category, prediction.score)
         });
       }
@@ -92,16 +92,16 @@ class PredictiveRiskModelingService {
       const anomalies: AnomalyDetection[] = [];
 
       // Detect KRI anomalies
-      for (const kri of recentKRIs) {
+      for (const kri of recentKRIs as any[]) {
         const historicalData = await this.getKRIHistoricalData(kri.kri_id);
-        const anomaly = this.detectKRIAnomaly(kri, historicalData);
+        const anomaly = this.detectKRIAnomaly(kri, historicalData as any[]);
         if (anomaly) {
           anomalies.push(anomaly);
         }
       }
 
       // Detect incident pattern anomalies
-      const incidentAnomaly = this.detectIncidentPatternAnomalies(recentIncidents);
+      const incidentAnomaly = this.detectIncidentPatternAnomalies(recentIncidents as any[]);
       if (incidentAnomaly) {
         anomalies.push(incidentAnomaly);
       }
@@ -121,10 +121,10 @@ class PredictiveRiskModelingService {
       ]);
 
       const correlations: RiskCorrelation[] = [];
-      const riskCategories = [...new Set(incidents.map(i => i.category).filter(Boolean))];
+      const riskCategories = [...new Set((incidents as any[]).map(i => i.category).filter(Boolean))];
 
       for (const primaryRisk of riskCategories) {
-        const correlatedRisks = this.findCorrelatedRisks(primaryRisk, incidents, kriData);
+        const correlatedRisks = this.findCorrelatedRisks(primaryRisk, incidents as any[], kriData as any[]);
         const networkEffect = this.calculateNetworkEffect(correlatedRisks);
         
         correlations.push({
@@ -275,7 +275,7 @@ class PredictiveRiskModelingService {
     const kriGroups = kriLogs.reduce((acc, log) => {
       const kriName = log.kri_definitions?.name || 'Unknown';
       if (!acc[kriName]) acc[kriName] = [];
-      acc[kriName].push(log.actual_value);
+      acc[kriName].push(Number(log.actual_value) || 0);
       return acc;
     }, {} as Record<string, number[]>);
     
@@ -350,12 +350,12 @@ class PredictiveRiskModelingService {
   private detectKRIAnomaly(currentKRI: any, historicalData: any[]): AnomalyDetection | null {
     if (historicalData.length < 5) return null;
     
-    const values = historicalData.map(d => d.actual_value);
+    const values = historicalData.map(d => Number(d.actual_value) || 0);
     const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
     const stdDev = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length);
     
-    const currentValue = currentKRI.actual_value;
-    const zScore = Math.abs((currentValue - mean) / stdDev);
+    const currentValue = Number(currentKRI.actual_value) || 0;
+    const zScore = Math.abs((currentValue - mean) / (stdDev || 1));
     
     if (zScore > 2) {
       const severity = zScore > 3 ? 'critical' : zScore > 2.5 ? 'high' : 'medium';
@@ -482,6 +482,8 @@ class PredictiveRiskModelingService {
 
   private calculateNetworkEffect(correlatedRisks: any[]): number {
     const totalCorrelations = correlatedRisks.length;
+    if (totalCorrelations === 0) return 0;
+    
     const avgStrength = correlatedRisks.reduce((sum, risk) => sum + risk.correlationStrength, 0) / totalCorrelations;
     
     // Network effect increases with number of correlations and their strength
