@@ -1,5 +1,3 @@
-
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -453,10 +451,12 @@ class PredictiveRiskModelingService {
     let causalityScore = 0;
     
     for (const incident1 of risk1Incidents) {
-      const incident1Time = new Date(incident1.reported_at).getTime();
+      // Ensure incident1.reported_at is properly typed
+      const incident1Time = new Date(incident1.reported_at || Date.now()).getTime();
       
       for (const incident2 of risk2Incidents) {
-        const incident2Time = new Date(incident2.reported_at).getTime();
+        // Ensure incident2.reported_at is properly typed
+        const incident2Time = new Date(incident2.reported_at || Date.now()).getTime();
         const timeDiff = Math.abs(incident2Time - incident1Time);
         
         // If incidents occur within 24 hours of each other
