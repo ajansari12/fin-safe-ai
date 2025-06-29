@@ -485,19 +485,20 @@ class PredictiveRiskModelingService {
   }
 
   private calculateNetworkEffect(correlatedRisks: Array<{ correlationStrength: number }>): number {
-    const totalCorrelations = correlatedRisks.length;
-    if (totalCorrelations === 0) return 0;
+    if (correlatedRisks.length === 0) return 0;
     
-    // Calculate average strength with explicit number handling and type safety
-    const totalStrength = correlatedRisks.reduce((sum, risk) => {
-      const strength = Number(risk.correlationStrength) || 0;
-      return sum + strength;
-    }, 0);
+    // Calculate average strength with explicit type safety
+    let totalStrength: number = 0;
+    for (const risk of correlatedRisks) {
+      const strength: number = typeof risk.correlationStrength === 'number' ? risk.correlationStrength : 0;
+      totalStrength = totalStrength + strength;
+    }
     
-    const avgStrength = totalStrength / totalCorrelations;
+    const avgStrength: number = totalStrength / correlatedRisks.length;
     
     // Network effect increases with number of correlations and their strength
-    return Math.min(1, (totalCorrelations * avgStrength) / 5);
+    const networkEffect: number = (correlatedRisks.length * avgStrength) / 5;
+    return Math.min(1, networkEffect);
   }
 }
 
