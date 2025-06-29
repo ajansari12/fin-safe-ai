@@ -488,13 +488,14 @@ class PredictiveRiskModelingService {
     const totalCorrelations = correlatedRisks.length;
     if (totalCorrelations === 0) return 0;
     
-    // Calculate average strength with explicit typing
-    const totalStrength = correlatedRisks.reduce((sum: number, risk: { correlationStrength: number }): number => {
-      const strength: number = typeof risk.correlationStrength === 'number' ? risk.correlationStrength : 0;
-      return sum + strength;
-    }, 0);
+    // Calculate average strength with explicit number handling
+    let totalStrength = 0;
+    for (const risk of correlatedRisks) {
+      const strength = Number(risk.correlationStrength) || 0;
+      totalStrength += strength;
+    }
     
-    const avgStrength: number = totalStrength / totalCorrelations;
+    const avgStrength = totalStrength / totalCorrelations;
     
     // Network effect increases with number of correlations and their strength
     return Math.min(1, (totalCorrelations * avgStrength) / 5);
