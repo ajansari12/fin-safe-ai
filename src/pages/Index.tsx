@@ -1,4 +1,5 @@
 
+import React from "react";
 import Hero from "@/components/home/Hero";
 import Features from "@/components/home/Features";
 import RegulatoryCompliance from "@/components/home/RegulatoryCompliance";
@@ -13,6 +14,8 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Helmet } from "react-helmet";
 
 const Index = () => {
+  console.log("Index component rendering");
+  
   return (
     <PageLayout>
       <Helmet>
