@@ -44,8 +44,8 @@ const ModuleToggleManager: React.FC = () => {
   };
 
   const isModuleEnabled = (moduleKey: string): boolean => {
-    const setting = moduleSettings.find(s => s.setting_key === moduleKey);
-    return setting?.setting_value?.enabled || false;
+    const setting = moduleSettings.find(s => s.module_key === moduleKey);
+    return setting?.enabled || false;
   };
 
   const availableModules = moduleSettingsService.getAvailableModules();
