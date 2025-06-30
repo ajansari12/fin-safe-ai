@@ -1,4 +1,4 @@
-import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud, Info, Contact } from "lucide-react";
+import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud, Info, Contact as ContactIcon } from "lucide-react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ThirdPartyRisk from "./pages/ThirdPartyRisk";
@@ -58,7 +58,7 @@ export const navItems = [
   {
     title: "Contact",
     to: "/contact",
-    icon: <Contact className="h-4 w-4" />,
+    icon: <ContactIcon className="h-4 w-4" />,
     page: Contact,
   },
   {
