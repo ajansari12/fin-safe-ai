@@ -27,7 +27,6 @@ interface StepAssignment {
   assigned_to?: string;
   assigned_to_name?: string;
   due_date?: Date;
-  sla_hours?: number;
 }
 
 const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
@@ -48,8 +47,7 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
     const assignments: StepAssignment[] = template.steps.map((step, index) => ({
       step_number: step.step_number || index + 1,
       step_name: step.step_name,
-      sla_hours: step.sla_hours || 24,
-      due_date: addHours(startDate, (step.sla_hours || 24) + (index * 24))
+      due_date: addHours(startDate, 24 + (index * 24))
     }));
     setStepAssignments(assignments);
   }, [template.steps, startDate]);
@@ -122,6 +120,7 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
         org_id: profile.organization_id,
         name: instanceName,
         status: 'draft',
+        priority: 'medium',
         owner_id: profile.id,
         owner_name: ownerName || profile.full_name || '',
         created_by: profile.id
@@ -235,7 +234,7 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
                         <h4 className="font-medium">{assignment.step_name}</h4>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="flex items-center gap-1">
                             <User className="h-3 w-3" />
@@ -256,22 +255,6 @@ const WorkflowInstanceCreator: React.FC<WorkflowInstanceCreatorProps> = ({
                               ))}
                             </SelectContent>
                           </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            SLA Hours
-                          </Label>
-                          <Input
-                            type="number"
-                            value={assignment.sla_hours || ""}
-                            onChange={(e) => updateStepAssignment(assignment.step_number, {
-                              sla_hours: e.target.value ? parseInt(e.target.value) : undefined
-                            })}
-                            placeholder="24"
-                            min="1"
-                          />
                         </div>
                         
                         <div className="space-y-2">

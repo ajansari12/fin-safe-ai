@@ -41,6 +41,9 @@ export interface WorkflowInstance {
   priority: 'low' | 'medium' | 'high' | 'critical';
   assigned_to?: string;
   assigned_to_name?: string;
+  owner_id?: string;
+  owner_name?: string;
+  started_at?: string;
   due_date?: string;
   completed_at?: string;
   org_id: string;
@@ -65,7 +68,10 @@ class WorkflowService {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(template => ({
+        ...template,
+        steps: Array.isArray(template.steps) ? template.steps : []
+      }));
     } catch (error) {
       console.error('Error in getWorkflowTemplates:', error);
       throw error;
@@ -85,7 +91,10 @@ class WorkflowService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        steps: Array.isArray(data.steps) ? data.steps : []
+      };
     } catch (error) {
       console.error('Error in createWorkflowTemplate:', error);
       throw error;
@@ -106,7 +115,10 @@ class WorkflowService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        steps: Array.isArray(data.steps) ? data.steps : []
+      };
     } catch (error) {
       console.error('Error in updateWorkflowTemplate:', error);
       throw error;
@@ -151,7 +163,13 @@ class WorkflowService {
       const instancesWithSteps = await Promise.all(
         (data || []).map(async (instance) => {
           const steps = await this.getWorkflowSteps(instance.id);
-          return { ...instance, steps };
+          return { 
+            ...instance, 
+            steps,
+            priority: instance.priority || 'medium',
+            owner_name: instance.owner_name || '',
+            started_at: instance.started_at || instance.created_at
+          };
         })
       );
 
@@ -175,7 +193,12 @@ class WorkflowService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        priority: data.priority || 'medium',
+        owner_name: data.owner_name || '',
+        started_at: data.started_at || data.created_at
+      };
     } catch (error) {
       console.error('Error in createWorkflowInstance:', error);
       throw error;
@@ -205,7 +228,12 @@ class WorkflowService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        priority: data.priority || 'medium',
+        owner_name: data.owner_name || '',
+        started_at: data.started_at || data.created_at
+      };
     } catch (error) {
       console.error('Error in updateWorkflowInstanceStatus:', error);
       throw error;
@@ -226,7 +254,10 @@ class WorkflowService {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(step => ({
+        ...step,
+        status: (step.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending'
+      }));
     } catch (error) {
       console.error('Error in getWorkflowSteps:', error);
       throw error;
@@ -246,7 +277,10 @@ class WorkflowService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        status: (data.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending'
+      };
     } catch (error) {
       console.error('Error in createWorkflowStep:', error);
       throw error;
@@ -267,7 +301,10 @@ class WorkflowService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        status: (data.status as 'pending' | 'in_progress' | 'completed' | 'blocked') || 'pending'
+      };
     } catch (error) {
       console.error('Error in updateWorkflowStep:', error);
       throw error;
@@ -294,7 +331,10 @@ class WorkflowService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        status: 'completed'
+      };
     } catch (error) {
       console.error('Error in completeWorkflowStep:', error);
       throw error;

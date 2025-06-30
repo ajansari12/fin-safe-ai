@@ -8,6 +8,7 @@ import { navItems } from "./nav-items";
 import Index from "./pages/Index";
 import IntegrationFramework from "./pages/IntegrationFramework";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
+import WorkflowCenter from "./pages/WorkflowCenter";
 
 const queryClient = new QueryClient();
 

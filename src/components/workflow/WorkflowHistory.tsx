@@ -34,7 +34,7 @@ const WorkflowHistory: React.FC<WorkflowHistoryProps> = ({
       filtered = filtered.filter(workflow =>
         workflow.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         workflow.template?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        workflow.owner_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        (workflow.owner_name && workflow.owner_name.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
