@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
 import RiskHeatmap from "@/components/analytics/RiskHeatmap";
-import ExecutiveScorecard from "@/components/analytics/ExecutiveScorecard";
-import PredictiveInsights from "@/components/analytics/PredictiveInsights";
+import { ExecutiveScorecard } from "@/components/analytics/ExecutiveScorecard";
+import { PredictiveInsights } from "@/components/analytics/PredictiveInsights";
 import DraggableWidget from "./DraggableWidget";
 
 interface ExecutiveDashboardProps {

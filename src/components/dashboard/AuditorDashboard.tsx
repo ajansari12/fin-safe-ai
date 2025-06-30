@@ -89,7 +89,7 @@ const AuditorDashboard: React.FC<AuditorDashboardProps> = ({ settings }) => {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "compliant":
-        return "success";
+        return "default";
       case "minor issues":
         return "secondary";
       case "non-compliant":
@@ -108,7 +108,7 @@ const AuditorDashboard: React.FC<AuditorDashboardProps> = ({ settings }) => {
       case "reporting":
         return "outline";
       case "completed":
-        return "success";
+        return "default";
       default:
         return "secondary";
     }
