@@ -21,24 +21,30 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
   };
 
   const navLinks = [
-    { path: "/dashboard", label: "Dashboard" },
-    { path: "/governance-framework", label: "Governance Framework" },
-    { path: "/risk-appetite", label: "Risk Appetite" },
-    { path: "/impact-tolerances", label: "Impact Tolerances" },
-    { path: "/business-functions", label: "Business Functions" },
-    { path: "/dependencies", label: "Dependencies" },
-    { path: "/scenario-testing", label: "Scenario Testing" },
-    { path: "/business-continuity", label: "Business Continuity" },
-    { path: "/third-party-risk", label: "Third-Party Risk" },
-    { path: "/controls-and-kri", label: "Controls & KRIs" },
-    { path: "/incident-log", label: "Incident Log" },
-    { path: "/audit-compliance", label: "Audit & Compliance" },
-    { path: "/workflow-center", label: "Workflow Center" },
-    { path: "/analytics", label: "Analytics Hub" },
+    { path: "/app/dashboard", label: "Dashboard" },
+    { path: "/app/governance", label: "Governance" },
+    { path: "/app/risk-appetite", label: "Risk Appetite" },
+    { path: "/app/impact-tolerances", label: "Impact Tolerances" },
+    { path: "/app/business-functions", label: "Business Functions" },
+    { path: "/app/dependencies", label: "Dependencies" },
+    { path: "/app/tolerance-framework", label: "Tolerance Framework" },
+    { path: "/app/controls-and-kri", label: "Controls & KRIs" },
+    { path: "/app/third-party-risk", label: "Third-Party Risk" },
+    { path: "/app/incident-log", label: "Incident Log" },
+    { path: "/app/scenario-testing", label: "Scenario Testing" },
+    { path: "/app/business-continuity", label: "Business Continuity" },
+    { path: "/app/audit-and-compliance", label: "Audit & Compliance" },
+    { path: "/app/document-management", label: "Document Management" },
+    { path: "/app/integrations", label: "Integrations" },
+    { path: "/app/analytics-hub", label: "Analytics Hub" },
+    { path: "/app/workflow-center", label: "Workflow Center" },
+    { path: "/app/dependency-mapping", label: "Dependency Mapping" },
+    { path: "/app/deployment-center", label: "Deployment Center" },
+    { path: "/app/reporting", label: "Reporting" },
   ];
 
   const bottomLinks = [
-    { path: "/settings", label: "Settings" },
+    { path: "/app/settings", label: "Settings" },
     { path: "/billing", label: "Billing" },
     { path: "/support", label: "Support" },
   ];
@@ -55,7 +61,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
           >
             {/* Sidebar header */}
             <div className="flex items-center justify-between px-4 h-16 border-b">
-              <Link to="/dashboard" className="flex items-center">
+              <Link to="/app/dashboard" className="flex items-center">
                 <Shield className="h-6 w-6 text-primary" />
                 {isSidebarOpen && (
                   <span className="ml-2 text-xl font-bold">ResilientFI</span>

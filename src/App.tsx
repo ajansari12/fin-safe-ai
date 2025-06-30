@@ -1,14 +1,16 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { navItems } from "./nav-items";
+import { publicNavItems, appNavItems } from "./nav-items";
 import { queryClientConfig } from "./lib/performance/cache-utils";
 import { QueryOptimizer } from "./lib/performance/query-optimizer";
 import { Suspense, lazy } from "react";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 // Lazy load major components for code splitting
 const Index = lazy(() => import("./pages/Index"));
@@ -28,6 +30,9 @@ const ModulesOverview = lazy(() => import("./pages/modules/ModulesOverview"));
 const GovernanceModule = lazy(() => import("./pages/modules/GovernanceModule"));
 const SelfAssessmentModule = lazy(() => import("./pages/modules/SelfAssessmentModule"));
 const RiskManagementModule = lazy(() => import("./pages/modules/RiskManagementModule"));
+
+// Lazy load billing page
+const Billing = lazy(() => import("./pages/Billing"));
 
 // Create optimized query client
 const queryClient = new QueryClient(queryClientConfig);
@@ -50,33 +55,55 @@ const App = () => (
           <AuthProvider>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
-                <Route path="/" element={<Index />} />
+                {/* Public routes */}
+                {publicNavItems.map(({ to, page: PageComponent }) => (
+                  <Route 
+                    key={to} 
+                    path={to} 
+                    element={<PageComponent />} 
+                  />
+                ))}
+                
+                {/* Auth routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/register" element={<Register />} />
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/auth/update-password" element={<UpdatePassword />} />
                 <Route path="/auth/verify" element={<Verify />} />
                 
-                {/* Module Information Pages */}
+                {/* Public Module Information Pages */}
                 <Route path="/modules" element={<ModulesOverview />} />
                 <Route path="/modules/governance" element={<GovernanceModule />} />
                 <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
                 <Route path="/modules/risk-management" element={<RiskManagementModule />} />
                 
+                {/* Public framework and dashboard routes (legacy support) */}
                 <Route path="/integration-framework" element={<IntegrationFramework />} />
                 <Route path="/personalized-dashboard" element={<PersonalizedDashboard />} />
                 <Route path="/workflow-center" element={<WorkflowCenter />} />
-                {navItems.map(({ to, page: PageComponent }) => (
+                
+                {/* Protected app routes */}
+                {appNavItems.map(({ to, page: PageComponent }) => (
                   <Route 
                     key={to} 
                     path={to} 
                     element={
-                      <Suspense fallback={<LoadingFallback />}>
+                      <ProtectedRoute>
                         <PageComponent />
-                      </Suspense>
+                      </ProtectedRoute>
                     } 
                   />
                 ))}
+                
+                {/* Additional protected routes */}
+                <Route 
+                  path="/billing" 
+                  element={
+                    <ProtectedRoute>
+                      <Billing />
+                    </ProtectedRoute>
+                  } 
+                />
               </Routes>
             </Suspense>
           </AuthProvider>

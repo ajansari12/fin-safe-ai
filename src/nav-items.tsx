@@ -1,3 +1,4 @@
+
 import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud, Info, Contact as ContactIcon } from "lucide-react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -28,9 +29,11 @@ import Contact from "./pages/Contact";
 
 /**
  * Central configuration for navigation items.
- * Each item represents a page in the application.
+ * Public pages (no authentication required) and authenticated app pages.
  */
-export const navItems = [
+
+// Public navigation items (no authentication required)
+export const publicNavItems = [
   {
     title: "Home",
     to: "/",
@@ -61,130 +64,137 @@ export const navItems = [
     icon: <ContactIcon className="h-4 w-4" />,
     page: Contact,
   },
+];
+
+// Authenticated app navigation items (require authentication)
+export const appNavItems = [
   {
     title: "Dashboard",
-    to: "/dashboard",
+    to: "/app/dashboard",
     icon: <BarChart3 className="h-4 w-4" />,
     page: Dashboard,
   },
   {
+    title: "Governance",
+    to: "/app/governance",
+    icon: <BookOpen className="h-4 w-4" />,
+    page: GovernanceFramework,
+  },
+  {
+    title: "Risk Appetite",
+    to: "/app/risk-appetite",
+    icon: <Target className="h-4 w-4" />,
+    page: RiskAppetite,
+  },
+  {
+    title: "Impact Tolerances",
+    to: "/app/impact-tolerances",
+    icon: <Calculator className="h-4 w-4" />,
+    page: ImpactTolerances,
+  },
+  {
+    title: "Business Functions",
+    to: "/app/business-functions",
+    icon: <Activity className="h-4 w-4" />,
+    page: BusinessFunctions,
+  },
+  {
+    title: "Dependencies",
+    to: "/app/dependencies",
+    icon: <Network className="h-4 w-4" />,
+    page: Dependencies,
+  },
+  {
+    title: "Tolerance Framework",
+    to: "/app/tolerance-framework",
+    icon: <Target className="h-4 w-4" />,
+    page: ToleranceFramework,
+  },
+  {
+    title: "Controls & KRI",
+    to: "/app/controls-and-kri",
+    icon: <Shield className="h-4 w-4" />,
+    page: ControlsAndKri,
+  },
+  {
     title: "Third Party Risk",
-    to: "/third-party-risk",
+    to: "/app/third-party-risk",
     icon: <Users className="h-4 w-4" />,
     page: ThirdPartyRisk,
   },
   {
     title: "Incident Log",
-    to: "/incident-log",
+    to: "/app/incident-log",
     icon: <AlertTriangle className="h-4 w-4" />,
     page: IncidentLog,
   },
   {
-    title: "Controls & KRI",
-    to: "/controls-and-kri",
-    icon: <Shield className="h-4 w-4" />,
-    page: ControlsAndKri,
-  },
-  {
-    title: "Risk Appetite",
-    to: "/risk-appetite",
-    icon: <Target className="h-4 w-4" />,
-    page: RiskAppetite,
-  },
-  {
-    title: "Governance",
-    to: "/governance-framework",
-    icon: <BookOpen className="h-4 w-4" />,
-    page: GovernanceFramework,
-  },
-  {
-    title: "Business Functions",
-    to: "/business-functions",
-    icon: <Activity className="h-4 w-4" />,
-    page: BusinessFunctions,
-  },
-  {
-    title: "Impact Tolerances",
-    to: "/impact-tolerances",
-    icon: <Calculator className="h-4 w-4" />,
-    page: ImpactTolerances,
-  },
-  {
-    title: "Dependencies",
-    to: "/dependencies",
-    icon: <Network className="h-4 w-4" />,
-    page: Dependencies,
-  },
-  {
-    title: "Document Management",
-    to: "/document-management",
-    icon: <FileImage className="h-4 w-4" />,
-    page: DocumentManagement,
-  },
-  {
-    title: "Tolerance Framework",
-    to: "/tolerance-framework",
-    icon: <Target className="h-4 w-4" />,
-    page: ToleranceFramework,
-  },
-  {
     title: "Scenario Testing",
-    to: "/scenario-testing",
+    to: "/app/scenario-testing",
     icon: <TestTube className="h-4 w-4" />,
     page: ScenarioTesting,
   },
   {
     title: "Business Continuity",
-    to: "/business-continuity",
+    to: "/app/business-continuity",
     icon: <Briefcase className="h-4 w-4" />,
     page: BusinessContinuity,
   },
   {
     title: "Audit & Compliance",
-    to: "/audit-and-compliance",
+    to: "/app/audit-and-compliance",
     icon: <FileText className="h-4 w-4" />,
     page: AuditAndCompliance,
   },
   {
+    title: "Document Management",
+    to: "/app/document-management",
+    icon: <FileImage className="h-4 w-4" />,
+    page: DocumentManagement,
+  },
+  {
     title: "Integrations",
-    to: "/integrations",
+    to: "/app/integrations",
     icon: <Database className="h-4 w-4" />,
     page: Integrations,
   },
   {
     title: "Analytics Hub",
-    to: "/analytics-hub",
+    to: "/app/analytics-hub",
     icon: <Brain className="h-4 w-4" />,
     page: AnalyticsHub,
   },
   {
     title: "Workflow Center",
-    to: "/workflow-center",
+    to: "/app/workflow-center",
     icon: <Workflow className="h-4 w-4" />,
     page: WorkflowCenter,
   },
   {
     title: "Dependency Mapping",
-    to: "/dependency-mapping",
+    to: "/app/dependency-mapping",
     icon: <Network className="h-4 w-4" />,
     page: DependencyMapping,
   },
   {
     title: "Deployment Center",
-    to: "/deployment-center",
+    to: "/app/deployment-center",
     icon: <Cloud className="h-4 w-4" />,
     page: DeploymentCenter,
   },
   {
     title: "Reporting",
-    to: "/reporting",
+    to: "/app/reporting",
     icon: <FileText className="h-4 w-4" />,
     page: Reporting,
   },
   {
     title: "Settings",
-    to: "/settings",
+    to: "/app/settings",
     icon: <SettingsIcon className="h-4 w-4" />,
     page: SettingsPage,
   },
 ];
+
+// Combined navigation items for backward compatibility
+export const navItems = [...publicNavItems, ...appNavItems];
