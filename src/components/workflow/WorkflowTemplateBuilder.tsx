@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,29 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, GripVertical, Save, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
-interface WorkflowStep {
-  id: string;
-  step_number: number;
-  step_name: string;
-  step_description: string;
-  assigned_role: string;
-  conditions?: string;
-  estimated_duration_hours?: number;
-  required_approvals?: number;
-}
-
-interface WorkflowTemplate {
-  id?: string;
-  name: string;
-  description?: string;
-  module: string;
-  steps: WorkflowStep[];
-}
+import { WorkflowStep, WorkflowTemplate } from "@/services/workflow-service";
 
 interface WorkflowTemplateBuilderProps {
   template?: WorkflowTemplate;
-  onSave: (template: Omit<WorkflowTemplate, 'id'>) => void;
+  onSave: (template: Omit<WorkflowTemplate, 'id' | 'created_at' | 'updated_at'>) => void;
   onCancel: () => void;
 }
 
@@ -56,11 +37,13 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
   onSave,
   onCancel
 }) => {
-  const [workflowTemplate, setWorkflowTemplate] = useState<WorkflowTemplate>({
+  const [workflowTemplate, setWorkflowTemplate] = useState<Omit<WorkflowTemplate, 'id' | 'created_at' | 'updated_at'>>({
     name: template?.name || "",
     description: template?.description || "",
     module: template?.module || "",
-    steps: template?.steps || []
+    steps: template?.steps || [],
+    org_id: template?.org_id || "",
+    created_by: template?.created_by
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -112,7 +95,9 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
       step_name: "",
       step_description: "",
       assigned_role: "",
-      estimated_duration_hours: 24
+      status: 'pending',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     setWorkflowTemplate(prev => ({
@@ -287,7 +272,7 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
                           <div className="space-y-2">
                             <Label>Assigned Role *</Label>
                             <Select
-                              value={step.assigned_role}
+                              value={step.assigned_role || ""}
                               onValueChange={(value) => updateStep(step.id, { assigned_role: value })}
                             >
                               <SelectTrigger className={errors[`step_${index}_role`] ? "border-red-500" : ""}>
@@ -310,46 +295,11 @@ const WorkflowTemplateBuilder: React.FC<WorkflowTemplateBuilderProps> = ({
                         <div className="space-y-2">
                           <Label>Step Description</Label>
                           <Textarea
-                            value={step.step_description}
+                            value={step.step_description || ""}
                             onChange={(e) => updateStep(step.id, { step_description: e.target.value })}
                             placeholder="Describe what needs to be done in this step"
                             rows={2}
                           />
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="space-y-2">
-                            <Label>Duration (hours)</Label>
-                            <Input
-                              type="number"
-                              value={step.estimated_duration_hours || ""}
-                              onChange={(e) => updateStep(step.id, { 
-                                estimated_duration_hours: e.target.value ? parseInt(e.target.value) : undefined 
-                              })}
-                              placeholder="24"
-                            />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label>Required Approvals</Label>
-                            <Input
-                              type="number"
-                              value={step.required_approvals || ""}
-                              onChange={(e) => updateStep(step.id, { 
-                                required_approvals: e.target.value ? parseInt(e.target.value) : undefined 
-                              })}
-                              placeholder="1"
-                            />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <Label>Conditions</Label>
-                            <Input
-                              value={step.conditions || ""}
-                              onChange={(e) => updateStep(step.id, { conditions: e.target.value })}
-                              placeholder="Optional conditions"
-                            />
-                          </div>
                         </div>
                       </div>
                       

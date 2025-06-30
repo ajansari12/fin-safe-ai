@@ -150,7 +150,12 @@ const WorkflowCenter = () => {
           description: "Workflow template has been updated successfully."
         });
       } else {
-        await workflowService.createWorkflowTemplate(templateData);
+        const templateWithOrgId = {
+          ...templateData,
+          org_id: orgId,
+          created_by: user?.id
+        };
+        await workflowService.createWorkflowTemplate(templateWithOrgId);
         toast({
           title: "Template created",
           description: "Workflow template has been created successfully."

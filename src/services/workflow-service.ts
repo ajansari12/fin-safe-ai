@@ -178,7 +178,7 @@ class WorkflowService {
           return { 
             ...instance, 
             steps,
-            priority: (instance.priority as 'low' | 'medium' | 'high' | 'critical') || 'medium',
+            priority: (instance as any).priority || 'medium' as 'low' | 'medium' | 'high' | 'critical',
             status: (instance.status as 'draft' | 'in_progress' | 'completed' | 'cancelled') || 'draft',
             owner_name: instance.owner_name || '',
             started_at: instance.started_at || instance.created_at,
@@ -201,7 +201,10 @@ class WorkflowService {
     try {
       const { data, error } = await supabase
         .from('workflow_instances')
-        .insert([instance])
+        .insert([{
+          ...instance,
+          priority: instance.priority || 'medium'
+        }])
         .select()
         .single();
 
@@ -212,7 +215,7 @@ class WorkflowService {
 
       return {
         ...data,
-        priority: (data.priority as 'low' | 'medium' | 'high' | 'critical') || 'medium',
+        priority: (data as any).priority || 'medium' as 'low' | 'medium' | 'high' | 'critical',
         status: (data.status as 'draft' | 'in_progress' | 'completed' | 'cancelled') || 'draft',
         owner_name: data.owner_name || '',
         started_at: data.started_at || data.created_at
@@ -248,7 +251,7 @@ class WorkflowService {
 
       return {
         ...data,
-        priority: (data.priority as 'low' | 'medium' | 'high' | 'critical') || 'medium',
+        priority: (data as any).priority || 'medium' as 'low' | 'medium' | 'high' | 'critical',
         status: (data.status as 'draft' | 'in_progress' | 'completed' | 'cancelled') || 'draft',
         owner_name: data.owner_name || '',
         started_at: data.started_at || data.created_at

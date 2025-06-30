@@ -23,6 +23,11 @@ const VirtualTable: React.FC<VirtualTableProps> = ({
   rowHeight = 50,
   onRowClick
 }) => {
+  const totalWidth = useMemo(() => 
+    columns.reduce((sum, col) => sum + col.width, 0), 
+    [columns]
+  );
+
   const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
     const item = data[index];
     
@@ -61,6 +66,7 @@ const VirtualTable: React.FC<VirtualTableProps> = ({
       <div style={{ height }}>
         <List
           height={height}
+          width={totalWidth}
           itemCount={data.length}
           itemSize={rowHeight}
           itemData={data}
