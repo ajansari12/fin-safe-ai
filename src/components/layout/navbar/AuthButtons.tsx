@@ -2,6 +2,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface AuthButtonsProps {
@@ -26,6 +27,7 @@ export function AuthButtons({ className }: AuthButtonsProps) {
           <span className="text-sm font-medium hidden lg:inline-block">
             {profile?.full_name || user?.email}
           </span>
+          <ThemeToggle />
           <Button asChild variant="default" size="sm">
             <Link to="/dashboard">Dashboard</Link>
           </Button>
@@ -34,14 +36,15 @@ export function AuthButtons({ className }: AuthButtonsProps) {
           </Button>
         </div>
       ) : (
-        <>
-          <Button asChild variant="outline" className="mr-2">
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button asChild variant="outline">
             <Link to="/auth/login">Login</Link>
           </Button>
           <Button asChild>
             <Link to="/auth/register">Get Started</Link>
           </Button>
-        </>
+        </div>
       )}
     </div>
   );
