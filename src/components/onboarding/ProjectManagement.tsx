@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import {
   Users, 
   AlertTriangle, 
   MessageSquare,
-  Gantt,
+  BarChart3,
   Clock,
   CheckCircle,
   TrendingUp
@@ -131,7 +130,7 @@ const ProjectManagement = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Gantt className="h-5 w-5" />
+                <BarChart3 className="h-5 w-5" />
                 Project Timeline & Dependencies
               </CardTitle>
               <CardDescription>
