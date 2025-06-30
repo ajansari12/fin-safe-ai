@@ -66,8 +66,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       setIsLoading(true);
       
-      // Get current onboarding status from profile
-      const currentStatus = profile?.onboarding_status || 'not_started';
+      // Get current onboarding status from profile - use type assertion for new fields
+      const currentStatus = (profile as any)?.onboarding_status || 'not_started';
       setOnboardingStatus(currentStatus);
 
       // Get user's progress
@@ -97,7 +97,19 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
 
       setSteps(initializedSteps);
-      setCurrentSession(sessionData?.[0] || null);
+      
+      // Transform session data to match our interface
+      if (sessionData?.[0]) {
+        const session = sessionData[0];
+        setCurrentSession({
+          id: session.id,
+          status: session.status as 'active' | 'completed' | 'abandoned',
+          currentStep: session.current_step || undefined,
+          totalSteps: session.total_steps,
+          completionPercentage: session.completion_percentage,
+          data: session.data
+        });
+      }
     } catch (error) {
       console.error('Error initializing onboarding state:', error);
       toast.error('Failed to load onboarding state');
@@ -131,7 +143,16 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       if (profileError) throw profileError;
 
-      setCurrentSession(sessionData);
+      // Transform session data to match our interface
+      setCurrentSession({
+        id: sessionData.id,
+        status: sessionData.status as 'active' | 'completed' | 'abandoned',
+        currentStep: sessionData.current_step || undefined,
+        totalSteps: sessionData.total_steps,
+        completionPercentage: sessionData.completion_percentage,
+        data: sessionData.data
+      });
+      
       setOnboardingStatus('in_progress');
       toast.success('Onboarding started! Let\'s get you set up.');
     } catch (error) {
