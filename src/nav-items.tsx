@@ -1,5 +1,5 @@
 
-import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud } from "lucide-react";
+import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud, info, contact } from "lucide-react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ThirdPartyRisk from "./pages/ThirdPartyRisk";
@@ -22,6 +22,10 @@ import DependencyMapping from "./pages/DependencyMapping";
 import Reporting from "./pages/Reporting";
 import DocumentManagement from "./pages/DocumentManagement";
 import DeploymentCenter from "./pages/DeploymentCenter";
+import Features from "./pages/Features";
+import Compliance from "./pages/Compliance";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 
 /**
  * Central configuration for navigation items.
@@ -33,6 +37,30 @@ export const navItems = [
     to: "/",
     icon: <HomeIcon className="h-4 w-4" />,
     page: Index,
+  },
+  {
+    title: "Features",
+    to: "/features",
+    icon: <BarChart3 className="h-4 w-4" />,
+    page: Features,
+  },
+  {
+    title: "Compliance",
+    to: "/compliance",
+    icon: <FileText className="h-4 w-4" />,
+    page: Compliance,
+  },
+  {
+    title: "About",
+    to: "/about",
+    icon: <info className="h-4 w-4" />,
+    page: About,
+  },
+  {
+    title: "Contact",
+    to: "/contact",
+    icon: <contact className="h-4 w-4" />,
+    page: Contact,
   },
   {
     title: "Dashboard",
