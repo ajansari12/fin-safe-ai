@@ -102,7 +102,43 @@ class ComplianceAutomationService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformCompliancePolicy(data);
+  }
+
+  private transformCompliancePolicy(data: any): CompliancePolicy {
+    return {
+      ...data,
+      remediation_actions: Array.isArray(data.remediation_actions) 
+        ? data.remediation_actions 
+        : JSON.parse(data.remediation_actions || '[]'),
+      policy_rules: typeof data.policy_rules === 'string' 
+        ? JSON.parse(data.policy_rules) 
+        : data.policy_rules
+    };
+  }
+
+  private transformComplianceCheck(data: any): ComplianceCheck {
+    return {
+      ...data,
+      violations_found: Array.isArray(data.violations_found) 
+        ? data.violations_found 
+        : JSON.parse(data.violations_found || '[]')
+    };
+  }
+
+  private transformComplianceReport(data: any): ComplianceReport {
+    return {
+      ...data,
+      critical_findings: Array.isArray(data.critical_findings) 
+        ? data.critical_findings 
+        : JSON.parse(data.critical_findings || '[]'),
+      recommendations: Array.isArray(data.recommendations) 
+        ? data.recommendations 
+        : JSON.parse(data.recommendations || '[]'),
+      compliance_data: typeof data.compliance_data === 'string' 
+        ? JSON.parse(data.compliance_data) 
+        : data.compliance_data
+    };
   }
 
   private determineSeverity(rules: any): string {
@@ -146,14 +182,15 @@ class ComplianceAutomationService {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 
-    const { data: policy } = await supabase
+    const { data: policyData } = await supabase
       .from('compliance_policies')
       .select('*')
       .eq('id', policyId)
       .single();
 
-    if (!policy) throw new Error('Policy not found');
-
+    if (!policyData) throw new Error('Policy not found');
+    
+    const policy = this.transformCompliancePolicy(policyData);
     const checkResult = await this.performComplianceCheck(policy);
     
     const { data, error } = await supabase
@@ -176,7 +213,7 @@ class ComplianceAutomationService {
       await this.performAutoRemediation(policy, checkResult.violations);
     }
 
-    return data;
+    return this.transformComplianceCheck(data);
   }
 
   private async performComplianceCheck(policy: CompliancePolicy): Promise<any> {
@@ -357,21 +394,25 @@ class ComplianceAutomationService {
     if (!profile?.organization_id) throw new Error('No organization found');
 
     // Get all compliance checks for the period
-    const { data: checks } = await supabase
+    const { data: checksData } = await supabase
       .from('compliance_checks')
       .select('*')
       .eq('org_id', profile.organization_id)
       .gte('checked_at', periodStart)
       .lte('checked_at', periodEnd);
 
+    const checks = checksData?.map(this.transformComplianceCheck) || [];
+
     // Get all policies for the framework
-    const { data: policies } = await supabase
+    const { data: policiesData } = await supabase
       .from('compliance_policies')
       .select('*')
       .eq('org_id', profile.organization_id)
       .eq('framework', framework);
 
-    const complianceData = this.analyzeComplianceData(checks || [], policies || []);
+    const policies = policiesData?.map(this.transformCompliancePolicy) || [];
+
+    const complianceData = this.analyzeComplianceData(checks, policies);
     
     const { data, error } = await supabase
       .from('compliance_reports')
@@ -392,7 +433,7 @@ class ComplianceAutomationService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformComplianceReport(data);
   }
 
   private analyzeComplianceData(checks: ComplianceCheck[], policies: CompliancePolicy[]): any {
@@ -484,7 +525,7 @@ class ComplianceAutomationService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformCompliancePolicy) || [];
   }
 
   async getComplianceReports(): Promise<ComplianceReport[]> {
@@ -502,7 +543,7 @@ class ComplianceAutomationService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformComplianceReport) || [];
   }
 
   async scheduleComplianceChecks(frequency: string = 'daily'): Promise<void> {

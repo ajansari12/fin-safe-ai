@@ -58,6 +58,25 @@ class DLPService {
     { name: 'password', pattern: /password\s*[:=]\s*['"]?[^'"\s]+['"]?/gi, level: 'critical' }
   ];
 
+  private transformDataClassification(data: any): DataClassification {
+    return {
+      ...data,
+      data_patterns: Array.isArray(data.data_patterns) 
+        ? data.data_patterns 
+        : JSON.parse(data.data_patterns || '[]'),
+      protection_rules: typeof data.protection_rules === 'string' 
+        ? JSON.parse(data.protection_rules) 
+        : data.protection_rules
+    };
+  }
+
+  private transformDataAccessLog(data: any): DataAccessLog {
+    return {
+      ...data,
+      ip_address: data.ip_address ? String(data.ip_address) : undefined
+    };
+  }
+
   async scanContent(content: string, context: any = {}): Promise<any> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return { violations: [], classifications: [] };
@@ -125,7 +144,7 @@ class DLPService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformDataClassification) || [];
   }
 
   private async logDLPViolation(violations: any[], context: any): Promise<void> {
@@ -249,7 +268,7 @@ class DLPService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformDataClassification(data);
   }
 
   async getDataAccessLogs(limit: number = 100): Promise<DataAccessLog[]> {
@@ -268,7 +287,7 @@ class DLPService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformDataAccessLog) || [];
   }
 
   async getDLPViolations(limit: number = 100): Promise<DLPViolation[]> {

@@ -73,6 +73,36 @@ class IncidentResponseService {
     }
   ];
 
+  private transformIncidentPlaybook(data: any): IncidentPlaybook {
+    return {
+      ...data,
+      severity_levels: Array.isArray(data.severity_levels) 
+        ? data.severity_levels 
+        : JSON.parse(data.severity_levels || '[]'),
+      response_steps: Array.isArray(data.response_steps) 
+        ? data.response_steps 
+        : JSON.parse(data.response_steps || '[]'),
+      escalation_matrix: typeof data.escalation_matrix === 'string' 
+        ? JSON.parse(data.escalation_matrix) 
+        : data.escalation_matrix,
+      communication_templates: typeof data.communication_templates === 'string' 
+        ? JSON.parse(data.communication_templates) 
+        : data.communication_templates
+    };
+  }
+
+  private transformForensicEvidence(data: any): ForensicEvidence {
+    return {
+      ...data,
+      chain_of_custody: Array.isArray(data.chain_of_custody) 
+        ? data.chain_of_custody 
+        : JSON.parse(data.chain_of_custody || '[]'),
+      evidence_data: typeof data.evidence_data === 'string' 
+        ? JSON.parse(data.evidence_data) 
+        : data.evidence_data
+    };
+  }
+
   async createIncidentPlaybook(
     playbookName: string,
     incidentType: string,
@@ -101,7 +131,7 @@ class IncidentResponseService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformIncidentPlaybook(data);
   }
 
   private generateCommunicationTemplates(incidentType: string): any {
@@ -135,7 +165,7 @@ class IncidentResponseService {
     if (!profile?.organization_id) return;
 
     // Find appropriate playbook
-    const { data: playbook } = await supabase
+    const { data: playbookData } = await supabase
       .from('incident_playbooks')
       .select('*')
       .eq('org_id', profile.organization_id)
@@ -143,11 +173,13 @@ class IncidentResponseService {
       .eq('is_active', true)
       .single();
 
-    if (!playbook) {
+    if (!playbookData) {
       // Use default playbook if none exists
       await this.createDefaultPlaybooks();
       return this.triggerIncidentResponse(incidentId, incidentType, severity);
     }
+
+    const playbook = this.transformIncidentPlaybook(playbookData);
 
     // Execute response steps
     await this.executeResponseSteps(incidentId, playbook, severity);
@@ -252,7 +284,11 @@ class IncidentResponseService {
       .single();
 
     if (incident) {
-      const updatedActions = [...(incident.response_actions || []), {
+      const responseActions = Array.isArray(incident.response_actions) 
+        ? incident.response_actions 
+        : JSON.parse(incident.response_actions || '[]');
+
+      const updatedActions = [...responseActions, {
         step: step.step,
         action: step.action,
         executed_at: new Date().toISOString(),
@@ -314,7 +350,7 @@ class IncidentResponseService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformForensicEvidence(data);
   }
 
   private async gatherEvidenceData(evidenceType: string): Promise<any> {
@@ -364,14 +400,18 @@ class IncidentResponseService {
     const profile = await getCurrentUserProfile();
     if (!profile) return;
 
-    const { data: evidence } = await supabase
+    const { data: evidenceData } = await supabase
       .from('forensic_evidence')
       .select('chain_of_custody')
       .eq('id', evidenceId)
       .single();
 
-    if (evidence) {
-      const updatedChain = [...evidence.chain_of_custody, {
+    if (evidenceData) {
+      const chainOfCustody = Array.isArray(evidenceData.chain_of_custody) 
+        ? evidenceData.chain_of_custody 
+        : JSON.parse(evidenceData.chain_of_custody || '[]');
+
+      const updatedChain = [...chainOfCustody, {
         action,
         timestamp: new Date().toISOString(),
         person: profile.full_name || 'Unknown',
@@ -401,7 +441,7 @@ class IncidentResponseService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformIncidentPlaybook) || [];
   }
 
   async getForensicEvidence(incidentId: string): Promise<ForensicEvidence[]> {
@@ -420,7 +460,7 @@ class IncidentResponseService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformForensicEvidence) || [];
   }
 
   async generatePostIncidentReport(incidentId: string): Promise<any> {
@@ -446,7 +486,9 @@ class IncidentResponseService {
         type: incident.incident_type,
         severity: incident.severity,
         duration: this.calculateIncidentDuration(incident),
-        affected_systems: incident.affected_systems
+        affected_systems: Array.isArray(incident.affected_systems) 
+          ? incident.affected_systems 
+          : JSON.parse(incident.affected_systems || '[]')
       },
       timeline: this.generateTimeline(incident),
       evidence_summary: evidence.map(e => ({
@@ -483,8 +525,12 @@ class IncidentResponseService {
       }
     ];
 
-    if (incident.response_actions) {
-      incident.response_actions.forEach((action: any) => {
+    const responseActions = Array.isArray(incident.response_actions) 
+      ? incident.response_actions 
+      : JSON.parse(incident.response_actions || '[]');
+
+    if (responseActions.length > 0) {
+      responseActions.forEach((action: any) => {
         timeline.push({
           timestamp: action.executed_at,
           event: action.action,
@@ -511,7 +557,11 @@ class IncidentResponseService {
       lessons.push('Consider implementing earlier escalation triggers for similar incidents');
     }
     
-    if (incident.affected_systems.length > 3) {
+    const affectedSystems = Array.isArray(incident.affected_systems) 
+      ? incident.affected_systems 
+      : JSON.parse(incident.affected_systems || '[]');
+    
+    if (affectedSystems.length > 3) {
       lessons.push('Review system isolation procedures to prevent widespread impact');
     }
     
