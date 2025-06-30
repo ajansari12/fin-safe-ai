@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
@@ -67,7 +66,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-slate-800 shadow-lg transition-all duration-300 ease-in-out lg:static lg:inset-0 ${
               isSidebarOpen 
                 ? 'w-[280px] sm:w-[320px] lg:w-64 xl:w-72 2xl:w-80 translate-x-0' 
-                : 'w-0 lg:w-16 -translate-x-full lg:translate-x-0'
+                : 'w-0 lg:w-0 -translate-x-full lg:-translate-x-full'
             }`}
           >
             {/* Sidebar header - always show logo when sidebar is open */}
@@ -109,10 +108,9 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                           isActive
                             ? "bg-primary/10 text-primary"
                             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-                        } ${!isSidebarOpen && 'lg:justify-center lg:px-2'}`}
-                        title={!isSidebarOpen ? link.label : undefined}
+                        } truncate`}
                       >
-                        <span className={`${!isSidebarOpen ? 'lg:text-center lg:text-xs' : ''} truncate`}>
+                        <span className="truncate">
                           {link.label}
                         </span>
                       </Link>
@@ -139,10 +137,9 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                           isActive
                             ? "bg-primary/10 text-primary"
                             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-                        } ${!isSidebarOpen && 'lg:justify-center lg:px-2'}`}
-                        title={!isSidebarOpen ? link.label : undefined}
+                        } truncate`}
                       >
-                        <span className={`${!isSidebarOpen ? 'lg:text-center lg:text-xs' : ''} truncate`}>
+                        <span className="truncate">
                           {link.label}
                         </span>
                       </Link>
