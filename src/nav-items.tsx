@@ -1,7 +1,7 @@
-
-import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud, Info, Contact as ContactIcon } from "lucide-react";
+import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud, Info, Contact as ContactIcon, Building2 } from "lucide-react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import EnterpriseOnboarding from "./pages/EnterpriseOnboarding";
 import ThirdPartyRisk from "./pages/ThirdPartyRisk";
 import IncidentLog from "./pages/IncidentLog";
 import ControlsAndKri from "./pages/ControlsAndKri";
@@ -73,6 +73,12 @@ export const appNavItems = [
     to: "/app/dashboard",
     icon: <BarChart3 className="h-4 w-4" />,
     page: Dashboard,
+  },
+  {
+    title: "Enterprise Onboarding",
+    to: "/app/enterprise-onboarding",
+    icon: <Building2 className="h-4 w-4" />,
+    page: EnterpriseOnboarding,
   },
   {
     title: "Governance",
