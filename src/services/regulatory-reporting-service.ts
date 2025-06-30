@@ -517,10 +517,14 @@ class RegulatoryReportingService {
         .select('*')
         .eq('org_id', orgId);
 
+      const scenarioTestsLength = scenarioTests?.length || 0;
+      const continuityTestsLength = continuityTests?.length || 0;
+      const totalTests = scenarioTestsLength + continuityTestsLength;
+
       return {
-        scenario_tests: scenarioTests?.length || 0,
-        continuity_tests: continuityTests?.length || 0,
-        total_tests: (scenarioTests?.length || 0) + (continuityTests?.length || 0),
+        scenario_tests: scenarioTestsLength,
+        continuity_tests: continuityTestsLength,
+        total_tests: totalTests,
         success_rate: 85 // Placeholder calculation
       };
     } catch (error) {
