@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,6 +22,12 @@ const Register = lazy(() => import("./pages/auth/Register"));
 const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
 const UpdatePassword = lazy(() => import("./pages/auth/UpdatePassword"));
 const Verify = lazy(() => import("./pages/auth/Verify"));
+
+// Lazy load module information pages
+const ModulesOverview = lazy(() => import("./pages/modules/ModulesOverview"));
+const GovernanceModule = lazy(() => import("./pages/modules/GovernanceModule"));
+const SelfAssessmentModule = lazy(() => import("./pages/modules/SelfAssessmentModule"));
+const RiskManagementModule = lazy(() => import("./pages/modules/RiskManagementModule"));
 
 // Create optimized query client
 const queryClient = new QueryClient(queryClientConfig);
@@ -51,6 +56,13 @@ const App = () => (
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
                 <Route path="/auth/update-password" element={<UpdatePassword />} />
                 <Route path="/auth/verify" element={<Verify />} />
+                
+                {/* Module Information Pages */}
+                <Route path="/modules" element={<ModulesOverview />} />
+                <Route path="/modules/governance" element={<GovernanceModule />} />
+                <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
+                <Route path="/modules/risk-management" element={<RiskManagementModule />} />
+                
                 <Route path="/integration-framework" element={<IntegrationFramework />} />
                 <Route path="/personalized-dashboard" element={<PersonalizedDashboard />} />
                 <Route path="/workflow-center" element={<WorkflowCenter />} />

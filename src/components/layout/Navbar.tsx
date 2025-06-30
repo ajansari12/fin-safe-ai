@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import {
   NavigationMenu,
@@ -13,42 +14,42 @@ import MobileMenu from "./navbar/MobileMenu";
 const modules = [
   {
     title: "Governance",
-    href: "/governance-framework",
+    href: "/modules/governance",
     description: "Accountability structures, roles, and risk oversight policies.",
   },
   {
     title: "Self Assessment",
-    href: "/risk-appetite",
+    href: "/modules/self-assessment",
     description: "Identify critical operations and assess current resilience posture.",
   },
   {
     title: "Impact Tolerances",
-    href: "/impact-tolerances",
+    href: "/modules/impact-tolerances",
     description: "Define tolerable levels of disruption for critical operations.",
   },
   {
     title: "Business Functions",
-    href: "/business-functions",
+    href: "/modules/business-functions",
     description: "Map and manage critical business functions and services.",
   },
   {
     title: "Risk Management",
-    href: "/controls-and-kri",
+    href: "/modules/risk-management",
     description: "Identify, assess, and manage operational risks across the organization.",
   },
   {
     title: "Incident Management",
-    href: "/incident-log",
+    href: "/modules/incident-management",
     description: "Detect, respond to, and recover from operational disruptions.",
   },
   {
     title: "Third-Party Risk",
-    href: "/third-party-risk",
+    href: "/modules/third-party-risk",
     description: "Manage risks associated with third-party service providers.",
   },
   {
     title: "Compliance",
-    href: "/audit-compliance",
+    href: "/modules/compliance",
     description: "Track and manage regulatory compliance requirements.",
   },
 ];
