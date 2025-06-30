@@ -80,7 +80,23 @@ const WorkflowNodePalette: React.FC<WorkflowNodePaletteProps> = ({
         return;
       }
 
-      setNodeTypes(data || []);
+      // Transform the data to match our TypeScript interface
+      const transformedData: WorkflowNodeType[] = (data || []).map(item => ({
+        id: item.id,
+        node_type: item.node_type,
+        display_name: item.display_name,
+        description: item.description || '',
+        category: item.category,
+        icon_name: item.icon_name || 'Square',
+        color_class: item.color_class || 'bg-gray-500',
+        input_schema: item.input_schema as Record<string, any> || {},
+        output_schema: item.output_schema as Record<string, any> || {},
+        configuration_schema: item.configuration_schema as Record<string, any> || {},
+        is_system: item.is_system || false,
+        is_active: item.is_active || true
+      }));
+
+      setNodeTypes(transformedData);
     } catch (error) {
       console.error('Error in loadNodeTypes:', error);
     } finally {

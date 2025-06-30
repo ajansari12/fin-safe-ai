@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface DataLineage {
@@ -86,7 +85,14 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        field_changes: data.field_changes as Record<string, any>,
+        transformation_rules: data.transformation_rules as Record<string, any>,
+        conflict_data: data.conflict_data as Record<string, any>,
+        operation_type: data.operation_type as DataLineage['operation_type'],
+        sync_status: data.sync_status as DataLineage['sync_status']
+      };
     } catch (error) {
       console.error('Error in createDataLineage:', error);
       throw error;
@@ -122,7 +128,14 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        field_changes: item.field_changes as Record<string, any>,
+        transformation_rules: item.transformation_rules as Record<string, any>,
+        conflict_data: item.conflict_data as Record<string, any>,
+        operation_type: item.operation_type as DataLineage['operation_type'],
+        sync_status: item.sync_status as DataLineage['sync_status']
+      }));
     } catch (error) {
       console.error('Error in getDataLineage:', error);
       throw error;
@@ -165,7 +178,11 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        quality_issues: Array.isArray(data.quality_issues) ? data.quality_issues : [],
+        validation_rules: Array.isArray(data.validation_rules) ? data.validation_rules : []
+      };
     } catch (error) {
       console.error('Error in createDataQualityMetrics:', error);
       throw error;
@@ -191,7 +208,11 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        quality_issues: Array.isArray(item.quality_issues) ? item.quality_issues : [],
+        validation_rules: Array.isArray(item.validation_rules) ? item.validation_rules : []
+      }));
     } catch (error) {
       console.error('Error in getDataQualityMetrics:', error);
       throw error;
@@ -212,7 +233,12 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        event_data: data.event_data as Record<string, any>,
+        error_details: data.error_details as Record<string, any>,
+        sync_status: data.sync_status as SyncEvent['sync_status']
+      };
     } catch (error) {
       console.error('Error in createSyncEvent:', error);
       throw error;
@@ -238,7 +264,12 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        event_data: item.event_data as Record<string, any>,
+        error_details: item.error_details as Record<string, any>,
+        sync_status: item.sync_status as SyncEvent['sync_status']
+      }));
     } catch (error) {
       console.error('Error in getSyncEvents:', error);
       throw error;
@@ -289,7 +320,12 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data;
+      return {
+        ...data,
+        validation_logic: data.validation_logic as Record<string, any>,
+        rule_type: data.rule_type as DataValidationRule['rule_type'],
+        severity: data.severity as DataValidationRule['severity']
+      };
     } catch (error) {
       console.error('Error in createValidationRule:', error);
       throw error;
@@ -315,7 +351,12 @@ class DataOrchestrationService {
         throw error;
       }
 
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        validation_logic: item.validation_logic as Record<string, any>,
+        rule_type: item.rule_type as DataValidationRule['rule_type'],
+        severity: item.severity as DataValidationRule['severity']
+      }));
     } catch (error) {
       console.error('Error in getValidationRules:', error);
       throw error;
