@@ -36,15 +36,25 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
   const { profile } = useAuth();
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [selectedExperience, setSelectedExperience] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleContinue = async () => {
-    if (selectedRole && selectedExperience) {
-      await completeStep('welcome', 'Welcome & Assessment', {
-        role: selectedRole,
-        experience: selectedExperience,
-        timestamp: new Date().toISOString()
-      });
-      onNext();
+    if (selectedRole && selectedExperience && !isSubmitting) {
+      console.log('WelcomeStep: Starting completion process');
+      setIsSubmitting(true);
+      
+      try {
+        await completeStep('welcome', 'Welcome & Assessment', {
+          role: selectedRole,
+          experience: selectedExperience,
+          timestamp: new Date().toISOString()
+        });
+        console.log('WelcomeStep: Step completed successfully');
+        // Don't call onNext() here - the context will handle navigation
+      } catch (error) {
+        console.error('WelcomeStep: Error completing step:', error);
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -124,10 +134,10 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         <div className="flex justify-end pt-6">
           <Button 
             onClick={handleContinue}
-            disabled={!selectedRole || !selectedExperience}
+            disabled={!selectedRole || !selectedExperience || isSubmitting}
             size="lg"
           >
-            Continue Setup
+            {isSubmitting ? 'Processing...' : 'Continue Setup'}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>

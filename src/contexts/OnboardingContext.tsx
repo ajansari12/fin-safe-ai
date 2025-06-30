@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
@@ -109,6 +110,12 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           data: session.data
         });
       }
+
+      console.log('OnboardingContext: Initialized state', {
+        status: currentStatus,
+        steps: initializedSteps,
+        session: sessionData?.[0]
+      });
     } catch (error) {
       console.error('Error initializing onboarding state:', error);
       toast.error('Failed to load onboarding state');
@@ -162,6 +169,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const completeStep = async (stepId: string, stepName: string, data: any = {}) => {
     try {
+      console.log('OnboardingContext: Starting completeStep', { stepId, stepName, data });
+
       // Update step progress
       await supabase.rpc('update_onboarding_step', {
         p_user_id: user?.id,
@@ -171,17 +180,17 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         p_data: data
       });
 
+      console.log('OnboardingContext: Step progress updated in database');
+
       // Update local state for steps
-      setSteps(prev => prev.map(step => 
+      const updatedSteps = steps.map(step => 
         step.id === stepId 
           ? { ...step, completed: true, completedAt: new Date().toISOString(), data }
           : step
-      ));
+      );
+      setSteps(updatedSteps);
 
       // Calculate completion percentage based on updated steps
-      const updatedSteps = steps.map(step => 
-        step.id === stepId ? { ...step, completed: true } : step
-      );
       const completedCount = updatedSteps.filter(s => s.completed).length;
       const completionPercentage = Math.round((completedCount / ONBOARDING_STEPS.length) * 100);
 
@@ -189,6 +198,13 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const currentStepIndex = ONBOARDING_STEPS.findIndex(s => s.id === stepId);
       const nextStepIndex = currentStepIndex + 1;
       const nextStep = nextStepIndex < ONBOARDING_STEPS.length ? ONBOARDING_STEPS[nextStepIndex].id : null;
+
+      console.log('OnboardingContext: Next step calculated', { 
+        currentStepIndex, 
+        nextStepIndex, 
+        nextStep,
+        completionPercentage 
+      });
 
       // Update session with next step
       if (currentSession) {
@@ -202,12 +218,17 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
         if (sessionError) throw sessionError;
 
+        console.log('OnboardingContext: Session updated in database');
+
         // Update local session state
-        setCurrentSession(prev => prev ? {
-          ...prev,
+        const updatedSession = {
+          ...currentSession,
           currentStep: nextStep || undefined,
           completionPercentage
-        } : null);
+        };
+        
+        setCurrentSession(updatedSession);
+        console.log('OnboardingContext: Local session state updated', updatedSession);
       }
 
       toast.success(`${stepName} completed!`);
@@ -279,7 +300,12 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const getCurrentStepIndex = () => {
     if (!currentSession?.currentStep) return 0;
-    return ONBOARDING_STEPS.findIndex(step => step.id === currentSession.currentStep);
+    const index = ONBOARDING_STEPS.findIndex(step => step.id === currentSession.currentStep);
+    console.log('OnboardingContext: getCurrentStepIndex', {
+      currentStep: currentSession.currentStep,
+      index: index >= 0 ? index : 0
+    });
+    return index >= 0 ? index : 0;
   };
 
   const value: OnboardingContextType = {

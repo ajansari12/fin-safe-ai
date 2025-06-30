@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -42,7 +43,17 @@ export const OnboardingWizard: React.FC = () => {
   const currentStepIndex = getCurrentStepIndex();
   const completionPercentage = currentSession?.completionPercentage || 0;
 
+  // Debug logging to track step changes
+  useEffect(() => {
+    console.log('OnboardingWizard: Step changed', {
+      currentStepIndex,
+      currentStep: currentSession?.currentStep,
+      steps: steps.map(s => ({ id: s.id, completed: s.completed }))
+    });
+  }, [currentStepIndex, currentSession?.currentStep, steps]);
+
   const handleNext = () => {
+    console.log('OnboardingWizard: handleNext called');
     if (currentStepIndex < steps.length - 1) {
       // The context will handle updating to the next step through completeStep
       // No need to manually update step state here
@@ -60,6 +71,7 @@ export const OnboardingWizard: React.FC = () => {
 
   const renderStep = () => {
     const stepId = steps[currentStepIndex]?.id;
+    console.log('OnboardingWizard: Rendering step', { stepId, currentStepIndex });
     
     switch (stepId) {
       case 'welcome':
@@ -73,7 +85,7 @@ export const OnboardingWizard: React.FC = () => {
       case 'goals':
         return <GoalsStep onNext={handleNext} onPrevious={handlePrevious} />;
       default:
-        return <div>Step not found</div>;
+        return <div>Step not found: {stepId}</div>;
     }
   };
 
