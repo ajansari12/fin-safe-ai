@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Play, 
   Square, 
@@ -10,103 +11,94 @@ import {
   GitBranch, 
   GitMerge,
   Clock,
-  Zap
+  Zap,
+  UserCheck,
+  Bell,
+  RefreshCw,
+  CheckCircle,
+  Brain
 } from 'lucide-react';
 
-interface NodeType {
-  type: string;
-  label: string;
+interface WorkflowNodeType {
+  id: string;
+  node_type: string;
+  display_name: string;
   description: string;
-  icon: React.ComponentType<any>;
-  color: string;
   category: string;
+  icon_name: string;
+  color_class: string;
+  input_schema: Record<string, any>;
+  output_schema: Record<string, any>;
+  configuration_schema: Record<string, any>;
+  is_system: boolean;
+  is_active: boolean;
 }
-
-const NODE_TYPES: NodeType[] = [
-  {
-    type: 'start',
-    label: 'Start',
-    description: 'Entry point for the workflow',
-    icon: Play,
-    color: 'bg-green-500',
-    category: 'control'
-  },
-  {
-    type: 'task',
-    label: 'Task',
-    description: 'Execute a specific action or process',
-    icon: Square,
-    color: 'bg-blue-500',
-    category: 'action'
-  },
-  {
-    type: 'decision',
-    label: 'Decision',
-    description: 'Branch based on conditions',
-    icon: Diamond,
-    color: 'bg-yellow-500',
-    category: 'logic'
-  },
-  {
-    type: 'integration',
-    label: 'Integration',
-    description: 'Connect to external systems',
-    icon: Settings,
-    color: 'bg-purple-500',
-    category: 'integration'
-  },
-  {
-    type: 'parallel',
-    label: 'Parallel',
-    description: 'Execute multiple branches simultaneously',
-    icon: GitBranch,
-    color: 'bg-orange-500',
-    category: 'control'
-  },
-  {
-    type: 'merge',
-    label: 'Merge',
-    description: 'Combine parallel execution paths',
-    icon: GitMerge,
-    color: 'bg-indigo-500',
-    category: 'control'
-  },
-  {
-    type: 'delay',
-    label: 'Delay',
-    description: 'Wait for a specified duration',
-    icon: Clock,
-    color: 'bg-gray-500',
-    category: 'control'
-  },
-  {
-    type: 'trigger',
-    label: 'Trigger',
-    description: 'Fire events or notifications',
-    icon: Zap,
-    color: 'bg-red-500',
-    category: 'action'
-  },
-  {
-    type: 'end',
-    label: 'End',
-    description: 'Workflow completion point',
-    icon: Square,
-    color: 'bg-red-600',
-    category: 'control'
-  }
-];
 
 interface WorkflowNodePaletteProps {
   onNodeDragStart: (nodeType: string) => void;
   className?: string;
 }
 
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  Play,
+  Square,
+  Diamond,
+  Settings,
+  GitBranch,
+  GitMerge,
+  Clock,
+  Zap,
+  UserCheck,
+  Bell,
+  RefreshCw,
+  CheckCircle,
+  Brain
+};
+
 const WorkflowNodePalette: React.FC<WorkflowNodePaletteProps> = ({
   onNodeDragStart,
   className = ''
 }) => {
-  const categories = Array.from(new Set(NODE_TYPES.map(node => node.category)));
+  const [nodeTypes, setNodeTypes] = useState<WorkflowNodeType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadNodeTypes();
+  }, []);
+
+  const loadNodeTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('workflow_node_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('category', { ascending: true })
+        .order('display_name', { ascending: true });
+
+      if (error) {
+        console.error('Error loading node types:', error);
+        return;
+      }
+
+      setNodeTypes(data || []);
+    } catch (error) {
+      console.error('Error in loadNodeTypes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={`space-y-4 ${className}`}>
+        <div className="text-sm font-medium text-gray-700 mb-3">
+          Loading node types...
+        </div>
+      </div>
+    );
+  }
+
+  const categories = Array.from(new Set(nodeTypes.map(node => node.category)));
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -120,25 +112,25 @@ const WorkflowNodePalette: React.FC<WorkflowNodePaletteProps> = ({
             <CardTitle className="text-sm capitalize flex items-center gap-2">
               {category}
               <Badge variant="outline" className="text-xs">
-                {NODE_TYPES.filter(node => node.category === category).length}
+                {nodeTypes.filter(node => node.category === category).length}
               </Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid grid-cols-1 gap-2">
-              {NODE_TYPES
+              {nodeTypes
                 .filter(node => node.category === category)
                 .map((nodeType) => {
-                  const Icon = nodeType.icon;
+                  const Icon = ICON_MAP[nodeType.icon_name] || Square;
                   return (
                     <div
-                      key={nodeType.type}
+                      key={nodeType.node_type}
                       draggable
-                      onDragStart={() => onNodeDragStart(nodeType.type)}
+                      onDragStart={() => onNodeDragStart(nodeType.node_type)}
                       className={`
                         p-3 rounded-lg cursor-move text-white transition-all duration-200
                         hover:scale-105 hover:shadow-lg active:scale-95
-                        ${nodeType.color}
+                        ${nodeType.color_class}
                       `}
                       title={nodeType.description}
                     >
@@ -146,7 +138,7 @@ const WorkflowNodePalette: React.FC<WorkflowNodePaletteProps> = ({
                         <Icon className="h-4 w-4 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium truncate">
-                            {nodeType.label}
+                            {nodeType.display_name}
                           </div>
                           <div className="text-xs opacity-90 truncate">
                             {nodeType.description}

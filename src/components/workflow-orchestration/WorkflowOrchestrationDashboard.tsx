@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { WorkflowOrchestration, WorkflowExecution, workflowOrchestrationService 
 import VisualWorkflowDesigner from "./VisualWorkflowDesigner";
 import WorkflowNodePalette from "./WorkflowNodePalette";
 import WorkflowCanvas from "./WorkflowCanvas";
+import DataOrchestrationManager from "./DataOrchestrationManager";
 
 const WorkflowOrchestrationDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -301,6 +301,7 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
           <TabsTrigger value="workflows">Workflows</TabsTrigger>
           <TabsTrigger value="executions">Executions</TabsTrigger>
           <TabsTrigger value="designer">Visual Designer</TabsTrigger>
+          <TabsTrigger value="orchestration">Data Orchestration</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
@@ -479,6 +480,10 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="orchestration" className="space-y-4">
+          <DataOrchestrationManager orgId={orgId} />
         </TabsContent>
 
         <TabsContent value="integrations" className="space-y-4">

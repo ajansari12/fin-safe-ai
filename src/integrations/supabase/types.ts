@@ -1747,6 +1747,63 @@ export type Database = {
         }
         Relationships: []
       }
+      data_lineage: {
+        Row: {
+          conflict_data: Json | null
+          created_at: string
+          created_by: string | null
+          field_changes: Json | null
+          id: string
+          operation_type: string
+          org_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          source_id: string
+          source_table: string
+          sync_status: string
+          target_id: string
+          target_table: string
+          transformation_rules: Json | null
+          updated_at: string
+        }
+        Insert: {
+          conflict_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          field_changes?: Json | null
+          id?: string
+          operation_type: string
+          org_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_id: string
+          source_table: string
+          sync_status?: string
+          target_id: string
+          target_table: string
+          transformation_rules?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          conflict_data?: Json | null
+          created_at?: string
+          created_by?: string | null
+          field_changes?: Json | null
+          id?: string
+          operation_type?: string
+          org_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source_id?: string
+          source_table?: string
+          sync_status?: string
+          target_id?: string
+          target_table?: string
+          transformation_rules?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_quality_checks: {
         Row: {
           check_name: string
@@ -1795,6 +1852,57 @@ export type Database = {
         }
         Relationships: []
       }
+      data_quality_metrics: {
+        Row: {
+          accuracy_score: number | null
+          completeness_score: number | null
+          consistency_score: number | null
+          created_at: string
+          id: string
+          last_validated_at: string
+          org_id: string
+          quality_issues: Json | null
+          quality_score: number
+          record_id: string
+          table_name: string
+          updated_at: string
+          validation_rules: Json | null
+          validity_score: number | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          completeness_score?: number | null
+          consistency_score?: number | null
+          created_at?: string
+          id?: string
+          last_validated_at?: string
+          org_id: string
+          quality_issues?: Json | null
+          quality_score?: number
+          record_id: string
+          table_name: string
+          updated_at?: string
+          validation_rules?: Json | null
+          validity_score?: number | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          completeness_score?: number | null
+          consistency_score?: number | null
+          created_at?: string
+          id?: string
+          last_validated_at?: string
+          org_id?: string
+          quality_issues?: Json | null
+          quality_score?: number
+          record_id?: string
+          table_name?: string
+          updated_at?: string
+          validation_rules?: Json | null
+          validity_score?: number | null
+        }
+        Relationships: []
+      }
       data_retention_policies: {
         Row: {
           auto_delete: boolean
@@ -1838,6 +1946,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      data_validation_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string
+          id: string
+          is_active: boolean
+          org_id: string
+          rule_name: string
+          rule_type: string
+          severity: string
+          target_fields: string[]
+          target_tables: string[]
+          updated_at: string
+          validation_logic: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message: string
+          id?: string
+          is_active?: boolean
+          org_id: string
+          rule_name: string
+          rule_type: string
+          severity?: string
+          target_fields?: string[]
+          target_tables?: string[]
+          updated_at?: string
+          validation_logic?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          rule_name?: string
+          rule_type?: string
+          severity?: string
+          target_fields?: string[]
+          target_tables?: string[]
+          updated_at?: string
+          validation_logic?: Json
+        }
+        Relationships: []
       }
       dependencies: {
         Row: {
@@ -5219,6 +5375,60 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_events: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          error_details: Json | null
+          event_data: Json
+          event_type: string
+          id: string
+          max_retries: number | null
+          org_id: string
+          processed_at: string | null
+          retry_count: number | null
+          source_module: string
+          sync_status: string
+          target_modules: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          error_details?: Json | null
+          event_data?: Json
+          event_type: string
+          id?: string
+          max_retries?: number | null
+          org_id: string
+          processed_at?: string | null
+          retry_count?: number | null
+          source_module: string
+          sync_status?: string
+          target_modules?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          error_details?: Json | null
+          event_data?: Json
+          event_type?: string
+          id?: string
+          max_retries?: number | null
+          org_id?: string
+          processed_at?: string | null
+          retry_count?: number | null
+          source_module?: string
+          sync_status?: string
+          target_modules?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       third_party_profiles: {
         Row: {
           address: string | null
@@ -5891,6 +6101,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      workflow_node_types: {
+        Row: {
+          category: string
+          color_class: string | null
+          configuration_schema: Json | null
+          created_at: string
+          description: string | null
+          display_name: string
+          icon_name: string | null
+          id: string
+          input_schema: Json | null
+          is_active: boolean | null
+          is_system: boolean | null
+          node_type: string
+          output_schema: Json | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          color_class?: string | null
+          configuration_schema?: Json | null
+          created_at?: string
+          description?: string | null
+          display_name: string
+          icon_name?: string | null
+          id?: string
+          input_schema?: Json | null
+          is_active?: boolean | null
+          is_system?: boolean | null
+          node_type: string
+          output_schema?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          color_class?: string | null
+          configuration_schema?: Json | null
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          icon_name?: string | null
+          id?: string
+          input_schema?: Json | null
+          is_active?: boolean | null
+          is_system?: boolean | null
+          node_type?: string
+          output_schema?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       workflow_orchestrations: {
         Row: {
