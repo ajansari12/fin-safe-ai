@@ -1,123 +1,55 @@
 
-import * as React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
-import { ChevronRight, Plus } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+interface Module {
+  title: string;
+  href: string;
+  description: string;
+}
 
 interface MobileMenuProps {
   isOpen: boolean;
-  modules: {
-    title: string;
-    href: string;
-    description: string;
-  }[];
+  modules: Module[];
   onClose: () => void;
 }
 
-export function MobileMenu({ isOpen, modules, onClose }: MobileMenuProps) {
-  const { isAuthenticated, logout } = useAuth();
-  
-  if (!isOpen) return null;
-
+const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, modules, onClose }) => {
   return (
-    <div className="fixed inset-0 top-16 z-50 bg-background pt-4 md:hidden">
-      <div className="h-full overflow-y-auto">
-        <nav className="container grid gap-2 px-4">
-          {/* Quick Action - One-tap incident log */}
-          {isAuthenticated && (
-            <div className="mb-6 p-4 bg-destructive/10 rounded-lg">
-              <Button asChild className="w-full bg-destructive hover:bg-destructive/90 text-white">
-                <Link to="/incident-log?quick=true" onClick={onClose}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Quick Log Incident
-                </Link>
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="right" className="w-80">
+        <div className="flex flex-col gap-4 py-4">
+          <div className="space-y-2">
+            <h3 className="font-medium">Modules</h3>
+            {modules.map((module) => (
+              <Link
+                key={module.href}
+                to={module.href}
+                className="block p-2 rounded-md hover:bg-muted"
+                onClick={onClose}
+              >
+                <div className="font-medium">{module.title}</div>
+                <div className="text-sm text-muted-foreground">{module.description}</div>
+              </Link>
+            ))}
+          </div>
+          
+          <div className="border-t pt-4">
+            <div className="flex flex-col gap-2">
+              <Button variant="ghost" asChild>
+                <Link to="/login" onClick={onClose}>Sign In</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/register" onClick={onClose}>Get Started</Link>
               </Button>
             </div>
-          )}
-          
-          {/* Main Navigation Links */}
-          <Link
-            to="/features"
-            className="flex items-center justify-between py-3 px-4 text-lg font-medium rounded-lg hover:bg-accent transition-colors"
-            onClick={onClose}
-          >
-            Features
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-          
-          <Link
-            to="/compliance"
-            className="flex items-center justify-between py-3 px-4 text-lg font-medium rounded-lg hover:bg-accent transition-colors"
-            onClick={onClose}
-          >
-            Compliance
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-          
-          <Link
-            to="/about"
-            className="flex items-center justify-between py-3 px-4 text-lg font-medium rounded-lg hover:bg-accent transition-colors"
-            onClick={onClose}
-          >
-            About
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-          
-          <Link
-            to="/contact"
-            className="flex items-center justify-between py-3 px-4 text-lg font-medium rounded-lg hover:bg-accent transition-colors"
-            onClick={onClose}
-          >
-            Contact
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-          
-          {/* Modules Section */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3 px-4">Modules</h3>
-            <div className="grid gap-1">
-              {modules.map((module) => (
-                <Link
-                  key={module.title}
-                  to={module.href}
-                  className="flex items-center justify-between py-3 px-4 rounded-lg hover:bg-accent transition-colors"
-                  onClick={onClose}
-                >
-                  <div>
-                    <div className="font-medium">{module.title}</div>
-                    <div className="text-sm text-muted-foreground">{module.description}</div>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
           </div>
-          
-          {/* Auth Section */}
-          <div className="flex flex-col gap-3 mt-8 px-4 pb-8">
-            {isAuthenticated ? (
-              <>
-                <Button asChild size="lg" className="w-full">
-                  <Link to="/dashboard" onClick={onClose}>Dashboard</Link>
-                </Button>
-                <Button variant="outline" size="lg" className="w-full" onClick={() => { logout(); onClose(); }}>
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button asChild variant="outline" size="lg" className="w-full">
-                  <Link to="/auth/login" onClick={onClose}>Login</Link>
-                </Button>
-                <Button asChild size="lg" className="w-full">
-                  <Link to="/auth/register" onClick={onClose}>Get Started</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </nav>
-      </div>
-    </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
-}
+};
+
+export default MobileMenu;
