@@ -3,11 +3,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>ResilientFI - Operational Risk Management for Financial Institutions</title>
     <meta name="description" content="AI-powered operational resilience platform for Canadian financial institutions. Achieve OSFI E-21 compliance and strengthen your operational risk management." />
     <meta name="author" content="ResilientFI" />
     <meta name="keywords" content="operational risk, OSFI E-21, operational resilience, risk management, financial institutions, regulatory compliance, third party risk, business continuity" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -23,6 +26,12 @@
     <meta name="twitter:description" content="AI-powered operational resilience platform for Canadian financial institutions" />
     <meta name="twitter:image" content="https://resilientfi.com/og-image.png" />
 
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ResilientFI" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
     <!-- Favicon -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -30,14 +39,41 @@
     <link rel="manifest" href="/site.webmanifest">
     <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
     <meta name="msapplication-TileColor" content="#2d89ef">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="theme-color" content="#1e40af">
     
     <!-- Font -->
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/sw.js" as="script">
+    
+    <!-- Touch and gesture optimization -->
+    <meta name="format-detection" content="telephone=no">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <!-- iOS specific -->
+    <meta name="apple-touch-fullscreen" content="yes">
+    <link rel="apple-touch-startup-image" href="/icon-512x512.png">
   </head>
 
   <body>
     <div id="root"></div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+    
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

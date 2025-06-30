@@ -1,119 +1,98 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { publicNavItems, appNavItems } from "./nav-items";
-import { queryClientConfig } from "./lib/performance/cache-utils";
-import { QueryOptimizer } from "./lib/performance/query-optimizer";
-import { Suspense, lazy } from "react";
-import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
+import { DeviceCapabilitiesProvider } from "@/components/mobile/DeviceCapabilitiesProvider";
+import { OfflineIndicator } from "@/components/mobile/OfflineIndicator";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import Dashboard from "@/pages/Dashboard";
+import IncidentLog from "@/pages/IncidentLog";
+import Governance from "@/pages/Governance";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import VerifyEmail from "@/pages/VerifyEmail";
+import UpdatePassword from "@/pages/UpdatePassword";
+import OnboardingWizard from "@/components/onboarding/OnboardingWizard";
 
-// Lazy load major components for code splitting
-const Index = lazy(() => import("./pages/Index"));
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      retry: (failureCount, error: any) => {
+        // Don't retry if offline
+        if (!navigator.onLine) return false;
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
-// Lazy load auth components
-const Login = lazy(() => import("./pages/auth/Login"));
-const Register = lazy(() => import("./pages/auth/Register"));
-const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
-const UpdatePassword = lazy(() => import("./pages/auth/UpdatePassword"));
-const Verify = lazy(() => import("./pages/auth/Verify"));
-
-// Lazy load module information pages
-const ModulesOverview = lazy(() => import("./pages/modules/ModulesOverview"));
-const GovernanceModule = lazy(() => import("./pages/modules/GovernanceModule"));
-const SelfAssessmentModule = lazy(() => import("./pages/modules/SelfAssessmentModule"));
-const RiskManagementModule = lazy(() => import("./pages/modules/RiskManagementModule"));
-
-// Lazy load billing page
-const Billing = lazy(() => import("./pages/Billing"));
-
-// Create optimized query client
-const queryClient = new QueryClient(queryClientConfig);
-QueryOptimizer.setQueryClient(queryClient);
-
-// Loading fallback component
-const LoadingFallback = () => (
-  <div className="flex items-center justify-center h-screen">
-    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-  </div>
-);
-
-const App = () => (
-  <ErrorBoundary>
+const App = () => {
+  return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+      <DeviceCapabilitiesProvider>
         <BrowserRouter>
           <AuthProvider>
             <OnboardingProvider>
-              <Suspense fallback={<LoadingFallback />}>
+              <TooltipProvider>
+                <Toaster />
+                <OfflineIndicator />
                 <Routes>
-                  {/* Public routes */}
-                  {publicNavItems.map(({ to, page: PageComponent }) => (
-                    <Route 
-                      key={to} 
-                      path={to} 
-                      element={<PageComponent />} 
-                    />
-                  ))}
-                  
-                  {/* Auth routes */}
+                  <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/auth/register" element={<Register />} />
-                  <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/auth/verify" element={<VerifyEmail />} />
                   <Route path="/auth/update-password" element={<UpdatePassword />} />
-                  <Route path="/auth/verify" element={<Verify />} />
-                  
-                  {/* Public Module Information Pages */}
-                  <Route path="/modules" element={<ModulesOverview />} />
-                  <Route path="/modules/governance" element={<GovernanceModule />} />
-                  <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
-                  <Route path="/modules/risk-management" element={<RiskManagementModule />} />
-                  
-                  {/* Legacy route redirects - redirect to authenticated versions */}
-                  <Route path="/integration-framework" element={<Navigate to="/app/integrations" replace />} />
-                  <Route path="/personalized-dashboard" element={<Navigate to="/app/dashboard" replace />} />
-                  <Route path="/workflow-center" element={<Navigate to="/app/workflow-center" replace />} />
-                  
-                  {/* Protected app routes */}
-                  {appNavItems.map(({ to, page: PageComponent }) => (
-                    <Route 
-                      key={to} 
-                      path={to} 
-                      element={
-                        <ProtectedRoute>
-                          <PageComponent />
-                        </ProtectedRoute>
-                      } 
-                    />
-                  ))}
-                  
-                  {/* Move billing under /app for consistency */}
-                  <Route 
-                    path="/app/billing" 
+
+                  <Route
+                    path="/app/dashboard"
                     element={
                       <ProtectedRoute>
-                        <Billing />
+                        <Dashboard />
                       </ProtectedRoute>
-                    } 
+                    }
                   />
-                  
-                  {/* Legacy billing redirect */}
-                  <Route path="/billing" element={<Navigate to="/app/billing" replace />} />
+
+                  <Route
+                    path="/app/incidents"
+                    element={
+                      <ProtectedRoute>
+                        <IncidentLog />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/app/governance"
+                    element={
+                      <ProtectedRoute>
+                        <Governance />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/app/onboarding/*"
+                    element={
+                      <ProtectedRoute>
+                        <OnboardingWizard />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Catch-all redirect */}
+                  <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
                 </Routes>
-              </Suspense>
+              </TooltipProvider>
             </OnboardingProvider>
           </AuthProvider>
         </BrowserRouter>
-      </TooltipProvider>
+      </DeviceCapabilitiesProvider>
     </QueryClientProvider>
-  </ErrorBoundary>
-);
+  );
+};
 
 export default App;
