@@ -12,7 +12,7 @@ import {
   CheckCircle, 
   Clock, 
   Database, 
-  Refresh, 
+  RefreshCw, 
   Settings,
   TrendingUp,
   Zap
@@ -171,7 +171,7 @@ const IntegrationDashboard: React.FC = () => {
           </p>
         </div>
         <Button onClick={loadDashboardData} variant="outline">
-          <Refresh className="h-4 w-4 mr-2" />
+          <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>

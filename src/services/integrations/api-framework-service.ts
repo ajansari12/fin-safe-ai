@@ -421,14 +421,26 @@ class APIFrameworkService {
 
   async logAPIRequest(endpoint: string, method: string, userId?: string, responseTime?: number): Promise<void> {
     try {
+      // Log to audit_trails table instead of non-existent api_request_logs
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) return;
+
       await supabase
-        .from('api_request_logs')
+        .from('audit_trails')
         .insert({
-          endpoint,
-          method,
+          org_id: profile.organization_id,
+          module_name: 'integrations',
+          action_type: 'api_request',
+          entity_type: 'api_endpoint',
+          entity_name: `${method} ${endpoint}`,
           user_id: userId,
-          response_time_ms: responseTime,
-          timestamp: new Date().toISOString()
+          user_name: profile.full_name,
+          changes_made: {
+            endpoint,
+            method,
+            response_time_ms: responseTime,
+            timestamp: new Date().toISOString()
+          }
         });
     } catch (error) {
       console.error('Error logging API request:', error);

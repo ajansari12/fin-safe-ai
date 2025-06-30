@@ -19,8 +19,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/integration-framework" element={<IntegrationFramework />} />
-          {navItems.map(({ to, page }) => (
-            <Route key={to} path={to} element={page} />
+          {navItems.map(({ to, page: PageComponent }) => (
+            <Route key={to} path={to} element={<PageComponent />} />
           ))}
         </Routes>
       </BrowserRouter>

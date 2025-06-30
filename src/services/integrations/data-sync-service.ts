@@ -38,19 +38,35 @@ class DataSyncService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
 
+      // Store sync configuration in integrations table with additional metadata
+      const { data: integration, error: integrationError } = await supabase
+        .from('integrations')
+        .select('id')
+        .eq('id', config.integrationId)
+        .single();
+
+      if (integrationError || !integration) {
+        throw new Error('Integration not found');
+      }
+
+      // Update integration with sync configuration
       const { error } = await supabase
-        .from('integration_sync_configs')
-        .insert({
-          org_id: profile.organization_id,
-          integration_id: config.integrationId,
-          sync_type: config.syncType,
-          schedule: config.schedule,
-          batch_size: config.batchSize || 100,
-          conflict_resolution: config.conflictResolution,
-          field_mappings: config.fieldMappings,
-          is_active: true,
-          created_by: profile.id
-        });
+        .from('integrations')
+        .update({
+          configuration: {
+            ...integration,
+            sync_config: {
+              sync_type: config.syncType,
+              schedule: config.schedule,
+              batch_size: config.batchSize || 100,
+              conflict_resolution: config.conflictResolution,
+              field_mappings: config.fieldMappings,
+              is_active: true
+            }
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', config.integrationId);
 
       if (error) throw error;
 
