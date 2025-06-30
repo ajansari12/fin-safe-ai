@@ -6,9 +6,9 @@ import {
 import { Logo } from "./navbar/Logo";
 import { ModulesMenu } from "./navbar/ModulesMenu";
 import { NavLinks } from "./navbar/NavLinks";
-import { AuthButtons } from "./navbar/AuthButtons";
+import AuthButtons from "./navbar/AuthButtons";
 import { MobileMenuToggle } from "./navbar/MobileMenuToggle";
-import { MobileMenu } from "./navbar/MobileMenu";
+import MobileMenu from "./navbar/MobileMenu";
 
 const modules = [
   {
