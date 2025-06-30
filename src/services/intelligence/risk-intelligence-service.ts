@@ -424,7 +424,7 @@ class RiskIntelligenceService {
       
       contributors.push({
         source: intel.attribution,
-        type: intel.intelligence_type,
+        intelligence_type: intel.intelligence_type,
         score: intel.risk_score,
         weight: adjustedWeight,
         confidence: intel.confidence_score,
