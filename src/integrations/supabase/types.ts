@@ -826,6 +826,109 @@ export type Database = {
         }
         Relationships: []
       }
+      authentication_sessions: {
+        Row: {
+          authentication_factors: Json
+          created_at: string
+          device_fingerprint_id: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_activity_at: string
+          location_data: Json | null
+          org_id: string
+          risk_score: number
+          session_token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          authentication_factors?: Json
+          created_at?: string
+          device_fingerprint_id: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          last_activity_at?: string
+          location_data?: Json | null
+          org_id: string
+          risk_score?: number
+          session_token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          authentication_factors?: Json
+          created_at?: string
+          device_fingerprint_id?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_activity_at?: string
+          location_data?: Json | null
+          org_id?: string
+          risk_score?: number
+          session_token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "authentication_sessions_device_fingerprint_id_fkey"
+            columns: ["device_fingerprint_id"]
+            isOneToOne: false
+            referencedRelation: "device_fingerprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      behavioral_analytics: {
+        Row: {
+          activity_data: Json
+          activity_type: string
+          anomaly_score: number
+          created_at: string
+          detected_at: string
+          id: string
+          org_id: string
+          risk_indicators: Json
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_data?: Json
+          activity_type: string
+          anomaly_score?: number
+          created_at?: string
+          detected_at?: string
+          id?: string
+          org_id: string
+          risk_indicators?: Json
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_data?: Json
+          activity_type?: string
+          anomaly_score?: number
+          created_at?: string
+          detected_at?: string
+          id?: string
+          org_id?: string
+          risk_indicators?: Json
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "behavioral_analytics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "authentication_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_functions: {
         Row: {
           category: string | null
@@ -861,6 +964,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      compliance_checks: {
+        Row: {
+          check_result: string
+          checked_at: string
+          compliance_score: number
+          created_at: string
+          id: string
+          org_id: string
+          policy_id: string
+          remediated_at: string | null
+          remediation_status: string
+          violations_found: Json
+        }
+        Insert: {
+          check_result: string
+          checked_at?: string
+          compliance_score?: number
+          created_at?: string
+          id?: string
+          org_id: string
+          policy_id: string
+          remediated_at?: string | null
+          remediation_status?: string
+          violations_found?: Json
+        }
+        Update: {
+          check_result?: string
+          checked_at?: string
+          compliance_score?: number
+          created_at?: string
+          id?: string
+          org_id?: string
+          policy_id?: string
+          remediated_at?: string | null
+          remediation_status?: string
+          violations_found?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_checks_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       compliance_findings: {
         Row: {
@@ -935,6 +1085,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      compliance_policies: {
+        Row: {
+          auto_remediation: boolean
+          check_frequency: string
+          created_at: string
+          created_by: string | null
+          framework: string
+          id: string
+          is_active: boolean
+          org_id: string
+          policy_name: string
+          policy_rules: Json
+          remediation_actions: Json
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          auto_remediation?: boolean
+          check_frequency?: string
+          created_at?: string
+          created_by?: string | null
+          framework: string
+          id?: string
+          is_active?: boolean
+          org_id: string
+          policy_name: string
+          policy_rules?: Json
+          remediation_actions?: Json
+          severity?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_remediation?: boolean
+          check_frequency?: string
+          created_at?: string
+          created_by?: string | null
+          framework?: string
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          policy_name?: string
+          policy_rules?: Json
+          remediation_actions?: Json
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      compliance_reports: {
+        Row: {
+          approval_date: string | null
+          approved_by: string | null
+          compliance_data: Json
+          created_at: string
+          critical_findings: Json
+          framework: string
+          generated_by: string | null
+          id: string
+          org_id: string
+          overall_score: number | null
+          recommendations: Json
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_date?: string | null
+          approved_by?: string | null
+          compliance_data?: Json
+          created_at?: string
+          critical_findings?: Json
+          framework: string
+          generated_by?: string | null
+          id?: string
+          org_id: string
+          overall_score?: number | null
+          recommendations?: Json
+          report_period_end: string
+          report_period_start: string
+          report_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_date?: string | null
+          approved_by?: string | null
+          compliance_data?: Json
+          created_at?: string
+          critical_findings?: Json
+          framework?: string
+          generated_by?: string | null
+          id?: string
+          org_id?: string
+          overall_score?: number | null
+          recommendations?: Json
+          report_period_end?: string
+          report_period_start?: string
+          report_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       continuity_plans: {
         Row: {
@@ -1349,6 +1604,93 @@ export type Database = {
         }
         Relationships: []
       }
+      data_access_logs: {
+        Row: {
+          access_granted: boolean
+          access_type: string
+          accessed_at: string
+          created_at: string
+          data_classification: string | null
+          denial_reason: string | null
+          id: string
+          ip_address: unknown | null
+          org_id: string
+          resource_id: string
+          resource_type: string
+          risk_score: number
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          access_granted?: boolean
+          access_type: string
+          accessed_at?: string
+          created_at?: string
+          data_classification?: string | null
+          denial_reason?: string | null
+          id?: string
+          ip_address?: unknown | null
+          org_id: string
+          resource_id: string
+          resource_type: string
+          risk_score?: number
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          access_granted?: boolean
+          access_type?: string
+          accessed_at?: string
+          created_at?: string
+          data_classification?: string | null
+          denial_reason?: string | null
+          id?: string
+          ip_address?: unknown | null
+          org_id?: string
+          resource_id?: string
+          resource_type?: string
+          risk_score?: number
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      data_classifications: {
+        Row: {
+          classification_level: string
+          classification_name: string
+          created_at: string
+          created_by: string | null
+          data_patterns: Json
+          id: string
+          org_id: string
+          protection_rules: Json
+          updated_at: string
+        }
+        Insert: {
+          classification_level: string
+          classification_name: string
+          created_at?: string
+          created_by?: string | null
+          data_patterns?: Json
+          id?: string
+          org_id: string
+          protection_rules?: Json
+          updated_at?: string
+        }
+        Update: {
+          classification_level?: string
+          classification_name?: string
+          created_at?: string
+          created_by?: string | null
+          data_patterns?: Json
+          id?: string
+          org_id?: string
+          protection_rules?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       data_quality_checks: {
         Row: {
           check_name: string
@@ -1756,6 +2098,99 @@ export type Database = {
           },
         ]
       }
+      device_fingerprints: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_info: Json
+          fingerprint_hash: string
+          id: string
+          is_trusted: boolean
+          last_seen_at: string
+          org_id: string
+          risk_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_info?: Json
+          fingerprint_hash: string
+          id?: string
+          is_trusted?: boolean
+          last_seen_at?: string
+          org_id: string
+          risk_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_info?: Json
+          fingerprint_hash?: string
+          id?: string
+          is_trusted?: boolean
+          last_seen_at?: string
+          org_id?: string
+          risk_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      dlp_violations: {
+        Row: {
+          action_taken: string
+          context_data: Json | null
+          created_at: string
+          detected_at: string
+          detected_data: Json
+          id: string
+          investigation_status: string
+          org_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          updated_at: string
+          user_id: string
+          violation_type: string
+        }
+        Insert: {
+          action_taken: string
+          context_data?: Json | null
+          created_at?: string
+          detected_at?: string
+          detected_data: Json
+          id?: string
+          investigation_status?: string
+          org_id: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          updated_at?: string
+          user_id: string
+          violation_type: string
+        }
+        Update: {
+          action_taken?: string
+          context_data?: Json | null
+          created_at?: string
+          detected_at?: string
+          detected_data?: Json
+          id?: string
+          investigation_status?: string
+          org_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          updated_at?: string
+          user_id?: string
+          violation_type?: string
+        }
+        Relationships: []
+      }
       failure_scenarios: {
         Row: {
           affected_functions: Json | null
@@ -1820,6 +2255,62 @@ export type Database = {
             columns: ["trigger_dependency_id"]
             isOneToOne: false
             referencedRelation: "dependencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forensic_evidence: {
+        Row: {
+          chain_of_custody: Json
+          collected_at: string
+          collected_by: string
+          collection_method: string
+          created_at: string
+          evidence_data: Json
+          evidence_type: string
+          id: string
+          incident_id: string
+          integrity_hash: string
+          org_id: string
+          preservation_status: string
+          updated_at: string
+        }
+        Insert: {
+          chain_of_custody?: Json
+          collected_at?: string
+          collected_by: string
+          collection_method: string
+          created_at?: string
+          evidence_data?: Json
+          evidence_type: string
+          id?: string
+          incident_id: string
+          integrity_hash: string
+          org_id: string
+          preservation_status?: string
+          updated_at?: string
+        }
+        Update: {
+          chain_of_custody?: Json
+          collected_at?: string
+          collected_by?: string
+          collection_method?: string
+          created_at?: string
+          evidence_data?: Json
+          evidence_type?: string
+          id?: string
+          incident_id?: string
+          integrity_hash?: string
+          org_id?: string
+          preservation_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forensic_evidence_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "security_incidents"
             referencedColumns: ["id"]
           },
         ]
@@ -2369,6 +2860,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      incident_playbooks: {
+        Row: {
+          communication_templates: Json
+          created_at: string
+          created_by: string | null
+          escalation_matrix: Json
+          id: string
+          incident_type: string
+          is_active: boolean
+          org_id: string
+          playbook_name: string
+          response_steps: Json
+          severity_levels: Json
+          updated_at: string
+        }
+        Insert: {
+          communication_templates?: Json
+          created_at?: string
+          created_by?: string | null
+          escalation_matrix?: Json
+          id?: string
+          incident_type: string
+          is_active?: boolean
+          org_id: string
+          playbook_name: string
+          response_steps?: Json
+          severity_levels?: Json
+          updated_at?: string
+        }
+        Update: {
+          communication_templates?: Json
+          created_at?: string
+          created_by?: string | null
+          escalation_matrix?: Json
+          id?: string
+          incident_type?: string
+          is_active?: boolean
+          org_id?: string
+          playbook_name?: string
+          response_steps?: Json
+          severity_levels?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       incident_responses: {
         Row: {
@@ -3688,6 +4224,63 @@ export type Database = {
         }
         Relationships: []
       }
+      security_incidents: {
+        Row: {
+          affected_systems: Json
+          assigned_team: string | null
+          created_at: string
+          description: string | null
+          escalated_at: string | null
+          escalation_level: number
+          evidence_data: Json
+          id: string
+          incident_type: string
+          org_id: string
+          resolved_at: string | null
+          response_actions: Json
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affected_systems?: Json
+          assigned_team?: string | null
+          created_at?: string
+          description?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          evidence_data?: Json
+          id?: string
+          incident_type: string
+          org_id: string
+          resolved_at?: string | null
+          response_actions?: Json
+          severity: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affected_systems?: Json
+          assigned_team?: string | null
+          created_at?: string
+          description?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          evidence_data?: Json
+          id?: string
+          incident_type?: string
+          org_id?: string
+          resolved_at?: string | null
+          response_actions?: Json
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_logs: {
         Row: {
           action_details: Json | null
@@ -3748,6 +4341,57 @@ export type Database = {
         }
         Relationships: []
       }
+      security_threats: {
+        Row: {
+          affected_resources: Json
+          assigned_to: string | null
+          created_at: string
+          detected_at: string
+          detection_method: string
+          id: string
+          mitigation_actions: Json
+          org_id: string
+          resolved_at: string | null
+          severity: string
+          status: string
+          threat_indicators: Json
+          threat_type: string
+          updated_at: string
+        }
+        Insert: {
+          affected_resources?: Json
+          assigned_to?: string | null
+          created_at?: string
+          detected_at?: string
+          detection_method: string
+          id?: string
+          mitigation_actions?: Json
+          org_id: string
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          threat_indicators?: Json
+          threat_type: string
+          updated_at?: string
+        }
+        Update: {
+          affected_resources?: Json
+          assigned_to?: string | null
+          created_at?: string
+          detected_at?: string
+          detection_method?: string
+          id?: string
+          mitigation_actions?: Json
+          org_id?: string
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          threat_indicators?: Json
+          threat_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           created_at: string
@@ -3785,6 +4429,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      siem_integrations: {
+        Row: {
+          authentication_config: Json
+          created_at: string
+          created_by: string | null
+          endpoint_url: string
+          event_filters: Json
+          id: string
+          integration_name: string
+          integration_type: string
+          is_active: boolean
+          last_sync_at: string | null
+          org_id: string
+          sync_status: string
+          updated_at: string
+        }
+        Insert: {
+          authentication_config?: Json
+          created_at?: string
+          created_by?: string | null
+          endpoint_url: string
+          event_filters?: Json
+          id?: string
+          integration_name: string
+          integration_type: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          org_id: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Update: {
+          authentication_config?: Json
+          created_at?: string
+          created_by?: string | null
+          endpoint_url?: string
+          event_filters?: Json
+          id?: string
+          integration_name?: string
+          integration_type?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          org_id?: string
+          sync_status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       third_party_profiles: {
         Row: {
@@ -4367,6 +5059,14 @@ export type Database = {
         }
         Returns: string
       }
+      calculate_session_risk_score: {
+        Args: {
+          user_id: string
+          device_fingerprint_id: string
+          location_data: Json
+        }
+        Returns: number
+      }
       calculate_vendor_risk_score: {
         Args: {
           vendor_criticality: string
@@ -4400,6 +5100,10 @@ export type Database = {
       check_user_policy_access: {
         Args: { policy_id: string }
         Returns: boolean
+      }
+      detect_data_patterns: {
+        Args: { data_content: string; org_id: string }
+        Returns: Json
       }
     }
     Enums: {

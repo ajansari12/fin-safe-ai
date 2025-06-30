@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
@@ -11,6 +10,7 @@ import UserPreferences from "@/components/settings/UserPreferences";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import OrganizationManagement from "@/components/settings/OrganizationManagement";
 import SecuritySettings from "@/components/security/SecuritySettings";
+import EnterpriseSecurityDashboard from "@/components/security/EnterpriseSecurityDashboard";
 import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
@@ -63,7 +63,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="preferences" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="preferences" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               User
@@ -79,6 +79,10 @@ const Settings = () => {
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Lock className="h-4 w-4" />
               Security
+            </TabsTrigger>
+            <TabsTrigger value="enterprise-security" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Enterprise
             </TabsTrigger>
             {isAdmin && (
               <>
@@ -108,6 +112,10 @@ const Settings = () => {
 
           <TabsContent value="security">
             <SecuritySettings />
+          </TabsContent>
+
+          <TabsContent value="enterprise-security">
+            <EnterpriseSecurityDashboard />
           </TabsContent>
 
           {isAdmin && (
