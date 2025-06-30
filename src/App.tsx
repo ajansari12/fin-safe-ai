@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,7 +12,7 @@ import IncidentLog from "@/pages/IncidentLog";
 import Governance from "@/pages/GovernanceFramework";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
-import VerifyEmail from "@/pages/VerifyEmail";
+import VerifyEmail from "@/pages/auth/Verify";
 import UpdatePassword from "@/pages/auth/UpdatePassword";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
