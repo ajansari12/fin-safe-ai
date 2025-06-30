@@ -2191,6 +2191,465 @@ export type Database = {
         }
         Relationships: []
       }
+      document_access_logs: {
+        Row: {
+          access_type: string
+          accessed_at: string
+          document_id: string
+          failure_reason: string | null
+          id: string
+          ip_address: unknown | null
+          org_id: string
+          success: boolean | null
+          user_agent: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          access_type: string
+          accessed_at?: string
+          document_id: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown | null
+          org_id: string
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          access_type?: string
+          accessed_at?: string
+          document_id?: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown | null
+          org_id?: string
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_logs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_approvals: {
+        Row: {
+          approval_date: string | null
+          approval_level: number | null
+          approval_status: string
+          approver_id: string
+          approver_name: string
+          created_at: string
+          digital_signature: string | null
+          document_id: string
+          id: string
+          is_final_approval: boolean | null
+          org_id: string
+          rejection_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          approval_date?: string | null
+          approval_level?: number | null
+          approval_status: string
+          approver_id: string
+          approver_name: string
+          created_at?: string
+          digital_signature?: string | null
+          document_id: string
+          id?: string
+          is_final_approval?: boolean | null
+          org_id: string
+          rejection_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approval_date?: string | null
+          approval_level?: number | null
+          approval_status?: string
+          approver_id?: string
+          approver_name?: string
+          created_at?: string
+          digital_signature?: string | null
+          document_id?: string
+          id?: string
+          is_final_approval?: boolean | null
+          org_id?: string
+          rejection_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_approvals_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_comments: {
+        Row: {
+          comment_text: string
+          comment_type: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          document_id: string
+          id: string
+          is_resolved: boolean | null
+          org_id: string
+          parent_comment_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_by_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          comment_text: string
+          comment_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          document_id: string
+          id?: string
+          is_resolved?: boolean | null
+          org_id: string
+          parent_comment_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comment_text?: string
+          comment_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          document_id?: string
+          id?: string
+          is_resolved?: boolean | null
+          org_id?: string
+          parent_comment_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_by_name?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_comments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "document_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_relationships: {
+        Row: {
+          auto_detected: boolean | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          org_id: string
+          relationship_strength: number | null
+          relationship_type: string
+          source_document_id: string
+          target_document_id: string
+        }
+        Insert: {
+          auto_detected?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          org_id: string
+          relationship_strength?: number | null
+          relationship_type: string
+          source_document_id: string
+          target_document_id: string
+        }
+        Update: {
+          auto_detected?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          org_id?: string
+          relationship_strength?: number | null
+          relationship_type?: string
+          source_document_id?: string
+          target_document_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_relationships_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_relationships_target_document_id_fkey"
+            columns: ["target_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_repositories: {
+        Row: {
+          access_level: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          description: string | null
+          document_type: string
+          id: string
+          name: string
+          org_id: string
+          retention_years: number | null
+          updated_at: string
+        }
+        Insert: {
+          access_level?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          document_type: string
+          id?: string
+          name: string
+          org_id: string
+          retention_years?: number | null
+          updated_at?: string
+        }
+        Update: {
+          access_level?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          document_type?: string
+          id?: string
+          name?: string
+          org_id?: string
+          retention_years?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_shares: {
+        Row: {
+          access_count: number | null
+          access_level: string | null
+          access_token: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          document_id: string
+          download_allowed: boolean | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          last_accessed_at: string | null
+          org_id: string
+          password_hash: string | null
+          password_protected: boolean | null
+          shared_with_email: string | null
+          shared_with_organization: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_count?: number | null
+          access_level?: string | null
+          access_token?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          document_id: string
+          download_allowed?: boolean | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          org_id: string
+          password_hash?: string | null
+          password_protected?: boolean | null
+          shared_with_email?: string | null
+          shared_with_organization?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_count?: number | null
+          access_level?: string | null
+          access_token?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          document_id?: string
+          download_allowed?: boolean | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_accessed_at?: string | null
+          org_id?: string
+          password_hash?: string | null
+          password_protected?: boolean | null
+          shared_with_email?: string | null
+          shared_with_organization?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_shares_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          access_count: number | null
+          ai_analysis_status: string | null
+          ai_confidence_score: number | null
+          ai_summary: string | null
+          checksum: string | null
+          compliance_gaps: Json | null
+          created_at: string
+          description: string | null
+          document_classification: Json | null
+          expiry_date: string | null
+          extracted_text: string | null
+          extraction_status: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_archived: boolean | null
+          is_current_version: boolean | null
+          key_risk_indicators: Json | null
+          last_accessed_at: string | null
+          metadata: Json | null
+          mime_type: string | null
+          org_id: string
+          parent_document_id: string | null
+          repository_id: string | null
+          review_due_date: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version_number: number | null
+        }
+        Insert: {
+          access_count?: number | null
+          ai_analysis_status?: string | null
+          ai_confidence_score?: number | null
+          ai_summary?: string | null
+          checksum?: string | null
+          compliance_gaps?: Json | null
+          created_at?: string
+          description?: string | null
+          document_classification?: Json | null
+          expiry_date?: string | null
+          extracted_text?: string | null
+          extraction_status?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_archived?: boolean | null
+          is_current_version?: boolean | null
+          key_risk_indicators?: Json | null
+          last_accessed_at?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          org_id: string
+          parent_document_id?: string | null
+          repository_id?: string | null
+          review_due_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version_number?: number | null
+        }
+        Update: {
+          access_count?: number | null
+          ai_analysis_status?: string | null
+          ai_confidence_score?: number | null
+          ai_summary?: string | null
+          checksum?: string | null
+          compliance_gaps?: Json | null
+          created_at?: string
+          description?: string | null
+          document_classification?: Json | null
+          expiry_date?: string | null
+          extracted_text?: string | null
+          extraction_status?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_archived?: boolean | null
+          is_current_version?: boolean | null
+          key_risk_indicators?: Json | null
+          last_accessed_at?: string | null
+          metadata?: Json | null
+          mime_type?: string | null
+          org_id?: string
+          parent_document_id?: string | null
+          repository_id?: string | null
+          review_due_date?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_parent_document_id_fkey"
+            columns: ["parent_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "document_repositories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_data_sources: {
         Row: {
           authentication_config: Json
