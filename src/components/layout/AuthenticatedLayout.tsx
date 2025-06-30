@@ -70,19 +70,24 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                 : 'w-0 lg:w-16 -translate-x-full lg:translate-x-0'
             }`}
           >
-            {/* Sidebar header */}
+            {/* Sidebar header - only show logo when sidebar is collapsed on desktop */}
             <div className="flex items-center justify-between px-4 h-16 border-b flex-shrink-0">
-              <Link to="/app/dashboard" className="flex items-center min-w-0">
-                <Shield className="h-6 w-6 text-primary flex-shrink-0" />
-                {(isSidebarOpen || window.innerWidth >= 1024) && (
-                  <span className={`ml-2 text-xl font-bold truncate ${!isSidebarOpen ? 'lg:hidden' : ''}`}>
-                    ResilientFI
-                  </span>
-                )}
-              </Link>
+              {/* Only show logo when sidebar is collapsed on desktop OR always on mobile */}
+              {(!isSidebarOpen || window.innerWidth < 1024) && (
+                <Link to="/app/dashboard" className="flex items-center min-w-0">
+                  <Shield className="h-6 w-6 text-primary flex-shrink-0" />
+                  {isSidebarOpen && (
+                    <span className="ml-2 text-xl font-bold truncate">
+                      ResilientFI
+                    </span>
+                  )}
+                </Link>
+              )}
+              
+              {/* Mobile close button */}
               <button 
                 onClick={toggleSidebar}
-                className="p-2 rounded-md lg:hidden flex-shrink-0"
+                className="p-2 rounded-md lg:hidden flex-shrink-0 ml-auto"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -103,7 +108,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                             setSidebarOpen(false);
                           }
                         }}
-                        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors group ${
+                        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors group min-h-[44px] ${
                           isActive
                             ? "bg-primary/10 text-primary"
                             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -133,7 +138,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                             setSidebarOpen(false);
                           }
                         }}
-                        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] ${
                           isActive
                             ? "bg-primary/10 text-primary"
                             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -157,15 +162,28 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             <header className="bg-white dark:bg-slate-800 shadow-sm z-10 flex-shrink-0">
               <div className="flex items-center justify-between h-16 px-4">
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={toggleSidebar}
-                    className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <Menu className="h-5 w-5" />
-                  </button>
+                  {/* Only show menu button when sidebar is closed on desktop OR always on mobile */}
+                  {(!isSidebarOpen || window.innerWidth < 1024) && (
+                    <button
+                      onClick={toggleSidebar}
+                      className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <Menu className="h-5 w-5" />
+                    </button>
+                  )}
                   
-                  {/* Breadcrumb or page title could go here */}
-                  <div className="hidden sm:block text-sm text-muted-foreground">
+                  {/* Logo when sidebar is open on desktop */}
+                  {isSidebarOpen && window.innerWidth >= 1024 && (
+                    <Link to="/app/dashboard" className="flex items-center min-w-0 ml-2">
+                      <Shield className="h-6 w-6 text-primary flex-shrink-0" />
+                      <span className="ml-2 text-xl font-bold truncate">
+                        ResilientFI
+                      </span>
+                    </Link>
+                  )}
+                  
+                  {/* Breadcrumb or page title */}
+                  <div className="hidden sm:block text-sm text-muted-foreground ml-4">
                     {navLinks.find(link => link.path === location.pathname)?.label || 'Dashboard'}
                   </div>
                 </div>
