@@ -48,6 +48,18 @@ export interface BehavioralAnalytics {
 class ZeroTrustService {
   private deviceFingerprint: string | null = null;
 
+  private transformAuthenticationSession(data: any): AuthenticationSession {
+    return {
+      ...data,
+      authentication_factors: Array.isArray(data.authentication_factors) 
+        ? data.authentication_factors 
+        : JSON.parse(data.authentication_factors || '[]'),
+      location_data: typeof data.location_data === 'string' 
+        ? JSON.parse(data.location_data) 
+        : data.location_data
+    };
+  }
+
   async generateDeviceFingerprint(): Promise<string> {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -148,7 +160,7 @@ class ZeroTrustService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformAuthenticationSession(data);
   }
 
   private async getLocationData(): Promise<any> {

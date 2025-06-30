@@ -286,7 +286,7 @@ class IncidentResponseService {
     if (incident) {
       const responseActions = Array.isArray(incident.response_actions) 
         ? incident.response_actions 
-        : JSON.parse(incident.response_actions || '[]');
+        : JSON.parse(String(incident.response_actions || '[]'));
 
       const updatedActions = [...responseActions, {
         step: step.step,
@@ -409,7 +409,7 @@ class IncidentResponseService {
     if (evidenceData) {
       const chainOfCustody = Array.isArray(evidenceData.chain_of_custody) 
         ? evidenceData.chain_of_custody 
-        : JSON.parse(evidenceData.chain_of_custody || '[]');
+        : JSON.parse(String(evidenceData.chain_of_custody || '[]'));
 
       const updatedChain = [...chainOfCustody, {
         action,
@@ -488,7 +488,7 @@ class IncidentResponseService {
         duration: this.calculateIncidentDuration(incident),
         affected_systems: Array.isArray(incident.affected_systems) 
           ? incident.affected_systems 
-          : JSON.parse(incident.affected_systems || '[]')
+          : JSON.parse(String(incident.affected_systems || '[]'))
       },
       timeline: this.generateTimeline(incident),
       evidence_summary: evidence.map(e => ({
@@ -527,7 +527,7 @@ class IncidentResponseService {
 
     const responseActions = Array.isArray(incident.response_actions) 
       ? incident.response_actions 
-      : JSON.parse(incident.response_actions || '[]');
+      : JSON.parse(String(incident.response_actions || '[]'));
 
     if (responseActions.length > 0) {
       responseActions.forEach((action: any) => {
@@ -559,7 +559,7 @@ class IncidentResponseService {
     
     const affectedSystems = Array.isArray(incident.affected_systems) 
       ? incident.affected_systems 
-      : JSON.parse(incident.affected_systems || '[]');
+      : JSON.parse(String(incident.affected_systems || '[]'));
     
     if (affectedSystems.length > 3) {
       lessons.push('Review system isolation procedures to prevent widespread impact');

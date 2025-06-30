@@ -79,6 +79,36 @@ class ThreatProtectionService {
     }
   ];
 
+  private transformSecurityThreat(data: any): SecurityThreat {
+    return {
+      ...data,
+      affected_resources: Array.isArray(data.affected_resources) 
+        ? data.affected_resources 
+        : JSON.parse(data.affected_resources || '[]'),
+      mitigation_actions: Array.isArray(data.mitigation_actions) 
+        ? data.mitigation_actions 
+        : JSON.parse(data.mitigation_actions || '[]'),
+      threat_indicators: typeof data.threat_indicators === 'string' 
+        ? JSON.parse(data.threat_indicators) 
+        : data.threat_indicators
+    };
+  }
+
+  private transformSecurityIncident(data: any): SecurityIncident {
+    return {
+      ...data,
+      affected_systems: Array.isArray(data.affected_systems) 
+        ? data.affected_systems 
+        : JSON.parse(data.affected_systems || '[]'),
+      response_actions: Array.isArray(data.response_actions) 
+        ? data.response_actions 
+        : JSON.parse(data.response_actions || '[]'),
+      evidence_data: typeof data.evidence_data === 'string' 
+        ? JSON.parse(data.evidence_data) 
+        : data.evidence_data
+    };
+  }
+
   async detectThreats(eventData: any): Promise<SecurityThreat[]> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return [];
@@ -246,7 +276,7 @@ class ThreatProtectionService {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 
-    const incident: Partial<SecurityIncident> = {
+    const incident = {
       org_id: profile.organization_id,
       incident_type: 'security_threat',
       severity: threat.severity,
@@ -270,7 +300,7 @@ class ThreatProtectionService {
       .single();
 
     if (error) throw error;
-    return data;
+    return this.transformSecurityIncident(data);
   }
 
   async getSecurityThreats(limit: number = 100): Promise<SecurityThreat[]> {
@@ -289,7 +319,7 @@ class ThreatProtectionService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformSecurityThreat) || [];
   }
 
   async getSecurityIncidents(limit: number = 100): Promise<SecurityIncident[]> {
@@ -308,7 +338,7 @@ class ThreatProtectionService {
       return [];
     }
 
-    return data || [];
+    return data?.map(this.transformSecurityIncident) || [];
   }
 
   async resolveIncident(incidentId: string, resolution: string): Promise<void> {
@@ -340,11 +370,18 @@ class ThreatProtectionService {
     }
   }
 
-  async integrateSIEM(config: Partial<SIEMIntegration>): Promise<SIEMIntegration> {
+  async integrateSIEM(config: {
+    integration_name: string;
+    integration_type: string;
+    endpoint_url: string;
+    authentication_config?: any;
+    event_filters?: any;
+    is_active?: boolean;
+  }): Promise<SIEMIntegration> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 
-    const integration: Partial<SIEMIntegration> = {
+    const integration = {
       ...config,
       org_id: profile.organization_id,
       created_by: profile.id,
