@@ -1,15 +1,7 @@
 
 import React from "react";
 import Hero from "@/components/home/Hero";
-import Features from "@/components/home/Features";
-import RegulatoryCompliance from "@/components/home/RegulatoryCompliance";
-import AIAssistant from "@/components/home/AIAssistant";
-import CTASection from "@/components/home/CTASection";
 import PageLayout from "@/components/layout/PageLayout";
-import Testimonials from "@/components/home/Testimonials";
-import Pricing from "@/components/home/Pricing";
-import Faq from "@/components/home/Faq";
-import ContactSection from "@/components/home/ContactSection";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { Helmet } from "react-helmet";
 
@@ -35,35 +27,25 @@ const Index = () => {
       <Hero />
       
       <ScrollReveal>
-        <Features />
-      </ScrollReveal>
-      
-      <ScrollReveal direction="up" delay={100}>
-        <RegulatoryCompliance />
-      </ScrollReveal>
-      
-      <ScrollReveal direction="up" delay={100}>
-        <AIAssistant />
-      </ScrollReveal>
-      
-      <ScrollReveal direction="up" delay={100}>
-        <Testimonials />
-      </ScrollReveal>
-      
-      <ScrollReveal direction="up" delay={100}>
-        <Pricing />
-      </ScrollReveal>
-      
-      <ScrollReveal direction="up" delay={100}>
-        <Faq />
-      </ScrollReveal>
-      
-      <ScrollReveal direction="up" delay={100}>
-        <ContactSection />
-      </ScrollReveal>
-      
-      <ScrollReveal direction="none" delay={100}>
-        <CTASection />
+        <div className="py-20 px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-8">Key Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="p-6 bg-white rounded-lg shadow-md">
+                <h3 className="text-xl font-semibold mb-4">Risk Management</h3>
+                <p className="text-gray-600">Comprehensive risk assessment and monitoring tools.</p>
+              </div>
+              <div className="p-6 bg-white rounded-lg shadow-md">
+                <h3 className="text-xl font-semibold mb-4">Compliance</h3>
+                <p className="text-gray-600">OSFI E-21 compliant operational resilience framework.</p>
+              </div>
+              <div className="p-6 bg-white rounded-lg shadow-md">
+                <h3 className="text-xl font-semibold mb-4">Integration</h3>
+                <p className="text-gray-600">Seamless connectivity with financial institution systems.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </ScrollReveal>
     </PageLayout>
   );

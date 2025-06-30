@@ -17,7 +17,7 @@ const Hero = () => {
     <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
       <DecorativeBg variant="dots" className="opacity-50" />
       
-      <div className="section-container pt-16 pb-24">
+      <div className="container mx-auto px-4 pt-16 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div 
@@ -51,10 +51,10 @@ const Hero = () => {
               }`}
             >
               <Button asChild size="lg" className="text-base rounded-xl">
-                <Link to="/start">Get Started</Link>
+                <Link to="/integration-framework">Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="text-base rounded-xl">
-                <Link to="/demo">Request Demo</Link>
+                <Link to="/integration-framework">View Integration Framework</Link>
               </Button>
             </div>
 
@@ -84,9 +84,9 @@ const Hero = () => {
               <div className="flex items-start space-x-3">
                 <CheckCircle className="h-5 w-5 text-green-500 mt-1" />
                 <div>
-                  <h3 className="font-medium">Comprehensive Reporting</h3>
+                  <h3 className="font-medium">Integration Framework</h3>
                   <p className="text-sm text-muted-foreground">
-                    Audit-ready reports that satisfy regulatory requirements
+                    Seamless connectivity with financial institution systems
                   </p>
                 </div>
               </div>
@@ -112,67 +112,40 @@ const Hero = () => {
             <div className="relative bg-white dark:bg-slate-950 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 p-6 overflow-hidden transition-all hover:shadow-2xl duration-300">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-medium">Critical Risk Overview</h3>
-                  <p className="text-sm text-muted-foreground">Enterprise-wide risk summary</p>
+                  <h3 className="text-lg font-medium">Integration Overview</h3>
+                  <p className="text-sm text-muted-foreground">System connectivity status</p>
                 </div>
                 <BarChart className="h-5 w-5 text-primary" />
               </div>
               <div className="space-y-4">
                 <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Cyber Resilience</h4>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                      High Risk
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                    <div 
-                      className="bg-red-500 h-2.5 rounded-full transition-all duration-1000 ease-in-out" 
-                      style={{ width: isLoaded ? '75%' : '0%' }}
-                    ></div>
-                  </div>
-                  <div className="mt-2 flex items-center text-xs">
-                    <AlertTriangle className="h-3 w-3 text-red-500 mr-1" />
-                    <span className="text-muted-foreground">4 critical findings require attention</span>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Third Party Vendors</h4>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                      Medium Risk
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                    <div 
-                      className="bg-yellow-500 h-2.5 rounded-full transition-all duration-1000 delay-300 ease-in-out" 
-                      style={{ width: isLoaded ? '45%' : '0%' }}
-                    ></div>
-                  </div>
-                  <div className="mt-2 flex items-center text-xs">
-                    <AlertTriangle className="h-3 w-3 text-yellow-500 mr-1" />
-                    <span className="text-muted-foreground">8 vendors require reassessment</span>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium">Business Continuity</h4>
+                    <h4 className="font-medium">Core Banking System</h4>
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      Low Risk
+                      Connected
                     </span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                    <div 
-                      className="bg-green-500 h-2.5 rounded-full transition-all duration-1000 delay-600 ease-in-out" 
-                      style={{ width: isLoaded ? '15%' : '0%' }}
-                    ></div>
+                  <p className="text-sm text-muted-foreground">Real-time data synchronization active</p>
+                </div>
+                
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium">ERP Integration</h4>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                      Pending
+                    </span>
                   </div>
-                  <div className="mt-2 flex items-center text-xs">
-                    <CheckCircle className="h-3 w-3 text-green-500 mr-1" />
-                    <span className="text-muted-foreground">Plans updated and tested within last 90 days</span>
+                  <p className="text-sm text-muted-foreground">Configuration in progress</p>
+                </div>
+                
+                <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium">Document Management</h4>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      Ready
+                    </span>
                   </div>
+                  <p className="text-sm text-muted-foreground">Available for configuration</p>
                 </div>
               </div>
             </div>
