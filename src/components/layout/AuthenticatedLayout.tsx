@@ -153,7 +153,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                     onClick={toggleSidebar}
                     className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
                   >
-                    {isSidebarOpen && window.innerWidth < 1024 ? (
+                    {isSidebarOpen ? (
                       <X className="h-5 w-5" />
                     ) : (
                       <Menu className="h-5 w-5" />
