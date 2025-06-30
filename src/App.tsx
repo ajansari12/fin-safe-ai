@@ -11,6 +11,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Dashboard from "@/pages/Dashboard";
 import IncidentLog from "@/pages/IncidentLog";
 import Governance from "@/pages/GovernanceFramework";
+import WorkflowOrchestration from "@/pages/WorkflowOrchestration";
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import VerifyEmail from "@/pages/auth/Verify";
@@ -72,6 +73,15 @@ const App = () => {
                     element={
                       <ProtectedRoute>
                         <Governance />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/app/workflow-orchestration"
+                    element={
+                      <ProtectedRoute>
+                        <WorkflowOrchestration />
                       </ProtectedRoute>
                     }
                   />

@@ -1,214 +1,297 @@
 
-import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud, Info, Contact as ContactIcon, Building2, GraduationCap } from "lucide-react";
-import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
-import EnterpriseOnboarding from "./pages/EnterpriseOnboarding";
-import ThirdPartyRisk from "./pages/ThirdPartyRisk";
-import IncidentLog from "./pages/IncidentLog";
-import ControlsAndKri from "./pages/ControlsAndKri";
-import RiskAppetite from "./pages/RiskAppetite";
-import SettingsPage from "./pages/Settings";
-import GovernanceFramework from "./pages/GovernanceFramework";
-import BusinessFunctions from "./pages/BusinessFunctions";
-import ImpactTolerances from "./pages/ImpactTolerances";
-import Dependencies from "./pages/Dependencies";
-import ToleranceFramework from "./pages/ToleranceFramework";
-import ScenarioTesting from "./pages/ScenarioTesting";
-import BusinessContinuity from "./pages/BusinessContinuity";
-import AuditAndCompliance from "./pages/AuditAndCompliance";
-import Integrations from "./pages/Integrations";
-import AnalyticsHub from "./pages/AnalyticsHub";
-import WorkflowCenter from "./pages/WorkflowCenter";
-import DependencyMapping from "./pages/DependencyMapping";
-import Reporting from "./pages/Reporting";
-import DocumentManagement from "./pages/DocumentManagement";
-import DeploymentCenter from "./pages/DeploymentCenter";
-import Features from "./pages/Features";
-import Compliance from "./pages/Compliance";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import UserOnboarding from "./pages/UserOnboarding";
+import { LucideIcon } from "lucide-react";
+import {
+  Shield,
+  AlertTriangle,
+  FileText,
+  BarChart3,
+  Settings,
+  Users,
+  Building,
+  Scale,
+  Network,
+  UserCheck,
+  Target,
+  Activity,
+  Workflow,
+  GitBranch,
+  Bot,
+  BookOpen,
+  Briefcase,
+  Calendar,
+  CheckSquare,
+  Database,
+  FileCheck,
+  Globe,
+  Heart,
+  HelpCircle,
+  Home,
+  LineChart,
+  Mail,
+  Map,
+  Monitor,
+  PieChart,
+  Search,
+  ShieldCheck,
+  Smartphone,
+  Star,
+  TrendingUp,
+  Upload,
+  Zap,
+  CreditCard,
+  Phone,
+  Info,
+  ClipboardList,
+  Layers,
+  Lock,
+  TestTube,
+  AlertCircle,
+  MapPin,
+  Brain,
+  Cog,
+} from "lucide-react";
 
-/**
- * Central configuration for navigation items.
- * Public pages (no authentication required) and authenticated app pages.
- */
+export interface NavItem {
+  title: string;
+  href: string;
+  icon: LucideIcon;
+  description?: string;
+  disabled?: boolean;
+  external?: boolean;
+  badge?: string;
+}
 
-// Public navigation items (no authentication required)
-export const publicNavItems = [
+export const mainNavItems: NavItem[] = [
   {
     title: "Home",
-    to: "/",
-    icon: <HomeIcon className="h-4 w-4" />,
-    page: Index,
+    href: "/",
+    icon: Home,
   },
   {
-    title: "Features",
-    to: "/features",
-    icon: <BarChart3 className="h-4 w-4" />,
-    page: Features,
+    title: "Features", 
+    href: "/features",
+    icon: Star,
   },
   {
-    title: "Compliance",
-    to: "/compliance",
-    icon: <FileText className="h-4 w-4" />,
-    page: Compliance,
+    title: "Pricing",
+    href: "/pricing", 
+    icon: CreditCard,
   },
   {
     title: "About",
-    to: "/about",
-    icon: <Info className="h-4 w-4" />,
-    page: About,
+    href: "/about",
+    icon: Info,
   },
   {
     title: "Contact",
-    to: "/contact",
-    icon: <ContactIcon className="h-4 w-4" />,
-    page: Contact,
+    href: "/contact",
+    icon: Phone,
   },
 ];
 
-// Authenticated app navigation items (require authentication)
-export const appNavItems = [
+export const dashboardNavItems: NavItem[] = [
   {
     title: "Dashboard",
-    to: "/app/dashboard",
-    icon: <BarChart3 className="h-4 w-4" />,
-    page: Dashboard,
+    href: "/app/dashboard",
+    icon: Home,
+    description: "Overview and analytics",
   },
   {
-    title: "User Onboarding",
-    to: "/app/user-onboarding",
-    icon: <GraduationCap className="h-4 w-4" />,
-    page: UserOnboarding,
+    title: "Incident Management",
+    href: "/app/incidents",
+    icon: AlertTriangle,
+    description: "Track and manage incidents",
   },
   {
-    title: "Enterprise Onboarding",
-    to: "/app/enterprise-onboarding",
-    icon: <Building2 className="h-4 w-4" />,
-    page: EnterpriseOnboarding,
+    title: "Governance Framework",
+    href: "/app/governance",
+    icon: Shield,
+    description: "Policies and compliance",
   },
   {
-    title: "Governance",
-    to: "/app/governance",
-    icon: <BookOpen className="h-4 w-4" />,
-    page: GovernanceFramework,
+    title: "Workflow Orchestration",
+    href: "/app/workflow-orchestration",
+    icon: Workflow,
+    description: "Automate business processes",
+  },
+  {
+    title: "Controls & KRIs",
+    href: "/app/controls-kri",
+    icon: CheckSquare,
+    description: "Risk controls and indicators",
   },
   {
     title: "Risk Appetite",
-    to: "/app/risk-appetite",
-    icon: <Target className="h-4 w-4" />,
-    page: RiskAppetite,
-  },
-  {
-    title: "Impact Tolerances",
-    to: "/app/impact-tolerances",
-    icon: <Calculator className="h-4 w-4" />,
-    page: ImpactTolerances,
-  },
-  {
-    title: "Business Functions",
-    to: "/app/business-functions",
-    icon: <Activity className="h-4 w-4" />,
-    page: BusinessFunctions,
-  },
-  {
-    title: "Dependencies",
-    to: "/app/dependencies",
-    icon: <Network className="h-4 w-4" />,
-    page: Dependencies,
-  },
-  {
-    title: "Tolerance Framework",
-    to: "/app/tolerance-framework",
-    icon: <Target className="h-4 w-4" />,
-    page: ToleranceFramework,
-  },
-  {
-    title: "Controls & KRI",
-    to: "/app/controls-and-kri",
-    icon: <Shield className="h-4 w-4" />,
-    page: ControlsAndKri,
+    href: "/app/risk-appetite",
+    icon: Target,
+    description: "Risk appetite management",
   },
   {
     title: "Third Party Risk",
-    to: "/app/third-party-risk",
-    icon: <Users className="h-4 w-4" />,
-    page: ThirdPartyRisk,
-  },
-  {
-    title: "Incident Log",
-    to: "/app/incident-log",
-    icon: <AlertTriangle className="h-4 w-4" />,
-    page: IncidentLog,
-  },
-  {
-    title: "Scenario Testing",
-    to: "/app/scenario-testing",
-    icon: <TestTube className="h-4 w-4" />,
-    page: ScenarioTesting,
+    href: "/app/third-party-risk",
+    icon: Users,
+    description: "Vendor risk management",
   },
   {
     title: "Business Continuity",
-    to: "/app/business-continuity",
-    icon: <Briefcase className="h-4 w-4" />,
-    page: BusinessContinuity,
+    href: "/app/business-continuity",
+    icon: Heart,
+    description: "Business continuity planning",
   },
   {
-    title: "Audit & Compliance",
-    to: "/app/audit-and-compliance",
-    icon: <FileText className="h-4 w-4" />,
-    page: AuditAndCompliance,
+    title: "Scenario Testing",
+    href: "/app/scenario-testing",
+    icon: TestTube,
+    description: "Test business scenarios",
   },
   {
     title: "Document Management",
-    to: "/app/document-management",
-    icon: <FileImage className="h-4 w-4" />,
-    page: DocumentManagement,
-  },
-  {
-    title: "Integrations",
-    to: "/app/integrations",
-    icon: <Database className="h-4 w-4" />,
-    page: Integrations,
-  },
-  {
-    title: "Analytics Hub",
-    to: "/app/analytics-hub",
-    icon: <Brain className="h-4 w-4" />,
-    page: AnalyticsHub,
-  },
-  {
-    title: "Workflow Center",
-    to: "/app/workflow-center",
-    icon: <Workflow className="h-4 w-4" />,
-    page: WorkflowCenter,
-  },
-  {
-    title: "Dependency Mapping",
-    to: "/app/dependency-mapping",
-    icon: <Network className="h-4 w-4" />,
-    page: DependencyMapping,
-  },
-  {
-    title: "Deployment Center",
-    to: "/app/deployment-center",
-    icon: <Cloud className="h-4 w-4" />,
-    page: DeploymentCenter,
+    href: "/app/document-management",
+    icon: FileText,
+    description: "Document repository",
   },
   {
     title: "Reporting",
-    to: "/app/reporting",
-    icon: <FileText className="h-4 w-4" />,
-    page: Reporting,
+    href: "/app/reporting",
+    icon: BarChart3,
+    description: "Reports and analytics",
+  },
+  {
+    title: "Analytics Hub",
+    href: "/app/analytics",
+    icon: PieChart,
+    description: "Advanced analytics",
+  },
+  {
+    title: "Integrations",
+    href: "/app/integrations",
+    icon: Globe,
+    description: "System integrations",
   },
   {
     title: "Settings",
-    to: "/app/settings",
-    icon: <SettingsIcon className="h-4 w-4" />,
-    page: SettingsPage,
+    href: "/app/settings",
+    icon: Settings,
+    description: "Application settings",
   },
 ];
 
-// Combined navigation items for backward compatibility
-export const navItems = [...publicNavItems, ...appNavItems];
+export const moduleNavItems: NavItem[] = [
+  {
+    title: "Risk Management",
+    href: "/app/risk-management",
+    icon: AlertCircle,
+    description: "Comprehensive risk management",
+  },
+  {
+    title: "Governance",
+    href: "/app/governance-module",
+    icon: Scale,
+    description: "Governance framework",
+  },
+  {
+    title: "Self Assessment",
+    href: "/app/self-assessment",
+    icon: ClipboardList,
+    description: "Risk self-assessment tools",
+  },
+];
+
+export const additionalNavItems: NavItem[] = [
+  {
+    title: "Business Functions",
+    href: "/app/business-functions",
+    icon: Building,
+    description: "Manage business functions",
+  },
+  {
+    title: "Impact Tolerances",
+    href: "/app/impact-tolerances",
+    icon: Activity,
+    description: "Define impact tolerances",
+  },
+  {
+    title: "Dependencies",
+    href: "/app/dependencies",
+    icon: Network,
+    description: "System dependencies",
+  },
+  {
+    title: "Dependency Mapping",
+    href: "/app/dependency-mapping",
+    icon: Map,
+    description: "Visual dependency mapping",
+  },
+  {
+    title: "Tolerance Framework",
+    href: "/app/tolerance-framework",
+    icon: Layers,
+    description: "Risk tolerance framework",
+  },
+  {
+    title: "Audit & Compliance",
+    href: "/app/audit-compliance",
+    icon: FileCheck,
+    description: "Audit and compliance management",
+  },
+  {
+    title: "Compliance",
+    href: "/app/compliance",
+    icon: ShieldCheck,
+    description: "Compliance monitoring",
+  },
+  {
+    title: "Workflow Center",
+    href: "/app/workflow-center",
+    icon: GitBranch,
+    description: "Workflow management",
+  },
+  {
+    title: "Integration Framework",
+    href: "/app/integration-framework",
+    icon: Cog,
+    description: "Integration framework",
+  },
+  {
+    title: "User Onboarding",
+    href: "/app/user-onboarding",
+    icon: UserCheck,
+    description: "User onboarding flows",
+  },
+  {
+    title: "Enterprise Onboarding",
+    href: "/app/enterprise-onboarding",
+    icon: Briefcase,
+    description: "Enterprise onboarding",
+  },
+  {
+    title: "Deployment Center",
+    href: "/app/deployment-center",
+    icon: Upload,
+    description: "Deployment management",
+  },
+  {
+    title: "Customer Success",
+    href: "/app/customer-success",
+    icon: TrendingUp,
+    description: "Customer success tools",
+  },
+  {
+    title: "Personalized Dashboard",
+    href: "/app/personalized-dashboard",
+    icon: Monitor,
+    description: "Personalized dashboard",
+  },
+  {
+    title: "Support",
+    href: "/app/support",
+    icon: HelpCircle,
+    description: "Help and support",
+  },
+  {
+    title: "Billing",
+    href: "/app/billing",
+    icon: CreditCard,
+    description: "Billing and subscriptions",
+  },
+];

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { WorkflowOrchestration, WorkflowExecution, workflowOrchestrationService } from "@/services/workflow-orchestration-service";
 import VisualWorkflowDesigner from "./VisualWorkflowDesigner";
+import WorkflowNodePalette from "./WorkflowNodePalette";
+import WorkflowCanvas from "./WorkflowCanvas";
 
 const WorkflowOrchestrationDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +21,8 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isDesignerOpen, setIsDesignerOpen] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<WorkflowOrchestration | null>(null);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [draggedNodeType, setDraggedNodeType] = useState<string | null>(null);
   const [orgId, setOrgId] = useState<string>("");
   const [error, setError] = useState<string>("");
 
@@ -152,29 +155,6 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
     }
   };
 
-  const handleDeleteWorkflow = async (workflowId: string) => {
-    if (!confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await workflowOrchestrationService.deleteWorkflowOrchestration(workflowId);
-      toast({
-        title: "Success",
-        description: "Workflow deleted successfully"
-      });
-      await loadWorkflows();
-    } catch (error) {
-      console.error('Error deleting workflow:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete workflow';
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    }
-  };
-
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'active': return 'default';
@@ -199,6 +179,22 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
     if (executions.length === 0) return 0;
     const successfulExecutions = executions.filter(e => e.status === 'completed').length;
     return Math.round((successfulExecutions / executions.length) * 100);
+  };
+
+  // Handle node operations for canvas
+  const handleNodeAdd = (type: string, position: { x: number; y: number }) => {
+    console.log('Adding node:', type, position);
+    // This will be handled by the VisualWorkflowDesigner
+  };
+
+  const handleNodeUpdate = (nodeId: string, updates: any) => {
+    console.log('Updating node:', nodeId, updates);
+    // This will be handled by the VisualWorkflowDesigner
+  };
+
+  const handleNodeDelete = (nodeId: string) => {
+    console.log('Deleting node:', nodeId);
+    // This will be handled by the VisualWorkflowDesigner
   };
 
   if (!orgId && !error) {
@@ -303,9 +299,8 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
         <TabsList>
           <TabsTrigger value="workflows">Workflows</TabsTrigger>
           <TabsTrigger value="executions">Executions</TabsTrigger>
-          <TabsTrigger value="rules">Business Rules</TabsTrigger>
+          <TabsTrigger value="designer">Visual Designer</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="workflows" className="space-y-4">
@@ -451,19 +446,36 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="rules" className="space-y-4">
+        <TabsContent value="designer" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5" />
-                <CardTitle>Business Rules Engine</CardTitle>
-              </div>
+              <CardTitle>Visual Workflow Designer</CardTitle>
               <CardDescription>
-                Centralized business rules management with version control
+                Build workflows using the visual drag-and-drop interface
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Business rules engine coming soon...</p>
+            <CardContent className="p-0">
+              <div className="flex h-[600px]">
+                <div className="w-80 border-r">
+                  <WorkflowNodePalette
+                    onNodeDragStart={(nodeType) => setDraggedNodeType(nodeType)}
+                    className="p-4 h-full overflow-y-auto"
+                  />
+                </div>
+                <div className="flex-1">
+                  <WorkflowCanvas
+                    nodes={[]}
+                    edges={[]}
+                    selectedNode={selectedNode}
+                    onNodeSelect={setSelectedNode}
+                    onNodeAdd={handleNodeAdd}
+                    onNodeUpdate={handleNodeUpdate}
+                    onNodeDelete={handleNodeDelete}
+                    draggedNodeType={draggedNodeType}
+                    onDraggedNodeTypeChange={setDraggedNodeType}
+                  />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -481,20 +493,6 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">Integration management coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Analytics</CardTitle>
-              <CardDescription>
-                Performance insights and optimization recommendations
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Analytics dashboard coming soon...</p>
             </CardContent>
           </Card>
         </TabsContent>
