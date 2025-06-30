@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -23,6 +22,7 @@ import Dependencies from '@/pages/Dependencies';
 import ControlsAndKRI from '@/pages/ControlsAndKri';
 import WorkflowCenter from '@/pages/WorkflowCenter';
 import RiskAppetite from '@/pages/RiskAppetite';
+import Reporting from '@/pages/Reporting';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -132,6 +132,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <RiskAppetite />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/reporting"
+                        element={
+                          <ProtectedRoute>
+                            <Reporting />
                           </ProtectedRoute>
                         }
                       />
