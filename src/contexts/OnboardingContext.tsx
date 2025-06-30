@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
@@ -172,26 +171,28 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         p_data: data
       });
 
-      // Update local state
+      // Update local state for steps
       setSteps(prev => prev.map(step => 
         step.id === stepId 
           ? { ...step, completed: true, completedAt: new Date().toISOString(), data }
           : step
       ));
 
-      // Calculate completion percentage
+      // Calculate completion percentage based on updated steps
       const updatedSteps = steps.map(step => 
         step.id === stepId ? { ...step, completed: true } : step
       );
       const completedCount = updatedSteps.filter(s => s.completed).length;
       const completionPercentage = Math.round((completedCount / ONBOARDING_STEPS.length) * 100);
 
-      // Update session
-      if (currentSession) {
-        const nextStepIndex = ONBOARDING_STEPS.findIndex(s => s.id === stepId) + 1;
-        const nextStep = nextStepIndex < ONBOARDING_STEPS.length ? ONBOARDING_STEPS[nextStepIndex].id : null;
+      // Find the next step
+      const currentStepIndex = ONBOARDING_STEPS.findIndex(s => s.id === stepId);
+      const nextStepIndex = currentStepIndex + 1;
+      const nextStep = nextStepIndex < ONBOARDING_STEPS.length ? ONBOARDING_STEPS[nextStepIndex].id : null;
 
-        await supabase
+      // Update session with next step
+      if (currentSession) {
+        const { error: sessionError } = await supabase
           .from('onboarding_sessions')
           .update({
             current_step: nextStep,
@@ -199,6 +200,9 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           })
           .eq('id', currentSession.id);
 
+        if (sessionError) throw sessionError;
+
+        // Update local session state
         setCurrentSession(prev => prev ? {
           ...prev,
           currentStep: nextStep || undefined,

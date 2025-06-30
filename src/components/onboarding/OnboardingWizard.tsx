@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -40,12 +39,13 @@ export const OnboardingWizard: React.FC = () => {
     canSkip 
   } = useOnboarding();
   
-  const [currentStep, setCurrentStep] = useState(getCurrentStepIndex());
+  const currentStepIndex = getCurrentStepIndex();
   const completionPercentage = currentSession?.completionPercentage || 0;
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+    if (currentStepIndex < steps.length - 1) {
+      // The context will handle updating to the next step through completeStep
+      // No need to manually update step state here
     } else {
       // Last step completed
       completeOnboarding();
@@ -53,13 +53,13 @@ export const OnboardingWizard: React.FC = () => {
   };
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+    // For now, we'll keep this simple and not implement going backwards
+    // In a real implementation, you might want to update the session's current_step
+    console.log("Previous navigation not implemented");
   };
 
   const renderStep = () => {
-    const stepId = steps[currentStep]?.id;
+    const stepId = steps[currentStepIndex]?.id;
     
     switch (stepId) {
       case 'welcome':
@@ -119,7 +119,7 @@ export const OnboardingWizard: React.FC = () => {
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between text-sm text-gray-600">
-                <span>Step {currentStep + 1} of {steps.length}</span>
+                <span>Step {currentStepIndex + 1} of {steps.length}</span>
                 <span>{completionPercentage}% Complete</span>
               </div>
               <Progress value={completionPercentage} className="w-full" />
@@ -129,8 +129,8 @@ export const OnboardingWizard: React.FC = () => {
                 {steps.map((step, index) => {
                   const Icon = stepIcons[step.id as keyof typeof stepIcons];
                   const isCompleted = step.completed;
-                  const isCurrent = index === currentStep;
-                  const isPast = index < currentStep;
+                  const isCurrent = index === currentStepIndex;
+                  const isPast = index < currentStepIndex;
                   
                   return (
                     <div key={step.id} className="flex flex-col items-center space-y-2">
