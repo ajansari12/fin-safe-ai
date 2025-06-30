@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/__tests__/utils/test-utils';
 import DocumentRepositoryManager from '@/components/documents/DocumentRepositoryManager';
 import { DocumentRepository } from '@/services/document-management-service';

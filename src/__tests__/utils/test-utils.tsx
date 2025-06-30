@@ -1,8 +1,9 @@
 
 import React, { ReactElement } from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { render, RenderOptions, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 
 // Create a mock auth context since the real one isn't exported
 const MockAuthContext = React.createContext({
@@ -68,4 +69,4 @@ const customRender = (
 ) => render(ui, { wrapper: AllTheProviders, ...options });
 
 export * from '@testing-library/react';
-export { customRender as render };
+export { customRender as render, screen, fireEvent, waitFor };
