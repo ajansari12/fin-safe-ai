@@ -1,222 +1,140 @@
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Play, Settings, TrendingUp, Workflow, Zap, Database, Brain, AlertCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { WorkflowOrchestration, WorkflowExecution, workflowOrchestrationService } from "@/services/workflow-orchestration-service";
-import VisualWorkflowDesigner from "./VisualWorkflowDesigner";
-import WorkflowNodePalette from "./WorkflowNodePalette";
-import WorkflowCanvas from "./WorkflowCanvas";
-import DataOrchestrationManager from "./DataOrchestrationManager";
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Plus, 
+  Play, 
+  Settings, 
+  BarChart3, 
+  Brain, 
+  Zap,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Activity
+} from 'lucide-react';
+import { toast } from 'sonner';
+import VisualWorkflowDesigner from './VisualWorkflowDesigner';
+import DataOrchestrationManager from './DataOrchestrationManager';
+import { workflowOrchestrationService, type Workflow } from '@/services/workflow-orchestration-service';
+import { intelligentAutomationService } from '@/services/intelligent-automation-service';
+import { useAuth } from '@/contexts/AuthContext';
 
 const WorkflowOrchestrationDashboard: React.FC = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  
-  const [workflows, setWorkflows] = useState<WorkflowOrchestration[]>([]);
-  const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isDesignerOpen, setIsDesignerOpen] = useState(false);
-  const [editingWorkflow, setEditingWorkflow] = useState<WorkflowOrchestration | null>(null);
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [draggedNodeType, setDraggedNodeType] = useState<string | null>(null);
-  const [orgId, setOrgId] = useState<string>("");
-  const [error, setError] = useState<string>("");
+  const { profile } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [showDesigner, setShowDesigner] = useState(false);
+  const [workflowAnalytics, setWorkflowAnalytics] = useState<any>({});
+  const [healthMetrics, setHealthMetrics] = useState<Record<string, any>>({});
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!user?.id) return;
-      
-      try {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('id', user.id)
-          .single();
-        
-        if (error) {
-          console.error('Failed to fetch profile:', error);
-          setError('Failed to load user profile');
-          return;
-        }
-
-        if (profile?.organization_id) {
-          setOrgId(profile.organization_id);
-        } else {
-          setError('No organization found for user');
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-        setError('Failed to load user profile');
-      }
-    };
-
-    fetchUserProfile();
-  }, [user]);
+    loadWorkflows();
+  }, [profile?.organization_id]);
 
   useEffect(() => {
-    if (orgId) {
-      loadWorkflows();
-      loadExecutions();
+    if (workflows.length > 0) {
+      loadWorkflowAnalytics();
+      loadHealthMetrics();
     }
-  }, [orgId]);
+  }, [workflows]);
 
   const loadWorkflows = async () => {
+    if (!profile?.organization_id) return;
+
     try {
-      setLoading(true);
-      setError("");
-      const data = await workflowOrchestrationService.getWorkflowOrchestrations(orgId);
+      const data = await workflowOrchestrationService.getWorkflows(profile.organization_id);
       setWorkflows(data);
     } catch (error) {
       console.error('Error loading workflows:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load workflows';
-      setError(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
+      toast.error('Failed to load workflows');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const loadExecutions = async () => {
-    try {
-      const data = await workflowOrchestrationService.getWorkflowExecutions(orgId);
-      setExecutions(data);
-    } catch (error) {
-      console.error('Error loading executions:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load executions';
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleSaveWorkflow = async (workflowData: Omit<WorkflowOrchestration, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const workflowWithOrgId = {
-        ...workflowData,
-        org_id: orgId,
-        created_by: user?.id
-      };
-
-      if (editingWorkflow) {
-        await workflowOrchestrationService.updateWorkflowOrchestration(editingWorkflow.id, workflowWithOrgId);
-        toast({
-          title: "Success",
-          description: "Workflow updated successfully"
-        });
-      } else {
-        await workflowOrchestrationService.createWorkflowOrchestration(workflowWithOrgId);
-        toast({
-          title: "Success",
-          description: "Workflow created successfully"
-        });
+  const loadWorkflowAnalytics = async () => {
+    const analytics: Record<string, any> = {};
+    
+    for (const workflow of workflows.slice(0, 5)) { // Limit to first 5 for performance
+      try {
+        const analysis = await intelligentAutomationService.analyzeWorkflowPerformance(workflow.id);
+        analytics[workflow.id] = analysis;
+      } catch (error) {
+        console.error(`Error analyzing workflow ${workflow.id}:`, error);
       }
-
-      await loadWorkflows();
-      setIsDesignerOpen(false);
-      setEditingWorkflow(null);
-    } catch (error) {
-      console.error('Error saving workflow:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save workflow';
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
     }
+    
+    setWorkflowAnalytics(analytics);
   };
 
-  const handleExecuteWorkflow = async (workflowId: string) => {
-    try {
-      await workflowOrchestrationService.executeWorkflow(workflowId, {});
-      toast({
-        title: "Success",
-        description: "Workflow execution started"
-      });
-      await loadExecutions();
-    } catch (error) {
-      console.error('Error executing workflow:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to execute workflow';
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
-      });
+  const loadHealthMetrics = async () => {
+    const metrics: Record<string, any> = {};
+    
+    for (const workflow of workflows.slice(0, 5)) {
+      try {
+        const health = await intelligentAutomationService.monitorWorkflowHealth(workflow.id);
+        metrics[workflow.id] = health;
+      } catch (error) {
+        console.error(`Error monitoring workflow ${workflow.id}:`, error);
+      }
     }
+    
+    setHealthMetrics(metrics);
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const handleCreateWorkflow = () => {
+    setSelectedWorkflow(null);
+    setShowDesigner(true);
+  };
+
+  const handleEditWorkflow = (workflow: Workflow) => {
+    setSelectedWorkflow(workflow);
+    setShowDesigner(true);
+  };
+
+  const handleWorkflowSaved = (workflow: Workflow) => {
+    setShowDesigner(false);
+    loadWorkflows();
+    toast.success('Workflow saved successfully');
+  };
+
+  const handleWorkflowExecuted = (executionId: string) => {
+    toast.success(`Workflow execution started: ${executionId}`);
+    // Could navigate to execution details or update UI
+  };
+
+  const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return 'default';
-      case 'draft': return 'secondary';
-      case 'deprecated': return 'destructive';
-      default: return 'outline';
+      case 'active': return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'draft': return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'paused': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      default: return <Activity className="h-4 w-4 text-gray-500" />;
     }
   };
 
-  const getExecutionStatusBadgeVariant = (status: string) => {
+  const getHealthStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'default';
-      case 'running': return 'secondary';
-      case 'failed': return 'destructive';
-      case 'paused': return 'outline';
-      case 'cancelled': return 'outline';
-      default: return 'outline';
+      case 'healthy': return 'text-green-500';
+      case 'warning': return 'text-yellow-500';
+      case 'critical': return 'text-red-500';
+      default: return 'text-gray-500';
     }
   };
 
-  const calculateSuccessRate = () => {
-    if (executions.length === 0) return 0;
-    const successfulExecutions = executions.filter(e => e.status === 'completed').length;
-    return Math.round((successfulExecutions / executions.length) * 100);
-  };
-
-  // Handle node operations for canvas
-  const handleNodeAdd = (type: string, position: { x: number; y: number }) => {
-    console.log('Adding node:', type, position);
-    // This will be handled by the VisualWorkflowDesigner
-  };
-
-  const handleNodeUpdate = (nodeId: string, updates: any) => {
-    console.log('Updating node:', nodeId, updates);
-    // This will be handled by the VisualWorkflowDesigner
-  };
-
-  const handleNodeDelete = (nodeId: string) => {
-    console.log('Deleting node:', nodeId);
-    // This will be handled by the VisualWorkflowDesigner
-  };
-
-  if (!orgId && !error) {
+  if (showDesigner) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading organization data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
-          <h3 className="text-lg font-medium mb-2">Error Loading Data</h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()} variant="outline">
-            Retry
-          </Button>
-        </div>
+      <div className="h-full">
+        <VisualWorkflowDesigner
+          workflowId={selectedWorkflow?.id}
+          onSave={handleWorkflowSaved}
+          onExecute={handleWorkflowExecuted}
+        />
       </div>
     );
   }
@@ -225,220 +143,131 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Workflow Orchestration</h1>
+          <h2 className="text-2xl font-bold tracking-tight">Workflow Orchestration</h2>
           <p className="text-muted-foreground">
-            Design, automate, and manage sophisticated business processes across all platform modules
+            Intelligent process automation and workflow management
           </p>
         </div>
-        <Button onClick={() => {
-          setEditingWorkflow(null);
-          setIsDesignerOpen(true);
-        }}>
+        <Button onClick={handleCreateWorkflow}>
           <Plus className="h-4 w-4 mr-2" />
           Create Workflow
         </Button>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Workflows</CardTitle>
-            <Workflow className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {workflows.filter(w => w.status === 'active').length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {workflows.length} total workflows
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Executions</CardTitle>
-            <Play className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{executions.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {executions.filter(e => e.status === 'running').length} currently running
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{calculateSuccessRate()}%</div>
-            <p className="text-xs text-muted-foreground">
-              Last 30 days
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Processing Time</CardTitle>
-            <Zap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2.3s</div>
-            <p className="text-xs text-muted-foreground">
-              Estimated average
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="workflows" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="workflows">Workflows</TabsTrigger>
-          <TabsTrigger value="executions">Executions</TabsTrigger>
-          <TabsTrigger value="designer">Visual Designer</TabsTrigger>
-          <TabsTrigger value="orchestration">Data Orchestration</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="workflows" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Workflows
+          </TabsTrigger>
+          <TabsTrigger value="automation" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            AI Automation
+          </TabsTrigger>
+          <TabsTrigger value="data" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Data Orchestration
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="workflows" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Templates</CardTitle>
-              <CardDescription>
-                Manage and configure your workflow templates
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">Loading workflows...</p>
-                </div>
-              ) : workflows.length === 0 ? (
-                <div className="text-center py-8">
-                  <Workflow className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">No workflows found</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Create your first workflow to automate business processes
-                  </p>
-                  <Button onClick={() => setIsDesignerOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Workflow
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {workflows.map((workflow) => (
-                    <div key={workflow.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-medium">{workflow.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {workflow.description || 'No description provided'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant={getStatusBadgeVariant(workflow.status)}>
-                              {workflow.status}
-                            </Badge>
-                            <Badge variant="outline">
-                              v{workflow.version}
-                            </Badge>
-                            <Badge variant="outline">
-                              {workflow.category}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {workflow.nodes.length} nodes
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleExecuteWorkflow(workflow.id)}
-                            disabled={workflow.status !== 'active'}
-                          >
-                            <Play className="h-3 w-3 mr-1" />
-                            Execute
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setEditingWorkflow(workflow);
-                              setIsDesignerOpen(true);
-                            }}
-                          >
-                            <Settings className="h-3 w-3 mr-1" />
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <TabsContent value="overview" className="space-y-6">
+          {/* Overview Stats */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
+                <Settings className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{workflows.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {workflows.filter(w => w.status === 'active').length} active
+                </p>
+              </CardContent>
+            </Card>
 
-        <TabsContent value="executions" className="space-y-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Executions Today</CardTitle>
+                <Play className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  0% from yesterday
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">--</div>
+                <p className="text-xs text-muted-foreground">
+                  No recent executions
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">--</div>
+                <p className="text-xs text-muted-foreground">
+                  No recent executions
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Workflow Health Monitor */}
           <Card>
             <CardHeader>
-              <CardTitle>Workflow Executions</CardTitle>
-              <CardDescription>
-                Monitor and track workflow execution history
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Workflow Health Monitor
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {executions.length === 0 ? (
-                <div className="text-center py-8">
-                  <Play className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">No executions found</h3>
-                  <p className="text-muted-foreground">
-                    Execute workflows to see their execution history here
-                  </p>
+              {workflows.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No workflows to monitor. Create your first workflow to get started.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {executions.slice(0, 10).map((execution) => {
-                    const workflow = workflows.find(w => w.id === execution.workflow_id);
+                <div className="space-y-3">
+                  {workflows.slice(0, 5).map((workflow) => {
+                    const health = healthMetrics[workflow.id];
                     return (
-                      <div key={execution.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between">
+                      <div key={workflow.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          {getStatusIcon(workflow.status)}
                           <div>
-                            <h4 className="font-medium">
-                              {workflow?.name || 'Unknown Workflow'}
-                            </h4>
-                            <p className="text-sm text-muted-foreground">
-                              Started: {new Date(execution.started_at).toLocaleString()}
-                            </p>
-                            {execution.completed_at && (
-                              <p className="text-sm text-muted-foreground">
-                                Completed: {new Date(execution.completed_at).toLocaleString()}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={getExecutionStatusBadgeVariant(execution.status)}>
-                              {execution.status}
-                            </Badge>
-                            {execution.error_message && (
-                              <Badge variant="destructive">
-                                Error
-                              </Badge>
-                            )}
+                            <div className="font-medium">{workflow.name}</div>
+                            <div className="text-sm text-muted-foreground">{workflow.description}</div>
                           </div>
                         </div>
-                        {execution.error_message && (
-                          <div className="mt-2 text-sm text-destructive">
-                            {execution.error_message}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {health && (
+                            <Badge 
+                              variant="outline" 
+                              className={getHealthStatusColor(health.status)}
+                            >
+                              {health.status}
+                            </Badge>
+                          )}
+                          <Badge variant="secondary">{workflow.status}</Badge>
+                        </div>
                       </div>
                     );
                   })}
@@ -448,84 +277,130 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="designer" className="space-y-4">
+        <TabsContent value="workflows" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Visual Workflow Designer</CardTitle>
-              <CardDescription>
-                Build workflows using the visual drag-and-drop interface
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="flex h-[600px]">
-                <div className="w-80 border-r">
-                  <WorkflowNodePalette
-                    onNodeDragStart={(nodeType) => setDraggedNodeType(nodeType)}
-                    className="p-4 h-full overflow-y-auto"
-                  />
-                </div>
-                <div className="flex-1">
-                  <WorkflowCanvas
-                    nodes={[]}
-                    edges={[]}
-                    selectedNode={selectedNode}
-                    onNodeSelect={setSelectedNode}
-                    onNodeAdd={handleNodeAdd}
-                    onNodeUpdate={handleNodeUpdate}
-                    onNodeDelete={handleNodeDelete}
-                    draggedNodeType={draggedNodeType}
-                    onDraggedNodeTypeChange={setDraggedNodeType}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="orchestration" className="space-y-4">
-          <DataOrchestrationManager orgId={orgId} />
-        </TabsContent>
-
-        <TabsContent value="integrations" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                <CardTitle>Integration & API Management</CardTitle>
-              </div>
-              <CardDescription>
-                Manage external integrations and API connections
-              </CardDescription>
+              <CardTitle>Workflow Library</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Integration management coming soon...</p>
+              {workflows.length === 0 ? (
+                <div className="text-center py-12">
+                  <Settings className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">No workflows yet</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Create your first automated workflow to streamline your processes
+                  </p>
+                  <Button onClick={handleCreateWorkflow}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Workflow
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {workflows.map((workflow) => (
+                    <Card key={workflow.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">{workflow.name}</CardTitle>
+                          <Badge variant="secondary">{workflow.status}</Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          {workflow.description || 'No description'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditWorkflow(workflow)}
+                          >
+                            <Settings className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            disabled={workflow.status !== 'active'}
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            Run
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
 
-      {/* Visual Workflow Designer Dialog */}
-      <Dialog open={isDesignerOpen} onOpenChange={setIsDesignerOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingWorkflow ? 'Edit Workflow' : 'Create New Workflow'}
-            </DialogTitle>
-            <DialogDescription>
-              Design sophisticated workflows with our visual editor
-            </DialogDescription>
-          </DialogHeader>
-          
-          <VisualWorkflowDesigner
-            workflow={editingWorkflow || undefined}
-            onSave={handleSaveWorkflow}
-            onCancel={() => {
-              setIsDesignerOpen(false);
-              setEditingWorkflow(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+        <TabsContent value="automation" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  AI Performance Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {Object.keys(workflowAnalytics).length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No workflow analytics available. Execute workflows to see AI insights.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(workflowAnalytics).map(([workflowId, analysis]: [string, any]) => {
+                      const workflow = workflows.find(w => w.id === workflowId);
+                      return (
+                        <div key={workflowId} className="border rounded-lg p-3">
+                          <div className="font-medium mb-2">{workflow?.name}</div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>Success Rate: {analysis.current_metrics?.success_rate || 0}%</div>
+                            <div>Avg Duration: {analysis.current_metrics?.avg_duration || 0}s</div>
+                          </div>
+                          {analysis.recommended_changes?.length > 0 && (
+                            <div className="mt-2">
+                              <Badge variant="outline" className="text-xs">
+                                {analysis.recommended_changes.length} optimization suggestions
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Automation Rules
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Zap className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Configure automation rules to trigger workflows automatically</p>
+                  <Button variant="outline" className="mt-2">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Rule
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="data">
+          <DataOrchestrationManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

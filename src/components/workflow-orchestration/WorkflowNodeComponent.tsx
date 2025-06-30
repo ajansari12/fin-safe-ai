@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
+import React, { useState } from 'react';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   Play, 
   Square, 
@@ -11,34 +12,15 @@ import {
   GitMerge,
   Clock,
   Zap,
+  UserCheck,
+  Bell,
+  RefreshCw,
+  CheckCircle,
+  Brain,
   Trash2,
-  Edit3
+  MoreVertical
 } from 'lucide-react';
 import { WorkflowNode } from '@/services/workflow-orchestration-service';
-
-const NODE_ICONS = {
-  start: Play,
-  task: Square,
-  decision: Diamond,
-  integration: Settings,
-  parallel: GitBranch,
-  merge: GitMerge,
-  delay: Clock,
-  trigger: Zap,
-  end: Square
-};
-
-const NODE_COLORS = {
-  start: 'bg-green-500 hover:bg-green-600',
-  task: 'bg-blue-500 hover:bg-blue-600',
-  decision: 'bg-yellow-500 hover:bg-yellow-600',
-  integration: 'bg-purple-500 hover:bg-purple-600',
-  parallel: 'bg-orange-500 hover:bg-orange-600',
-  merge: 'bg-indigo-500 hover:bg-indigo-600',
-  delay: 'bg-gray-500 hover:bg-gray-600',
-  trigger: 'bg-red-500 hover:bg-red-600',
-  end: 'bg-red-600 hover:bg-red-700'
-};
 
 interface WorkflowNodeComponentProps {
   node: WorkflowNode;
@@ -48,6 +30,39 @@ interface WorkflowNodeComponentProps {
   onDelete: () => void;
 }
 
+const ICON_MAP: Record<string, React.ComponentType<any>> = {
+  Play,
+  Square,
+  Diamond,
+  Settings,
+  GitBranch,
+  GitMerge,
+  Clock,
+  Zap,
+  UserCheck,
+  Bell,
+  RefreshCw,
+  CheckCircle,
+  Brain
+};
+
+const NODE_COLORS: Record<string, string> = {
+  start: 'bg-green-500',
+  task: 'bg-blue-500',
+  decision: 'bg-yellow-500',
+  integration: 'bg-purple-500',
+  parallel: 'bg-orange-500',
+  merge: 'bg-indigo-500',
+  delay: 'bg-gray-500',
+  trigger: 'bg-red-500',
+  end: 'bg-red-600',
+  approval: 'bg-cyan-500',
+  notification: 'bg-pink-500',
+  data_transform: 'bg-teal-500',
+  validation: 'bg-emerald-500',
+  ml_prediction: 'bg-violet-500'
+};
+
 const WorkflowNodeComponent: React.FC<WorkflowNodeComponentProps> = ({
   node,
   isSelected,
@@ -55,128 +70,129 @@ const WorkflowNodeComponent: React.FC<WorkflowNodeComponentProps> = ({
   onUpdate,
   onDelete
 }) => {
-  const Icon = NODE_ICONS[node.type as keyof typeof NODE_ICONS] || Square;
-  const colorClass = NODE_COLORS[node.type as keyof typeof NODE_COLORS] || 'bg-gray-500 hover:bg-gray-600';
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-  const handleNodeClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const Icon = ICON_MAP[node.data.nodeType] || Square;
+  const bgColor = NODE_COLORS[node.data.nodeType] || 'bg-gray-500';
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.detail === 2) { // Double click
+      onSelect();
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+    setIsDragging(true);
     onSelect();
   };
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDelete();
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+
+    const canvas = e.currentTarget.closest('.workflow-canvas');
+    if (!canvas) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const newPosition = {
+      x: e.clientX - canvasRect.left - dragOffset.x,
+      y: e.clientY - canvasRect.top - dragOffset.y
+    };
+
+    onUpdate({ position: newPosition });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const getStatusColor = () => {
+    // This would come from execution status in a real implementation
+    return 'bg-gray-200';
   };
 
   return (
     <div
-      className="absolute z-10 group"
+      className={`absolute cursor-move select-none transition-all duration-200 ${
+        isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+      } ${isDragging ? 'z-50 scale-105' : 'z-10'}`}
       style={{
         left: node.position.x,
         top: node.position.y,
-        transform: 'translate(-50%, -50%)'
+        transform: isDragging ? 'rotate(5deg)' : 'none'
       }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
-      {/* Node container */}
-      <div
-        className={`
-          relative cursor-pointer border-2 rounded-lg p-3 min-w-[140px] text-center 
-          transition-all duration-200 hover:shadow-lg text-white
-          ${isSelected 
-            ? 'border-blue-400 shadow-lg ring-2 ring-blue-200' 
-            : 'border-transparent hover:border-white/50'
-          }
-          ${colorClass}
-        `}
-        onClick={handleNodeClick}
-      >
-        {/* Node icon and title */}
-        <div className="flex flex-col items-center gap-1">
-          <Icon className="h-5 w-5" />
-          <div className="text-sm font-medium truncate max-w-full">
-            {node.name}
+      <Card className={`w-48 shadow-lg hover:shadow-xl transition-shadow ${
+        isDragging ? 'shadow-2xl' : ''
+      }`}>
+        <div className={`p-3 text-white ${bgColor} rounded-t-lg`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Icon className="h-4 w-4" />
+              <div className="font-medium text-sm truncate">
+                {node.data.label}
+              </div>
+            </div>
+            
+            {isSelected && (
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-white hover:bg-white/20"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </div>
-
-        {/* Node details */}
-        <div className="mt-2 space-y-1">
-          {node.description && (
-            <div className="text-xs opacity-90 truncate">
-              {node.description}
+        
+        <div className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <Badge variant="outline" className="text-xs">
+              {node.data.nodeType}
+            </Badge>
+            
+            {/* Status indicator */}
+            <div className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
+          </div>
+          
+          {/* Configuration preview */}
+          {Object.keys(node.data.configuration).length > 0 && (
+            <div className="text-xs text-gray-600 mt-2">
+              <div className="truncate">
+                {Object.keys(node.data.configuration).length} config{Object.keys(node.data.configuration).length !== 1 ? 's' : ''}
+              </div>
             </div>
           )}
-
-          {/* Type-specific badges */}
-          {node.type === 'decision' && node.conditions && node.conditions.length > 0 && (
-            <Badge variant="secondary" className="text-xs">
-              {node.conditions.length} rule{node.conditions.length !== 1 ? 's' : ''}
-            </Badge>
-          )}
-
-          {node.type === 'task' && node.module && (
-            <Badge variant="secondary" className="text-xs">
-              {node.module}
-            </Badge>
-          )}
-
-          {node.type === 'integration' && (
-            <Badge variant="secondary" className="text-xs">
-              External
-            </Badge>
-          )}
-
-          {node.timeout_minutes && node.timeout_minutes !== 60 && (
-            <Badge variant="outline" className="text-xs text-white border-white/50">
-              {node.timeout_minutes}m
-            </Badge>
-          )}
-        </div>
-
-        {/* Action buttons (visible on hover/selection) */}
-        {isSelected && (
-          <div className="absolute -top-2 -right-2 flex gap-1">
-            <Button
-              size="sm"
-              variant="destructive"
-              className="h-6 w-6 p-0"
-              onClick={handleDeleteClick}
-              title="Delete node"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
-
-        {/* Connection points */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Input connection point */}
-          {node.type !== 'start' && (
-            <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white border-2 border-gray-300 rounded-full"></div>
-          )}
           
-          {/* Output connection point */}
-          {node.type !== 'end' && (
-            <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-white border-2 border-gray-300 rounded-full"></div>
-          )}
+          {/* Connection points */}
+          <div className="flex justify-between items-center mt-3">
+            {/* Input connection point */}
+            {node.data.nodeType !== 'start' && (
+              <div className="w-3 h-3 rounded-full bg-gray-300 border-2 border-gray-500 -ml-1" />
+            )}
+            
+            <div className="flex-1" />
+            
+            {/* Output connection point */}
+            {node.data.nodeType !== 'end' && (
+              <div className="w-3 h-3 rounded-full bg-gray-300 border-2 border-gray-500 -mr-1" />
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Node validation indicators */}
-      {node.type === 'start' && (
-        <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
-          <Badge variant="outline" className="text-xs bg-white">
-            Entry Point
-          </Badge>
-        </div>
-      )}
-
-      {node.type === 'end' && (
-        <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2">
-          <Badge variant="outline" className="text-xs bg-white">
-            Exit Point
-          </Badge>
-        </div>
-      )}
+      </Card>
     </div>
   );
 };
