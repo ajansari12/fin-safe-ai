@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -424,7 +423,6 @@ class RiskIntelligenceService {
       
       contributors.push({
         source: intel.attribution,
-        intelligence_type: intel.intelligence_type,
         score: intel.risk_score,
         weight: adjustedWeight,
         confidence: intel.confidence_score,
