@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
-import { Plus, FileDown, BarChart3 } from "lucide-react";
+import { Plus, FileDown, BarChart3, Brain } from "lucide-react";
 import { createVendorProfile, updateVendorProfile, deleteVendorProfile, getVendorProfiles, VendorProfile } from "@/services/third-party-service";
 import { generateThirdPartyReviewPDF } from "@/services/third-party-pdf-service";
 import { checkExpiringContracts } from "@/services/contract-service";
@@ -15,6 +14,7 @@ import VendorProfileForm from "@/components/third-party/VendorProfileForm";
 import VendorProfilesList from "@/components/third-party/VendorProfilesList";
 import VendorDetailsDialog from "@/components/third-party/VendorDetailsDialog";
 import VendorRiskDashboard from "@/components/third-party/VendorRiskDashboard";
+import RiskIntelligenceHub from "@/components/intelligence/RiskIntelligenceHub";
 
 const ThirdPartyRisk = () => {
   const { user } = useAuth();
@@ -183,7 +183,7 @@ const ThirdPartyRisk = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Third-Party Risk Management</h1>
             <p className="text-muted-foreground">
-              Assess and manage risks associated with third-party service providers with automated risk scoring and contract management.
+              Assess and manage risks associated with third-party service providers with automated risk scoring, contract management, and external intelligence integration.
             </p>
           </div>
           
@@ -214,12 +214,16 @@ const ThirdPartyRisk = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Risk Overview
             </TabsTrigger>
             <TabsTrigger value="vendors">Vendor Profiles</TabsTrigger>
+            <TabsTrigger value="intelligence" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              Risk Intelligence
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
@@ -233,6 +237,10 @@ const ThirdPartyRisk = () => {
               onDelete={handleDelete}
               onViewDetails={handleViewDetails}
             />
+          </TabsContent>
+
+          <TabsContent value="intelligence" className="space-y-6">
+            <RiskIntelligenceHub vendorId={selectedVendor?.id} />
           </TabsContent>
         </Tabs>
 
