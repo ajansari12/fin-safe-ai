@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -102,6 +101,22 @@ export interface ExecutionLogEntry {
   data?: any;
 }
 
+// Helper function to safely parse JSON with fallback
+const safeParseJSON = (value: any, fallback: any = null) => {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'object') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+// Helper function to ensure status is valid
+const validateStatus = (status: string, validStatuses: string[], defaultStatus: string) => {
+  return validStatuses.includes(status) ? status : defaultStatus;
+};
+
 class WorkflowOrchestrationService {
   // Workflow Template Management
   async getWorkflowOrchestrations(orgId: string): Promise<WorkflowOrchestration[]> {
@@ -116,10 +131,12 @@ class WorkflowOrchestrationService {
 
       return (data || []).map(workflow => ({
         ...workflow,
-        nodes: Array.isArray(workflow.nodes) ? workflow.nodes : JSON.parse(workflow.nodes || '[]'),
-        edges: Array.isArray(workflow.edges) ? workflow.edges : JSON.parse(workflow.edges || '[]'),
-        variables: typeof workflow.variables === 'object' ? workflow.variables : JSON.parse(workflow.variables || '{}'),
-        business_rules: Array.isArray(workflow.business_rules) ? workflow.business_rules : JSON.parse(workflow.business_rules || '[]')
+        status: validateStatus(workflow.status, ['draft', 'active', 'deprecated'], 'draft') as 'draft' | 'active' | 'deprecated',
+        trigger_type: validateStatus(workflow.trigger_type, ['manual', 'scheduled', 'event', 'api'], 'manual') as 'manual' | 'scheduled' | 'event' | 'api',
+        nodes: safeParseJSON(workflow.nodes, []) as WorkflowNode[],
+        edges: safeParseJSON(workflow.edges, []) as WorkflowEdge[],
+        variables: safeParseJSON(workflow.variables, {}) as Record<string, any>,
+        business_rules: safeParseJSON(workflow.business_rules, []) as BusinessRule[]
       }));
     } catch (error) {
       console.error('Error fetching workflow orchestrations:', error);
@@ -156,10 +173,12 @@ class WorkflowOrchestrationService {
 
       return {
         ...data,
-        nodes: Array.isArray(data.nodes) ? data.nodes : JSON.parse(data.nodes || '[]'),
-        edges: Array.isArray(data.edges) ? data.edges : JSON.parse(data.edges || '[]'),
-        variables: typeof data.variables === 'object' ? data.variables : JSON.parse(data.variables || '{}'),
-        business_rules: Array.isArray(data.business_rules) ? data.business_rules : JSON.parse(data.business_rules || '[]')
+        status: validateStatus(data.status, ['draft', 'active', 'deprecated'], 'draft') as 'draft' | 'active' | 'deprecated',
+        trigger_type: validateStatus(data.trigger_type, ['manual', 'scheduled', 'event', 'api'], 'manual') as 'manual' | 'scheduled' | 'event' | 'api',
+        nodes: safeParseJSON(data.nodes, []) as WorkflowNode[],
+        edges: safeParseJSON(data.edges, []) as WorkflowEdge[],
+        variables: safeParseJSON(data.variables, {}) as Record<string, any>,
+        business_rules: safeParseJSON(data.business_rules, []) as BusinessRule[]
       };
     } catch (error) {
       console.error('Error creating workflow orchestration:', error);
@@ -201,10 +220,12 @@ class WorkflowOrchestrationService {
 
       return {
         ...data,
-        nodes: Array.isArray(data.nodes) ? data.nodes : JSON.parse(data.nodes || '[]'),
-        edges: Array.isArray(data.edges) ? data.edges : JSON.parse(data.edges || '[]'),
-        variables: typeof data.variables === 'object' ? data.variables : JSON.parse(data.variables || '{}'),
-        business_rules: Array.isArray(data.business_rules) ? data.business_rules : JSON.parse(data.business_rules || '[]')
+        status: validateStatus(data.status, ['draft', 'active', 'deprecated'], 'draft') as 'draft' | 'active' | 'deprecated',
+        trigger_type: validateStatus(data.trigger_type, ['manual', 'scheduled', 'event', 'api'], 'manual') as 'manual' | 'scheduled' | 'event' | 'api',
+        nodes: safeParseJSON(data.nodes, []) as WorkflowNode[],
+        edges: safeParseJSON(data.edges, []) as WorkflowEdge[],
+        variables: safeParseJSON(data.variables, {}) as Record<string, any>,
+        business_rules: safeParseJSON(data.business_rules, []) as BusinessRule[]
       };
     } catch (error) {
       console.error('Error updating workflow orchestration:', error);
@@ -258,7 +279,8 @@ class WorkflowOrchestrationService {
 
       return {
         ...data,
-        execution_log: Array.isArray(data.execution_log) ? data.execution_log : JSON.parse(data.execution_log || '[]')
+        status: validateStatus(data.status, ['running', 'completed', 'failed', 'paused', 'cancelled'], 'running') as 'running' | 'completed' | 'failed' | 'paused' | 'cancelled',
+        execution_log: safeParseJSON(data.execution_log, []) as ExecutionLogEntry[]
       };
     } catch (error) {
       console.error('Error executing workflow:', error);
@@ -284,7 +306,8 @@ class WorkflowOrchestrationService {
 
       return (data || []).map(execution => ({
         ...execution,
-        execution_log: Array.isArray(execution.execution_log) ? execution.execution_log : JSON.parse(execution.execution_log || '[]')
+        status: validateStatus(execution.status, ['running', 'completed', 'failed', 'paused', 'cancelled'], 'running') as 'running' | 'completed' | 'failed' | 'paused' | 'cancelled',
+        execution_log: safeParseJSON(execution.execution_log, []) as ExecutionLogEntry[]
       }));
     } catch (error) {
       console.error('Error fetching workflow executions:', error);
@@ -476,10 +499,7 @@ class WorkflowOrchestrationService {
 
       if (fetchError) throw fetchError;
 
-      const currentLog = Array.isArray(execution.execution_log) 
-        ? execution.execution_log 
-        : JSON.parse(execution.execution_log || '[]');
-
+      const currentLog = safeParseJSON(execution.execution_log, []) as ExecutionLogEntry[];
       const updatedLog = [...currentLog, logEntry];
 
       const { error: updateError } = await supabase
@@ -527,10 +547,12 @@ class WorkflowOrchestrationService {
 
       return {
         ...data,
-        nodes: Array.isArray(data.nodes) ? data.nodes : JSON.parse(data.nodes || '[]'),
-        edges: Array.isArray(data.edges) ? data.edges : JSON.parse(data.edges || '[]'),
-        variables: typeof data.variables === 'object' ? data.variables : JSON.parse(data.variables || '{}'),
-        business_rules: Array.isArray(data.business_rules) ? data.business_rules : JSON.parse(data.business_rules || '[]')
+        status: validateStatus(data.status, ['draft', 'active', 'deprecated'], 'draft') as 'draft' | 'active' | 'deprecated',
+        trigger_type: validateStatus(data.trigger_type, ['manual', 'scheduled', 'event', 'api'], 'manual') as 'manual' | 'scheduled' | 'event' | 'api',
+        nodes: safeParseJSON(data.nodes, []) as WorkflowNode[],
+        edges: safeParseJSON(data.edges, []) as WorkflowEdge[],
+        variables: safeParseJSON(data.variables, {}) as Record<string, any>,
+        business_rules: safeParseJSON(data.business_rules, []) as BusinessRule[]
       };
     } catch (error) {
       console.error('Error fetching workflow orchestration:', error);
@@ -585,8 +607,9 @@ class WorkflowOrchestrationService {
 
       return (data || []).map(rule => ({
         ...rule,
-        conditions: Array.isArray(rule.conditions) ? rule.conditions : JSON.parse(rule.conditions || '[]'),
-        actions: Array.isArray(rule.actions) ? rule.actions : JSON.parse(rule.actions || '[]')
+        rule_type: validateStatus(rule.rule_type, ['validation', 'assignment', 'routing', 'calculation'], 'validation') as 'validation' | 'assignment' | 'routing' | 'calculation',
+        conditions: safeParseJSON(rule.conditions, []) as WorkflowCondition[],
+        actions: safeParseJSON(rule.actions, []) as RuleAction[]
       }));
     } catch (error) {
       console.error('Error fetching business rules:', error);
@@ -596,13 +619,19 @@ class WorkflowOrchestrationService {
 
   async createBusinessRule(rule: Omit<BusinessRule, 'id'>): Promise<BusinessRule> {
     try {
+      const ruleData = {
+        name: rule.name,
+        description: rule.description,
+        rule_type: rule.rule_type,
+        conditions: JSON.stringify(rule.conditions || []),
+        actions: JSON.stringify(rule.actions || []),
+        priority: rule.priority,
+        is_active: rule.is_active
+      };
+
       const { data, error } = await supabase
         .from('business_rules')
-        .insert([{
-          ...rule,
-          conditions: JSON.stringify(rule.conditions || []),
-          actions: JSON.stringify(rule.actions || [])
-        }])
+        .insert([ruleData])
         .select()
         .single();
 
@@ -610,8 +639,9 @@ class WorkflowOrchestrationService {
 
       return {
         ...data,
-        conditions: Array.isArray(data.conditions) ? data.conditions : JSON.parse(data.conditions || '[]'),
-        actions: Array.isArray(data.actions) ? data.actions : JSON.parse(data.actions || '[]')
+        rule_type: validateStatus(data.rule_type, ['validation', 'assignment', 'routing', 'calculation'], 'validation') as 'validation' | 'assignment' | 'routing' | 'calculation',
+        conditions: safeParseJSON(data.conditions, []) as WorkflowCondition[],
+        actions: safeParseJSON(data.actions, []) as RuleAction[]
       };
     } catch (error) {
       console.error('Error creating business rule:', error);
