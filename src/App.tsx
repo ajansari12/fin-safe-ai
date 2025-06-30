@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { navItems } from "./nav-items";
 import Index from "./pages/Index";
 import IntegrationFramework from "./pages/IntegrationFramework";
+import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 
 const queryClient = new QueryClient();
 
@@ -19,6 +20,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/integration-framework" element={<IntegrationFramework />} />
+          <Route path="/personalized-dashboard" element={<PersonalizedDashboard />} />
           {navItems.map(({ to, page: PageComponent }) => (
             <Route key={to} path={to} element={<PageComponent />} />
           ))}

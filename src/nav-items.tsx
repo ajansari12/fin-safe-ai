@@ -1,6 +1,8 @@
 
 import React from "react";
 import { LucideIcon } from "lucide-react";
+import Dashboard from "./pages/Dashboard";
+import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 
 export interface NavItem {
   title: string;
@@ -9,5 +11,15 @@ export interface NavItem {
   page: React.ComponentType;
 }
 
-// Empty nav items for now since the specific navigation structure isn't defined
-export const navItems: NavItem[] = [];
+export const navItems: NavItem[] = [
+  {
+    title: "Dashboard",
+    to: "/dashboard",
+    page: Dashboard,
+  },
+  {
+    title: "Personalized Dashboard",
+    to: "/personalized-dashboard",
+    page: PersonalizedDashboard,
+  }
+];
