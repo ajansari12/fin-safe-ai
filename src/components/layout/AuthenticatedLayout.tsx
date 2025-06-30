@@ -70,19 +70,16 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                 : 'w-0 lg:w-16 -translate-x-full lg:translate-x-0'
             }`}
           >
-            {/* Sidebar header - only show logo when sidebar is collapsed on desktop */}
+            {/* Sidebar header - always show logo on mobile when open, hide on desktop when open */}
             <div className="flex items-center justify-between px-4 h-16 border-b flex-shrink-0">
-              {/* Only show logo when sidebar is collapsed on desktop OR always on mobile */}
-              {(!isSidebarOpen || window.innerWidth < 1024) && (
-                <Link to="/app/dashboard" className="flex items-center min-w-0">
-                  <Shield className="h-6 w-6 text-primary flex-shrink-0" />
-                  {isSidebarOpen && (
-                    <span className="ml-2 text-xl font-bold truncate">
-                      ResilientFI
-                    </span>
-                  )}
-                </Link>
-              )}
+              <Link to="/app/dashboard" className={`flex items-center min-w-0 ${isSidebarOpen ? 'lg:hidden' : ''}`}>
+                <Shield className="h-6 w-6 text-primary flex-shrink-0" />
+                {isSidebarOpen && (
+                  <span className="ml-2 text-xl font-bold truncate">
+                    ResilientFI
+                  </span>
+                )}
+              </Link>
               
               {/* Mobile close button */}
               <button 
@@ -161,29 +158,28 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             {/* Navbar */}
             <header className="bg-white dark:bg-slate-800 shadow-sm z-10 flex-shrink-0">
               <div className="flex items-center justify-between h-16 px-4">
-                <div className="flex items-center gap-3">
-                  {/* Only show menu button when sidebar is closed on desktop OR always on mobile */}
-                  {(!isSidebarOpen || window.innerWidth < 1024) && (
-                    <button
-                      onClick={toggleSidebar}
-                      className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <Menu className="h-5 w-5" />
-                    </button>
-                  )}
+                <div className="flex items-center gap-6">
+                  {/* Menu toggle button - always show with proper spacing */}
+                  <button
+                    onClick={toggleSidebar}
+                    className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
                   
-                  {/* Logo when sidebar is open on desktop */}
-                  {isSidebarOpen && window.innerWidth >= 1024 && (
-                    <Link to="/app/dashboard" className="flex items-center min-w-0 ml-2">
-                      <Shield className="h-6 w-6 text-primary flex-shrink-0" />
-                      <span className="ml-2 text-xl font-bold truncate">
-                        ResilientFI
-                      </span>
-                    </Link>
-                  )}
+                  {/* Logo in header when sidebar is open on desktop - with proper spacing */}
+                  <Link 
+                    to="/app/dashboard" 
+                    className={`items-center min-w-0 flex-shrink-0 ${isSidebarOpen ? 'hidden lg:flex' : 'hidden'}`}
+                  >
+                    <Shield className="h-6 w-6 text-primary flex-shrink-0" />
+                    <span className="ml-2 text-xl font-bold truncate">
+                      ResilientFI
+                    </span>
+                  </Link>
                   
-                  {/* Breadcrumb or page title */}
-                  <div className="hidden sm:block text-sm text-muted-foreground ml-4">
+                  {/* Breadcrumb or page title - with responsive spacing */}
+                  <div className="hidden sm:block text-sm text-muted-foreground">
                     {navLinks.find(link => link.path === location.pathname)?.label || 'Dashboard'}
                   </div>
                 </div>
