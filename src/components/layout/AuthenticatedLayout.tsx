@@ -70,9 +70,9 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                 : 'w-0 lg:w-16 -translate-x-full lg:translate-x-0'
             }`}
           >
-            {/* Sidebar header - always show logo on mobile when open, hide on desktop when open */}
+            {/* Sidebar header - always show logo when sidebar is open */}
             <div className="flex items-center justify-between px-4 h-16 border-b flex-shrink-0">
-              <Link to="/app/dashboard" className={`flex items-center min-w-0 ${isSidebarOpen ? 'lg:hidden' : ''}`}>
+              <Link to="/app/dashboard" className="flex items-center min-w-0">
                 <Shield className="h-6 w-6 text-primary flex-shrink-0" />
                 {isSidebarOpen && (
                   <span className="ml-2 text-xl font-bold truncate">
@@ -166,17 +166,6 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                   >
                     <Menu className="h-5 w-5" />
                   </button>
-                  
-                  {/* Logo in header when sidebar is open on desktop - with proper spacing */}
-                  <Link 
-                    to="/app/dashboard" 
-                    className={`items-center min-w-0 flex-shrink-0 ${isSidebarOpen ? 'hidden lg:flex' : 'hidden'}`}
-                  >
-                    <Shield className="h-6 w-6 text-primary flex-shrink-0" />
-                    <span className="ml-2 text-xl font-bold truncate">
-                      ResilientFI
-                    </span>
-                  </Link>
                   
                   {/* Breadcrumb or page title - with responsive spacing */}
                   <div className="hidden sm:block text-sm text-muted-foreground">
