@@ -103,7 +103,7 @@ class RiskIntelligenceService {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as ExternalDataSource;
   }
 
   async collectRiskIntelligence(vendorId: string, forceRefresh: boolean = false): Promise<RiskIntelligence[]> {
@@ -121,7 +121,7 @@ class RiskIntelligenceService {
 
     const intelligence: RiskIntelligence[] = [];
 
-    for (const source of sources) {
+    for (const source of sources as ExternalDataSource[]) {
       try {
         const data = await this.fetchFromExternalSource(source, vendorId);
         const processed = await this.processRiskData(data, source);
@@ -259,7 +259,7 @@ class RiskIntelligenceService {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as RiskIntelligence;
   }
 
   private async checkForRiskChanges(vendorId: string, newIntelligence: RiskIntelligence[]): Promise<void> {
@@ -277,8 +277,10 @@ class RiskIntelligenceService {
 
     if (!previousIntelligence) return;
 
+    const previousIntel = previousIntelligence as RiskIntelligence[];
+
     for (const current of newIntelligence) {
-      const previous = previousIntelligence.find(p => 
+      const previous = previousIntel.find(p => 
         p.source_id === current.source_id && 
         p.intelligence_type === current.intelligence_type
       );
@@ -331,7 +333,7 @@ class RiskIntelligenceService {
       .single();
 
     if (error) throw error;
-    return data;
+    return data as RiskAlert;
   }
 
   async getRiskIntelligence(vendorId?: string, limit: number = 100): Promise<RiskIntelligence[]> {
@@ -355,7 +357,7 @@ class RiskIntelligenceService {
       return [];
     }
 
-    return data || [];
+    return (data || []) as RiskIntelligence[];
   }
 
   async getRiskAlerts(acknowledged: boolean = false, limit: number = 50): Promise<RiskAlert[]> {
@@ -375,7 +377,7 @@ class RiskIntelligenceService {
       return [];
     }
 
-    return data || [];
+    return (data || []) as RiskAlert[];
   }
 
   async acknowledgeAlert(alertId: string): Promise<void> {

@@ -349,14 +349,14 @@ class EnhancedRiskScoringService {
     }, {} as Record<string, any[]>);
 
     for (const [type, data] of Object.entries(byType)) {
-      if (data.length < 2) continue;
-      
-      const firstScore = data[0].risk_score;
-      const lastScore = data[data.length - 1].risk_score;
-      const change = lastScore - firstScore;
-      
-      if (Math.abs(change) > 1) {
-        drivers.push(`${type.replace('_', ' ')} trend: ${change > 0 ? 'increasing' : 'decreasing'} risk`);
+      if (Array.isArray(data) && data.length >= 2) {
+        const firstScore = data[0].risk_score;
+        const lastScore = data[data.length - 1].risk_score;
+        const change = lastScore - firstScore;
+        
+        if (Math.abs(change) > 1) {
+          drivers.push(`${type.replace('_', ' ')} trend: ${change > 0 ? 'increasing' : 'decreasing'} risk`);
+        }
       }
     }
 

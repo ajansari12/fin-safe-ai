@@ -2191,6 +2191,51 @@ export type Database = {
         }
         Relationships: []
       }
+      external_data_sources: {
+        Row: {
+          authentication_config: Json
+          created_at: string
+          data_quality_score: number
+          endpoint_url: string
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          org_id: string
+          source_name: string
+          source_type: string
+          sync_frequency_hours: number
+          updated_at: string
+        }
+        Insert: {
+          authentication_config?: Json
+          created_at?: string
+          data_quality_score?: number
+          endpoint_url: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          org_id: string
+          source_name: string
+          source_type: string
+          sync_frequency_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          authentication_config?: Json
+          created_at?: string
+          data_quality_score?: number
+          endpoint_url?: string
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          org_id?: string
+          source_name?: string
+          source_type?: string
+          sync_frequency_hours?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       failure_scenarios: {
         Row: {
           affected_functions: Json | null
@@ -3795,6 +3840,63 @@ export type Database = {
         }
         Relationships: []
       }
+      risk_alerts: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          change_magnitude: number | null
+          created_at: string
+          current_value: Json | null
+          description: string
+          id: string
+          org_id: string
+          previous_value: Json | null
+          severity: string
+          source_attribution: string
+          triggered_at: string
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          change_magnitude?: number | null
+          created_at?: string
+          current_value?: Json | null
+          description: string
+          id?: string
+          org_id: string
+          previous_value?: Json | null
+          severity: string
+          source_attribution: string
+          triggered_at?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          change_magnitude?: number | null
+          created_at?: string
+          current_value?: Json | null
+          description?: string
+          id?: string
+          org_id?: string
+          previous_value?: Json | null
+          severity?: string
+          source_attribution?: string
+          triggered_at?: string
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: []
+      }
       risk_appetite_statements: {
         Row: {
           created_at: string
@@ -3857,6 +3959,71 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      risk_intelligence: {
+        Row: {
+          attribution: string
+          collected_at: string
+          confidence_score: number
+          created_at: string
+          data_freshness_hours: number
+          expires_at: string | null
+          id: string
+          intelligence_type: string
+          org_id: string
+          processed_data: Json
+          raw_data: Json
+          risk_level: string
+          risk_score: number
+          source_id: string | null
+          updated_at: string
+          vendor_id: string | null
+        }
+        Insert: {
+          attribution: string
+          collected_at?: string
+          confidence_score?: number
+          created_at?: string
+          data_freshness_hours?: number
+          expires_at?: string | null
+          id?: string
+          intelligence_type: string
+          org_id: string
+          processed_data?: Json
+          raw_data?: Json
+          risk_level: string
+          risk_score: number
+          source_id?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Update: {
+          attribution?: string
+          collected_at?: string
+          confidence_score?: number
+          created_at?: string
+          data_freshness_hours?: number
+          expires_at?: string | null
+          id?: string
+          intelligence_type?: string
+          org_id?: string
+          processed_data?: Json
+          raw_data?: Json
+          risk_level?: string
+          risk_score?: number
+          source_id?: string | null
+          updated_at?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_intelligence_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "external_data_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       risk_thresholds: {
         Row: {
