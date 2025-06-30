@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -437,11 +436,16 @@ class RegulatoryReportingService {
         .select('*')
         .eq('org_id', orgId);
 
+      const controlsLength = controls?.length || 0;
+      const averageEffectiveness = controlsLength > 0 
+        ? controls.reduce((sum, c) => sum + (c.effectiveness_rating || 0), 0) / controlsLength
+        : 0;
+
       return {
         total_incidents: incidents?.length || 0,
         resolved_incidents: incidents?.filter(i => i.status === 'resolved').length || 0,
-        controls_tested: controls?.length || 0,
-        average_effectiveness: controls?.reduce((sum, c) => sum + (c.effectiveness_rating || 0), 0) / Math.max(controls?.length || 1, 1)
+        controls_tested: controlsLength,
+        average_effectiveness: averageEffectiveness
       };
     } catch (error) {
       console.error('Error getting metrics data:', error);
