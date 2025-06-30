@@ -97,7 +97,7 @@ export const useOfflineStorage = () => {
       const store = transaction.objectStore('offlineData');
       
       return new Promise((resolve, reject) => {
-        const request = type ? store.index('type').getAll(type) : store.getAll();
+        const request = type ? store.index('type').getAll(IDBKeyRange.only(type)) : store.getAll();
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
@@ -153,7 +153,7 @@ export const useOfflineStorage = () => {
       const store = transaction.objectStore('offlineData');
       
       const count = await new Promise<number>((resolve, reject) => {
-        const request = store.index('synced').count(false);
+        const request = store.index('synced').count(IDBKeyRange.only(false));
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
@@ -219,7 +219,7 @@ export const useOfflineStorage = () => {
       const store = transaction.objectStore('offlineData');
       
       const syncedItems = await new Promise<OfflineData[]>((resolve, reject) => {
-        const request = store.index('synced').getAll(true);
+        const request = store.index('synced').getAll(IDBKeyRange.only(true));
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
