@@ -217,7 +217,7 @@ class IntelligentAutomationService {
       };
 
       const { data, error } = await supabase
-        .from('automation_rules')
+        .from('automation_rules' as any)
         .insert([ruleData])
         .select()
         .single();
@@ -241,7 +241,7 @@ class IntelligentAutomationService {
   async getAutomationRules(orgId: string): Promise<AutomationRule[]> {
     try {
       const { data, error } = await supabase
-        .from('automation_rules')
+        .from('automation_rules' as any)
         .select('*')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
@@ -251,7 +251,7 @@ class IntelligentAutomationService {
         throw error;
       }
 
-      return (data || []).map(item => ({
+      return (data || []).map((item: any) => ({
         ...item,
         trigger_conditions: item.trigger_conditions as Record<string, any>,
         actions: item.actions as AutomationRule['actions']

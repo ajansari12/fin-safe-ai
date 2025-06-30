@@ -398,7 +398,7 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="data">
-          <DataOrchestrationManager />
+          <DataOrchestrationManager orgId={profile?.organization_id || ''} />
         </TabsContent>
       </Tabs>
     </div>

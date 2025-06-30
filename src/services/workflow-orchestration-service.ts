@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface WorkflowNode {
@@ -68,7 +67,7 @@ class WorkflowOrchestrationService {
   async createWorkflow(workflow: Omit<Workflow, 'id' | 'created_at' | 'updated_at'>): Promise<Workflow> {
     try {
       const { data, error } = await supabase
-        .from('workflows')
+        .from('workflows' as any)
         .insert([workflow])
         .select()
         .single();
@@ -93,7 +92,7 @@ class WorkflowOrchestrationService {
   async getWorkflows(orgId: string, status?: string): Promise<Workflow[]> {
     try {
       let query = supabase
-        .from('workflows')
+        .from('workflows' as any)
         .select('*')
         .eq('org_id', orgId)
         .order('updated_at', { ascending: false });
@@ -109,7 +108,7 @@ class WorkflowOrchestrationService {
         throw error;
       }
 
-      return (data || []).map(item => ({
+      return (data || []).map((item: any) => ({
         ...item,
         workflow_definition: item.workflow_definition as Workflow['workflow_definition'],
         triggers: item.triggers as Record<string, any>,
@@ -124,7 +123,7 @@ class WorkflowOrchestrationService {
   async updateWorkflow(workflowId: string, updates: Partial<Workflow>): Promise<void> {
     try {
       const { error } = await supabase
-        .from('workflows')
+        .from('workflows' as any)
         .update(updates)
         .eq('id', workflowId);
 
@@ -143,7 +142,7 @@ class WorkflowOrchestrationService {
     try {
       // Get workflow definition
       const { data: workflow, error: workflowError } = await supabase
-        .from('workflows')
+        .from('workflows' as any)
         .select('*')
         .eq('id', workflowId)
         .single();
@@ -169,7 +168,7 @@ class WorkflowOrchestrationService {
         .single();
 
       if (executionError) {
-        console.error('Error creating workflow execution:', error);
+        console.error('Error creating workflow execution:', executionError);
         throw executionError;
       }
 

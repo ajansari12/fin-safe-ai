@@ -882,6 +882,45 @@ export type Database = {
           },
         ]
       }
+      automation_rules: {
+        Row: {
+          actions: Json
+          created_at: string
+          execution_count: number
+          id: string
+          is_active: boolean
+          last_executed_at: string | null
+          org_id: string
+          rule_name: string
+          trigger_conditions: Json
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string
+          execution_count?: number
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          org_id: string
+          rule_name: string
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          created_at?: string
+          execution_count?: number
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          org_id?: string
+          rule_name?: string
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       behavioral_analytics: {
         Row: {
           activity_data: Json
@@ -6299,6 +6338,45 @@ export type Database = {
           org_id?: string
           steps?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      workflows: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          org_id: string
+          status: string
+          triggers: Json
+          updated_at: string
+          workflow_definition: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          org_id: string
+          status?: string
+          triggers?: Json
+          updated_at?: string
+          workflow_definition?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          status?: string
+          triggers?: Json
+          updated_at?: string
+          workflow_definition?: Json
         }
         Relationships: []
       }
