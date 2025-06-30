@@ -116,10 +116,10 @@ class WorkflowOrchestrationService {
 
       return (data || []).map(workflow => ({
         ...workflow,
-        nodes: Array.isArray(workflow.nodes) ? workflow.nodes : [],
-        edges: Array.isArray(workflow.edges) ? workflow.edges : [],
-        variables: workflow.variables || {},
-        business_rules: Array.isArray(workflow.business_rules) ? workflow.business_rules : []
+        nodes: Array.isArray(workflow.nodes) ? workflow.nodes : JSON.parse(workflow.nodes || '[]'),
+        edges: Array.isArray(workflow.edges) ? workflow.edges : JSON.parse(workflow.edges || '[]'),
+        variables: typeof workflow.variables === 'object' ? workflow.variables : JSON.parse(workflow.variables || '{}'),
+        business_rules: Array.isArray(workflow.business_rules) ? workflow.business_rules : JSON.parse(workflow.business_rules || '[]')
       }));
     } catch (error) {
       console.error('Error fetching workflow orchestrations:', error);
@@ -129,14 +129,25 @@ class WorkflowOrchestrationService {
 
   async createWorkflowOrchestration(workflow: Omit<WorkflowOrchestration, 'id' | 'created_at' | 'updated_at'>): Promise<WorkflowOrchestration> {
     try {
+      // Validate required fields
+      if (!workflow.name?.trim()) {
+        throw new Error('Workflow name is required');
+      }
+      if (!workflow.category?.trim()) {
+        throw new Error('Workflow category is required');
+      }
+      if (!workflow.org_id) {
+        throw new Error('Organization ID is required');
+      }
+
       const { data, error } = await supabase
         .from('workflow_orchestrations')
         .insert([{
           ...workflow,
-          nodes: JSON.stringify(workflow.nodes),
-          edges: JSON.stringify(workflow.edges),
-          variables: JSON.stringify(workflow.variables),
-          business_rules: JSON.stringify(workflow.business_rules)
+          nodes: JSON.stringify(workflow.nodes || []),
+          edges: JSON.stringify(workflow.edges || []),
+          variables: JSON.stringify(workflow.variables || {}),
+          business_rules: JSON.stringify(workflow.business_rules || [])
         }])
         .select()
         .single();
@@ -158,14 +169,26 @@ class WorkflowOrchestrationService {
 
   async updateWorkflowOrchestration(id: string, updates: Partial<WorkflowOrchestration>): Promise<WorkflowOrchestration> {
     try {
-      const updateData = {
-        ...updates,
-        nodes: updates.nodes ? JSON.stringify(updates.nodes) : undefined,
-        edges: updates.edges ? JSON.stringify(updates.edges) : undefined,
-        variables: updates.variables ? JSON.stringify(updates.variables) : undefined,
-        business_rules: updates.business_rules ? JSON.stringify(updates.business_rules) : undefined,
-        updated_at: new Date().toISOString()
-      };
+      const updateData: any = { ...updates };
+      
+      // Handle JSONB fields properly
+      if (updates.nodes) {
+        updateData.nodes = JSON.stringify(updates.nodes);
+      }
+      if (updates.edges) {
+        updateData.edges = JSON.stringify(updates.edges);
+      }
+      if (updates.variables) {
+        updateData.variables = JSON.stringify(updates.variables);
+      }
+      if (updates.business_rules) {
+        updateData.business_rules = JSON.stringify(updates.business_rules);
+      }
+
+      // Remove computed fields that shouldn't be updated
+      delete updateData.id;
+      delete updateData.created_at;
+      delete updateData.updated_at;
 
       const { data, error } = await supabase
         .from('workflow_orchestrations')
@@ -189,17 +212,34 @@ class WorkflowOrchestrationService {
     }
   }
 
+  async deleteWorkflowOrchestration(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('workflow_orchestrations')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting workflow orchestration:', error);
+      throw error;
+    }
+  }
+
   // Workflow Execution
   async executeWorkflow(workflowId: string, context: any = {}): Promise<WorkflowExecution> {
     try {
       const workflow = await this.getWorkflowOrchestration(workflowId);
       if (!workflow) throw new Error('Workflow not found');
 
-      const execution: Omit<WorkflowExecution, 'id'> = {
+      const startNode = this.findStartNode(workflow.nodes);
+      if (!startNode) throw new Error('No start node found in workflow');
+
+      const execution = {
         workflow_id: workflowId,
         execution_context: context,
-        current_node: this.findStartNode(workflow.nodes)?.id || '',
-        status: 'running',
+        current_node: startNode.id,
+        status: 'running' as const,
         started_at: new Date().toISOString(),
         execution_log: [],
         org_id: workflow.org_id
@@ -213,22 +253,54 @@ class WorkflowOrchestrationService {
 
       if (error) throw error;
 
-      // Start execution process
-      this.processWorkflowNode(data.id, workflow, execution.current_node, context);
+      // Start execution process asynchronously
+      this.processWorkflowExecution(data.id, workflow, startNode.id, context);
 
-      return data;
+      return {
+        ...data,
+        execution_log: Array.isArray(data.execution_log) ? data.execution_log : JSON.parse(data.execution_log || '[]')
+      };
     } catch (error) {
       console.error('Error executing workflow:', error);
       throw error;
     }
   }
 
-  private async processWorkflowNode(executionId: string, workflow: WorkflowOrchestration, nodeId: string, context: any): Promise<void> {
+  async getWorkflowExecutions(orgId: string, workflowId?: string): Promise<WorkflowExecution[]> {
+    try {
+      let query = supabase
+        .from('workflow_executions')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('started_at', { ascending: false });
+
+      if (workflowId) {
+        query = query.eq('workflow_id', workflowId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(execution => ({
+        ...execution,
+        execution_log: Array.isArray(execution.execution_log) ? execution.execution_log : JSON.parse(execution.execution_log || '[]')
+      }));
+    } catch (error) {
+      console.error('Error fetching workflow executions:', error);
+      throw error;
+    }
+  }
+
+  private async processWorkflowExecution(executionId: string, workflow: WorkflowOrchestration, nodeId: string, context: any): Promise<void> {
     try {
       const node = workflow.nodes.find(n => n.id === nodeId);
-      if (!node) throw new Error(`Node ${nodeId} not found`);
+      if (!node) {
+        await this.updateExecutionStatus(executionId, 'failed', `Node ${nodeId} not found`);
+        return;
+      }
 
-      await this.logExecutionStep(executionId, nodeId, 'processing', `Processing node: ${node.name}`);
+      await this.logExecutionStep(executionId, nodeId, 'success', `Processing node: ${node.name}`);
 
       switch (node.type) {
         case 'start':
@@ -253,8 +325,9 @@ class WorkflowOrchestrationService {
           throw new Error(`Unknown node type: ${node.type}`);
       }
     } catch (error) {
-      await this.logExecutionStep(executionId, nodeId, 'error', `Error: ${error.message}`, { error: error.message });
-      await this.updateExecutionStatus(executionId, 'failed', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await this.logExecutionStep(executionId, nodeId, 'error', `Error: ${errorMessage}`, { error: errorMessage });
+      await this.updateExecutionStatus(executionId, 'failed', errorMessage);
     }
   }
 
@@ -262,12 +335,12 @@ class WorkflowOrchestrationService {
     await this.logExecutionStep(executionId, node.id, 'success', 'Workflow started');
     const nextNode = this.getNextNode(workflow, node.id);
     if (nextNode) {
-      await this.processWorkflowNode(executionId, workflow, nextNode.id, context);
+      await this.processWorkflowExecution(executionId, workflow, nextNode.id, context);
     }
   }
 
   private async processTaskNode(executionId: string, workflow: WorkflowOrchestration, node: WorkflowNode, context: any): Promise<void> {
-    // Apply business rules
+    // Apply business rules if any
     const applicableRules = workflow.business_rules.filter(rule => 
       rule.is_active && this.evaluateConditions(rule.conditions, context)
     );
@@ -276,12 +349,12 @@ class WorkflowOrchestrationService {
       await this.executeRuleActions(rule.actions, context);
     }
 
-    // For now, simulate task completion
+    // Simulate task completion for now
     await this.logExecutionStep(executionId, node.id, 'success', `Task completed: ${node.name}`);
     
     const nextNode = this.getNextNode(workflow, node.id);
     if (nextNode) {
-      await this.processWorkflowNode(executionId, workflow, nextNode.id, context);
+      await this.processWorkflowExecution(executionId, workflow, nextNode.id, context);
     }
   }
 
@@ -296,7 +369,7 @@ class WorkflowOrchestrationService {
     const nextEdge = edges.find(e => e.condition === result.toString()) || edges[0];
     
     if (nextEdge) {
-      await this.processWorkflowNode(executionId, workflow, nextEdge.target, context);
+      await this.processWorkflowExecution(executionId, workflow, nextEdge.target, context);
     }
   }
 
@@ -305,7 +378,7 @@ class WorkflowOrchestrationService {
     
     const nextNode = this.getNextNode(workflow, node.id);
     if (nextNode) {
-      await this.processWorkflowNode(executionId, workflow, nextNode.id, context);
+      await this.processWorkflowExecution(executionId, workflow, nextNode.id, context);
     }
   }
 
@@ -314,9 +387,11 @@ class WorkflowOrchestrationService {
     await this.logExecutionStep(executionId, node.id, 'success', `Parallel execution started for ${branches.length} branches`);
 
     // Execute branches in parallel (simplified for now)
-    for (const branchId of branches) {
-      await this.processWorkflowNode(executionId, workflow, branchId, context);
-    }
+    const promises = branches.map(branchId => 
+      this.processWorkflowExecution(executionId, workflow, branchId, context)
+    );
+    
+    await Promise.all(promises);
   }
 
   private async processEndNode(executionId: string, workflow: WorkflowOrchestration, node: WorkflowNode, context: any): Promise<void> {
@@ -382,54 +457,85 @@ class WorkflowOrchestrationService {
   }
 
   private async logExecutionStep(executionId: string, nodeId: string, status: 'success' | 'error' | 'warning', message: string, data?: any): Promise<void> {
-    const logEntry: ExecutionLogEntry = {
-      timestamp: new Date().toISOString(),
-      node_id: nodeId,
-      action: 'process',
-      status,
-      message,
-      data
-    };
+    try {
+      const logEntry: ExecutionLogEntry = {
+        timestamp: new Date().toISOString(),
+        node_id: nodeId,
+        action: 'process',
+        status,
+        message,
+        data
+      };
 
-    await supabase
-      .from('workflow_executions')
-      .update({
-        execution_log: supabase.raw(`execution_log || '[${JSON.stringify(logEntry)}]'::jsonb`)
-      })
-      .eq('id', executionId);
+      // Get current execution log and append new entry
+      const { data: execution, error: fetchError } = await supabase
+        .from('workflow_executions')
+        .select('execution_log')
+        .eq('id', executionId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentLog = Array.isArray(execution.execution_log) 
+        ? execution.execution_log 
+        : JSON.parse(execution.execution_log || '[]');
+
+      const updatedLog = [...currentLog, logEntry];
+
+      const { error: updateError } = await supabase
+        .from('workflow_executions')
+        .update({ execution_log: JSON.stringify(updatedLog) })
+        .eq('id', executionId);
+
+      if (updateError) throw updateError;
+    } catch (error) {
+      console.error('Error logging execution step:', error);
+    }
   }
 
   private async updateExecutionStatus(executionId: string, status: WorkflowExecution['status'], errorMessage?: string): Promise<void> {
-    const updates: any = { status };
-    if (status === 'completed' || status === 'failed') {
-      updates.completed_at = new Date().toISOString();
-    }
-    if (errorMessage) {
-      updates.error_message = errorMessage;
-    }
+    try {
+      const updates: any = { status };
+      
+      if (status === 'completed' || status === 'failed') {
+        updates.completed_at = new Date().toISOString();
+      }
+      if (errorMessage) {
+        updates.error_message = errorMessage;
+      }
 
-    await supabase
-      .from('workflow_executions')
-      .update(updates)
-      .eq('id', executionId);
+      const { error } = await supabase
+        .from('workflow_executions')
+        .update(updates)
+        .eq('id', executionId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating execution status:', error);
+    }
   }
 
   private async getWorkflowOrchestration(id: string): Promise<WorkflowOrchestration | null> {
-    const { data, error } = await supabase
-      .from('workflow_orchestrations')
-      .select('*')
-      .eq('id', id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('workflow_orchestrations')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    if (error || !data) return null;
+      if (error || !data) return null;
 
-    return {
-      ...data,
-      nodes: Array.isArray(data.nodes) ? data.nodes : JSON.parse(data.nodes || '[]'),
-      edges: Array.isArray(data.edges) ? data.edges : JSON.parse(data.edges || '[]'),
-      variables: typeof data.variables === 'object' ? data.variables : JSON.parse(data.variables || '{}'),
-      business_rules: Array.isArray(data.business_rules) ? data.business_rules : JSON.parse(data.business_rules || '[]')
-    };
+      return {
+        ...data,
+        nodes: Array.isArray(data.nodes) ? data.nodes : JSON.parse(data.nodes || '[]'),
+        edges: Array.isArray(data.edges) ? data.edges : JSON.parse(data.edges || '[]'),
+        variables: typeof data.variables === 'object' ? data.variables : JSON.parse(data.variables || '{}'),
+        business_rules: Array.isArray(data.business_rules) ? data.business_rules : JSON.parse(data.business_rules || '[]')
+      };
+    } catch (error) {
+      console.error('Error fetching workflow orchestration:', error);
+      return null;
+    }
   }
 
   // Integration Management
@@ -444,7 +550,7 @@ class WorkflowOrchestrationService {
     } catch (error) {
       return {
         success: false,
-        message: error.message
+        message: error instanceof Error ? error.message : 'Integration test failed'
       };
     }
   }
@@ -452,10 +558,63 @@ class WorkflowOrchestrationService {
   // Data Orchestration
   async synchronizeData(sourceModule: string, targetModule: string, dataMapping: Record<string, string>): Promise<void> {
     try {
-      // Implement cross-module data synchronization
       console.log(`Synchronizing data from ${sourceModule} to ${targetModule}`, dataMapping);
+      // Implementation would depend on specific module APIs
     } catch (error) {
       console.error('Error synchronizing data:', error);
+      throw error;
+    }
+  }
+
+  // Business Rules Management
+  async getBusinessRules(orgId: string, workflowId?: string): Promise<BusinessRule[]> {
+    try {
+      let query = supabase
+        .from('business_rules')
+        .select('*')
+        .eq('org_id', orgId)
+        .order('priority', { ascending: false });
+
+      if (workflowId) {
+        query = query.eq('workflow_id', workflowId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      return (data || []).map(rule => ({
+        ...rule,
+        conditions: Array.isArray(rule.conditions) ? rule.conditions : JSON.parse(rule.conditions || '[]'),
+        actions: Array.isArray(rule.actions) ? rule.actions : JSON.parse(rule.actions || '[]')
+      }));
+    } catch (error) {
+      console.error('Error fetching business rules:', error);
+      throw error;
+    }
+  }
+
+  async createBusinessRule(rule: Omit<BusinessRule, 'id'>): Promise<BusinessRule> {
+    try {
+      const { data, error } = await supabase
+        .from('business_rules')
+        .insert([{
+          ...rule,
+          conditions: JSON.stringify(rule.conditions || []),
+          actions: JSON.stringify(rule.actions || [])
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return {
+        ...data,
+        conditions: Array.isArray(data.conditions) ? data.conditions : JSON.parse(data.conditions || '[]'),
+        actions: Array.isArray(data.actions) ? data.actions : JSON.parse(data.actions || '[]')
+      };
+    } catch (error) {
+      console.error('Error creating business rule:', error);
       throw error;
     }
   }

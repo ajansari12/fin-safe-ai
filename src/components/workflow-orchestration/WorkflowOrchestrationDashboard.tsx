@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Play, Settings, TrendingUp, Workflow, Zap, Database, Brain } from "lucide-react";
+import { Plus, Play, Settings, TrendingUp, Workflow, Zap, Database, Brain, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { WorkflowOrchestration, WorkflowExecution, workflowOrchestrationService } from "@/services/workflow-orchestration-service";
@@ -21,6 +21,7 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
   const [isDesignerOpen, setIsDesignerOpen] = useState(false);
   const [editingWorkflow, setEditingWorkflow] = useState<WorkflowOrchestration | null>(null);
   const [orgId, setOrgId] = useState<string>("");
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -28,17 +29,26 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
       
       try {
         const { supabase } = await import("@/integrations/supabase/client");
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('organization_id')
           .eq('id', user.id)
           .single();
         
+        if (error) {
+          console.error('Failed to fetch profile:', error);
+          setError('Failed to load user profile');
+          return;
+        }
+
         if (profile?.organization_id) {
           setOrgId(profile.organization_id);
+        } else {
+          setError('No organization found for user');
         }
       } catch (error) {
         console.error('Failed to fetch profile:', error);
+        setError('Failed to load user profile');
       }
     };
 
@@ -48,23 +58,42 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
   useEffect(() => {
     if (orgId) {
       loadWorkflows();
+      loadExecutions();
     }
   }, [orgId]);
 
   const loadWorkflows = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await workflowOrchestrationService.getWorkflowOrchestrations(orgId);
       setWorkflows(data);
     } catch (error) {
       console.error('Error loading workflows:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load workflows';
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: "Failed to load workflows",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadExecutions = async () => {
+    try {
+      const data = await workflowOrchestrationService.getWorkflowExecutions(orgId);
+      setExecutions(data);
+    } catch (error) {
+      console.error('Error loading executions:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load executions';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     }
   };
 
@@ -90,14 +119,15 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
         });
       }
 
-      loadWorkflows();
+      await loadWorkflows();
       setIsDesignerOpen(false);
       setEditingWorkflow(null);
     } catch (error) {
       console.error('Error saving workflow:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save workflow';
       toast({
         title: "Error",
-        description: "Failed to save workflow",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -110,11 +140,36 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
         title: "Success",
         description: "Workflow execution started"
       });
+      await loadExecutions();
     } catch (error) {
       console.error('Error executing workflow:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to execute workflow';
       toast({
         title: "Error",
-        description: "Failed to execute workflow",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteWorkflow = async (workflowId: string) => {
+    if (!confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await workflowOrchestrationService.deleteWorkflowOrchestration(workflowId);
+      toast({
+        title: "Success",
+        description: "Workflow deleted successfully"
+      });
+      await loadWorkflows();
+    } catch (error) {
+      console.error('Error deleting workflow:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete workflow';
+      toast({
+        title: "Error",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -129,10 +184,42 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
     }
   };
 
-  if (!orgId) {
+  const getExecutionStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'completed': return 'default';
+      case 'running': return 'secondary';
+      case 'failed': return 'destructive';
+      case 'paused': return 'outline';
+      case 'cancelled': return 'outline';
+      default: return 'outline';
+    }
+  };
+
+  const calculateSuccessRate = () => {
+    if (executions.length === 0) return 0;
+    const successfulExecutions = executions.filter(e => e.status === 'completed').length;
+    return Math.round((successfulExecutions / executions.length) * 100);
+  };
+
+  if (!orgId && !error) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Loading organization data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+          <h3 className="text-lg font-medium mb-2">Error Loading Data</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()} variant="outline">
+            Retry
+          </Button>
+        </div>
       </div>
     );
   }
@@ -166,6 +253,9 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
             <div className="text-2xl font-bold">
               {workflows.filter(w => w.status === 'active').length}
             </div>
+            <p className="text-xs text-muted-foreground">
+              {workflows.length} total workflows
+            </p>
           </CardContent>
         </Card>
 
@@ -176,6 +266,9 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{executions.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {executions.filter(e => e.status === 'running').length} currently running
+            </p>
           </CardContent>
         </Card>
 
@@ -185,7 +278,10 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">98.5%</div>
+            <div className="text-2xl font-bold">{calculateSuccessRate()}%</div>
+            <p className="text-xs text-muted-foreground">
+              Last 30 days
+            </p>
           </CardContent>
         </Card>
 
@@ -196,6 +292,9 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">2.3s</div>
+            <p className="text-xs text-muted-foreground">
+              Estimated average
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -239,7 +338,7 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
                   {workflows.map((workflow) => (
                     <div key={workflow.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-medium">{workflow.name}</h3>
                           <p className="text-sm text-muted-foreground">
                             {workflow.description || 'No description provided'}
@@ -299,7 +398,55 @@ const WorkflowOrchestrationDashboard: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">Execution monitoring coming soon...</p>
+              {executions.length === 0 ? (
+                <div className="text-center py-8">
+                  <Play className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">No executions found</h3>
+                  <p className="text-muted-foreground">
+                    Execute workflows to see their execution history here
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {executions.slice(0, 10).map((execution) => {
+                    const workflow = workflows.find(w => w.id === execution.workflow_id);
+                    return (
+                      <div key={execution.id} className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium">
+                              {workflow?.name || 'Unknown Workflow'}
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              Started: {new Date(execution.started_at).toLocaleString()}
+                            </p>
+                            {execution.completed_at && (
+                              <p className="text-sm text-muted-foreground">
+                                Completed: {new Date(execution.completed_at).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={getExecutionStatusBadgeVariant(execution.status)}>
+                              {execution.status}
+                            </Badge>
+                            {execution.error_message && (
+                              <Badge variant="destructive">
+                                Error
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        {execution.error_message && (
+                          <div className="mt-2 text-sm text-destructive">
+                            {execution.error_message}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
