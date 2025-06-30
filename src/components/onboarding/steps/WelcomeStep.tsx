@@ -53,6 +53,8 @@ export const WelcomeStep: React.FC<WelcomeStepProps> = ({ onNext }) => {
         // Don't call onNext() here - the context will handle navigation
       } catch (error) {
         console.error('WelcomeStep: Error completing step:', error);
+      } finally {
+        // Always reset the submitting state
         setIsSubmitting(false);
       }
     }

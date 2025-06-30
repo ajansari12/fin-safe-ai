@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
@@ -50,7 +49,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [currentSession, setCurrentSession] = useState<OnboardingSession | null>(null);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [canSkip] = useState(true); // Allow skipping for experienced users
+  const [canSkip] = useState(true);
 
   // Initialize onboarding state
   useEffect(() => {
@@ -66,7 +65,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       setIsLoading(true);
       
-      // Get current onboarding status from profile - use type assertion for new fields
+      // Get current onboarding status from profile
       const currentStatus = (profile as any)?.onboarding_status || 'not_started';
       setOnboardingStatus(currentStatus);
 
@@ -98,7 +97,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
       setSteps(initializedSteps);
       
-      // Transform session data to match our interface
+      // Handle session state
       if (sessionData?.[0]) {
         const session = sessionData[0];
         setCurrentSession({
@@ -109,6 +108,11 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           completionPercentage: session.completion_percentage,
           data: session.data
         });
+      } else if (currentStatus === 'in_progress') {
+        // If user is in progress but has no session, create one
+        console.log('OnboardingContext: User in progress but no session found, creating session');
+        await startOnboarding();
+        return; // startOnboarding will reinitialize
       }
 
       console.log('OnboardingContext: Initialized state', {
@@ -126,6 +130,8 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const startOnboarding = async () => {
     try {
+      console.log('OnboardingContext: Starting onboarding');
+      
       // Create new onboarding session
       const { data: sessionData, error: sessionError } = await supabase
         .from('onboarding_sessions')
@@ -160,6 +166,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
       
       setOnboardingStatus('in_progress');
+      console.log('OnboardingContext: Session created successfully', sessionData);
       toast.success('Onboarding started! Let\'s get you set up.');
     } catch (error) {
       console.error('Error starting onboarding:', error);
@@ -170,6 +177,36 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const completeStep = async (stepId: string, stepName: string, data: any = {}) => {
     try {
       console.log('OnboardingContext: Starting completeStep', { stepId, stepName, data });
+
+      // Ensure we have a session - if not, create one
+      let sessionToUpdate = currentSession;
+      if (!sessionToUpdate) {
+        console.log('OnboardingContext: No session found, creating one first');
+        await startOnboarding();
+        // Get the newly created session
+        const { data: newSessionData } = await supabase
+          .from('onboarding_sessions')
+          .select('*')
+          .eq('user_id', user?.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        if (newSessionData) {
+          sessionToUpdate = {
+            id: newSessionData.id,
+            status: newSessionData.status as 'active' | 'completed' | 'abandoned',
+            currentStep: newSessionData.current_step || undefined,
+            totalSteps: newSessionData.total_steps,
+            completionPercentage: newSessionData.completion_percentage,
+            data: newSessionData.data
+          };
+          setCurrentSession(sessionToUpdate);
+        } else {
+          throw new Error('Failed to create or retrieve session');
+        }
+      }
 
       // Update step progress
       await supabase.rpc('update_onboarding_step', {
@@ -207,34 +244,33 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
 
       // Update session with next step
-      if (currentSession) {
-        const { error: sessionError } = await supabase
-          .from('onboarding_sessions')
-          .update({
-            current_step: nextStep,
-            completion_percentage: completionPercentage
-          })
-          .eq('id', currentSession.id);
+      const { error: sessionError } = await supabase
+        .from('onboarding_sessions')
+        .update({
+          current_step: nextStep,
+          completion_percentage: completionPercentage
+        })
+        .eq('id', sessionToUpdate.id);
 
-        if (sessionError) throw sessionError;
+      if (sessionError) throw sessionError;
 
-        console.log('OnboardingContext: Session updated in database');
+      console.log('OnboardingContext: Session updated in database');
 
-        // Update local session state
-        const updatedSession = {
-          ...currentSession,
-          currentStep: nextStep || undefined,
-          completionPercentage
-        };
-        
-        setCurrentSession(updatedSession);
-        console.log('OnboardingContext: Local session state updated', updatedSession);
-      }
+      // Update local session state
+      const updatedSession = {
+        ...sessionToUpdate,
+        currentStep: nextStep || undefined,
+        completionPercentage
+      };
+      
+      setCurrentSession(updatedSession);
+      console.log('OnboardingContext: Local session state updated', updatedSession);
 
       toast.success(`${stepName} completed!`);
     } catch (error) {
       console.error('Error completing step:', error);
       toast.error('Failed to save progress');
+      throw error; // Re-throw so the component can handle it
     }
   };
 
