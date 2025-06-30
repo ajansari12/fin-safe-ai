@@ -8,6 +8,7 @@ export interface WorkflowStep {
   step_number: number;
   assigned_to?: string;
   assigned_to_name?: string;
+  assigned_role?: string;
   due_date?: string;
   status: 'pending' | 'in_progress' | 'completed' | 'blocked';
   notes?: string;
@@ -70,7 +71,7 @@ class WorkflowService {
 
       return (data || []).map(template => ({
         ...template,
-        steps: Array.isArray(template.steps) ? template.steps as WorkflowStep[] : []
+        steps: Array.isArray(template.steps) ? (template.steps as unknown as WorkflowStep[]) : []
       }));
     } catch (error) {
       console.error('Error in getWorkflowTemplates:', error);
@@ -80,9 +81,14 @@ class WorkflowService {
 
   async createWorkflowTemplate(template: Omit<WorkflowTemplate, 'id' | 'created_at' | 'updated_at'>): Promise<WorkflowTemplate> {
     try {
+      const templateData = {
+        ...template,
+        steps: JSON.stringify(template.steps) // Convert to JSON for database storage
+      };
+
       const { data, error } = await supabase
         .from('workflow_templates')
-        .insert([template])
+        .insert([templateData])
         .select()
         .single();
 
@@ -93,7 +99,7 @@ class WorkflowService {
 
       return {
         ...data,
-        steps: Array.isArray(data.steps) ? data.steps as WorkflowStep[] : []
+        steps: Array.isArray(data.steps) ? (data.steps as unknown as WorkflowStep[]) : []
       };
     } catch (error) {
       console.error('Error in createWorkflowTemplate:', error);
@@ -103,9 +109,15 @@ class WorkflowService {
 
   async updateWorkflowTemplate(id: string, updates: Partial<WorkflowTemplate>): Promise<WorkflowTemplate> {
     try {
+      const updateData = {
+        ...updates,
+        steps: updates.steps ? JSON.stringify(updates.steps) : undefined,
+        updated_at: new Date().toISOString()
+      };
+
       const { data, error } = await supabase
         .from('workflow_templates')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
@@ -117,7 +129,7 @@ class WorkflowService {
 
       return {
         ...data,
-        steps: Array.isArray(data.steps) ? data.steps as WorkflowStep[] : []
+        steps: Array.isArray(data.steps) ? (data.steps as unknown as WorkflowStep[]) : []
       };
     } catch (error) {
       console.error('Error in updateWorkflowTemplate:', error);
@@ -172,7 +184,7 @@ class WorkflowService {
             started_at: instance.started_at || instance.created_at,
             template: instance.template ? {
               ...instance.template,
-              steps: Array.isArray(instance.template.steps) ? instance.template.steps as WorkflowStep[] : []
+              steps: Array.isArray(instance.template.steps) ? (instance.template.steps as unknown as WorkflowStep[]) : []
             } : undefined
           };
         })
