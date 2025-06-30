@@ -511,7 +511,7 @@ const WorkflowCenter = () => {
           </Card>
         )}
 
-        {/* Template Builder Dialog - Updated to use DragDropTemplateBuilder */}
+        {/* Template Builder Dialog - Updated to use correct props */}
         <Dialog open={isTemplateBuilderOpen} onOpenChange={setIsTemplateBuilderOpen}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -519,11 +519,11 @@ const WorkflowCenter = () => {
                 {editingTemplate ? 'Edit Workflow Template' : 'Create Workflow Template'}
               </DialogTitle>
               <DialogDescription>
-                Design reusable workflow templates with drag & drop functionality for consistent process execution.
+                Design reusable workflow templates for consistent process execution.
               </DialogDescription>
             </DialogHeader>
             
-            <DragDropTemplateBuilder
+            <WorkflowTemplateBuilder
               template={editingTemplate || undefined}
               onSave={handleSaveTemplate}
               onCancel={() => {
