@@ -21,7 +21,7 @@ export interface WorkflowTemplate {
   name: string;
   description?: string;
   module: string;
-  steps: Omit<WorkflowStep, 'id' | 'workflow_instance_id' | 'created_at' | 'updated_at'>[];
+  steps: WorkflowStep[];
   form_config?: any;
   approval_rules?: any;
   escalation_rules?: any;
@@ -70,7 +70,7 @@ class WorkflowService {
 
       return (data || []).map(template => ({
         ...template,
-        steps: Array.isArray(template.steps) ? template.steps : []
+        steps: Array.isArray(template.steps) ? template.steps as WorkflowStep[] : []
       }));
     } catch (error) {
       console.error('Error in getWorkflowTemplates:', error);
@@ -93,7 +93,7 @@ class WorkflowService {
 
       return {
         ...data,
-        steps: Array.isArray(data.steps) ? data.steps : []
+        steps: Array.isArray(data.steps) ? data.steps as WorkflowStep[] : []
       };
     } catch (error) {
       console.error('Error in createWorkflowTemplate:', error);
@@ -117,7 +117,7 @@ class WorkflowService {
 
       return {
         ...data,
-        steps: Array.isArray(data.steps) ? data.steps : []
+        steps: Array.isArray(data.steps) ? data.steps as WorkflowStep[] : []
       };
     } catch (error) {
       console.error('Error in updateWorkflowTemplate:', error);
@@ -166,9 +166,14 @@ class WorkflowService {
           return { 
             ...instance, 
             steps,
-            priority: instance.priority || 'medium',
+            priority: (instance.priority as 'low' | 'medium' | 'high' | 'critical') || 'medium',
+            status: (instance.status as 'draft' | 'in_progress' | 'completed' | 'cancelled') || 'draft',
             owner_name: instance.owner_name || '',
-            started_at: instance.started_at || instance.created_at
+            started_at: instance.started_at || instance.created_at,
+            template: instance.template ? {
+              ...instance.template,
+              steps: Array.isArray(instance.template.steps) ? instance.template.steps as WorkflowStep[] : []
+            } : undefined
           };
         })
       );
@@ -195,7 +200,8 @@ class WorkflowService {
 
       return {
         ...data,
-        priority: data.priority || 'medium',
+        priority: (data.priority as 'low' | 'medium' | 'high' | 'critical') || 'medium',
+        status: (data.status as 'draft' | 'in_progress' | 'completed' | 'cancelled') || 'draft',
         owner_name: data.owner_name || '',
         started_at: data.started_at || data.created_at
       };
@@ -230,7 +236,8 @@ class WorkflowService {
 
       return {
         ...data,
-        priority: data.priority || 'medium',
+        priority: (data.priority as 'low' | 'medium' | 'high' | 'critical') || 'medium',
+        status: (data.status as 'draft' | 'in_progress' | 'completed' | 'cancelled') || 'draft',
         owner_name: data.owner_name || '',
         started_at: data.started_at || data.created_at
       };

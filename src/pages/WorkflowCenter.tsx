@@ -142,23 +142,16 @@ const WorkflowCenter = () => {
   };
 
   // Template operations
-  const handleSaveTemplate = async (templateData: Omit<WorkflowTemplate, 'id'>) => {
+  const handleSaveTemplate = async (templateData: Omit<WorkflowTemplate, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      const completeTemplateData = {
-        ...templateData,
-        description: templateData.description || "",
-        org_id: orgId,
-        created_by: user?.id
-      };
-
       if (editingTemplate) {
-        await workflowService.updateWorkflowTemplate(editingTemplate.id, completeTemplateData);
+        await workflowService.updateWorkflowTemplate(editingTemplate.id, templateData);
         toast({
           title: "Template updated",
           description: "Workflow template has been updated successfully."
         });
       } else {
-        await workflowService.createWorkflowTemplate(completeTemplateData);
+        await workflowService.createWorkflowTemplate(templateData);
         toast({
           title: "Template created",
           description: "Workflow template has been created successfully."
@@ -203,15 +196,17 @@ const WorkflowCenter = () => {
 
   const handleDuplicateTemplate = async (template: WorkflowTemplate) => {
     try {
-      const duplicatedTemplate = {
-        ...template,
+      const duplicatedTemplate: Omit<WorkflowTemplate, 'id' | 'created_at' | 'updated_at'> = {
         name: `${template.name} (Copy)`,
+        description: template.description,
+        module: template.module,
+        steps: template.steps,
+        form_config: template.form_config,
+        approval_rules: template.approval_rules,
+        escalation_rules: template.escalation_rules,
         org_id: orgId,
         created_by: user?.id
       };
-      delete (duplicatedTemplate as any).id;
-      delete (duplicatedTemplate as any).created_at;
-      delete (duplicatedTemplate as any).updated_at;
       
       await workflowService.createWorkflowTemplate(duplicatedTemplate);
       toast({
