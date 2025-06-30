@@ -113,7 +113,7 @@ class RegulatoryReportingService {
       // Transform data to match our interface, providing defaults for missing fields
       return (data || []).map(template => ({
         ...template,
-        version: template.version || 1,
+        version: (template as any).version || 1,
         data_blocks: Array.isArray(template.data_blocks) ? template.data_blocks : [],
         template_config: template.template_config || {},
         layout_config: template.layout_config || {}
@@ -136,7 +136,7 @@ class RegulatoryReportingService {
       
       return {
         ...data,
-        version: data.version || 1,
+        version: (data as any).version || 1,
         data_blocks: Array.isArray(data.data_blocks) ? data.data_blocks : [],
         template_config: data.template_config || {},
         layout_config: data.layout_config || {}
@@ -208,9 +208,9 @@ class RegulatoryReportingService {
       // Transform and return the created instance
       return {
         ...data,
-        email_recipients: Array.isArray(data.email_recipients) ? data.email_recipients : [],
-        digital_signature: data.digital_signature || null,
-        compliance_flags: Array.isArray(data.compliance_flags) ? data.compliance_flags : []
+        email_recipients: Array.isArray((data as any).email_recipients) ? (data as any).email_recipients : [],
+        digital_signature: (data as any).digital_signature || null,
+        compliance_flags: Array.isArray((data as any).compliance_flags) ? (data as any).compliance_flags : []
       } as RegulatoryReportInstance;
     } catch (error) {
       console.error('Error generating report:', error);
@@ -234,9 +234,9 @@ class RegulatoryReportingService {
       // Transform data to match our interface
       return (data || []).map(instance => ({
         ...instance,
-        email_recipients: Array.isArray(instance.email_recipients) ? instance.email_recipients : [],
-        digital_signature: instance.digital_signature || null,
-        compliance_flags: Array.isArray(instance.compliance_flags) ? instance.compliance_flags : []
+        email_recipients: Array.isArray((instance as any).email_recipients) ? (instance as any).email_recipients : [],
+        digital_signature: (instance as any).digital_signature || null,
+        compliance_flags: Array.isArray((instance as any).compliance_flags) ? (instance as any).compliance_flags : []
       })) as RegulatoryReportInstance[];
     } catch (error) {
       console.error('Error fetching report instances:', error);
@@ -396,7 +396,7 @@ class RegulatoryReportingService {
       
       return {
         ...data,
-        version: data.version || 1,
+        version: (data as any).version || 1,
         data_blocks: Array.isArray(data.data_blocks) ? data.data_blocks : [],
         template_config: data.template_config || {},
         layout_config: data.layout_config || {}
@@ -441,7 +441,7 @@ class RegulatoryReportingService {
         total_incidents: incidents?.length || 0,
         resolved_incidents: incidents?.filter(i => i.status === 'resolved').length || 0,
         controls_tested: controls?.length || 0,
-        average_effectiveness: controls?.reduce((sum, c) => sum + (c.effectiveness_rating || 0), 0) / (controls?.length || 1)
+        average_effectiveness: controls?.reduce((sum, c) => sum + (c.effectiveness_rating || 0), 0) / Math.max(controls?.length || 1, 1)
       };
     } catch (error) {
       console.error('Error getting metrics data:', error);
