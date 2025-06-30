@@ -105,8 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
       
-      // Redirect to dashboard or the page they were trying to access
-      const origin = location.state?.from?.pathname || "/dashboard";
+      // Redirect to app dashboard or the page they were trying to access
+      const origin = location.state?.from?.pathname || "/app/dashboard";
       navigate(origin);
     } catch (error) {
       console.error("Login failed:", error);
@@ -191,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       toast.success("Password updated successfully!");
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch (error) {
       console.error("Password update failed:", error);
       throw error;

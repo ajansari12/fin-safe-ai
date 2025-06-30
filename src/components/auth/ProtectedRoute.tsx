@@ -31,7 +31,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check role requirement if specified
   if (requiredRole && profile?.role !== requiredRole) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/app/dashboard" replace />;
   }
 
   // Wrap children with OnboardingGuard to check onboarding status
