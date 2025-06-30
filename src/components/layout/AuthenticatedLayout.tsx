@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
@@ -155,7 +156,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             {/* Navbar */}
             <header className="bg-white dark:bg-slate-800 shadow-sm z-10 flex-shrink-0">
               <div className="flex items-center justify-between h-16 px-4">
-                <div className="flex items-center gap-6">
+                <div className={`flex items-center gap-6 ${!isSidebarOpen ? 'ml-4 lg:ml-8' : ''}`}>
                   {/* Menu toggle button - always show with proper spacing */}
                   <button
                     onClick={toggleSidebar}
