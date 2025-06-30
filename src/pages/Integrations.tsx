@@ -3,17 +3,18 @@ import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Key, Webhook, Settings, FileText } from "lucide-react";
+import { Plus, Key, Webhook, Settings, FileText, Zap } from "lucide-react";
 import IntegrationsList from "@/components/integrations/IntegrationsList";
 import ApiKeyManager from "@/components/integrations/ApiKeyManager";
 import EnhancedWebhookManager from "@/components/integrations/EnhancedWebhookManager";
 import ConnectorSettings from "@/components/integrations/ConnectorSettings";
 import IntegrationAuditLogs from "@/components/integrations/IntegrationAuditLogs";
 import IntegrationForm from "@/components/integrations/IntegrationForm";
+import IntegrationDashboard from "@/components/integrations/IntegrationDashboard";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 
 const Integrations: React.FC = () => {
-  const [activeTab, setActiveTab] = useState("integrations");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [showIntegrationForm, setShowIntegrationForm] = useState(false);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
 
@@ -50,17 +51,27 @@ const Integrations: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold">Integrations</h1>
             <p className="text-muted-foreground">
-              Manage external integrations, API keys, webhooks, and connector settings
+              Comprehensive integration framework for financial institution systems
             </p>
           </div>
-          <Button onClick={handleCreateIntegration}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Integration
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleCreateIntegration}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Integration
+            </Button>
+            <Button variant="outline" onClick={() => window.open('/integration-framework', '_blank')}>
+              <Zap className="h-4 w-4 mr-2" />
+              Full Framework
+            </Button>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
             <TabsTrigger value="integrations" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Integrations
@@ -82,6 +93,10 @@ const Integrations: React.FC = () => {
               Audit Logs
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard" className="space-y-6">
+            <IntegrationDashboard />
+          </TabsContent>
 
           <TabsContent value="integrations" className="space-y-6">
             <IntegrationsList onEditIntegration={handleEditIntegration} />

@@ -1,160 +1,31 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
-import { ThemeProvider } from 'next-themes';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { AIAssistantProvider } from '@/components/ai-assistant';
-import { EnhancedAIAssistantProvider } from '@/components/ai-assistant/EnhancedAIAssistantContext';
-import { EnhancedAIAssistantButton } from '@/components/ai-assistant/EnhancedAIAssistantButton';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
-// Page imports
-import Index from '@/pages/Index';
-import Dashboard from '@/pages/Dashboard';
-import IncidentLog from '@/pages/IncidentLog';
-import GovernanceFramework from '@/pages/GovernanceFramework';
-import FrameworkDetail from '@/pages/governance/FrameworkDetail';
-import BusinessContinuity from '@/pages/BusinessContinuity';
-import ThirdPartyRisk from '@/pages/ThirdPartyRisk';
-import Dependencies from '@/pages/Dependencies';
-import ControlsAndKRI from '@/pages/ControlsAndKri';
-import WorkflowCenter from '@/pages/WorkflowCenter';
-import RiskAppetite from '@/pages/RiskAppetite';
-import Reporting from '@/pages/Reporting';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { navItems } from "./nav-items";
+import Index from "./pages/Index";
+import IntegrationFramework from "./pages/IntegrationFramework";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
-console.log('App component rendering');
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Router>
-            <AuthProvider>
-              <AIAssistantProvider>
-                <EnhancedAIAssistantProvider>
-                  <div className="min-h-screen bg-background">
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route
-                        path="/dashboard"
-                        element={
-                          <ProtectedRoute>
-                            <Dashboard />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/incident-log"
-                        element={
-                          <ProtectedRoute>
-                            <IncidentLog />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/governance-framework"
-                        element={
-                          <ProtectedRoute>
-                            <GovernanceFramework />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/governance-framework/:frameworkId"
-                        element={
-                          <ProtectedRoute>
-                            <FrameworkDetail />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/governance-framework/new"
-                        element={
-                          <ProtectedRoute>
-                            <FrameworkDetail />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/business-continuity"
-                        element={
-                          <ProtectedRoute>
-                            <BusinessContinuity />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/third-party-risk"
-                        element={
-                          <ProtectedRoute>
-                            <ThirdPartyRisk />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/dependencies"
-                        element={
-                          <ProtectedRoute>
-                            <Dependencies />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/controls-and-kri"
-                        element={
-                          <ProtectedRoute>
-                            <ControlsAndKRI />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/workflow-center"
-                        element={
-                          <ProtectedRoute>
-                            <WorkflowCenter />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/risk-appetite"
-                        element={
-                          <ProtectedRoute>
-                            <RiskAppetite />
-                          </ProtectedRoute>
-                        }
-                      />
-                      <Route
-                        path="/reporting"
-                        element={
-                          <ProtectedRoute>
-                            <Reporting />
-                          </ProtectedRoute>
-                        }
-                      />
-                    </Routes>
-                    <EnhancedAIAssistantButton />
-                  </div>
-                </EnhancedAIAssistantProvider>
-              </AIAssistantProvider>
-            </AuthProvider>
-          </Router>
-        </ThemeProvider>
-        <Toaster />
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
-}
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/integration-framework" element={<IntegrationFramework />} />
+          {navItems.map(({ to, page }) => (
+            <Route key={to} path={to} element={page} />
+          ))}
+        </Routes>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
