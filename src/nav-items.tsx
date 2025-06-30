@@ -1,5 +1,5 @@
 
-import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage } from "lucide-react";
+import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage, Cloud } from "lucide-react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ThirdPartyRisk from "./pages/ThirdPartyRisk";
@@ -21,6 +21,7 @@ import WorkflowCenter from "./pages/WorkflowCenter";
 import DependencyMapping from "./pages/DependencyMapping";
 import Reporting from "./pages/Reporting";
 import DocumentManagement from "./pages/DocumentManagement";
+import DeploymentCenter from "./pages/DeploymentCenter";
 
 /**
  * Central configuration for navigation items.
@@ -140,6 +141,12 @@ export const navItems = [
     to: "/dependency-mapping",
     icon: <Network className="h-4 w-4" />,
     page: DependencyMapping,
+  },
+  {
+    title: "Deployment Center",
+    to: "/deployment-center",
+    icon: <Cloud className="h-4 w-4" />,
+    page: DeploymentCenter,
   },
   {
     title: "Reporting",
