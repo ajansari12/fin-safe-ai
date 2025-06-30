@@ -1,15 +1,28 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Save, Play, Settings, Plus, Trash2, Copy, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { WorkflowOrchestration, WorkflowNode, WorkflowEdge, workflowOrchestrationService } from "@/services/workflow-orchestration-service";
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Play, 
+  Square, 
+  Diamond, 
+  Settings, 
+  GitBranch, 
+  GitMerge,
+  Plus,
+  Trash2,
+  Save,
+  X,
+  Clock
+} from 'lucide-react';
+import { WorkflowOrchestration, WorkflowNode, WorkflowEdge, WorkflowCondition, WorkflowAssignment } from '@/services/workflow-orchestration-service';
 
 interface VisualWorkflowDesignerProps {
   workflow?: WorkflowOrchestration;
@@ -17,18 +30,19 @@ interface VisualWorkflowDesignerProps {
   onCancel: () => void;
 }
 
-const nodeTypes = [
-  { type: 'start', label: 'Start', icon: '▶️', color: 'bg-green-100 border-green-300' },
-  { type: 'task', label: 'Task', icon: '📋', color: 'bg-blue-100 border-blue-300' },
-  { type: 'decision', label: 'Decision', icon: '❓', color: 'bg-yellow-100 border-yellow-300' },
-  { type: 'integration', label: 'Integration', icon: '🔗', color: 'bg-purple-100 border-purple-300' },
-  { type: 'parallel', label: 'Parallel', icon: '⏸️', color: 'bg-orange-100 border-orange-300' },
-  { type: 'end', label: 'End', icon: '⏹️', color: 'bg-red-100 border-red-300' }
-];
+interface NodePosition {
+  x: number;
+  y: number;
+}
 
-const moduleOptions = [
-  'governance', 'incident', 'audit', 'risk', 'third_party', 
-  'business_continuity', 'controls', 'compliance', 'documents'
+const NODE_TYPES = [
+  { type: 'start', label: 'Start', icon: Play, color: 'bg-green-500' },
+  { type: 'task', label: 'Task', icon: Square, color: 'bg-blue-500' },
+  { type: 'decision', label: 'Decision', icon: Diamond, color: 'bg-yellow-500' },
+  { type: 'integration', label: 'Integration', icon: Settings, color: 'bg-purple-500' },
+  { type: 'parallel', label: 'Parallel', icon: GitBranch, color: 'bg-orange-500' },
+  { type: 'merge', label: 'Merge', icon: GitMerge, color: 'bg-indigo-500' },
+  { type: 'end', label: 'End', icon: Square, color: 'bg-red-500' }
 ];
 
 const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
@@ -36,10 +50,9 @@ const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
   onSave,
   onCancel
 }) => {
-  const { toast } = useToast();
   const [workflowData, setWorkflowData] = useState<Omit<WorkflowOrchestration, 'id' | 'created_at' | 'updated_at'>>({
-    name: workflow?.name || "",
-    description: workflow?.description || "",
+    name: workflow?.name || '',
+    description: workflow?.description || '',
     version: workflow?.version || 1,
     status: workflow?.status || 'draft',
     category: workflow?.category || '',
@@ -49,23 +62,32 @@ const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
     edges: workflow?.edges || [],
     variables: workflow?.variables || {},
     business_rules: workflow?.business_rules || [],
-    org_id: workflow?.org_id || "",
+    org_id: workflow?.org_id || '',
     created_by: workflow?.created_by
   });
 
   const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
-  const [isNodeDialogOpen, setIsNodeDialogOpen] = useState(false);
   const [draggedNodeType, setDraggedNodeType] = useState<string | null>(null);
-  const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
+  const [canvasSize] = useState({ width: 1200, height: 800 });
 
-  const handleAddNode = useCallback((nodeType: string, position: { x: number; y: number }) => {
+  // Generate unique ID for new nodes
+  const generateNodeId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  // Add a new node to the canvas
+  const addNode = useCallback((type: string, position: NodePosition) => {
     const newNode: WorkflowNode = {
-      id: `node_${Date.now()}`,
-      type: nodeType as WorkflowNode['type'],
-      name: `${nodeType.charAt(0).toUpperCase() + nodeType.slice(1)} Node`,
+      id: generateNodeId(),
+      type: type as WorkflowNode['type'],
+      name: `${type.charAt(0).toUpperCase() + type.slice(1)} Node`,
+      description: '',
       position,
       conditions: [],
-      assignments: []
+      assignments: [],
+      timeout_minutes: 60,
+      retry_config: {
+        max_attempts: 3,
+        delay_seconds: 30
+      }
     };
 
     setWorkflowData(prev => ({
@@ -74,7 +96,8 @@ const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
     }));
   }, []);
 
-  const handleUpdateNode = useCallback((nodeId: string, updates: Partial<WorkflowNode>) => {
+  // Update a node's properties
+  const updateNode = useCallback((nodeId: string, updates: Partial<WorkflowNode>) => {
     setWorkflowData(prev => ({
       ...prev,
       nodes: prev.nodes.map(node => 
@@ -83,260 +106,134 @@ const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
     }));
   }, []);
 
-  const handleDeleteNode = useCallback((nodeId: string) => {
+  // Delete a node
+  const deleteNode = useCallback((nodeId: string) => {
     setWorkflowData(prev => ({
       ...prev,
       nodes: prev.nodes.filter(node => node.id !== nodeId),
       edges: prev.edges.filter(edge => edge.source !== nodeId && edge.target !== nodeId)
     }));
+    setSelectedNode(null);
   }, []);
 
-  const handleConnectNodes = useCallback((sourceId: string, targetId: string) => {
-    const newEdge: WorkflowEdge = {
-      id: `edge_${Date.now()}`,
-      source: sourceId,
-      target: targetId,
-      label: 'Next'
-    };
-
-    setWorkflowData(prev => ({
-      ...prev,
-      edges: [...prev.edges, newEdge]
-    }));
-  }, []);
-
+  // Handle canvas drop for new nodes
   const handleCanvasDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    if (draggedNodeType) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const position = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-      handleAddNode(draggedNodeType, position);
-      setDraggedNodeType(null);
-    }
-  }, [draggedNodeType, handleAddNode]);
+    if (!draggedNodeType) return;
 
-  const handleSaveWorkflow = useCallback(() => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const position = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+
+    addNode(draggedNodeType, position);
+    setDraggedNodeType(null);
+  }, [draggedNodeType, addNode]);
+
+  // Save workflow
+  const handleSave = () => {
     if (!workflowData.name.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Workflow name is required",
-        variant: "destructive"
-      });
+      alert('Please enter a workflow name');
       return;
     }
-
-    if (workflowData.nodes.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "Workflow must have at least one node",
-        variant: "destructive"
-      });
+    if (!workflowData.category.trim()) {
+      alert('Please select a category');
       return;
     }
 
     onSave(workflowData);
-  }, [workflowData, onSave, toast]);
+  };
 
-  const handleExecuteWorkflow = useCallback(async () => {
-    if (!workflow?.id) {
-      toast({
-        title: "Error",
-        description: "Save the workflow before executing",
-        variant: "destructive"
-      });
-      return;
-    }
+  // Node component
+  const NodeComponent: React.FC<{ node: WorkflowNode }> = ({ node }) => {
+    const nodeType = NODE_TYPES.find(t => t.type === node.type);
+    const Icon = nodeType?.icon || Square;
 
-    try {
-      await workflowOrchestrationService.executeWorkflow(workflow.id, {});
-      toast({
-        title: "Success",
-        description: "Workflow execution started"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to start workflow execution",
-        variant: "destructive"
-      });
-    }
-  }, [workflow?.id, toast]);
+    return (
+      <div
+        className={`absolute cursor-pointer border-2 rounded-lg p-3 min-w-[120px] text-center transition-all hover:shadow-lg ${
+          selectedNode?.id === node.id 
+            ? 'border-blue-500 shadow-lg' 
+            : 'border-gray-300 hover:border-gray-400'
+        } ${nodeType?.color || 'bg-gray-500'} text-white`}
+        style={{
+          left: node.position.x,
+          top: node.position.y,
+          transform: 'translate(-50%, -50%)'
+        }}
+        onClick={() => setSelectedNode(node)}
+      >
+        <Icon className="h-4 w-4 mx-auto mb-1" />
+        <div className="text-xs font-medium">{node.name}</div>
+        {node.type === 'decision' && node.conditions && node.conditions.length > 0 && (
+          <Badge variant="secondary" className="text-xs mt-1">
+            {node.conditions.length} rule{node.conditions.length !== 1 ? 's' : ''}
+          </Badge>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Visual Workflow Designer</h2>
-          <p className="text-muted-foreground">
-            Design sophisticated workflows with drag-and-drop simplicity
-          </p>
+    <div className="h-full max-h-[90vh] flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex-1">
+          <Input
+            placeholder="Workflow Name"
+            value={workflowData.name}
+            onChange={(e) => setWorkflowData(prev => ({ ...prev, name: e.target.value }))}
+            className="text-lg font-medium"
+          />
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 ml-4">
           <Button variant="outline" onClick={onCancel}>
+            <X className="h-4 w-4 mr-1" />
             Cancel
           </Button>
-          <Button variant="outline" onClick={handleExecuteWorkflow} disabled={!workflow?.id}>
-            <Play className="h-4 w-4 mr-2" />
-            Test Run
-          </Button>
-          <Button onClick={handleSaveWorkflow}>
-            <Save className="h-4 w-4 mr-2" />
+          <Button onClick={handleSave}>
+            <Save className="h-4 w-4 mr-1" />
             Save Workflow
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="designer" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="designer">Visual Designer</TabsTrigger>
-          <TabsTrigger value="properties">Properties</TabsTrigger>
-          <TabsTrigger value="rules">Business Rules</TabsTrigger>
-          <TabsTrigger value="variables">Variables</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="designer" className="space-y-4">
-          <div className="grid grid-cols-12 gap-4 h-[600px]">
-            {/* Node Palette */}
-            <div className="col-span-2 space-y-2">
-              <h3 className="font-medium">Node Types</h3>
-              <div className="space-y-2">
-                {nodeTypes.map((nodeType) => (
-                  <div
-                    key={nodeType.type}
-                    draggable
-                    onDragStart={() => setDraggedNodeType(nodeType.type)}
-                    className={`p-3 rounded border-2 cursor-move hover:shadow-md transition-shadow ${nodeType.color}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{nodeType.icon}</span>
-                      <span className="text-sm font-medium">{nodeType.label}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Canvas */}
-            <div className="col-span-8">
-              <div
-                className="relative w-full h-full border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 overflow-auto"
-                onDrop={handleCanvasDrop}
-                onDragOver={(e) => e.preventDefault()}
-              >
-                {workflowData.nodes.map((node) => (
-                  <div
-                    key={node.id}
-                    className={`absolute p-3 rounded border-2 cursor-pointer hover:shadow-md transition-shadow ${
-                      nodeTypes.find(nt => nt.type === node.type)?.color || 'bg-gray-100 border-gray-300'
-                    }`}
-                    style={{
-                      left: node.position.x,
-                      top: node.position.y,
-                      minWidth: '120px'
-                    }}
-                    onClick={() => {
-                      setSelectedNode(node);
-                      setIsNodeDialogOpen(true);
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span>{nodeTypes.find(nt => nt.type === node.type)?.icon}</span>
-                        <span className="text-sm font-medium">{node.name}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteNode(node.id);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    {node.module && (
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {node.module}
-                      </Badge>
-                    )}
-                  </div>
-                ))}
-
-                {/* Render connections */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                  {workflowData.edges.map((edge) => {
-                    const sourceNode = workflowData.nodes.find(n => n.id === edge.source);
-                    const targetNode = workflowData.nodes.find(n => n.id === edge.target);
-                    
-                    if (!sourceNode || !targetNode) return null;
-
-                    const startX = sourceNode.position.x + 60;
-                    const startY = sourceNode.position.y + 20;
-                    const endX = targetNode.position.x + 60;
-                    const endY = targetNode.position.y + 20;
-
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar - Node Palette & Properties */}
+        <div className="w-80 border-r flex flex-col">
+          <Tabs defaultValue="palette" className="flex-1">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="palette">Palette</TabsTrigger>
+              <TabsTrigger value="properties">Properties</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="palette" className="p-4 space-y-4">
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Drag nodes to canvas</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {NODE_TYPES.map((nodeType) => {
+                    const Icon = nodeType.icon;
                     return (
-                      <g key={edge.id}>
-                        <line
-                          x1={startX}
-                          y1={startY}
-                          x2={endX}
-                          y2={endY}
-                          stroke="#6b7280"
-                          strokeWidth="2"
-                          markerEnd="url(#arrowhead)"
-                        />
-                        <defs>
-                          <marker
-                            id="arrowhead"
-                            markerWidth="10"
-                            markerHeight="7"
-                            refX="9"
-                            refY="3.5"
-                            orient="auto"
-                          >
-                            <polygon
-                              points="0 0, 10 3.5, 0 7"
-                              fill="#6b7280"
-                            />
-                          </marker>
-                        </defs>
-                      </g>
+                      <div
+                        key={nodeType.type}
+                        draggable
+                        onDragStart={() => setDraggedNodeType(nodeType.type)}
+                        className={`p-3 rounded-lg cursor-move text-white text-center transition-transform hover:scale-105 ${nodeType.color}`}
+                      >
+                        <Icon className="h-4 w-4 mx-auto mb-1" />
+                        <div className="text-xs">{nodeType.label}</div>
+                      </div>
                     );
                   })}
-                </svg>
-
-                {workflowData.nodes.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                    <div className="text-center">
-                      <p className="text-lg">Drag nodes from the palette to start building your workflow</p>
-                      <p className="text-sm">Connect nodes by clicking and dragging between them</p>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            </div>
 
-            {/* Properties Panel */}
-            <div className="col-span-2 space-y-4">
-              <h3 className="font-medium">Workflow Properties</h3>
+              <Separator />
+
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="workflowName">Name</Label>
-                  <Input
-                    id="workflowName"
-                    value={workflowData.name}
-                    onChange={(e) => setWorkflowData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Workflow name"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="workflowCategory">Category</Label>
+                  <Label htmlFor="category">Category</Label>
                   <Select
                     value={workflowData.category}
                     onValueChange={(value) => setWorkflowData(prev => ({ ...prev, category: value }))}
@@ -345,20 +242,26 @@ const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="incident_management">Incident Management</SelectItem>
                       <SelectItem value="governance">Governance</SelectItem>
-                      <SelectItem value="incident">Incident Management</SelectItem>
-                      <SelectItem value="audit">Audit & Compliance</SelectItem>
-                      <SelectItem value="risk">Risk Management</SelectItem>
-                      <SelectItem value="continuity">Business Continuity</SelectItem>
+                      <SelectItem value="risk_assessment">Risk Assessment</SelectItem>
+                      <SelectItem value="compliance">Compliance</SelectItem>
+                      <SelectItem value="business_continuity">Business Continuity</SelectItem>
+                      <SelectItem value="audit">Audit</SelectItem>
+                      <SelectItem value="third_party">Third Party</SelectItem>
+                      <SelectItem value="general">General</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="triggerType">Trigger Type</Label>
+                  <Label htmlFor="trigger_type">Trigger Type</Label>
                   <Select
                     value={workflowData.trigger_type}
-                    onValueChange={(value) => setWorkflowData(prev => ({ ...prev, trigger_type: value as any }))}
+                    onValueChange={(value) => setWorkflowData(prev => ({ 
+                      ...prev, 
+                      trigger_type: value as 'manual' | 'scheduled' | 'event' | 'api'
+                    }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select trigger" />
@@ -366,180 +269,190 @@ const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
                     <SelectContent>
                       <SelectItem value="manual">Manual</SelectItem>
                       <SelectItem value="scheduled">Scheduled</SelectItem>
-                      <SelectItem value="event">Event-driven</SelectItem>
-                      <SelectItem value="api">API Trigger</SelectItem>
+                      <SelectItem value="event">Event</SelectItem>
+                      <SelectItem value="api">API</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="pt-2">
-                  <Badge variant={workflowData.status === 'active' ? 'default' : 'secondary'}>
-                    {workflowData.status.toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="properties" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Properties</CardTitle>
-              <CardDescription>
-                Configure global workflow settings and metadata
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="workflowNameProp">Name</Label>
-                <Input
-                  id="workflowNameProp"
-                  value={workflowData.name}
-                  onChange={(e) => setWorkflowData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Workflow name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="workflowDescription">Description</Label>
-                <Input
-                  id="workflowDescription"
-                  value={workflowData.description || ''}
-                  onChange={(e) => setWorkflowData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Workflow description"
-                />
-              </div>
-              <div>
-                <Label htmlFor="workflowVersion">Version</Label>
-                <Input
-                  id="workflowVersion"
-                  type="number"
-                  value={workflowData.version}
-                  onChange={(e) => setWorkflowData(prev => ({ ...prev, version: Number(e.target.value) }))}
-                  min={1}
-                />
-              </div>
-              <div>
-                <Label htmlFor="workflowStatus">Status</Label>
-                <Select
-                  value={workflowData.status}
-                  onValueChange={(value) => setWorkflowData(prev => ({ ...prev, status: value as any }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="deprecated">Deprecated</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="rules" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Rules</CardTitle>
-              <CardDescription>
-                Define business rules that govern workflow behavior
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Business rules configuration coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="variables" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Workflow Variables</CardTitle>
-              <CardDescription>
-                Define variables that can be used throughout the workflow
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Variables configuration coming soon...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Node Configuration Dialog */}
-      <Dialog open={isNodeDialogOpen} onOpenChange={setIsNodeDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Configure Node: {selectedNode?.name}</DialogTitle>
-            <DialogDescription>
-              Set up the properties and behavior for this workflow node
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedNode && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="nodeName">Node Name</Label>
-                <Input
-                  id="nodeName"
-                  value={selectedNode.name}
-                  onChange={(e) => {
-                    const updatedNode = { ...selectedNode, name: e.target.value };
-                    setSelectedNode(updatedNode);
-                    handleUpdateNode(selectedNode.id, { name: e.target.value });
-                  }}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="nodeDescription">Description</Label>
-                <Input
-                  id="nodeDescription"
-                  value={selectedNode.description || ''}
-                  onChange={(e) => {
-                    const updatedNode = { ...selectedNode, description: e.target.value };
-                    setSelectedNode(updatedNode);
-                    handleUpdateNode(selectedNode.id, { description: e.target.value });
-                  }}
-                />
-              </div>
-
-              {selectedNode.type === 'task' && (
                 <div>
-                  <Label htmlFor="nodeModule">Module</Label>
-                  <Select
-                    value={selectedNode.module || ''}
-                    onValueChange={(value) => {
-                      const updatedNode = { ...selectedNode, module: value };
-                      setSelectedNode(updatedNode);
-                      handleUpdateNode(selectedNode.id, { module: value });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select module" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {moduleOptions.map((module) => (
-                        <SelectItem key={module} value={module}>
-                          {module.charAt(0).toUpperCase() + module.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Describe the workflow purpose..."
+                    value={workflowData.description || ''}
+                    onChange={(e) => setWorkflowData(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="properties" className="p-4">
+              {selectedNode ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Node Properties</h3>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteNode(selectedNode.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="node-name">Name</Label>
+                      <Input
+                        id="node-name"
+                        value={selectedNode.name}
+                        onChange={(e) => updateNode(selectedNode.id, { name: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="node-description">Description</Label>
+                      <Textarea
+                        id="node-description"
+                        value={selectedNode.description || ''}
+                        onChange={(e) => updateNode(selectedNode.id, { description: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+
+                    {selectedNode.type === 'task' && (
+                      <>
+                        <div>
+                          <Label htmlFor="module">Module</Label>
+                          <Select
+                            value={selectedNode.module || ''}
+                            onValueChange={(value) => updateNode(selectedNode.id, { module: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select module" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="incident_management">Incident Management</SelectItem>
+                              <SelectItem value="governance">Governance</SelectItem>
+                              <SelectItem value="risk_management">Risk Management</SelectItem>
+                              <SelectItem value="compliance">Compliance</SelectItem>
+                              <SelectItem value="audit">Audit</SelectItem>
+                              <SelectItem value="third_party">Third Party</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="action">Action</Label>
+                          <Input
+                            id="action"
+                            placeholder="e.g., create_incident, assign_reviewer"
+                            value={selectedNode.action || ''}
+                            onChange={(e) => updateNode(selectedNode.id, { action: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {selectedNode.type === 'integration' && (
+                      <div>
+                        <Label>Integration Configuration</Label>
+                        <Textarea
+                          placeholder="Enter JSON configuration..."
+                          value={JSON.stringify(selectedNode.integration_config || {}, null, 2)}
+                          onChange={(e) => {
+                            try {
+                              const config = JSON.parse(e.target.value);
+                              updateNode(selectedNode.id, { integration_config: config });
+                            } catch {
+                              // Invalid JSON, ignore
+                            }
+                          }}
+                          rows={4}
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <Label htmlFor="timeout">Timeout (minutes)</Label>
+                    </div>
+                    <Input
+                      id="timeout"
+                      type="number"
+                      min="1"
+                      value={selectedNode.timeout_minutes || 60}
+                      onChange={(e) => updateNode(selectedNode.id, { 
+                        timeout_minutes: parseInt(e.target.value) || 60 
+                      })}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  <Settings className="h-8 w-8 mx-auto mb-2" />
+                  <p>Select a node to edit its properties</p>
                 </div>
               )}
+            </TabsContent>
+          </Tabs>
+        </div>
 
-              <div className="flex justify-end">
-                <Button onClick={() => setIsNodeDialogOpen(false)}>
-                  Done
-                </Button>
+        {/* Main Canvas */}
+        <div className="flex-1 relative overflow-hidden bg-gray-50">
+          <div
+            className="w-full h-full relative"
+            onDrop={handleCanvasDrop}
+            onDragOver={(e) => e.preventDefault()}
+            style={{ 
+              backgroundImage: 'radial-gradient(circle, #e5e7eb 1px, transparent 1px)',
+              backgroundSize: '20px 20px'
+            }}
+          >
+            {/* Render nodes */}
+            {workflowData.nodes.map(node => (
+              <NodeComponent key={node.id} node={node} />
+            ))}
+
+            {/* Instructions overlay when canvas is empty */}
+            {workflowData.nodes.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Card className="p-8 text-center max-w-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 justify-center">
+                      <Plus className="h-5 w-5" />
+                      Start Building Your Workflow
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      Drag nodes from the palette on the left to create your workflow. 
+                      Start with a "Start" node and build your process step by step.
+                    </p>
+                  </CardContent>
+                </Card>
               </div>
-            </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Status Bar */}
+      <div className="flex items-center justify-between p-2 border-t bg-gray-50 text-sm text-muted-foreground">
+        <div className="flex items-center gap-4">
+          <span>Nodes: {workflowData.nodes.length}</span>
+          <span>Edges: {workflowData.edges.length}</span>
+          <span>Status: {workflowData.status}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">Version {workflowData.version}</Badge>
+          {workflowData.trigger_type !== 'manual' && (
+            <Badge variant="secondary">{workflowData.trigger_type} trigger</Badge>
           )}
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   );
 };
