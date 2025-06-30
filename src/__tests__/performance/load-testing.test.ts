@@ -27,8 +27,8 @@ describe('Performance Load Testing', () => {
     const largeDocumentSize = 10 * 1024 * 1024; // 10MB
     const result = await simulateLargeDocumentProcessing(largeDocumentSize);
     
-    expect(result.success).toBe(true);
-    expect(result.processingTime).toBeLessThan(30000); // Should process within 30 seconds
+    expect((result as any).success).toBe(true);
+    expect((result as any).processingTime).toBeLessThan(30000); // Should process within 30 seconds
   });
 });
 

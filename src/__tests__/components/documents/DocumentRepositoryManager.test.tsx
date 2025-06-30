@@ -2,15 +2,16 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@/__tests__/utils/test-utils';
 import DocumentRepositoryManager from '@/components/documents/DocumentRepositoryManager';
+import { DocumentRepository } from '@/services/document-management-service';
 
-const mockRepositories = [
+const mockRepositories: DocumentRepository[] = [
   {
     id: '1',
     org_id: 'test-org',
     name: 'Test Repository',
     description: 'Test description',
-    document_type: 'policy' as const,
-    access_level: 'internal' as const,
+    document_type: 'policy',
+    access_level: 'internal',
     retention_years: 7,
     created_by: 'user-1',
     created_by_name: 'Test User',

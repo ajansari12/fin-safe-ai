@@ -8,7 +8,7 @@ describe('WCAG Accessibility Compliance', () => {
     const { container } = render(<DocumentManagementDashboard />);
     
     const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    const headingLevels = Array.from(headings).map(h => parseInt(h.tagName.charAt(1)));
+    const headingLevels = Array.from(headings).map(h => parseInt((h as HTMLElement).tagName.charAt(1)));
     
     // Check that heading levels are sequential
     for (let i = 1; i < headingLevels.length; i++) {

@@ -3,10 +3,9 @@ import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthContext } from '@/contexts/AuthContext';
 
-// Mock auth context
-const mockAuthContext = {
+// Create a mock auth context since the real one isn't exported
+const MockAuthContext = React.createContext({
   user: {
     id: 'test-user-id',
     email: 'test@example.com',
@@ -23,7 +22,7 @@ const mockAuthContext = {
   signUp: vi.fn(),
   signOut: vi.fn(),
   updateProfile: vi.fn(),
-};
+});
 
 // Custom render function
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
@@ -37,11 +36,28 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthContext.Provider value={mockAuthContext}>
+      <MockAuthContext.Provider value={{
+        user: {
+          id: 'test-user-id',
+          email: 'test@example.com',
+          user_metadata: { full_name: 'Test User' },
+        },
+        profile: {
+          id: 'test-user-id',
+          organization_id: 'test-org-id',
+          full_name: 'Test User',
+          role: 'admin',
+        },
+        loading: false,
+        signIn: vi.fn(),
+        signUp: vi.fn(),
+        signOut: vi.fn(),
+        updateProfile: vi.fn(),
+      }}>
         <BrowserRouter>
           {children}
         </BrowserRouter>
-      </AuthContext.Provider>
+      </MockAuthContext.Provider>
     </QueryClientProvider>
   );
 };
