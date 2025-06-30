@@ -70,6 +70,18 @@ export interface DataValidationRule {
   updated_at: string;
 }
 
+// Helper function to safely convert Json arrays to string arrays
+const safeJsonArrayToStringArray = (jsonArray: any): string[] => {
+  if (!Array.isArray(jsonArray)) return [];
+  return jsonArray.map(item => String(item)).filter(item => item !== 'null' && item !== 'undefined');
+};
+
+// Helper function to safely convert Json arrays to Record arrays
+const safeJsonArrayToRecordArray = (jsonArray: any): Record<string, any>[] => {
+  if (!Array.isArray(jsonArray)) return [];
+  return jsonArray.filter(item => item && typeof item === 'object').map(item => item as Record<string, any>);
+};
+
 class DataOrchestrationService {
   // Data Lineage Management
   async createDataLineage(lineage: Omit<DataLineage, 'id' | 'created_at' | 'updated_at'>): Promise<DataLineage> {
@@ -180,8 +192,8 @@ class DataOrchestrationService {
 
       return {
         ...data,
-        quality_issues: Array.isArray(data.quality_issues) ? data.quality_issues : [],
-        validation_rules: Array.isArray(data.validation_rules) ? data.validation_rules : []
+        quality_issues: safeJsonArrayToStringArray(data.quality_issues),
+        validation_rules: safeJsonArrayToRecordArray(data.validation_rules)
       };
     } catch (error) {
       console.error('Error in createDataQualityMetrics:', error);
@@ -210,8 +222,8 @@ class DataOrchestrationService {
 
       return (data || []).map(item => ({
         ...item,
-        quality_issues: Array.isArray(item.quality_issues) ? item.quality_issues : [],
-        validation_rules: Array.isArray(item.validation_rules) ? item.validation_rules : []
+        quality_issues: safeJsonArrayToStringArray(item.quality_issues),
+        validation_rules: safeJsonArrayToRecordArray(item.validation_rules)
       }));
     } catch (error) {
       console.error('Error in getDataQualityMetrics:', error);
