@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { publicNavItems, appNavItems } from "./nav-items";
 import { queryClientConfig } from "./lib/performance/cache-utils";
 import { QueryOptimizer } from "./lib/performance/query-optimizer";
@@ -14,9 +14,6 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 // Lazy load major components for code splitting
 const Index = lazy(() => import("./pages/Index"));
-const IntegrationFramework = lazy(() => import("./pages/IntegrationFramework"));
-const PersonalizedDashboard = lazy(() => import("./pages/PersonalizedDashboard"));
-const WorkflowCenter = lazy(() => import("./pages/WorkflowCenter"));
 
 // Lazy load auth components
 const Login = lazy(() => import("./pages/auth/Login"));
@@ -77,10 +74,10 @@ const App = () => (
                 <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
                 <Route path="/modules/risk-management" element={<RiskManagementModule />} />
                 
-                {/* Public framework and dashboard routes (legacy support) */}
-                <Route path="/integration-framework" element={<IntegrationFramework />} />
-                <Route path="/personalized-dashboard" element={<PersonalizedDashboard />} />
-                <Route path="/workflow-center" element={<WorkflowCenter />} />
+                {/* Legacy route redirects - redirect to authenticated versions */}
+                <Route path="/integration-framework" element={<Navigate to="/app/integrations" replace />} />
+                <Route path="/personalized-dashboard" element={<Navigate to="/app/dashboard" replace />} />
+                <Route path="/workflow-center" element={<Navigate to="/app/workflow-center" replace />} />
                 
                 {/* Protected app routes */}
                 {appNavItems.map(({ to, page: PageComponent }) => (
@@ -95,15 +92,18 @@ const App = () => (
                   />
                 ))}
                 
-                {/* Additional protected routes */}
+                {/* Move billing under /app for consistency */}
                 <Route 
-                  path="/billing" 
+                  path="/app/billing" 
                   element={
                     <ProtectedRoute>
                       <Billing />
                     </ProtectedRoute>
                   } 
                 />
+                
+                {/* Legacy billing redirect */}
+                <Route path="/billing" element={<Navigate to="/app/billing" replace />} />
               </Routes>
             </Suspense>
           </AuthProvider>

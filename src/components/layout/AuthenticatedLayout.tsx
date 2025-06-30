@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
@@ -45,7 +44,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
 
   const bottomLinks = [
     { path: "/app/settings", label: "Settings" },
-    { path: "/billing", label: "Billing" },
+    { path: "/app/billing", label: "Billing" },
     { path: "/support", label: "Support" },
   ];
 
