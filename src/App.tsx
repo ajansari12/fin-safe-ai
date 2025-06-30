@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,6 +15,7 @@ import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
 import VerifyEmail from "@/pages/auth/Verify";
 import UpdatePassword from "@/pages/auth/UpdatePassword";
+import Index from "@/pages/Index";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 
 const queryClient = new QueryClient({
@@ -41,7 +43,7 @@ const App = () => {
                 <Toaster />
                 <OfflineIndicator />
                 <Routes>
-                  <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="/" element={<Index />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/auth/verify" element={<VerifyEmail />} />
@@ -84,7 +86,7 @@ const App = () => {
                   />
 
                   {/* Catch-all redirect */}
-                  <Route path="*" element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </TooltipProvider>
             </OnboardingProvider>

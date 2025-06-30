@@ -33,7 +33,7 @@ const AuthButtons: React.FC<AuthButtonsProps> = ({ className }) => {
           <Link to="/login">Login</Link>
         </Button>
         <Button asChild>
-          <Link to="/auth/register">Get Started</Link>
+          <Link to="/register">Get Started</Link>
         </Button>
       </div>
     </div>
