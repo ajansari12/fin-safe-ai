@@ -1,5 +1,3 @@
-
-
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
@@ -71,8 +69,8 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                 : 'w-0 lg:w-0 -translate-x-full lg:-translate-x-full'
             }`}
           >
-            {/* Sidebar header - always show logo when sidebar is open */}
-            <div className="flex items-center justify-between px-4 h-16 border-b flex-shrink-0">
+            {/* Sidebar header - simplified without close button */}
+            <div className="flex items-center px-4 h-16 border-b flex-shrink-0">
               <Link to="/app/dashboard" className="flex items-center min-w-0">
                 <Shield className="h-6 w-6 text-primary flex-shrink-0" />
                 {isSidebarOpen && (
@@ -81,14 +79,6 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                   </span>
                 )}
               </Link>
-              
-              {/* Mobile close button */}
-              <button 
-                onClick={toggleSidebar}
-                className="p-2 rounded-md lg:hidden flex-shrink-0 ml-auto"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
             {/* Sidebar content */}
@@ -158,12 +148,16 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             <header className="bg-white dark:bg-slate-800 shadow-sm z-10 flex-shrink-0">
               <div className="flex items-center justify-between h-16 px-4">
                 <div className={`flex items-center gap-6 ${!isSidebarOpen ? 'ml-3 sm:ml-4 md:ml-6 lg:ml-8' : ''}`}>
-                  {/* Menu toggle button - always show with proper spacing */}
+                  {/* Enhanced menu toggle button with dynamic icon */}
                   <button
                     onClick={toggleSidebar}
                     className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
                   >
-                    <Menu className="h-5 w-5" />
+                    {isSidebarOpen && window.innerWidth < 1024 ? (
+                      <X className="h-5 w-5" />
+                    ) : (
+                      <Menu className="h-5 w-5" />
+                    )}
                   </button>
                   
                   {/* Breadcrumb or page title - with responsive spacing */}
@@ -210,4 +204,3 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
 };
 
 export default AuthenticatedLayout;
-
