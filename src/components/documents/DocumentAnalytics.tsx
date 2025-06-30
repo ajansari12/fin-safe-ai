@@ -104,11 +104,11 @@ const DocumentAnalytics: React.FC<DocumentAnalyticsProps> = ({ analytics }) => {
                     <div
                       className="bg-blue-600 h-2 rounded-full"
                       style={{ 
-                        width: `${Math.min(100, ((count as number) / analytics.totalDocuments) * 100)}%` 
+                        width: `${Math.min(100, ((Number(count)) / analytics.totalDocuments) * 100)}%` 
                       }}
                     ></div>
                   </div>
-                  <span className="text-sm font-medium w-8 text-right">{count as number}</span>
+                  <span className="text-sm font-medium w-8 text-right">{Number(count)}</span>
                 </div>
               </div>
             ))}
@@ -172,11 +172,11 @@ const DocumentAnalytics: React.FC<DocumentAnalyticsProps> = ({ analytics }) => {
                       <div
                         className="bg-green-600 h-2 rounded-full"
                         style={{ 
-                          width: `${Math.min(100, ((count as number) / Math.max(...Object.values(analytics.uploadsOverTime))) * 100)}%` 
+                          width: `${Math.min(100, ((Number(count)) / Math.max(...Object.values(analytics.uploadsOverTime).map(Number))) * 100)}%` 
                         }}
                       ></div>
                     </div>
-                    <span className="text-sm font-medium w-8 text-right">{count as number}</span>
+                    <span className="text-sm font-medium w-8 text-right">{Number(count)}</span>
                   </div>
                 </div>
               ))}

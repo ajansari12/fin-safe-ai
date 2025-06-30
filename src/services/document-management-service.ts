@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -90,7 +89,7 @@ export interface DocumentShare {
 
 class DocumentManagementService {
   // Repository Management
-  async createRepository(repository: Omit<DocumentRepository, 'id' | 'created_at' | 'updated_at'>): Promise<DocumentRepository> {
+  async createRepository(repository: Omit<DocumentRepository, 'id' | 'org_id' | 'created_at' | 'updated_at' | 'created_by' | 'created_by_name'>): Promise<DocumentRepository> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 

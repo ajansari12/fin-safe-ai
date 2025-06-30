@@ -1,12 +1,12 @@
 
-import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, Settings, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage } from "lucide-react";
+import { HomeIcon, Users, FileText, AlertTriangle, BarChart3, SettingsIcon, Shield, Target, Activity, BookOpen, Network, TestTube, Workflow, Brain, Calculator, Briefcase, Database, FileImage } from "lucide-react";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import ThirdPartyRisk from "./pages/ThirdPartyRisk";
 import IncidentLog from "./pages/IncidentLog";
 import ControlsAndKri from "./pages/ControlsAndKri";
 import RiskAppetite from "./pages/RiskAppetite";
-import Settings from "./pages/Settings";
+import SettingsPage from "./pages/Settings";
 import GovernanceFramework from "./pages/GovernanceFramework";
 import BusinessFunctions from "./pages/BusinessFunctions";
 import ImpactTolerances from "./pages/ImpactTolerances";
@@ -150,7 +150,7 @@ export const navItems = [
   {
     title: "Settings",
     to: "/settings",
-    icon: <Settings className="h-4 w-4" />,
-    page: Settings,
+    icon: <SettingsIcon className="h-4 w-4" />,
+    page: SettingsPage,
   },
 ];

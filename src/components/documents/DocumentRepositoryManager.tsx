@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,8 @@ const DocumentRepositoryManager: React.FC<DocumentRepositoryManagerProps> = ({ r
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
-    mutationFn: (data: typeof formData) => documentManagementService.createRepository(data),
+    mutationFn: (data: Omit<DocumentRepository, 'id' | 'org_id' | 'created_at' | 'updated_at' | 'created_by' | 'created_by_name'>) => 
+      documentManagementService.createRepository(data),
     onSuccess: () => {
       toast({
         title: "Repository created",
