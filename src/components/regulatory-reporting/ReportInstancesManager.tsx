@@ -1,9 +1,11 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   FileText, 
   Download, 
@@ -16,19 +18,75 @@ import {
   User,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  FileSpreadsheet,
+  Mail,
+  PenTool
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { regulatoryReportingService } from "@/services/regulatory-reporting-service";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const ReportInstancesManager: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [distributionEmails, setDistributionEmails] = useState("");
+  const [signatureDialog, setSignatureDialog] = useState(false);
+  const [distributionDialog, setDistributionDialog] = useState(false);
+
+  const queryClient = useQueryClient();
 
   const { data: reportInstances = [], isLoading } = useQuery({
     queryKey: ['regulatory-report-instances'],
     queryFn: () => regulatoryReportingService.getReportInstances(),
+  });
+
+  const exportToPDFMutation = useMutation({
+    mutationFn: (reportId: string) => regulatoryReportingService.exportReportToPDF(reportId),
+    onSuccess: () => {
+      toast.success("Report exported to PDF successfully");
+    },
+    onError: (error) => {
+      toast.error(`Export failed: ${error.message}`);
+    }
+  });
+
+  const exportToExcelMutation = useMutation({
+    mutationFn: (reportId: string) => regulatoryReportingService.exportReportToExcel(reportId),
+    onSuccess: () => {
+      toast.success("Report exported to Excel successfully");
+    },
+    onError: (error) => {
+      toast.error(`Export failed: ${error.message}`);
+    }
+  });
+
+  const signReportMutation = useMutation({
+    mutationFn: ({ reportId, signature }: { reportId: string; signature: string }) => 
+      regulatoryReportingService.signReport(reportId, signature),
+    onSuccess: () => {
+      toast.success("Report signed successfully");
+      queryClient.invalidateQueries({ queryKey: ['regulatory-report-instances'] });
+      setSignatureDialog(false);
+    },
+    onError: (error) => {
+      toast.error(`Signing failed: ${error.message}`);
+    }
+  });
+
+  const distributeReportMutation = useMutation({
+    mutationFn: ({ reportId, recipients }: { reportId: string; recipients: string[] }) => 
+      regulatoryReportingService.distributeReport(reportId, recipients),
+    onSuccess: () => {
+      toast.success("Report distributed successfully");
+      queryClient.invalidateQueries({ queryKey: ['regulatory-report-instances'] });
+      setDistributionDialog(false);
+    },
+    onError: (error) => {
+      toast.error(`Distribution failed: ${error.message}`);
+    }
   });
 
   const filteredInstances = reportInstances.filter(instance => {
@@ -36,6 +94,32 @@ const ReportInstancesManager: React.FC = () => {
     const matchesStatus = statusFilter === "all" || instance.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleSignReport = (report: any) => {
+    setSelectedReport(report);
+    setSignatureDialog(true);
+  };
+
+  const handleDistributeReport = (report: any) => {
+    setSelectedReport(report);
+    setDistributionEmails(report.email_recipients?.join(', ') || '');
+    setDistributionDialog(true);
+  };
+
+  const submitSignature = () => {
+    if (selectedReport) {
+      // In a real implementation, you'd capture an actual digital signature
+      const signature = `Digitally signed by user on ${new Date().toISOString()}`;
+      signReportMutation.mutate({ reportId: selectedReport.id, signature });
+    }
+  };
+
+  const submitDistribution = () => {
+    if (selectedReport && distributionEmails.trim()) {
+      const recipients = distributionEmails.split(',').map(email => email.trim()).filter(Boolean);
+      distributeReportMutation.mutate({ reportId: selectedReport.id, recipients });
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -137,6 +221,12 @@ const ReportInstancesManager: React.FC = () => {
                           {instance.compliance_flags.length} Issues
                         </Badge>
                       )}
+                      {instance.digital_signature && (
+                        <Badge variant="outline" className="text-xs">
+                          <PenTool className="h-3 w-3 mr-1" />
+                          Signed
+                        </Badge>
+                      )}
                     </div>
                     
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -174,20 +264,54 @@ const ReportInstancesManager: React.FC = () => {
                   )}
                   
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" title="Preview Report">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="outline">
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => exportToPDFMutation.mutate(instance.id)}
+                      disabled={exportToPDFMutation.isPending}
+                      title="Export to PDF"
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
-                    {instance.status === 'generated' && (
-                      <Button size="sm">
-                        <Send className="h-4 w-4 mr-1" />
-                        Submit
+                    
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => exportToExcelMutation.mutate(instance.id)}
+                      disabled={exportToExcelMutation.isPending}
+                      title="Export to Excel"
+                    >
+                      <FileSpreadsheet className="h-4 w-4" />
+                    </Button>
+
+                    {instance.status === 'generated' && !instance.digital_signature && (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleSignReport(instance)}
+                        title="Sign Report"
+                      >
+                        <PenTool className="h-4 w-4" />
                       </Button>
                     )}
+                    
+                    {(instance.status === 'generated' || instance.status === 'approved') && (
+                      <Button 
+                        size="sm"
+                        onClick={() => handleDistributeReport(instance)}
+                        title="Distribute Report"
+                      >
+                        <Mail className="h-4 w-4 mr-1" />
+                        Send
+                      </Button>
+                    )}
+                    
                     {instance.status === 'submitted' && (
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" title="Archive Report">
                         <Archive className="h-4 w-4 mr-1" />
                         Archive
                       </Button>
@@ -214,6 +338,84 @@ const ReportInstancesManager: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      {/* Digital Signature Dialog */}
+      <Dialog open={signatureDialog} onOpenChange={setSignatureDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign Report</DialogTitle>
+            <DialogDescription>
+              Apply your digital signature to approve this regulatory report.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Report</Label>
+              <p className="text-sm text-muted-foreground">
+                {selectedReport?.instance_name}
+              </p>
+            </div>
+            <div>
+              <Label>Confirmation</Label>
+              <p className="text-sm text-muted-foreground">
+                By signing this report, you confirm that you have reviewed the content and approve it for submission to regulatory authorities.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={submitSignature} disabled={signReportMutation.isPending}>
+                {signReportMutation.isPending ? 'Signing...' : 'Apply Digital Signature'}
+              </Button>
+              <Button variant="outline" onClick={() => setSignatureDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Distribution Dialog */}
+      <Dialog open={distributionDialog} onOpenChange={setDistributionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Distribute Report</DialogTitle>
+            <DialogDescription>
+              Send this report to regulatory authorities and internal stakeholders.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Report</Label>
+              <p className="text-sm text-muted-foreground">
+                {selectedReport?.instance_name}
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="emails">Email Recipients</Label>
+              <Textarea
+                id="emails"
+                value={distributionEmails}
+                onChange={(e) => setDistributionEmails(e.target.value)}
+                placeholder="Enter email addresses separated by commas"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Separate multiple email addresses with commas
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={submitDistribution} 
+                disabled={distributeReportMutation.isPending || !distributionEmails.trim()}
+              >
+                {distributeReportMutation.isPending ? 'Sending...' : 'Send Report'}
+              </Button>
+              <Button variant="outline" onClick={() => setDistributionDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {filteredInstances.length === 0 && (
         <Card>

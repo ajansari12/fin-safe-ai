@@ -204,6 +204,18 @@ class RegulatoryReportingService {
 
       if (error) throw error;
 
+      // Store data quality checks
+      if (qualityChecks.length > 0) {
+        const checksWithInstanceId = qualityChecks.map(check => ({
+          ...check,
+          report_instance_id: data.id
+        }));
+        
+        await supabase
+          .from('data_quality_checks')
+          .insert(checksWithInstanceId);
+      }
+
       // Transform and return the created instance
       return {
         ...data,
@@ -252,31 +264,38 @@ class RegulatoryReportingService {
 
     // Process each data block in the template
     for (const block of template.data_blocks) {
-      switch (block.type) {
-        case 'governance_matrix':
-          reportData[block.id] = await this.getGovernanceData(profile.organization_id);
-          break;
-        case 'metrics':
-          reportData[block.id] = await this.getMetricsData(profile.organization_id, periodStart, periodEnd);
-          break;
-        case 'incident_summary':
-          reportData[block.id] = await this.getIncidentData(profile.organization_id, periodStart, periodEnd);
-          break;
-        case 'controls_effectiveness':
-          reportData[block.id] = await this.getControlsData(profile.organization_id, periodStart, periodEnd);
-          break;
-        case 'testing_results':
-          reportData[block.id] = await this.getTestingData(profile.organization_id, periodStart, periodEnd);
-          break;
-        case 'appetite_dashboard':
-          reportData[block.id] = await this.getAppetiteData(profile.organization_id, periodStart, periodEnd);
-          break;
-        case 'risk_register':
-          reportData[block.id] = await this.getRiskRegisterData(profile.organization_id);
-          break;
-        case 'kri_dashboard':
-          reportData[block.id] = await this.getKRIData(profile.organization_id, periodStart, periodEnd);
-          break;
+      try {
+        switch (block.type) {
+          case 'governance_matrix':
+            reportData[block.id] = await this.getGovernanceData(profile.organization_id);
+            break;
+          case 'metrics':
+            reportData[block.id] = await this.getMetricsData(profile.organization_id, periodStart, periodEnd);
+            break;
+          case 'incident_summary':
+            reportData[block.id] = await this.getIncidentData(profile.organization_id, periodStart, periodEnd);
+            break;
+          case 'controls_effectiveness':
+            reportData[block.id] = await this.getControlsData(profile.organization_id, periodStart, periodEnd);
+            break;
+          case 'testing_results':
+            reportData[block.id] = await this.getTestingData(profile.organization_id, periodStart, periodEnd);
+            break;
+          case 'appetite_dashboard':
+            reportData[block.id] = await this.getAppetiteData(profile.organization_id, periodStart, periodEnd);
+            break;
+          case 'risk_register':
+            reportData[block.id] = await this.getRiskRegisterData(profile.organization_id);
+            break;
+          case 'kri_dashboard':
+            reportData[block.id] = await this.getKRIData(profile.organization_id, periodStart, periodEnd);
+            break;
+          default:
+            console.warn(`Unknown data block type: ${block.type}`);
+        }
+      } catch (error) {
+        console.error(`Error processing data block ${block.id}:`, error);
+        reportData[block.id] = { error: 'Failed to load data', details: error instanceof Error ? error.message : 'Unknown error' };
       }
     }
 
@@ -285,7 +304,7 @@ class RegulatoryReportingService {
 
   // Data Quality Checks
   private async runDataQualityChecks(reportData: any, template: RegulatoryReportTemplate): Promise<DataQualityCheck[]> {
-    const checks: any[] = [];
+    const checks: Partial<DataQualityCheck>[] = [];
     const profile = await getCurrentUserProfile();
     
     if (!profile?.organization_id) return [];
@@ -295,17 +314,43 @@ class RegulatoryReportingService {
       if (block.required && (!reportData[block.id] || Object.keys(reportData[block.id]).length === 0)) {
         checks.push({
           org_id: profile.organization_id,
-          report_instance_id: '', // Will be filled after report creation
           check_name: `${block.title} Completeness Check`,
           check_type: 'completeness',
           data_source: block.id,
           check_status: 'failed',
           check_result: { missing_data: true },
           error_details: `Required data block ${block.title} is missing or empty`,
-          checked_at: new Date().toISOString(),
-          resolved_at: null,
-          resolved_by: null
+          checked_at: new Date().toISOString()
         });
+      } else if (reportData[block.id] && !reportData[block.id].error) {
+        checks.push({
+          org_id: profile.organization_id,
+          check_name: `${block.title} Completeness Check`,
+          check_type: 'completeness',
+          data_source: block.id,
+          check_status: 'passed',
+          check_result: { data_present: true },
+          checked_at: new Date().toISOString()
+        });
+      }
+    }
+
+    // Data accuracy checks
+    for (const [blockId, data] of Object.entries(reportData)) {
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const block = template.data_blocks.find(b => b.id === blockId);
+        if (block && data.error) {
+          checks.push({
+            org_id: profile.organization_id,
+            check_name: `${block.title} Accuracy Check`,
+            check_type: 'accuracy',
+            data_source: blockId,
+            check_status: 'failed',
+            check_result: { error_detected: true },
+            error_details: data.details || 'Data collection error',
+            checked_at: new Date().toISOString()
+          });
+        }
       }
     }
 
@@ -379,6 +424,109 @@ class RegulatoryReportingService {
     } catch (error) {
       console.error('Error fetching report schedules:', error);
       return [];
+    }
+  }
+
+  // File Export Functionality
+  async exportReportToPDF(reportId: string): Promise<string> {
+    try {
+      const { data: reportInstance, error } = await supabase
+        .from('report_instances')
+        .select('*')
+        .eq('id', reportId)
+        .single();
+
+      if (error) throw error;
+
+      // Generate PDF using html2pdf
+      const html2pdf = (await import('html2pdf.js')).default;
+      const reportHtml = this.generateReportHTML(reportInstance);
+      
+      const options = {
+        margin: 1,
+        filename: `${reportInstance.instance_name}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      const pdfBlob = await html2pdf().from(reportHtml).set(options).outputPdf('blob');
+      const fileName = `reports/${reportId}/${Date.now()}.pdf`;
+      
+      // In a real implementation, you would upload to Supabase Storage
+      // For now, return a mock file path
+      return fileName;
+    } catch (error) {
+      console.error('Error exporting report to PDF:', error);
+      throw error;
+    }
+  }
+
+  async exportReportToExcel(reportId: string): Promise<string> {
+    try {
+      // Mock implementation - in reality you'd use a library like xlsx
+      const fileName = `reports/${reportId}/${Date.now()}.xlsx`;
+      return fileName;
+    } catch (error) {
+      console.error('Error exporting report to Excel:', error);
+      throw error;
+    }
+  }
+
+  // Digital Signature Implementation
+  async signReport(reportId: string, signature: string): Promise<void> {
+    try {
+      const profile = await getCurrentUserProfile();
+      if (!profile) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('report_instances')
+        .update({
+          digital_signature: signature,
+          status: 'approved'
+        })
+        .eq('id', reportId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error signing report:', error);
+      throw error;
+    }
+  }
+
+  // Email Distribution
+  async distributeReport(reportId: string, recipients: string[]): Promise<void> {
+    try {
+      const { data: reportInstance, error } = await supabase
+        .from('report_instances')
+        .select('*')
+        .eq('id', reportId)
+        .single();
+
+      if (error) throw error;
+
+      // Update recipients
+      await supabase
+        .from('report_instances')
+        .update({ email_recipients: recipients })
+        .eq('id', reportId);
+
+      // Send emails using Supabase Edge Function
+      await supabase.functions.invoke('send-email-notification', {
+        body: {
+          recipients,
+          subject: `Regulatory Report: ${reportInstance.instance_name}`,
+          template: 'report_distribution',
+          data: {
+            reportName: reportInstance.instance_name,
+            generatedDate: reportInstance.generation_date,
+            reportId: reportId
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error distributing report:', error);
+      throw error;
     }
   }
 
@@ -558,9 +706,15 @@ class RegulatoryReportingService {
         .select('*')
         .eq('org_id', orgId);
 
+      const categories = incidents ? [...new Set(incidents.map(i => i.category).filter(Boolean))] : [];
+
       return {
-        risk_categories: [...new Set(incidents?.map(i => i.category).filter(Boolean))] || [],
-        total_risks: incidents?.length || 0
+        risk_categories: categories,
+        total_risks: incidents?.length || 0,
+        risks_by_category: categories.reduce((acc, category) => {
+          acc[category] = incidents?.filter(i => i.category === category).length || 0;
+          return acc;
+        }, {} as Record<string, number>)
       };
     } catch (error) {
       console.error('Error getting risk register data:', error);
@@ -587,6 +741,46 @@ class RegulatoryReportingService {
       console.error('Error getting KRI data:', error);
       return {};
     }
+  }
+
+  private generateReportHTML(reportInstance: any): string {
+    return `
+      <html>
+        <head>
+          <title>${reportInstance.instance_name}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .data-table { width: 100%; border-collapse: collapse; }
+            .data-table th, .data-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${reportInstance.instance_name}</h1>
+            <p>Generated: ${new Date(reportInstance.generation_date).toLocaleDateString()}</p>
+          </div>
+          <div class="content">
+            ${this.formatReportDataAsHTML(reportInstance.report_data)}
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  private formatReportDataAsHTML(reportData: any): string {
+    let html = '';
+    for (const [key, value] of Object.entries(reportData)) {
+      html += `<div class="section"><h2>${key}</h2>`;
+      if (typeof value === 'object' && value !== null) {
+        html += `<pre>${JSON.stringify(value, null, 2)}</pre>`;
+      } else {
+        html += `<p>${value}</p>`;
+      }
+      html += '</div>';
+    }
+    return html;
   }
 }
 

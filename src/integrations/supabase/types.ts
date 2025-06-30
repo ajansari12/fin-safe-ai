@@ -1349,6 +1349,54 @@ export type Database = {
         }
         Relationships: []
       }
+      data_quality_checks: {
+        Row: {
+          check_name: string
+          check_result: Json | null
+          check_status: string
+          check_type: string
+          checked_at: string | null
+          created_at: string | null
+          data_source: string
+          error_details: string | null
+          id: string
+          org_id: string
+          report_instance_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          check_name: string
+          check_result?: Json | null
+          check_status?: string
+          check_type: string
+          checked_at?: string | null
+          created_at?: string | null
+          data_source: string
+          error_details?: string | null
+          id?: string
+          org_id: string
+          report_instance_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          check_name?: string
+          check_result?: Json | null
+          check_status?: string
+          check_type?: string
+          checked_at?: string | null
+          created_at?: string | null
+          data_source?: string
+          error_details?: string | null
+          id?: string
+          org_id?: string
+          report_instance_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: []
+      }
       data_retention_policies: {
         Row: {
           auto_delete: boolean
@@ -2885,6 +2933,60 @@ export type Database = {
           },
         ]
       }
+      regulatory_calendar: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          due_date: string
+          filing_frequency: string
+          id: string
+          org_id: string
+          regulation_name: string
+          regulatory_body: string
+          reminder_days_before: number | null
+          report_type: string
+          status: string
+          submitted_by: string | null
+          submitted_by_name: string | null
+          submitted_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          filing_frequency: string
+          id?: string
+          org_id: string
+          regulation_name: string
+          regulatory_body: string
+          reminder_days_before?: number | null
+          report_type: string
+          status?: string
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          submitted_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          filing_frequency?: string
+          id?: string
+          org_id?: string
+          regulation_name?: string
+          regulatory_body?: string
+          reminder_days_before?: number | null
+          report_type?: string
+          status?: string
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          submitted_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       regulatory_mapping: {
         Row: {
           audit_upload_id: string | null
@@ -3037,6 +3139,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "report_instances_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_schedules: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          day_of_month: number | null
+          day_of_week: number | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          last_run_date: string | null
+          next_run_date: string | null
+          org_id: string
+          recipients: string[] | null
+          schedule_name: string
+          template_id: string | null
+          time_of_day: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          day_of_month?: number | null
+          day_of_week?: number | null
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          last_run_date?: string | null
+          next_run_date?: string | null
+          org_id: string
+          recipients?: string[] | null
+          schedule_name: string
+          template_id?: string | null
+          time_of_day: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          created_by_name?: string | null
+          day_of_month?: number | null
+          day_of_week?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          last_run_date?: string | null
+          next_run_date?: string | null
+          org_id?: string
+          recipients?: string[] | null
+          schedule_name?: string
+          template_id?: string | null
+          time_of_day?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_schedules_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "report_templates"
