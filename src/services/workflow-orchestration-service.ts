@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -619,14 +620,22 @@ class WorkflowOrchestrationService {
 
   async createBusinessRule(rule: Omit<BusinessRule, 'id'>): Promise<BusinessRule> {
     try {
+      // Get current user profile to determine org_id if not provided
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) {
+        throw new Error('User organization not found');
+      }
+
       const ruleData = {
+        org_id: profile.organization_id,
         name: rule.name,
         description: rule.description,
         rule_type: rule.rule_type,
         conditions: JSON.stringify(rule.conditions || []),
         actions: JSON.stringify(rule.actions || []),
         priority: rule.priority,
-        is_active: rule.is_active
+        is_active: rule.is_active,
+        created_by: profile.id
       };
 
       const { data, error } = await supabase
