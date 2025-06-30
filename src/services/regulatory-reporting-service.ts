@@ -93,6 +93,12 @@ export interface DataQualityCheck {
   created_at: string;
 }
 
+interface ReportDataBlock {
+  error?: string;
+  details?: string;
+  [key: string]: any;
+}
+
 class RegulatoryReportingService {
   // Report Template Management
   async getReportTemplates(): Promise<RegulatoryReportTemplate[]> {
@@ -322,7 +328,7 @@ class RegulatoryReportingService {
           error_details: `Required data block ${block.title} is missing or empty`,
           checked_at: new Date().toISOString()
         });
-      } else if (reportData[block.id] && !reportData[block.id].error) {
+      } else if (reportData[block.id] && !(reportData[block.id] as ReportDataBlock).error) {
         checks.push({
           org_id: profile.organization_id,
           check_name: `${block.title} Completeness Check`,
@@ -339,7 +345,8 @@ class RegulatoryReportingService {
     for (const [blockId, data] of Object.entries(reportData)) {
       if (data && typeof data === 'object' && !Array.isArray(data)) {
         const block = template.data_blocks.find(b => b.id === blockId);
-        if (block && data.error) {
+        const typedData = data as ReportDataBlock;
+        if (block && typedData.error) {
           checks.push({
             org_id: profile.organization_id,
             check_name: `${block.title} Accuracy Check`,
@@ -347,7 +354,7 @@ class RegulatoryReportingService {
             data_source: blockId,
             check_status: 'failed',
             check_result: { error_detected: true },
-            error_details: data.details || 'Data collection error',
+            error_details: typedData.details || 'Data collection error',
             checked_at: new Date().toISOString()
           });
         }
@@ -512,16 +519,14 @@ class RegulatoryReportingService {
         .eq('id', reportId);
 
       // Send emails using Supabase Edge Function
-      await supabase.functions.invoke('send-email-notification', {
+      await supabase.functions.invoke('send-regulatory-report-email', {
         body: {
           recipients,
           subject: `Regulatory Report: ${reportInstance.instance_name}`,
-          template: 'report_distribution',
-          data: {
-            reportName: reportInstance.instance_name,
-            generatedDate: reportInstance.generation_date,
-            reportId: reportId
-          }
+          reportName: reportInstance.instance_name,
+          generatedDate: reportInstance.generation_date,
+          reportId: reportId,
+          reportType: 'Regulatory Compliance'
         }
       });
     } catch (error) {
