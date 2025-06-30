@@ -21,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/integration-framework" element={<IntegrationFramework />} />
           <Route path="/personalized-dashboard" element={<PersonalizedDashboard />} />
+          <Route path="/workflow-center" element={<WorkflowCenter />} />
           {navItems.map(({ to, page: PageComponent }) => (
             <Route key={to} path={to} element={<PageComponent />} />
           ))}
