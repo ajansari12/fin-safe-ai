@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -425,8 +426,7 @@ class RiskIntelligenceService {
         source: intel.attribution,
         score: intel.risk_score,
         weight: adjustedWeight,
-        confidence: intel.confidence_score,
-        freshness: freshnessFactor
+        confidence: intel.confidence_score
       });
 
       totalWeightedScore += intel.risk_score * adjustedWeight;
