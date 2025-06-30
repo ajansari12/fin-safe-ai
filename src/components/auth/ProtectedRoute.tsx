@@ -2,6 +2,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -33,7 +34,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <>{children}</>;
+  // Wrap children with OnboardingGuard to check onboarding status
+  return (
+    <OnboardingGuard>
+      {children}
+    </OnboardingGuard>
+  );
 };
 
 export default ProtectedRoute;

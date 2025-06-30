@@ -3716,6 +3716,56 @@ export type Database = {
           },
         ]
       }
+      onboarding_sessions: {
+        Row: {
+          completion_percentage: number | null
+          created_at: string | null
+          current_step: string | null
+          data: Json | null
+          id: string
+          session_end: string | null
+          session_start: string | null
+          status: string | null
+          total_steps: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          current_step?: string | null
+          data?: Json | null
+          id?: string
+          session_end?: string | null
+          session_start?: string | null
+          status?: string | null
+          total_steps?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          current_step?: string | null
+          data?: Json | null
+          id?: string
+          session_end?: string | null
+          session_start?: string | null
+          status?: string | null
+          total_steps?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_policies: {
         Row: {
           created_at: string | null
@@ -3790,6 +3840,9 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          onboarding_completed_at: string | null
+          onboarding_data: Json | null
+          onboarding_status: string | null
           organization_id: string | null
           role: string
           updated_at: string
@@ -3799,6 +3852,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          onboarding_completed_at?: string | null
+          onboarding_data?: Json | null
+          onboarding_status?: string | null
           organization_id?: string | null
           role?: string
           updated_at?: string
@@ -3808,6 +3864,9 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          onboarding_completed_at?: string | null
+          onboarding_data?: Json | null
+          onboarding_status?: string | null
           organization_id?: string | null
           role?: string
           updated_at?: string
@@ -5279,6 +5338,50 @@ export type Database = {
           },
         ]
       }
+      user_onboarding_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          data: Json | null
+          id: string
+          step_id: string
+          step_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          step_id: string
+          step_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          step_id?: string
+          step_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_onboarding_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -5730,6 +5833,16 @@ export type Database = {
       detect_data_patterns: {
         Args: { data_content: string; org_id: string }
         Returns: Json
+      }
+      update_onboarding_step: {
+        Args: {
+          p_user_id: string
+          p_step_id: string
+          p_step_name: string
+          p_completed?: boolean
+          p_data?: Json
+        }
+        Returns: undefined
       }
     }
     Enums: {

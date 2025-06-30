@@ -10,6 +10,7 @@ import { QueryOptimizer } from "./lib/performance/query-optimizer";
 import { Suspense, lazy } from "react";
 import { ErrorBoundary } from "./components/error/ErrorBoundary";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 // Lazy load major components for code splitting
@@ -50,62 +51,64 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
-                {/* Public routes */}
-                {publicNavItems.map(({ to, page: PageComponent }) => (
+            <OnboardingProvider>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  {/* Public routes */}
+                  {publicNavItems.map(({ to, page: PageComponent }) => (
+                    <Route 
+                      key={to} 
+                      path={to} 
+                      element={<PageComponent />} 
+                    />
+                  ))}
+                  
+                  {/* Auth routes */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/auth/register" element={<Register />} />
+                  <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/auth/update-password" element={<UpdatePassword />} />
+                  <Route path="/auth/verify" element={<Verify />} />
+                  
+                  {/* Public Module Information Pages */}
+                  <Route path="/modules" element={<ModulesOverview />} />
+                  <Route path="/modules/governance" element={<GovernanceModule />} />
+                  <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
+                  <Route path="/modules/risk-management" element={<RiskManagementModule />} />
+                  
+                  {/* Legacy route redirects - redirect to authenticated versions */}
+                  <Route path="/integration-framework" element={<Navigate to="/app/integrations" replace />} />
+                  <Route path="/personalized-dashboard" element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="/workflow-center" element={<Navigate to="/app/workflow-center" replace />} />
+                  
+                  {/* Protected app routes */}
+                  {appNavItems.map(({ to, page: PageComponent }) => (
+                    <Route 
+                      key={to} 
+                      path={to} 
+                      element={
+                        <ProtectedRoute>
+                          <PageComponent />
+                        </ProtectedRoute>
+                      } 
+                    />
+                  ))}
+                  
+                  {/* Move billing under /app for consistency */}
                   <Route 
-                    key={to} 
-                    path={to} 
-                    element={<PageComponent />} 
-                  />
-                ))}
-                
-                {/* Auth routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/auth/register" element={<Register />} />
-                <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-                <Route path="/auth/update-password" element={<UpdatePassword />} />
-                <Route path="/auth/verify" element={<Verify />} />
-                
-                {/* Public Module Information Pages */}
-                <Route path="/modules" element={<ModulesOverview />} />
-                <Route path="/modules/governance" element={<GovernanceModule />} />
-                <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
-                <Route path="/modules/risk-management" element={<RiskManagementModule />} />
-                
-                {/* Legacy route redirects - redirect to authenticated versions */}
-                <Route path="/integration-framework" element={<Navigate to="/app/integrations" replace />} />
-                <Route path="/personalized-dashboard" element={<Navigate to="/app/dashboard" replace />} />
-                <Route path="/workflow-center" element={<Navigate to="/app/workflow-center" replace />} />
-                
-                {/* Protected app routes */}
-                {appNavItems.map(({ to, page: PageComponent }) => (
-                  <Route 
-                    key={to} 
-                    path={to} 
+                    path="/app/billing" 
                     element={
                       <ProtectedRoute>
-                        <PageComponent />
+                        <Billing />
                       </ProtectedRoute>
                     } 
                   />
-                ))}
-                
-                {/* Move billing under /app for consistency */}
-                <Route 
-                  path="/app/billing" 
-                  element={
-                    <ProtectedRoute>
-                      <Billing />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Legacy billing redirect */}
-                <Route path="/billing" element={<Navigate to="/app/billing" replace />} />
-              </Routes>
-            </Suspense>
+                  
+                  {/* Legacy billing redirect */}
+                  <Route path="/billing" element={<Navigate to="/app/billing" replace />} />
+                </Routes>
+              </Suspense>
+            </OnboardingProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
