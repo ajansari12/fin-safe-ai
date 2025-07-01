@@ -1,32 +1,25 @@
 
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { OnboardingProvider } from "@/contexts/OnboardingContext";
-import { DeviceCapabilitiesProvider } from "@/components/mobile/DeviceCapabilitiesProvider";
-import { OfflineIndicator } from "@/components/mobile/OfflineIndicator";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import Dashboard from "@/pages/Dashboard";
-import IncidentLog from "@/pages/IncidentLog";
-import Governance from "@/pages/GovernanceFramework";
-import WorkflowOrchestration from "@/pages/WorkflowOrchestration";
-import Login from "@/pages/auth/Login";
-import Register from "@/pages/auth/Register";
-import VerifyEmail from "@/pages/auth/Verify";
-import UpdatePassword from "@/pages/auth/UpdatePassword";
-import Index from "@/pages/Index";
-import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { navItems } from "./nav-items";
+import { AuthProvider } from "./contexts/AuthContext";
+import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { TypeSafeErrorBoundary } from "./components/error/TypeSafeErrorBoundary";
+import "./App.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
-      retry: (failureCount, error: any) => {
-        // Don't retry if offline
-        if (!navigator.onLine) return false;
+      retry: (failureCount, error) => {
+        // Don't retry on type errors or 4xx errors
+        if (error instanceof TypeError || 
+            (error as any)?.status >= 400 && (error as any)?.status < 500) {
+          return false;
+        }
         return failureCount < 3;
       },
     },
@@ -35,75 +28,25 @@ const queryClient = new QueryClient({
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <DeviceCapabilitiesProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <OnboardingProvider>
-              <TooltipProvider>
-                <Toaster />
-                <OfflineIndicator />
+    <TypeSafeErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <OnboardingProvider>
                 <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/auth/verify" element={<VerifyEmail />} />
-                  <Route path="/auth/update-password" element={<UpdatePassword />} />
-
-                  <Route
-                    path="/app/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/app/incidents"
-                    element={
-                      <ProtectedRoute>
-                        <IncidentLog />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/app/governance"
-                    element={
-                      <ProtectedRoute>
-                        <Governance />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/app/workflow-orchestration"
-                    element={
-                      <ProtectedRoute>
-                        <WorkflowOrchestration />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/app/onboarding/*"
-                    element={
-                      <ProtectedRoute>
-                        <OnboardingWizard />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Catch-all redirect */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  {navItems.map(({ to, page }) => (
+                    <Route key={to} path={to} element={page} />
+                  ))}
                 </Routes>
-              </TooltipProvider>
-            </OnboardingProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </DeviceCapabilitiesProvider>
-    </QueryClientProvider>
+              </OnboardingProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </TypeSafeErrorBoundary>
   );
 };
 
