@@ -66,7 +66,7 @@ class EnhancedOrganizationalIntelligenceService {
       }
 
       // Technology Modernization Opportunities
-      if (profile.technology_maturity === 'basic' && profile.digital_transformation === 'early') {
+      if (profile.technology_maturity === 'basic' && profile.digital_transformation === 'basic') {
         insights.push({
           id: `tech-opportunity-${Date.now()}`,
           type: 'opportunity',
@@ -170,7 +170,7 @@ class EnhancedOrganizationalIntelligenceService {
             'Train compliance team on new tools',
             'Integrate with risk management'
           ],
-          estimated_effort: '4_months',
+          estimated_effort: '3_months',
           expected_impact: 'Reduce compliance incidents by 60%',
           success_metrics: ['Zero regulatory violations', 'Audit preparation time reduced by 50%'],
           resources_required: ['Compliance Officer', 'Technology Platform', '$200K budget'],

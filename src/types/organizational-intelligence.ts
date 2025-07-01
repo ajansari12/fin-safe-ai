@@ -1,3 +1,4 @@
+
 export type MaturityLevel = 'basic' | 'developing' | 'advanced' | 'sophisticated';
 
 export interface QuestionnaireTemplate {
@@ -6,9 +7,21 @@ export interface QuestionnaireTemplate {
   description: string;
   version: string;
   target_sector: string;
-  questions: Question[];
+  questions: QuestionnaireSection[];
   created_at: string;
   updated_at: string;
+}
+
+export interface QuestionnaireSection {
+  id: string;
+  section: string;
+  description?: string;
+  questions: QuestionnaireQuestion[];
+  conditional?: {
+    dependsOn: string;
+    condition: string;
+    value: any;
+  };
 }
 
 export interface Question {
@@ -21,14 +34,49 @@ export interface Question {
   template_id: string;
 }
 
+export interface QuestionnaireQuestion {
+  id: string;
+  text: string;
+  type: 'text' | 'number' | 'select' | 'multiselect' | 'boolean' | 'date' | 'range';
+  options?: string[];
+  required: boolean;
+  order: number;
+  help?: string;
+  description?: string;
+  validation?: {
+    min?: number;
+    max?: number;
+    pattern?: string;
+  };
+  conditional?: {
+    dependsOn: string;
+    condition: string;
+    value: any;
+  };
+}
+
+export interface QuestionnaireResponse {
+  id: string;
+  organization_id: string;
+  template_id: string;
+  responses: Record<string, any>;
+  completion_percentage: number;
+  current_section?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface OrganizationalProfile {
   id: string;
   org_id: string;
+  organization_id: string;
   name: string;
   sub_sector: string;
   employee_count: number;
   asset_size: number;
   geographic_scope: string;
+  customer_base?: string;
   risk_maturity: MaturityLevel;
   compliance_maturity: MaturityLevel;
   technology_maturity: MaturityLevel;
@@ -44,7 +92,10 @@ export interface OrganizationalProfile {
   profile_score: number;
   completeness_percentage: number;
   growth_strategy: string;
+  digital_strategy?: string;
   market_position: string;
+  competitive_strategy?: string;
+  international_exposure?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +106,7 @@ export interface ProfileAssessment {
   risk_level: string;
   maturity_level: string;
   score: number;
+  completeness: number;
   strengths: string[];
   weaknesses: string[];
   recommendations: string[];
@@ -79,6 +131,9 @@ export interface RiskFrameworkTemplate {
   name: string;
   description: string;
   version: string;
+  framework_components: any;
+  target_profile: any;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
