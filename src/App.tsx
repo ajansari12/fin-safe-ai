@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { navItems } from "./nav-items";
 import { AuthProvider } from "./contexts/AuthContext";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { TypeSafeErrorBoundary } from "./components/error/TypeSafeErrorBoundary";
@@ -13,10 +12,10 @@ import "./App.css";
 // Import page components
 import Home from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import Modules from "./pages/Modules";
-import GovernanceModule from "./pages/modules/Governance";
-import RiskManagementModule from "./pages/modules/RiskManagement";
-import SelfAssessmentModule from "./pages/modules/SelfAssessment";
+import ModulesOverview from "./pages/modules/ModulesOverview";
+import GovernanceModule from "./pages/modules/GovernanceModule";
+import RiskManagementModule from "./pages/modules/RiskManagementModule";
+import SelfAssessmentModule from "./pages/modules/SelfAssessmentModule";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,7 +46,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/modules" element={<Modules />} />
+                  <Route path="/modules" element={<ModulesOverview />} />
                   <Route path="/modules/governance" element={<GovernanceModule />} />
                   <Route path="/modules/risk-management" element={<RiskManagementModule />} />
                   <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
