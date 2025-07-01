@@ -3275,6 +3275,89 @@ export type Database = {
           },
         ]
       }
+      encrypted_data_fields: {
+        Row: {
+          created_at: string
+          encrypted_value: string
+          encryption_key_id: string
+          field_name: string
+          id: string
+          org_id: string
+          record_id: string
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_value: string
+          encryption_key_id: string
+          field_name: string
+          id?: string
+          org_id: string
+          record_id: string
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_value?: string
+          encryption_key_id?: string
+          field_name?: string
+          id?: string
+          org_id?: string
+          record_id?: string
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encrypted_data_fields_encryption_key_id_fkey"
+            columns: ["encryption_key_id"]
+            isOneToOne: false
+            referencedRelation: "encryption_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      encryption_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          key_name: string
+          key_purpose: string
+          key_version: number
+          org_id: string
+          rotated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name: string
+          key_purpose: string
+          key_version?: number
+          org_id: string
+          rotated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          key_name?: string
+          key_purpose?: string
+          key_version?: number
+          org_id?: string
+          rotated_at?: string | null
+        }
+        Relationships: []
+      }
       enhanced_auth_sessions: {
         Row: {
           authentication_factors: Json
@@ -4511,6 +4594,60 @@ export type Database = {
           },
         ]
       }
+      mfa_backup_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mfa_verification_attempts: {
+        Row: {
+          attempt_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          success: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          attempt_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          attempt_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       microservices: {
         Row: {
           circuit_breaker_config: Json
@@ -4683,6 +4820,84 @@ export type Database = {
           sector?: string | null
           size?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      password_history: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      password_policies: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          lockout_duration_minutes: number
+          max_failed_attempts: number
+          min_length: number
+          org_id: string
+          password_expiry_days: number
+          policy_name: string
+          prevent_password_reuse: number
+          require_lowercase: boolean
+          require_numbers: boolean
+          require_symbols: boolean
+          require_uppercase: boolean
+          updated_at: string
+          warning_days_before_expiry: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lockout_duration_minutes?: number
+          max_failed_attempts?: number
+          min_length?: number
+          org_id: string
+          password_expiry_days?: number
+          policy_name: string
+          prevent_password_reuse?: number
+          require_lowercase?: boolean
+          require_numbers?: boolean
+          require_symbols?: boolean
+          require_uppercase?: boolean
+          updated_at?: string
+          warning_days_before_expiry?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          lockout_duration_minutes?: number
+          max_failed_attempts?: number
+          min_length?: number
+          org_id?: string
+          password_expiry_days?: number
+          policy_name?: string
+          prevent_password_reuse?: number
+          require_lowercase?: boolean
+          require_numbers?: boolean
+          require_symbols?: boolean
+          require_uppercase?: boolean
+          updated_at?: string
+          warning_days_before_expiry?: number
         }
         Relationships: []
       }
@@ -5827,6 +6042,63 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_logs: {
+        Row: {
+          action_performed: string
+          correlation_id: string | null
+          event_category: string
+          event_details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          location_data: Json | null
+          org_id: string
+          resource_id: string | null
+          resource_type: string | null
+          risk_score: number | null
+          session_id: string | null
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_performed: string
+          correlation_id?: string | null
+          event_category: string
+          event_details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          location_data?: Json | null
+          org_id: string
+          resource_id?: string | null
+          resource_type?: string | null
+          risk_score?: number | null
+          session_id?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_performed?: string
+          correlation_id?: string | null
+          event_category?: string
+          event_details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          location_data?: Json | null
+          org_id?: string
+          resource_id?: string | null
+          resource_type?: string | null
+          risk_score?: number | null
+          session_id?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       security_incidents: {
         Row: {
           affected_systems: Json
@@ -6087,6 +6359,51 @@ export type Database = {
           status?: string
           threat_indicators?: Json
           threat_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_policies: {
+        Row: {
+          absolute_timeout_minutes: number
+          allowed_ip_ranges: Json | null
+          created_at: string
+          id: string
+          idle_timeout_minutes: number
+          ip_restriction_enabled: boolean
+          is_active: boolean
+          max_concurrent_sessions: number
+          org_id: string
+          policy_name: string
+          require_mfa_for_sensitive_actions: boolean
+          updated_at: string
+        }
+        Insert: {
+          absolute_timeout_minutes?: number
+          allowed_ip_ranges?: Json | null
+          created_at?: string
+          id?: string
+          idle_timeout_minutes?: number
+          ip_restriction_enabled?: boolean
+          is_active?: boolean
+          max_concurrent_sessions?: number
+          org_id: string
+          policy_name: string
+          require_mfa_for_sensitive_actions?: boolean
+          updated_at?: string
+        }
+        Update: {
+          absolute_timeout_minutes?: number
+          allowed_ip_ranges?: Json | null
+          created_at?: string
+          id?: string
+          idle_timeout_minutes?: number
+          ip_restriction_enabled?: boolean
+          is_active?: boolean
+          max_concurrent_sessions?: number
+          org_id?: string
+          policy_name?: string
+          require_mfa_for_sensitive_actions?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -6460,6 +6777,54 @@ export type Database = {
           },
         ]
       }
+      user_mfa_settings: {
+        Row: {
+          backup_codes_generated_at: string | null
+          created_at: string
+          email_enabled: boolean
+          id: string
+          last_mfa_verification: string | null
+          mfa_enabled: boolean
+          org_id: string
+          phone_number: string | null
+          sms_enabled: boolean
+          totp_enabled: boolean
+          totp_secret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backup_codes_generated_at?: string | null
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          last_mfa_verification?: string | null
+          mfa_enabled?: boolean
+          org_id: string
+          phone_number?: string | null
+          sms_enabled?: boolean
+          totp_enabled?: boolean
+          totp_secret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          backup_codes_generated_at?: string | null
+          created_at?: string
+          email_enabled?: boolean
+          id?: string
+          last_mfa_verification?: string | null
+          mfa_enabled?: boolean
+          org_id?: string
+          phone_number?: string | null
+          sms_enabled?: boolean
+          totp_enabled?: boolean
+          totp_secret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_onboarding_progress: {
         Row: {
           completed: boolean | null
@@ -6535,6 +6900,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          device_fingerprint: string | null
+          expires_at: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          last_activity_at: string
+          location_data: Json | null
+          org_id: string
+          session_token: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint?: string | null
+          expires_at: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_activity_at?: string
+          location_data?: Json | null
+          org_id: string
+          session_token: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string | null
+          expires_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_activity_at?: string
+          location_data?: Json | null
+          org_id?: string
+          session_token?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       vendor_business_functions: {
         Row: {
@@ -7249,6 +7662,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      check_session_timeout: {
+        Args: { session_token: string }
+        Returns: boolean
+      }
       check_user_framework_access: {
         Args: { framework_id: string }
         Returns: boolean
@@ -7268,6 +7685,10 @@ export type Database = {
       check_user_policy_access: {
         Args: { policy_id: string }
         Returns: boolean
+      }
+      cleanup_expired_sessions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       detect_data_patterns: {
         Args: { data_content: string; org_id: string }
@@ -7294,6 +7715,10 @@ export type Database = {
           p_data?: Json
         }
         Returns: undefined
+      }
+      validate_password_strength: {
+        Args: { password: string; org_id: string }
+        Returns: Json
       }
     }
     Enums: {
