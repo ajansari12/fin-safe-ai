@@ -1,3 +1,4 @@
+
 import {
   Home,
   LayoutDashboard,
@@ -19,7 +20,7 @@ import {
 interface NavigationItem {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   items?: NavigationItem[];
 }
 
