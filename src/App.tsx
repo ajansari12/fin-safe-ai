@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/auth/Login';
+import IndexPage from './pages/Index';
 import DashboardPage from './pages/Dashboard';
 import SettingsPage from './pages/Settings';
 import ThirdPartyRiskPage from './pages/ThirdPartyRisk';
@@ -38,42 +39,58 @@ function App() {
         <AuthProvider>
           <EnhancedAIAssistantProvider>
             <Routes>
+              {/* Public website homepage */}
+              <Route path="/" element={<IndexPage />} />
+              
+              {/* Authentication */}
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/" element={
+              
+              {/* Protected application routes */}
+              <Route path="/app" element={
+                <ProtectedRoute>
+                  <Navigate to="/app/dashboard" />
+                </ProtectedRoute>
+              } />
+              <Route path="/app/dashboard" element={
                 <ProtectedRoute>
                   <DashboardPage />
                 </ProtectedRoute>
               } />
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
+              <Route path="/app/settings" element={
                 <ProtectedRoute>
                   <SettingsPage />
                 </ProtectedRoute>
               } />
-              <Route path="/third-party-risk" element={
+              <Route path="/app/third-party-risk" element={
                 <ProtectedRoute>
                   <ThirdPartyRiskPage />
                 </ProtectedRoute>
               } />
-              <Route path="/scenario-testing" element={
+              <Route path="/app/scenario-testing" element={
                 <ProtectedRoute>
                   <ScenarioTestingPage />
                 </ProtectedRoute>
               } />
-              <Route path="/integrations" element={
+              <Route path="/app/integrations" element={
                 <ProtectedRoute>
                   <IntegrationsPage />
                 </ProtectedRoute>
               } />
-              <Route path="/analytics" element={
+              <Route path="/app/analytics" element={
                 <ProtectedRoute>
                   <AnalyticsPage />
                 </ProtectedRoute>
               } />
+              
+              {/* Legacy routes - redirect to new structure */}
+              <Route path="/dashboard" element={<Navigate to="/app/dashboard" />} />
+              <Route path="/settings" element={<Navigate to="/app/settings" />} />
+              <Route path="/third-party-risk" element={<Navigate to="/app/third-party-risk" />} />
+              <Route path="/scenario-testing" element={<Navigate to="/app/scenario-testing" />} />
+              <Route path="/integrations" element={<Navigate to="/app/integrations" />} />
+              <Route path="/analytics" element={<Navigate to="/app/analytics" />} />
+              
+              {/* Fallback */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </EnhancedAIAssistantProvider>
