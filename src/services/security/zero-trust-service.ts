@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -221,18 +220,22 @@ class ZeroTrustService {
       }
     }
 
-    // Check user authentication history
-    const { data: authHistory } = await supabase
-      .from('security_logs')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('action_type', 'authentication')
-      .eq('outcome', 'success')
-      .order('created_at', { ascending: false })
-      .limit(10);
+    // Check user authentication history - simplified query to avoid deep type instantiation
+    try {
+      const { count } = await supabase
+        .from('security_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('action_type', 'authentication')
+        .eq('outcome', 'success')
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-    if (authHistory && authHistory.length > 5) {
-      trustScore += 15; // Regular successful authentication
+      if (count && count > 5) {
+        trustScore += 15; // Regular successful authentication
+      }
+    } catch (error) {
+      console.error('Error checking auth history:', error);
     }
 
     return Math.min(trustScore, 100);
@@ -326,7 +329,7 @@ class ZeroTrustService {
   // Security Event Logging
   async logSecurityEvent(event: SecurityEvent, context: ZeroTrustContext): Promise<void> {
     try {
-      await supabase.from('security_logs').insert({
+      const logData = {
         org_id: context.orgId,
         user_id: context.userId,
         action_type: event.eventType,
@@ -344,7 +347,9 @@ class ZeroTrustService {
         session_id: context.sessionId,
         outcome: event.outcome,
         error_message: event.errorDetails
-      });
+      };
+
+      await supabase.from('security_logs').insert(logData);
     } catch (error) {
       console.error('Failed to log security event:', error);
     }
