@@ -1,6 +1,4 @@
 
-import { supabase } from "@/integrations/supabase/client";
-
 export interface MicroserviceConfig {
   serviceName: string;
   version: string;
@@ -55,8 +53,8 @@ class MicroservicesRegistry {
     this.services.set(config.serviceName, config);
     this.serviceInstances.set(config.serviceName, config.instances);
     
-    // Store in database for persistence
-    await supabase.from('microservices').upsert({
+    // Log service registration (instead of storing in non-existent database)
+    console.log(`Service registered: ${config.serviceName}`, {
       service_name: config.serviceName,
       service_version: config.version,
       endpoints: config.endpoints,
@@ -122,10 +120,16 @@ class MicroservicesRegistry {
 
       const healthPromises = instances.map(async (instance) => {
         try {
+          // Use AbortController for timeout instead of fetch timeout option
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
           const response = await fetch(`${instance.host}:${instance.port}${config.healthCheckUrl}`, {
             method: 'GET',
-            timeout: 5000
+            signal: controller.signal
           });
+          
+          clearTimeout(timeoutId);
           
           instance.status = response.ok ? 'healthy' : 'unhealthy';
           instance.lastHealthCheck = new Date();

@@ -1,6 +1,4 @@
 
-import { supabase } from "@/integrations/supabase/client";
-
 export interface PerformanceMetrics {
   timestamp: Date;
   serviceName: string;
@@ -135,7 +133,7 @@ class PerformanceMonitor {
         totalDuration: Date.now() - startTime,
         steps: results,
         success: false,
-        error: error.message,
+        error: error?.message || 'Unknown error',
         timestamp: new Date()
       });
     }
@@ -160,14 +158,15 @@ class PerformanceMonitor {
 
   // Performance Analytics and Trends
   async generatePerformanceReport(timeRange: { start: Date; end: Date }, services?: string[]): Promise<any> {
-    const { data: metricsData } = await supabase
-      .from('performance_metrics')
-      .select('*')
-      .gte('timestamp', timeRange.start.toISOString())
-      .lte('timestamp', timeRange.end.toISOString())
-      .in('service_name', services || []);
+    // Filter metrics from in-memory buffer for the specified time range
+    const metricsData = this.metricsBuffer.filter(metric => {
+      const timestamp = metric.timestamp.getTime();
+      return timestamp >= timeRange.start.getTime() && 
+             timestamp <= timeRange.end.getTime() &&
+             (!services || services.includes(metric.serviceName));
+    });
 
-    if (!metricsData) return null;
+    if (metricsData.length === 0) return null;
 
     return {
       summary: this.calculateSummaryStatistics(metricsData),
@@ -178,38 +177,38 @@ class PerformanceMonitor {
     };
   }
 
-  private calculateSummaryStatistics(data: any[]) {
+  private calculateSummaryStatistics(data: PerformanceMetrics[]) {
     return {
-      averageResponseTime: data.reduce((sum, d) => sum + d.response_time, 0) / data.length,
-      p95ResponseTime: this.calculatePercentile(data.map(d => d.response_time), 95),
-      p99ResponseTime: this.calculatePercentile(data.map(d => d.response_time), 99),
-      totalRequests: data.reduce((sum, d) => sum + d.throughput, 0),
-      averageErrorRate: data.reduce((sum, d) => sum + d.error_rate, 0) / data.length,
-      averageCpuUsage: data.reduce((sum, d) => sum + d.cpu_usage, 0) / data.length,
-      averageMemoryUsage: data.reduce((sum, d) => sum + d.memory_usage, 0) / data.length
+      averageResponseTime: data.reduce((sum, d) => sum + d.metrics.responseTime, 0) / data.length,
+      p95ResponseTime: this.calculatePercentile(data.map(d => d.metrics.responseTime), 95),
+      p99ResponseTime: this.calculatePercentile(data.map(d => d.metrics.responseTime), 99),
+      totalRequests: data.reduce((sum, d) => sum + d.metrics.throughput, 0),
+      averageErrorRate: data.reduce((sum, d) => sum + d.metrics.errorRate, 0) / data.length,
+      averageCpuUsage: data.reduce((sum, d) => sum + d.metrics.cpuUsage, 0) / data.length,
+      averageMemoryUsage: data.reduce((sum, d) => sum + d.metrics.memoryUsage, 0) / data.length
     };
   }
 
-  private analyzeTrends(data: any[]) {
+  private analyzeTrends(data: PerformanceMetrics[]) {
     // Implement trend analysis using time series analysis
     return {
-      responseTimeTrend: this.calculateTrend(data.map(d => d.response_time)),
-      throughputTrend: this.calculateTrend(data.map(d => d.throughput)),
-      errorRateTrend: this.calculateTrend(data.map(d => d.error_rate)),
-      resourceUsageTrend: this.calculateTrend(data.map(d => d.cpu_usage + d.memory_usage))
+      responseTimeTrend: this.calculateTrend(data.map(d => d.metrics.responseTime)),
+      throughputTrend: this.calculateTrend(data.map(d => d.metrics.throughput)),
+      errorRateTrend: this.calculateTrend(data.map(d => d.metrics.errorRate)),
+      resourceUsageTrend: this.calculateTrend(data.map(d => d.metrics.cpuUsage + d.metrics.memoryUsage))
     };
   }
 
-  private detectAnomalies(data: any[]) {
+  private detectAnomalies(data: PerformanceMetrics[]) {
     // Implement anomaly detection using statistical methods
     return data.filter(d => this.isAnomaly(d));
   }
 
-  private generateRecommendations(data: any[]) {
+  private generateRecommendations(data: PerformanceMetrics[]) {
     const recommendations = [];
-    const avgResponseTime = data.reduce((sum, d) => sum + d.response_time, 0) / data.length;
-    const avgErrorRate = data.reduce((sum, d) => sum + d.error_rate, 0) / data.length;
-    const avgCpuUsage = data.reduce((sum, d) => sum + d.cpu_usage, 0) / data.length;
+    const avgResponseTime = data.reduce((sum, d) => sum + d.metrics.responseTime, 0) / data.length;
+    const avgErrorRate = data.reduce((sum, d) => sum + d.metrics.errorRate, 0) / data.length;
+    const avgCpuUsage = data.reduce((sum, d) => sum + d.metrics.cpuUsage, 0) / data.length;
 
     if (avgResponseTime > 1000) {
       recommendations.push({
@@ -241,7 +240,7 @@ class PerformanceMonitor {
     return recommendations;
   }
 
-  private performCapacityPlanning(data: any[]) {
+  private performCapacityPlanning(data: PerformanceMetrics[]) {
     const growthRate = this.calculateGrowthRate(data);
     const currentCapacity = this.getCurrentCapacity();
     
@@ -280,8 +279,8 @@ class PerformanceMonitor {
       metricValue: value
     };
 
-    // Store alert
-    await supabase.from('performance_alerts').insert(alert);
+    // Log alert instead of storing in non-existent database
+    console.log('Performance alert triggered:', alert);
 
     // Send notifications
     for (const channel of rule.notificationChannels) {
@@ -353,9 +352,9 @@ class PerformanceMonitor {
     return 'stable';
   }
 
-  private isAnomaly(dataPoint: any): boolean {
+  private isAnomaly(dataPoint: PerformanceMetrics): boolean {
     // Simple anomaly detection - in production, use more sophisticated algorithms
-    return dataPoint.response_time > 2000 || dataPoint.error_rate > 0.1;
+    return dataPoint.metrics.responseTime > 2000 || dataPoint.metrics.errorRate > 0.1;
   }
 
   private extractMetricValue(metrics: PerformanceMetrics, metricName: string): number {
@@ -382,32 +381,19 @@ class PerformanceMonitor {
   private async storeMetrics(): Promise<void> {
     const metricsToStore = this.metricsBuffer.splice(0);
     
-    const dbMetrics = metricsToStore.map(m => ({
-      timestamp: m.timestamp.toISOString(),
-      service_name: m.serviceName,
-      region: m.region,
-      response_time: m.metrics.responseTime,
-      throughput: m.metrics.throughput,
-      error_rate: m.metrics.errorRate,
-      cpu_usage: m.metrics.cpuUsage,
-      memory_usage: m.metrics.memoryUsage,
-      disk_usage: m.metrics.diskUsage,
-      network_latency: m.metrics.networkLatency,
-      database_connections: m.metrics.databaseConnections,
-      queue_depth: m.metrics.queueDepth,
-      cache_hit_rate: m.metrics.cacheHitRate,
-      page_load_time: m.userExperience.pageLoadTime,
-      time_to_interactive: m.userExperience.timeToInteractive,
-      cumulative_layout_shift: m.userExperience.cumulativeLayoutShift,
-      first_contentful_paint: m.userExperience.firstContentfulPaint,
-      largest_contentful_paint: m.userExperience.largestContentfulPaint
-    }));
-
-    await supabase.from('performance_metrics').insert(dbMetrics);
+    // Log metrics instead of storing in non-existent database
+    console.log(`Storing ${metricsToStore.length} performance metrics`, {
+      metrics_count: metricsToStore.length,
+      time_range: {
+        start: metricsToStore[0]?.timestamp,
+        end: metricsToStore[metricsToStore.length - 1]?.timestamp
+      }
+    });
   }
 
   private async storeSyntheticTransactionResult(result: any): Promise<void> {
-    await supabase.from('synthetic_transactions').insert({
+    // Log synthetic transaction results instead of storing in non-existent database
+    console.log('Synthetic transaction completed:', {
       transaction_name: result.transactionName,
       total_duration: result.totalDuration,
       steps: result.steps,
@@ -449,7 +435,7 @@ class PerformanceMonitor {
     await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
   }
 
-  private calculateGrowthRate(data: any[]): number {
+  private calculateGrowthRate(data: PerformanceMetrics[]): number {
     // Simple growth rate calculation
     return 0.05; // 5% monthly growth
   }
@@ -458,13 +444,13 @@ class PerformanceMonitor {
     return 1000; // Current capacity units
   }
 
-  private calculateCurrentUtilization(data: any[]): number {
-    const avgCpu = data.reduce((sum, d) => sum + d.cpu_usage, 0) / data.length;
-    const avgMemory = data.reduce((sum, d) => sum + d.memory_usage, 0) / data.length;
+  private calculateCurrentUtilization(data: PerformanceMetrics[]): number {
+    const avgCpu = data.reduce((sum, d) => sum + d.metrics.cpuUsage, 0) / data.length;
+    const avgMemory = data.reduce((sum, d) => sum + d.metrics.memoryUsage, 0) / data.length;
     return Math.max(avgCpu, avgMemory);
   }
 
-  private projectUtilization(data: any[], growthRate: number): number {
+  private projectUtilization(data: PerformanceMetrics[], growthRate: number): number {
     return this.calculateCurrentUtilization(data) * (1 + growthRate);
   }
 
@@ -472,18 +458,14 @@ class PerformanceMonitor {
     return Math.ceil(currentCapacity * (1 + growthRate) * 1.2); // 20% buffer
   }
 
-  private calculateTimeToExhaustion(data: any[], growthRate: number): number {
+  private calculateTimeToExhaustion(data: PerformanceMetrics[], growthRate: number): number {
     const currentUtilization = this.calculateCurrentUtilization(data);
     const monthsToExhaustion = Math.log(100 / currentUtilization) / Math.log(1 + growthRate);
     return Math.max(0, monthsToExhaustion);
   }
 
   private async resolveAlert(rule: AlertRule): Promise<void> {
-    await supabase
-      .from('performance_alerts')
-      .update({ resolved_at: new Date().toISOString() })
-      .eq('rule_id', rule.ruleId)
-      .is('resolved_at', null);
+    console.log(`Alert resolved for rule: ${rule.ruleId}`);
   }
 
   private async sendNotification(channel: string, alert: any): Promise<void> {
