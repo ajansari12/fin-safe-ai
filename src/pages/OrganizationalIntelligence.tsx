@@ -12,14 +12,14 @@ import ProfileInsightsPanel from "@/components/organizational-intelligence/Profi
 import IntelligentAutomationPanel from "@/components/organizational-intelligence/IntelligentAutomationPanel";
 import RiskFrameworkGenerator from "@/components/organizational-intelligence/RiskFrameworkGenerator";
 
-// Import Phase 4 components
+// Import Phase 3 components
 import WorkflowOrchestrationPanel from "@/components/organizational-intelligence/WorkflowOrchestrationPanel";
 import RealTimeIntelligenceHub from "@/components/organizational-intelligence/RealTimeIntelligenceHub";
 
-// Import Phase 5 components
-import PerformanceMonitor from "@/components/organizational-intelligence/PerformanceMonitor";
-import TestingDashboard from "@/components/organizational-intelligence/TestingDashboard";
-import SystemHealth from "@/components/organizational-intelligence/SystemHealth";
+// Import Phase 4 components (placeholders for now)
+// import PerformanceMonitor from "@/components/organizational-intelligence/PerformanceMonitor";
+// import TestingDashboard from "@/components/organizational-intelligence/TestingDashboard";
+// import SystemHealth from "@/components/organizational-intelligence/SystemHealth";
 
 const OrganizationalIntelligencePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
@@ -43,7 +43,7 @@ const OrganizationalIntelligencePage = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-11">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="dashboard" className="flex items-center gap-1">
               <Brain className="h-4 w-4" />
               Dashboard
@@ -80,10 +80,6 @@ const OrganizationalIntelligencePage = () => {
               <TestTube className="h-4 w-4" />
               Testing
             </TabsTrigger>
-            <TabsTrigger value="health" className="flex items-center gap-1">
-              <Heart className="h-4 w-4" />
-              Health
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -115,15 +111,19 @@ const OrganizationalIntelligencePage = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-6">
-            <PerformanceMonitor orgId={orgId} />
+            <div className="text-center py-12 text-muted-foreground">
+              <Activity className="h-16 w-16 mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Performance Monitor</h3>
+              <p>Phase 4: Performance monitoring and optimization tools (Coming Soon)</p>
+            </div>
           </TabsContent>
 
           <TabsContent value="testing" className="space-y-6">
-            <TestingDashboard orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="health" className="space-y-6">
-            <SystemHealth orgId={orgId} />
+            <div className="text-center py-12 text-muted-foreground">
+              <TestTube className="h-16 w-16 mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">Testing Dashboard</h3>
+              <p>Phase 4: Comprehensive testing and validation platform (Coming Soon)</p>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

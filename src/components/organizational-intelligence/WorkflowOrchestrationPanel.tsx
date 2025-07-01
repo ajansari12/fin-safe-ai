@@ -1,201 +1,318 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
+  Settings, 
   Play, 
-  Pause, 
-  Square, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle,
-  Settings,
-  Plus,
-  Workflow
+  Pause,
+  CheckCircle,
+  AlertTriangle,
+  Clock,
+  Users,
+  BarChart3,
+  GitBranch,
+  Zap
 } from 'lucide-react';
-import { workflowOrchestrationService, type WorkflowDefinition, type WorkflowInstance } from '@/services/workflow-orchestration-service';
-import { toast } from 'sonner';
+
+interface WorkflowStep {
+  id: string;
+  name: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  assignee?: string;
+  due_date?: string;
+  duration_minutes?: number;
+  dependencies: string[];
+}
+
+interface WorkflowTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  steps: WorkflowStep[];
+  automation_level: 'manual' | 'semi-automated' | 'fully-automated';
+  estimated_duration: number;
+  success_rate: number;
+}
+
+interface WorkflowInstance {
+  id: string;
+  template_id: string;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'completed' | 'failed';
+  progress: number;
+  started_at?: string;
+  completed_at?: string;
+  current_step?: string;
+  participants: string[];
+}
 
 interface WorkflowOrchestrationPanelProps {
   orgId: string;
 }
 
-const WorkflowOrchestrationPanel: React.FC<WorkflowOrchestrationPanelProps> = ({ orgId }) => {
-  const [workflows, setWorkflows] = useState<WorkflowDefinition[]>([]);
-  const [instances, setInstances] = useState<WorkflowInstance[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowDefinition | null>(null);
+const WorkflowOrchestrationPanel: React.FC<WorkflowOrchestrationPanelProps> = ({ 
+  orgId 
+}) => {
+  const [activeTab, setActiveTab] = useState('templates');
+  const [workflows, setWorkflows] = useState<WorkflowInstance[]>([]);
+  const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadWorkflows();
+    loadWorkflowData();
   }, [orgId]);
 
-  const loadWorkflows = async () => {
+  const loadWorkflowData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Create default workflows for demonstration
-      const assessmentWorkflow = await workflowOrchestrationService.createOrganizationalAssessmentWorkflow(orgId);
-      const riskWorkflow = await workflowOrchestrationService.createRiskMonitoringWorkflow(orgId);
-      const maturityWorkflow = await workflowOrchestrationService.createMaturityEnhancementWorkflow(orgId, 'Risk Management');
-      
-      setWorkflows([assessmentWorkflow, riskWorkflow, maturityWorkflow]);
-      
-      // Mock instances for demonstration
-      setInstances([
+      // Mock data - in real implementation, this would fetch from the service
+      const mockTemplates: WorkflowTemplate[] = [
         {
-          id: 'instance-1',
-          workflow_id: assessmentWorkflow.id,
-          org_id: orgId,
-          status: 'completed',
-          current_step: 'notify-stakeholders',
-          context: { completion_percentage: 100 },
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          updated_at: new Date().toISOString(),
-          completed_at: new Date().toISOString()
+          id: '1',
+          name: 'Risk Assessment Workflow',
+          description: 'Comprehensive risk assessment process',
+          category: 'Risk Management',
+          automation_level: 'semi-automated',
+          estimated_duration: 240,
+          success_rate: 89,
+          steps: [
+            {
+              id: 'step1',
+              name: 'Initial Risk Identification',
+              status: 'completed',
+              assignee: 'Risk Analyst',
+              duration_minutes: 60,
+              dependencies: []
+            },
+            {
+              id: 'step2',
+              name: 'Risk Impact Analysis',
+              status: 'in_progress',
+              assignee: 'Senior Risk Manager',
+              duration_minutes: 90,
+              dependencies: ['step1']
+            },
+            {
+              id: 'step3',
+              name: 'Mitigation Strategy Development',
+              status: 'pending',
+              duration_minutes: 90,
+              dependencies: ['step2']
+            }
+          ]
         },
         {
-          id: 'instance-2',
-          workflow_id: riskWorkflow.id,
-          org_id: orgId,
-          status: 'active',
-          current_step: 'calculate-risk-scores',
-          context: { completion_percentage: 60 },
-          created_at: new Date(Date.now() - 3600000).toISOString(),
-          updated_at: new Date().toISOString()
+          id: '2',
+          name: 'Compliance Review Process',
+          description: 'Automated compliance checking and review',
+          category: 'Compliance',
+          automation_level: 'fully-automated',
+          estimated_duration: 120,
+          success_rate: 95,
+          steps: [
+            {
+              id: 'step1',
+              name: 'Automated Policy Check',
+              status: 'completed',
+              duration_minutes: 30,
+              dependencies: []
+            },
+            {
+              id: 'step2',
+              name: 'Compliance Gap Analysis',
+              status: 'completed',
+              duration_minutes: 45,
+              dependencies: ['step1']
+            },
+            {
+              id: 'step3',
+              name: 'Report Generation',
+              status: 'in_progress',
+              duration_minutes: 45,
+              dependencies: ['step2']
+            }
+          ]
         }
-      ]);
-      
+      ];
+
+      const mockInstances: WorkflowInstance[] = [
+        {
+          id: '1',
+          template_id: '1',
+          name: 'Q4 Risk Assessment - Financial Services',
+          status: 'active',
+          progress: 65,
+          started_at: '2024-01-15T09:00:00Z',
+          current_step: 'Risk Impact Analysis',
+          participants: ['john.doe@company.com', 'jane.smith@company.com']
+        },
+        {
+          id: '2',
+          template_id: '2',
+          name: 'Monthly Compliance Review - January',
+          status: 'completed',
+          progress: 100,
+          started_at: '2024-01-01T08:00:00Z',
+          completed_at: '2024-01-01T10:30:00Z',
+          participants: ['compliance@company.com']
+        }
+      ];
+
+      setTemplates(mockTemplates);
+      setWorkflows(mockInstances);
     } catch (error) {
-      console.error('Error loading workflows:', error);
-      toast.error('Failed to load workflows');
+      console.error('Error loading workflow data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const executeWorkflow = async (workflowId: string) => {
-    try {
-      setLoading(true);
-      
-      const executionId = await workflowOrchestrationService.executeWorkflow(workflowId, { org_id: orgId });
-      
-      // Create a new instance based on the execution
-      const newInstance: WorkflowInstance = {
-        id: `instance-${Date.now()}`,
-        workflow_id: workflowId,
-        org_id: orgId,
-        status: 'active',
-        current_step: 'step-1',
-        context: { execution_id: executionId, completion_percentage: 0 },
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      setInstances(prev => [...prev, newInstance]);
-      toast.success('Workflow execution started');
-      
-    } catch (error) {
-      console.error('Error executing workflow:', error);
-      toast.error('Failed to execute workflow');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'active': return <Play className="h-4 w-4 text-blue-500" />;
-      case 'paused': return <Pause className="h-4 w-4 text-yellow-500" />;
-      case 'failed': return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default: return <Clock className="h-4 w-4 text-gray-500" />;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'active': return 'default';
-      case 'paused': return 'secondary';
-      case 'failed': return 'destructive';
-      default: return 'outline';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'active':
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      case 'paused': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="h-4 w-4" />;
+      case 'active':
+      case 'in_progress': return <Play className="h-4 w-4" />;
+      case 'failed': return <AlertTriangle className="h-4 w-4" />;
+      case 'paused': return <Pause className="h-4 w-4" />;
+      default: return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const getAutomationColor = (level: string) => {
+    switch (level) {
+      case 'fully-automated': return 'bg-green-100 text-green-800';
+      case 'semi-automated': return 'bg-blue-100 text-blue-800';
+      case 'manual': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map(i => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 rounded"></div>
+                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Workflow Orchestration</h2>
-          <p className="text-muted-foreground">
-            Automated workflow management and orchestration
-          </p>
+        <div className="flex items-center gap-3">
+          <GitBranch className="h-8 w-8 text-blue-500" />
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Workflow Orchestration</h2>
+            <p className="text-muted-foreground">
+              Manage and automate organizational workflows
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Workflow
-          </Button>
-        </div>
+        <Button className="flex items-center gap-2">
+          <Zap className="h-4 w-4" />
+          Create Workflow
+        </Button>
       </div>
 
-      <Tabs defaultValue="workflows" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="workflows">Workflows</TabsTrigger>
-          <TabsTrigger value="instances">Active Instances</TabsTrigger>
-          <TabsTrigger value="automation">Automation Rules</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="active">Active Workflows</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="workflows" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {workflows.map((workflow) => (
-              <Card key={workflow.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{workflow.name}</CardTitle>
-                    <Badge variant={workflow.is_active ? 'default' : 'secondary'}>
-                      {workflow.is_active ? 'Active' : 'Inactive'}
+        <TabsContent value="templates" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {templates.map((template) => (
+              <Card key={template.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-base">{template.name}</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {template.description}
+                      </p>
+                    </div>
+                    <Badge variant="outline">{template.category}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Automation Level:</span>
+                    <Badge className={getAutomationColor(template.automation_level)}>
+                      {template.automation_level.replace('-', ' ')}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">{workflow.description}</p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Steps:</span>
-                      <span className="font-medium">{workflow.steps.length}</span>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Duration:</span>
+                      <div className="font-medium">{template.estimated_duration} min</div>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Trigger:</span>
-                      <Badge variant="outline" className="text-xs">
-                        {workflow.trigger_type.replace('_', ' ')}
-                      </Badge>
+                    <div>
+                      <span className="text-muted-foreground">Success Rate:</span>
+                      <div className="font-medium">{template.success_rate}%</div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        onClick={() => executeWorkflow(workflow.id)}
-                        disabled={loading}
-                        className="flex-1"
-                      >
-                        <Play className="h-4 w-4 mr-2" />
-                        Execute
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => setSelectedWorkflow(workflow)}
-                      >
-                        <Workflow className="h-4 w-4" />
-                      </Button>
+                  </div>
+
+                  <div>
+                    <span className="text-sm font-medium">Steps ({template.steps.length})</span>
+                    <div className="mt-2 space-y-2">
+                      {template.steps.slice(0, 3).map((step) => (
+                        <div key={step.id} className="flex items-center gap-2 text-sm">
+                          {getStatusIcon(step.status)}
+                          <span className="flex-1">{step.name}</span>
+                          <Badge variant="outline" className={getStatusColor(step.status)}>
+                            {step.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      ))}
+                      {template.steps.length > 3 && (
+                        <div className="text-xs text-muted-foreground">
+                          +{template.steps.length - 3} more steps
+                        </div>
+                      )}
                     </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button size="sm" className="flex-1">
+                      <Play className="h-4 w-4 mr-2" />
+                      Start Workflow
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Settings className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -203,85 +320,117 @@ const WorkflowOrchestrationPanel: React.FC<WorkflowOrchestrationPanelProps> = ({
           </div>
         </TabsContent>
 
-        <TabsContent value="instances" className="space-y-4">
+        <TabsContent value="active" className="space-y-4">
           <div className="space-y-4">
-            {instances.map((instance) => {
-              const workflow = workflows.find(w => w.id === instance.workflow_id);
-              const progress = instance.context.completion_percentage || 0;
-              
-              return (
-                <Card key={instance.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">
-                        {workflow?.name || 'Unknown Workflow'}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(instance.status)}
-                        <Badge variant={getStatusColor(instance.status) as any}>
-                          {instance.status}
-                        </Badge>
+            {workflows.map((workflow) => (
+              <Card key={workflow.id}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-base">{workflow.name}</CardTitle>
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                        <span>Started: {new Date(workflow.started_at!).toLocaleDateString()}</span>
+                        {workflow.current_step && (
+                          <span>Current: {workflow.current_step}</span>
+                        )}
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span>Progress</span>
-                          <span>{progress}%</span>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Current Step:</span>
-                          <p className="font-medium">{instance.current_step.replace('-', ' ')}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Started:</span>
-                          <p className="font-medium">
-                            {new Date(instance.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" disabled={instance.status !== 'active'}>
+                    <Badge className={getStatusColor(workflow.status)}>
+                      {getStatusIcon(workflow.status)}
+                      {workflow.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Progress</span>
+                      <span className="text-sm text-muted-foreground">
+                        {workflow.progress}%
+                      </span>
+                    </div>
+                    <Progress value={workflow.progress} className="h-2" />
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span>{workflow.participants.length} participants</span>
+                  </div>
+
+                  <div className="flex gap-2">
+                    {workflow.status === 'active' && (
+                      <>
+                        <Button size="sm" variant="outline">
                           <Pause className="h-4 w-4 mr-2" />
                           Pause
                         </Button>
-                        <Button size="sm" variant="outline" disabled={instance.status !== 'active'}>
-                          <Square className="h-4 w-4 mr-2" />
-                          Stop
+                        <Button size="sm" variant="outline">
+                          <Settings className="h-4 w-4 mr-2" />
+                          Manage
                         </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      </>
+                    )}
+                    <Button size="sm" variant="outline">
+                      View Details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
 
-        <TabsContent value="automation" className="space-y-4">
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">24</div>
+                <div className="text-sm text-muted-foreground">Active Workflows</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">92%</div>
+                <div className="text-sm text-muted-foreground">Success Rate</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-purple-600">156</div>
+                <div className="text-sm text-muted-foreground">Completed This Month</div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle>Automation Rules</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Configure automated triggers and actions for workflows
-              </p>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Workflow Performance
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">Automation Rules</h3>
-                <p className="text-muted-foreground mb-4">
-                  Set up automated triggers and actions for your workflows
-                </p>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Automation Rule
-                </Button>
+              <div className="text-center py-8 text-muted-foreground">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Analytics Dashboard</h3>
+                <p>Detailed workflow analytics and performance metrics</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Workflow Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8 text-muted-foreground">
+                <Settings className="h-12 w-12 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Configuration Settings</h3>
+                <p>Manage workflow templates, automation rules, and notifications</p>
               </div>
             </CardContent>
           </Card>
