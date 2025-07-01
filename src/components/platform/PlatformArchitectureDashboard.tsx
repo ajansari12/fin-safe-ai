@@ -394,7 +394,7 @@ const PlatformArchitectureDashboard: React.FC = () => {
                       <h4 className="font-medium">Analytics Service</h4>
                       <Badge className="bg-yellow-100 text-yellow-800">Scaling</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">3→5 instances</p>
+                    <p className="text-sm text-muted-foreground">3 to 5 instances</p>
                     <p className="text-xs text-muted-foreground">v3.2.1 • high demand detected</p>
                   </div>
                 </div>
@@ -432,15 +432,6 @@ const PlatformArchitectureDashboard: React.FC = () => {
                     <div className="text-lg font-semibold">76.3%</div>
                     <div className="text-xs text-muted-foreground">Hit Rate</div>
                   </div>
-                </div>
-                
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium mb-2">Cache Optimization Recommendations</h4>
-                  <ul className="text-sm space-y-1">
-                    <li>• Increase TTL for document metadata cache (+15% hit rate projected)</li>
-                    <li>• Enable compression for large analytics datasets (-30% memory usage)</li>
-                    <li>• Add cache warming for frequently accessed reports</li>
-                  </ul>
                 </div>
               </div>
             </CardContent>
@@ -539,11 +530,11 @@ const PlatformArchitectureDashboard: React.FC = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm">RTO (Recovery Time Objective)</span>
-                        <span className="font-mono text-sm text-green-600">< 15 min</span>
+                        <span className="font-mono text-sm text-green-600">Less than 15 min</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">RPO (Recovery Point Objective)</span>
-                        <span className="font-mono text-sm text-green-600">< 5 min</span>
+                        <span className="font-mono text-sm text-green-600">Less than 5 min</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm">Last DR Test</span>
