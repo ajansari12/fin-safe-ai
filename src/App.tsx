@@ -16,6 +16,7 @@ import About from "./pages/About";
 import Features from "./pages/Features";
 import Contact from "./pages/Contact";
 import Compliance from "./pages/Compliance";
+import ModulesOverview from "./pages/modules/ModulesOverview";
 
 // Import auth pages
 import Login from "./pages/auth/Login";
@@ -83,6 +84,7 @@ const App = () => {
                   <Route path="/features" element={<Features />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/compliance" element={<Compliance />} />
+                  <Route path="/modules" element={<ModulesOverview />} />
                   
                   {/* Authentication Routes */}
                   <Route path="/login" element={<Login />} />
@@ -228,10 +230,6 @@ const App = () => {
                   
                   {/* Legacy route redirects */}
                   <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
-                  <Route path="/modules" element={<Navigate to="/app/dashboard" replace />} />
-                  <Route path="/modules/governance" element={<Navigate to="/app/governance" replace />} />
-                  <Route path="/modules/risk-management" element={<Navigate to="/app/risk-appetite" replace />} />
-                  <Route path="/modules/self-assessment" element={<Navigate to="/app/dashboard" replace />} />
                   
                   {/* 404 Route */}
                   <Route path="*" element={<NotFound />} />

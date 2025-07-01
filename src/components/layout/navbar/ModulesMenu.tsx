@@ -23,17 +23,33 @@ export function ModulesMenu({ modules }: ModulesMenuProps) {
     <NavigationMenuItem>
       <NavigationMenuTrigger>Modules</NavigationMenuTrigger>
       <NavigationMenuContent>
-        <ul className="grid w-[600px] gap-3 p-4 md:grid-cols-2">
-          {modules.map((module) => (
-            <ListItem
-              key={module.title}
-              title={module.title}
-              href={module.href}
+        <div className="w-[600px] p-4">
+          <div className="mb-4 pb-4 border-b">
+            <h3 className="text-lg font-semibold">Explore Our Modules</h3>
+            <p className="text-sm text-muted-foreground">
+              Comprehensive risk management solutions for financial institutions
+            </p>
+          </div>
+          <ul className="grid gap-3 md:grid-cols-2">
+            {modules.map((module) => (
+              <ListItem
+                key={module.title}
+                title={module.title}
+                href={module.href}
+              >
+                {module.description}
+              </ListItem>
+            ))}
+          </ul>
+          <div className="mt-4 pt-4 border-t">
+            <Link
+              to="/modules"
+              className="text-sm font-medium text-primary hover:underline"
             >
-              {module.description}
-            </ListItem>
-          ))}
-        </ul>
+              View all modules →
+            </Link>
+          </div>
+        </div>
       </NavigationMenuContent>
     </NavigationMenuItem>
   );

@@ -14,42 +14,42 @@ import MobileMenu from "./navbar/MobileMenu";
 const modules = [
   {
     title: "Governance",
-    href: "/modules/governance",
+    href: "/modules#governance",
     description: "Accountability structures, roles, and risk oversight policies.",
   },
   {
-    title: "Self Assessment",
-    href: "/modules/self-assessment",
-    description: "Identify critical operations and assess current resilience posture.",
+    title: "Risk Appetite",
+    href: "/modules#risk-appetite",
+    description: "Define and monitor your organization's risk tolerance levels.",
   },
   {
     title: "Impact Tolerances",
-    href: "/modules/impact-tolerances",
+    href: "/modules#impact-tolerances",
     description: "Define tolerable levels of disruption for critical operations.",
   },
   {
     title: "Business Functions",
-    href: "/modules/business-functions",
+    href: "/modules#business-functions",
     description: "Map and manage critical business functions and services.",
   },
   {
-    title: "Risk Management",
-    href: "/modules/risk-management",
-    description: "Identify, assess, and manage operational risks across the organization.",
+    title: "Controls & KRI",
+    href: "/modules#controls-kri",
+    description: "Implement and monitor operational controls with Key Risk Indicators.",
   },
   {
     title: "Incident Management",
-    href: "/modules/incident-management",
+    href: "/modules#incident-management",
     description: "Detect, respond to, and recover from operational disruptions.",
   },
   {
     title: "Third-Party Risk",
-    href: "/modules/third-party-risk",
+    href: "/modules#third-party-risk",
     description: "Manage risks associated with third-party service providers.",
   },
   {
-    title: "Compliance",
-    href: "/modules/compliance",
+    title: "Audit & Compliance",
+    href: "/modules#audit-compliance",
     description: "Track and manage regulatory compliance requirements.",
   },
 ];
