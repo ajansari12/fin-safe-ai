@@ -1,0 +1,657 @@
+
+import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUserProfile } from "@/lib/supabase-utils";
+import type {
+  OrganizationalProfile,
+  QuestionnaireTemplate,
+  QuestionnaireResponse,
+  RiskFrameworkTemplate,
+  GeneratedFramework,
+  ProfileAssessment,
+  QuestionnaireSection
+} from "@/types/organizational-intelligence";
+
+class OrganizationalIntelligenceService {
+  // Profile Management
+  async getOrganizationalProfile(orgId?: string): Promise<OrganizationalProfile | null> {
+    const profile = await getCurrentUserProfile();
+    const organizationId = orgId || profile?.organization_id;
+    
+    if (!organizationId) return null;
+
+    const { data, error } = await supabase
+      .from('organizational_profiles')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching organizational profile:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  async createOrUpdateProfile(profileData: Partial<OrganizationalProfile>): Promise<OrganizationalProfile | null> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    const existingProfile = await this.getOrganizationalProfile();
+    
+    const dataToSave = {
+      organization_id: profile.organization_id,
+      ...profileData
+    };
+
+    let result;
+    if (existingProfile) {
+      const { data, error } = await supabase
+        .from('organizational_profiles')
+        .update(dataToSave)
+        .eq('id', existingProfile.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
+    } else {
+      const { data, error } = await supabase
+        .from('organizational_profiles')
+        .insert([dataToSave])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
+    }
+
+    // Calculate and update profile score
+    await this.calculateProfileScore(result.id);
+    
+    return result;
+  }
+
+  // Questionnaire Management
+  async getQuestionnaireTemplates(sector?: string, size?: string): Promise<QuestionnaireTemplate[]> {
+    let query = supabase
+      .from('questionnaire_templates')
+      .select('*')
+      .eq('is_active', true);
+
+    if (sector) {
+      query = query.eq('target_sector', sector);
+    }
+
+    if (size) {
+      query = query.eq('target_size', size);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching questionnaire templates:', error);
+      return [];
+    }
+
+    return data;
+  }
+
+  async getQuestionnaireResponse(templateId: string): Promise<QuestionnaireResponse | null> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    const { data, error } = await supabase
+      .from('questionnaire_responses')
+      .select('*')
+      .eq('organization_id', profile.organization_id)
+      .eq('template_id', templateId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching questionnaire response:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  async saveQuestionnaireResponse(
+    templateId: string, 
+    responses: Record<string, any>, 
+    currentSection?: string
+  ): Promise<QuestionnaireResponse> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    const template = await this.getQuestionnaireTemplate(templateId);
+    const completionPercentage = this.calculateCompletionPercentage(template, responses);
+
+    const existingResponse = await this.getQuestionnaireResponse(templateId);
+
+    const responseData = {
+      organization_id: profile.organization_id,
+      template_id: templateId,
+      responses,
+      completion_percentage: completionPercentage,
+      current_section: currentSection,
+      completed_at: completionPercentage === 100 ? new Date().toISOString() : null
+    };
+
+    let result;
+    if (existingResponse) {
+      const { data, error } = await supabase
+        .from('questionnaire_responses')
+        .update(responseData)
+        .eq('id', existingResponse.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
+    } else {
+      const { data, error } = await supabase
+        .from('questionnaire_responses')
+        .insert([responseData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
+    }
+
+    // If questionnaire is completed, generate/update organizational profile
+    if (completionPercentage === 100) {
+      await this.generateProfileFromResponses(responses, template);
+    }
+
+    return result;
+  }
+
+  private async getQuestionnaireTemplate(templateId: string): Promise<QuestionnaireTemplate | null> {
+    const { data, error } = await supabase
+      .from('questionnaire_templates')
+      .select('*')
+      .eq('id', templateId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching questionnaire template:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  private calculateCompletionPercentage(template: QuestionnaireTemplate | null, responses: Record<string, any>): number {
+    if (!template || !template.questions) return 0;
+
+    const allQuestions = template.questions.flatMap(section => section.questions);
+    const requiredQuestions = allQuestions.filter(q => q.required);
+    
+    if (requiredQuestions.length === 0) return 100;
+
+    const answeredRequired = requiredQuestions.filter(q => 
+      responses[q.id] !== undefined && responses[q.id] !== null && responses[q.id] !== ''
+    ).length;
+
+    return Math.round((answeredRequired / requiredQuestions.length) * 100);
+  }
+
+  // Framework Generation
+  async generateRiskFramework(profileId: string): Promise<GeneratedFramework | null> {
+    const profile = await this.getOrganizationalProfileById(profileId);
+    if (!profile) return null;
+
+    // Find matching framework template
+    const template = await this.findBestFrameworkTemplate(profile);
+    if (!template) return null;
+
+    // Generate customized framework
+    const frameworkData = await this.customizeFramework(template, profile);
+    
+    const { data, error } = await supabase
+      .from('generated_frameworks')
+      .insert([{
+        organization_id: profile.organization_id,
+        profile_id: profileId,
+        template_id: template.id,
+        framework_data: frameworkData,
+        customizations: {},
+        implementation_status: 'draft'
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  private async getOrganizationalProfileById(profileId: string): Promise<OrganizationalProfile | null> {
+    const { data, error } = await supabase
+      .from('organizational_profiles')
+      .select('*')
+      .eq('id', profileId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching profile by ID:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  private async findBestFrameworkTemplate(profile: OrganizationalProfile): Promise<RiskFrameworkTemplate | null> {
+    // Get organization data to determine sector
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('sector, size')
+      .eq('id', profile.organization_id)
+      .single();
+
+    if (!org) return null;
+
+    const { data: templates, error } = await supabase
+      .from('risk_framework_templates')
+      .select('*')
+      .eq('is_active', true);
+
+    if (error || !templates) return null;
+
+    // Score templates based on profile match
+    const scoredTemplates = templates.map(template => {
+      let score = 0;
+      const targetProfile = template.target_profile as any;
+
+      if (targetProfile.sector === org.sector) score += 50;
+      if (targetProfile.size === org.size) score += 30;
+      if (targetProfile.risk_maturity === profile.risk_maturity) score += 20;
+
+      return { template, score };
+    });
+
+    // Return the best matching template
+    const bestMatch = scoredTemplates.sort((a, b) => b.score - a.score)[0];
+    return bestMatch?.template || null;
+  }
+
+  private async customizeFramework(template: RiskFrameworkTemplate, profile: OrganizationalProfile): Promise<any> {
+    const baseFramework = template.framework_components;
+    
+    // Customize based on profile characteristics
+    const customizedFramework = JSON.parse(JSON.stringify(baseFramework));
+
+    // Adjust risk category weights based on profile
+    if (customizedFramework.risk_categories) {
+      customizedFramework.risk_categories = customizedFramework.risk_categories.map((category: any) => {
+        let adjustedWeight = category.weight;
+
+        // Adjust weights based on organizational characteristics
+        if (category.name === 'Operational Risk' && profile.technology_maturity === 'basic') {
+          adjustedWeight *= 1.2;
+        }
+        if (category.name === 'Compliance Risk' && profile.compliance_maturity === 'basic') {
+          adjustedWeight *= 1.3;
+        }
+        if (category.name === 'Market Risk' && profile.asset_size && profile.asset_size > 1000000000) {
+          adjustedWeight *= 1.1;
+        }
+
+        return { ...category, weight: adjustedWeight };
+      });
+
+      // Normalize weights
+      const totalWeight = customizedFramework.risk_categories.reduce((sum: number, cat: any) => sum + cat.weight, 0);
+      customizedFramework.risk_categories = customizedFramework.risk_categories.map((cat: any) => ({
+        ...cat,
+        weight: cat.weight / totalWeight
+      }));
+    }
+
+    // Add profile-specific KRIs
+    if (customizedFramework.kris) {
+      const additionalKRIs = this.generateProfileSpecificKRIs(profile);
+      customizedFramework.kris = [...customizedFramework.kris, ...additionalKRIs];
+    }
+
+    return customizedFramework;
+  }
+
+  private generateProfileSpecificKRIs(profile: OrganizationalProfile): any[] {
+    const kris = [];
+
+    if (profile.third_party_dependencies && profile.third_party_dependencies > 10) {
+      kris.push({
+        name: 'Third Party Risk Score',
+        threshold: 75,
+        frequency: 'monthly',
+        description: 'Aggregate risk score across all third-party vendors'
+      });
+    }
+
+    if (profile.digital_transformation === 'leader' || profile.digital_transformation === 'advanced') {
+      kris.push({
+        name: 'Cyber Security Incidents',
+        threshold: 2,
+        frequency: 'monthly',
+        description: 'Number of cybersecurity incidents per month'
+      });
+    }
+
+    if (profile.international_exposure) {
+      kris.push({
+        name: 'Regulatory Compliance Score',
+        threshold: 90,
+        frequency: 'quarterly',
+        description: 'Compliance score across all international jurisdictions'
+      });
+    }
+
+    return kris;
+  }
+
+  // Profile Assessment and Scoring
+  async calculateProfileScore(profileId: string): Promise<number> {
+    const profile = await this.getOrganizationalProfileById(profileId);
+    if (!profile) return 0;
+
+    let score = 0;
+    let maxScore = 0;
+
+    // Risk maturity scoring (0-25 points)
+    maxScore += 25;
+    if (profile.risk_maturity) {
+      const maturityScores = { basic: 10, developing: 15, advanced: 20, sophisticated: 25 };
+      score += maturityScores[profile.risk_maturity];
+    }
+
+    // Compliance maturity scoring (0-25 points)
+    maxScore += 25;
+    if (profile.compliance_maturity) {
+      const complianceScores = { basic: 10, developing: 15, mature: 20, advanced: 25 };
+      score += complianceScores[profile.compliance_maturity];
+    }
+
+    // Technology maturity scoring (0-20 points)
+    maxScore += 20;
+    if (profile.technology_maturity) {
+      const techScores = { basic: 8, developing: 12, advanced: 16, 'cutting-edge': 20 };
+      score += techScores[profile.technology_maturity];
+    }
+
+    // Digital transformation scoring (0-20 points)
+    maxScore += 20;
+    if (profile.digital_transformation) {
+      const digitalScores = { early: 8, progressing: 12, advanced: 16, leader: 20 };
+      score += digitalScores[profile.digital_transformation];
+    }
+
+    // Completeness scoring (0-10 points)
+    maxScore += 10;
+    const completeness = this.calculateProfileCompleteness(profile);
+    score += (completeness / 100) * 10;
+
+    const finalScore = Math.round((score / maxScore) * 100);
+
+    // Update the profile with the calculated score
+    await supabase
+      .from('organizational_profiles')
+      .update({ 
+        profile_score: finalScore,
+        completeness_percentage: completeness
+      })
+      .eq('id', profileId);
+
+    return finalScore;
+  }
+
+  private calculateProfileCompleteness(profile: OrganizationalProfile): number {
+    const fields = [
+      'sub_sector', 'employee_count', 'asset_size', 'geographic_scope', 'customer_base',
+      'risk_maturity', 'risk_culture', 'compliance_maturity', 'regulatory_history',
+      'business_lines', 'technology_maturity', 'digital_transformation',
+      'primary_regulators', 'applicable_frameworks', 'growth_strategy',
+      'digital_strategy', 'market_position', 'competitive_strategy'
+    ];
+
+    const completedFields = fields.filter(field => {
+      const value = (profile as any)[field];
+      return value !== null && value !== undefined && value !== '';
+    }).length;
+
+    return Math.round((completedFields / fields.length) * 100);
+  }
+
+  async generateProfileAssessment(profileId: string): Promise<ProfileAssessment> {
+    const profile = await this.getOrganizationalProfileById(profileId);
+    if (!profile) throw new Error('Profile not found');
+
+    const score = await this.calculateProfileScore(profileId);
+    const completeness = this.calculateProfileCompleteness(profile);
+
+    const assessment: ProfileAssessment = {
+      score,
+      completeness,
+      strengths: this.identifyStrengths(profile),
+      weaknesses: this.identifyWeaknesses(profile),
+      recommendations: this.generateRecommendations(profile),
+      risk_level: this.determineRiskLevel(profile),
+      maturity_level: this.determineMaturityLevel(profile),
+      next_steps: this.generateNextSteps(profile)
+    };
+
+    return assessment;
+  }
+
+  private identifyStrengths(profile: OrganizationalProfile): string[] {
+    const strengths = [];
+
+    if (profile.risk_maturity === 'advanced' || profile.risk_maturity === 'sophisticated') {
+      strengths.push('Strong risk management maturity');
+    }
+
+    if (profile.compliance_maturity === 'mature' || profile.compliance_maturity === 'advanced') {
+      strengths.push('Excellent compliance framework');
+    }
+
+    if (profile.technology_maturity === 'advanced' || profile.technology_maturity === 'cutting-edge') {
+      strengths.push('Advanced technology infrastructure');
+    }
+
+    if (profile.digital_transformation === 'leader' || profile.digital_transformation === 'advanced') {
+      strengths.push('Digital transformation leadership');
+    }
+
+    if (profile.regulatory_history === 'clean') {
+      strengths.push('Clean regulatory history');
+    }
+
+    return strengths.length > 0 ? strengths : ['Basic organizational structure in place'];
+  }
+
+  private identifyWeaknesses(profile: OrganizationalProfile): string[] {
+    const weaknesses = [];
+
+    if (profile.risk_maturity === 'basic') {
+      weaknesses.push('Limited risk management maturity');
+    }
+
+    if (profile.compliance_maturity === 'basic') {
+      weaknesses.push('Basic compliance framework needs enhancement');
+    }
+
+    if (profile.technology_maturity === 'basic') {
+      weaknesses.push('Technology infrastructure requires modernization');
+    }
+
+    if (profile.regulatory_history === 'significant-issues') {
+      weaknesses.push('History of regulatory issues requires attention');
+    }
+
+    if (profile.previous_incidents && profile.previous_incidents > 5) {
+      weaknesses.push('High number of previous incidents');
+    }
+
+    return weaknesses;
+  }
+
+  private generateRecommendations(profile: OrganizationalProfile): string[] {
+    const recommendations = [];
+
+    if (profile.risk_maturity === 'basic' || profile.risk_maturity === 'developing') {
+      recommendations.push('Invest in risk management training and tools');
+      recommendations.push('Establish formal risk appetite statements');
+    }
+
+    if (profile.compliance_maturity === 'basic') {
+      recommendations.push('Implement comprehensive compliance monitoring');
+      recommendations.push('Establish regular compliance training programs');
+    }
+
+    if (profile.technology_maturity === 'basic') {
+      recommendations.push('Develop technology modernization roadmap');
+      recommendations.push('Invest in cybersecurity capabilities');
+    }
+
+    if (profile.third_party_dependencies && profile.third_party_dependencies > 20) {
+      recommendations.push('Implement enhanced third-party risk management');
+      recommendations.push('Establish vendor risk assessment protocols');
+    }
+
+    return recommendations;
+  }
+
+  private determineRiskLevel(profile: OrganizationalProfile): 'low' | 'medium' | 'high' | 'critical' {
+    let riskFactors = 0;
+
+    if (profile.risk_maturity === 'basic') riskFactors++;
+    if (profile.compliance_maturity === 'basic') riskFactors++;
+    if (profile.regulatory_history === 'significant-issues') riskFactors += 2;
+    if (profile.previous_incidents && profile.previous_incidents > 10) riskFactors++;
+    if (profile.technology_maturity === 'basic') riskFactors++;
+
+    if (riskFactors >= 4) return 'critical';
+    if (riskFactors >= 3) return 'high';
+    if (riskFactors >= 2) return 'medium';
+    return 'low';
+  }
+
+  private determineMaturityLevel(profile: OrganizationalProfile): 'basic' | 'developing' | 'advanced' | 'sophisticated' {
+    const maturityScores = [];
+
+    if (profile.risk_maturity) {
+      const scores = { basic: 1, developing: 2, advanced: 3, sophisticated: 4 };
+      maturityScores.push(scores[profile.risk_maturity]);
+    }
+
+    if (profile.compliance_maturity) {
+      const scores = { basic: 1, developing: 2, mature: 3, advanced: 4 };
+      maturityScores.push(scores[profile.compliance_maturity]);
+    }
+
+    if (profile.technology_maturity) {
+      const scores = { basic: 1, developing: 2, advanced: 3, 'cutting-edge': 4 };
+      maturityScores.push(scores[profile.technology_maturity]);
+    }
+
+    const avgScore = maturityScores.reduce((sum, score) => sum + score, 0) / maturityScores.length;
+
+    if (avgScore >= 3.5) return 'sophisticated';
+    if (avgScore >= 2.5) return 'advanced';
+    if (avgScore >= 1.5) return 'developing';
+    return 'basic';
+  }
+
+  private generateNextSteps(profile: OrganizationalProfile): string[] {
+    const nextSteps = [];
+
+    if (this.calculateProfileCompleteness(profile) < 80) {
+      nextSteps.push('Complete organizational profile assessment');
+    }
+
+    if (!profile.risk_maturity || profile.risk_maturity === 'basic') {
+      nextSteps.push('Develop risk management framework');
+    }
+
+    if (!profile.applicable_frameworks || profile.applicable_frameworks.length === 0) {
+      nextSteps.push('Identify applicable regulatory frameworks');
+    }
+
+    nextSteps.push('Generate customized risk management framework');
+    nextSteps.push('Schedule regular profile reassessment');
+
+    return nextSteps;
+  }
+
+  // Helper method to generate profile from questionnaire responses
+  private async generateProfileFromResponses(responses: Record<string, any>, template: QuestionnaireTemplate | null): Promise<void> {
+    if (!template) return;
+
+    const profileData: Partial<OrganizationalProfile> = {};
+
+    // Map questionnaire responses to profile fields
+    Object.entries(responses).forEach(([key, value]) => {
+      switch (key) {
+        case 'sub_sector':
+          profileData.sub_sector = value;
+          break;
+        case 'employee_count':
+          profileData.employee_count = parseInt(value);
+          break;
+        case 'asset_size':
+          profileData.asset_size = parseInt(value) * 1000000; // Convert millions to actual amount
+          break;
+        case 'risk_maturity':
+          profileData.risk_maturity = value;
+          break;
+        case 'compliance_maturity':
+          profileData.compliance_maturity = value;
+          break;
+        case 'technology_maturity':
+          profileData.technology_maturity = value;
+          break;
+        case 'digital_transformation':
+          profileData.digital_transformation = value;
+          break;
+        case 'geographic_scope':
+          profileData.geographic_scope = value;
+          break;
+        case 'customer_base':
+          profileData.customer_base = value;
+          break;
+        case 'risk_culture':
+          profileData.risk_culture = value;
+          break;
+        case 'regulatory_history':
+          profileData.regulatory_history = value;
+          break;
+        case 'business_lines':
+          profileData.business_lines = Array.isArray(value) ? value : [value];
+          break;
+        case 'primary_regulators':
+          profileData.primary_regulators = Array.isArray(value) ? value : [value];
+          break;
+        case 'applicable_frameworks':
+          profileData.applicable_frameworks = Array.isArray(value) ? value : [value];
+          break;
+        case 'growth_strategy':
+          profileData.growth_strategy = value;
+          break;
+        case 'digital_strategy':
+          profileData.digital_strategy = value;
+          break;
+        case 'market_position':
+          profileData.market_position = value;
+          break;
+        case 'competitive_strategy':
+          profileData.competitive_strategy = value;
+          break;
+      }
+    });
+
+    await this.createOrUpdateProfile(profileData);
+  }
+}
+
+export const organizationalIntelligenceService = new OrganizationalIntelligenceService();

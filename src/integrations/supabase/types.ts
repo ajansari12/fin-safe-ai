@@ -3697,6 +3697,70 @@ export type Database = {
           },
         ]
       }
+      generated_frameworks: {
+        Row: {
+          created_at: string
+          customizations: Json
+          effectiveness_score: number | null
+          framework_data: Json
+          id: string
+          implementation_status: string | null
+          last_updated_at: string | null
+          organization_id: string
+          profile_id: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customizations?: Json
+          effectiveness_score?: number | null
+          framework_data?: Json
+          id?: string
+          implementation_status?: string | null
+          last_updated_at?: string | null
+          organization_id: string
+          profile_id: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customizations?: Json
+          effectiveness_score?: number | null
+          framework_data?: Json
+          id?: string
+          implementation_status?: string | null
+          last_updated_at?: string | null
+          organization_id?: string
+          profile_id?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_frameworks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_frameworks_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "organizational_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_frameworks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "risk_framework_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       governance_change_logs: {
         Row: {
           change_type: string
@@ -4889,6 +4953,116 @@ export type Database = {
           },
         ]
       }
+      organizational_profiles: {
+        Row: {
+          applicable_frameworks: string[] | null
+          asset_size: number | null
+          business_lines: string[] | null
+          competitive_strategy: string | null
+          completeness_percentage: number | null
+          compliance_maturity: string | null
+          created_at: string
+          customer_base: string | null
+          digital_strategy: string | null
+          digital_transformation: string | null
+          employee_count: number | null
+          geographic_locations: number | null
+          geographic_scope: string | null
+          growth_strategy: string | null
+          id: string
+          international_exposure: boolean | null
+          last_assessment_date: string | null
+          market_position: string | null
+          next_assessment_date: string | null
+          organization_id: string
+          previous_incidents: number | null
+          primary_regulators: string[] | null
+          profile_score: number | null
+          regulatory_history: string | null
+          risk_culture: string | null
+          risk_maturity: string | null
+          sub_sector: string | null
+          technology_maturity: string | null
+          third_party_dependencies: number | null
+          upcoming_regulations: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          applicable_frameworks?: string[] | null
+          asset_size?: number | null
+          business_lines?: string[] | null
+          competitive_strategy?: string | null
+          completeness_percentage?: number | null
+          compliance_maturity?: string | null
+          created_at?: string
+          customer_base?: string | null
+          digital_strategy?: string | null
+          digital_transformation?: string | null
+          employee_count?: number | null
+          geographic_locations?: number | null
+          geographic_scope?: string | null
+          growth_strategy?: string | null
+          id?: string
+          international_exposure?: boolean | null
+          last_assessment_date?: string | null
+          market_position?: string | null
+          next_assessment_date?: string | null
+          organization_id: string
+          previous_incidents?: number | null
+          primary_regulators?: string[] | null
+          profile_score?: number | null
+          regulatory_history?: string | null
+          risk_culture?: string | null
+          risk_maturity?: string | null
+          sub_sector?: string | null
+          technology_maturity?: string | null
+          third_party_dependencies?: number | null
+          upcoming_regulations?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          applicable_frameworks?: string[] | null
+          asset_size?: number | null
+          business_lines?: string[] | null
+          competitive_strategy?: string | null
+          completeness_percentage?: number | null
+          compliance_maturity?: string | null
+          created_at?: string
+          customer_base?: string | null
+          digital_strategy?: string | null
+          digital_transformation?: string | null
+          employee_count?: number | null
+          geographic_locations?: number | null
+          geographic_scope?: string | null
+          growth_strategy?: string | null
+          id?: string
+          international_exposure?: boolean | null
+          last_assessment_date?: string | null
+          market_position?: string | null
+          next_assessment_date?: string | null
+          organization_id?: string
+          previous_incidents?: number | null
+          primary_regulators?: string[] | null
+          profile_score?: number | null
+          regulatory_history?: string | null
+          risk_culture?: string | null
+          risk_maturity?: string | null
+          sub_sector?: string | null
+          technology_maturity?: string | null
+          third_party_dependencies?: number | null
+          upcoming_regulations?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizational_profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null
@@ -5304,6 +5478,102 @@ export type Database = {
           subscription_data?: Json
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      questionnaire_responses: {
+        Row: {
+          completed_at: string | null
+          completion_percentage: number | null
+          created_at: string
+          current_section: string | null
+          id: string
+          organization_id: string
+          responses: Json
+          started_at: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string
+          current_section?: string | null
+          id?: string
+          organization_id: string
+          responses?: Json
+          started_at?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completion_percentage?: number | null
+          created_at?: string
+          current_section?: string | null
+          id?: string
+          organization_id?: string
+          responses?: Json
+          started_at?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_responses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_responses_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questionnaire_templates: {
+        Row: {
+          branching_logic: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          questions: Json
+          target_sector: string | null
+          target_size: string | null
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          branching_logic?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          questions?: Json
+          target_sector?: string | null
+          target_size?: string | null
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          branching_logic?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          questions?: Json
+          target_sector?: string | null
+          target_size?: string | null
+          updated_at?: string
+          version?: string
         }
         Relationships: []
       }
@@ -5874,6 +6144,42 @@ export type Database = {
           id?: string
           org_id?: string
           statistical_significance?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      risk_framework_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          framework_components: Json
+          id: string
+          implementation_roadmap: Json
+          is_active: boolean | null
+          name: string
+          target_profile: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          framework_components?: Json
+          id?: string
+          implementation_roadmap?: Json
+          is_active?: boolean | null
+          name: string
+          target_profile?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          framework_components?: Json
+          id?: string
+          implementation_roadmap?: Json
+          is_active?: boolean | null
+          name?: string
+          target_profile?: Json
           updated_at?: string
         }
         Relationships: []

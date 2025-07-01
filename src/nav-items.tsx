@@ -1,260 +1,131 @@
-
-import { 
-  Home, 
-  FileText, 
-  Shield, 
-  Users, 
-  TrendingUp, 
-  Settings, 
-  AlertTriangle, 
-  CheckSquare, 
-  Database, 
-  Zap,
-  Activity,
+import {
+  Home,
+  LayoutDashboard,
+  Scale,
+  ShieldAlert,
+  Settings,
+  Building2,
   BarChart3,
-  Cloud,
-  GitBranch,
+  Zap,
+  LucideIcon,
+  ListChecks,
+  FileSliders,
   Network,
-  Server,
-  Globe,
-  Target,
-  Layers,
-  Briefcase,
-  UserCheck,
-  Book,
-  Wrench,
-  Phone,
-  HelpCircle
+  HelpCircle,
+  AlertTriangle,
+  KanbanSquare,
 } from "lucide-react";
 
-export const navItems = [
+interface NavigationItem {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  items?: NavigationItem[];
+}
+
+export const navItems: NavigationItem[] = [
   {
     title: "Home",
-    to: "/",
+    url: "/app",
     icon: Home,
-    variant: "default" as const,
   },
   {
     title: "Dashboard",
-    to: "/dashboard",
-    icon: BarChart3,
-    variant: "default" as const,
+    url: "/app/dashboard",
+    icon: LayoutDashboard,
   },
   {
-    title: "Modules",
-    icon: Layers,
-    variant: "default" as const,
-    submenu: [
-      {
-        title: "Overview",
-        to: "/modules",
-        icon: Layers,
-      },
-      {
-        title: "Governance",
-        to: "/modules/governance",
-        icon: Shield,
-      },
-      {
-        title: "Risk Management",
-        to: "/modules/risk-management",
-        icon: AlertTriangle,
-      },
-      {
-        title: "Self Assessment",
-        to: "/modules/self-assessment",
-        icon: CheckSquare,
-      },
-    ],
+    title: "Risk Appetite",
+    url: "/app/risk-appetite",
+    icon: Scale,
   },
   {
-    title: "Risk Management",
-    icon: AlertTriangle,
-    variant: "default" as const,
-    submenu: [
-      {
-        title: "Risk Appetite",
-        to: "/risk-appetite",
-        icon: Target,
-      },
-      {
-        title: "Risk Appetite Workflow",
-        to: "/risk-management/risk-appetite-workflow",
-        icon: GitBranch,
-      },
-      {
-        title: "Controls & KRIs",
-        to: "/controls-and-kri",
-        icon: CheckSquare,
-      },
-      {
-        title: "Impact Tolerances",
-        to: "/impact-tolerances",
-        icon: Activity,
-      },
-      {
-        title: "Business Functions",
-        to: "/business-functions",
-        icon: Briefcase,
-      },
-      {
-        title: "Dependencies",
-        to: "/dependencies",
-        icon: Network,
-      },
-      {
-        title: "Tolerance Framework",
-        to: "/tolerance-framework",
-        icon: Target,
-      },
-    ],
-  },
-  {
-    title: "Platform Architecture",
-    to: "/platform-architecture",
-    icon: Server,
-    variant: "default" as const,
-  },
-  {
-    title: "Security Center",
-    to: "/security/enterprise-security-center",
-    icon: Shield,
-    variant: "default" as const,
-  },
-  {
-    title: "Documents",
-    to: "/documents",
-    icon: FileText,
-    variant: "default" as const,
-  },
-  {
-    title: "Governance",
-    to: "/governance",
-    icon: Shield,
-    variant: "default" as const,
+    title: "Controls",
+    url: "/app/controls",
+    icon: ListChecks,
   },
   {
     title: "Third Party Risk",
-    to: "/third-party-risk",
-    icon: Users,
-    variant: "default" as const,
-  },
-  {
-    title: "Incident Log",
-    to: "/incident-log",
-    icon: AlertTriangle,
-    variant: "default" as const,
-  },
-  {
-    title: "Analytics Hub",
-    to: "/analytics",
-    icon: TrendingUp,
-    variant: "default" as const,
-  },
-  {
-    title: "Compliance",
-    to: "/compliance",
-    icon: CheckSquare,
-    variant: "default" as const,
-  },
-  {
-    title: "Audit",
-    to: "/audit",
-    icon: CheckSquare,
-    variant: "default" as const,
+    url: "/app/third-party-risk",
+    icon: Network,
+    items: [
+      {
+        title: "Vendor Profiles",
+        url: "/app/third-party-risk",
+      },
+      {
+        title: "Risk Assessments",
+        url: "/app/third-party-risk/assessments",
+      },
+      {
+        title: "Supply Chain",
+        url: "/app/third-party-risk/supply-chain",
+      },
+    ],
   },
   {
     title: "Scenario Testing",
-    to: "/scenario-testing",
-    icon: Zap,
-    variant: "default" as const,
-  },
-  {
-    title: "Business Continuity",
-    to: "/business-continuity",
-    icon: Activity,
-    variant: "default" as const,
-  },
-  {
-    title: "Reporting",
-    to: "/reporting",
-    icon: FileText,
-    variant: "default" as const,
+    url: "/app/scenario-testing",
+    icon: FileSliders,
   },
   {
     title: "Integrations",
-    to: "/integrations",
-    icon: Database,
-    variant: "default" as const,
+    url: "/app/integrations",
+    icon: Zap,
   },
   {
-    title: "Workflows",
-    to: "/workflows",
-    icon: GitBranch,
-    variant: "default" as const,
+    title: "Analytics",
+    url: "/app/analytics",
+    icon: BarChart3,
+    items: [
+      {
+        title: "Analytics Hub",
+        url: "/app/analytics",
+      },
+      {
+        title: "Organizational Intelligence",
+        url: "/app/organizational-intelligence",
+      },
+    ],
   },
   {
-    title: "Deployment",
-    to: "/deployment",
-    icon: Cloud,
-    variant: "default" as const,
+    title: "Knowledge Base",
+    url: "/app/knowledge-base",
+    icon: HelpCircle,
   },
   {
-    title: "Enterprise",
-    icon: Globe,
-    variant: "default" as const,
-    submenu: [
+    title: "Incident Management",
+    url: "/app/incident-management",
+    icon: AlertTriangle,
+    items: [
       {
-        title: "Onboarding",
-        to: "/enterprise-onboarding",
-        icon: UserCheck,
+        title: "Incident Logs",
+        url: "/app/incident-management",
       },
       {
-        title: "User Onboarding",
-        to: "/user-onboarding",
-        icon: Users,
+        title: "Playbooks",
+        url: "/app/incident-management/playbooks",
+      },
+    ],
+  },
+  {
+    title: "Policy Management",
+    url: "/app/policy-management",
+    icon: KanbanSquare,
+    items: [
+      {
+        title: "Policies",
+        url: "/app/policy-management",
       },
       {
-        title: "Customer Success",
-        to: "/customer-success",
-        icon: TrendingUp,
-      },
-      {
-        title: "Training Center",
-        to: "/training",
-        icon: Book,
+        title: "Exceptions",
+        url: "/app/policy-management/exceptions",
       },
     ],
   },
   {
     title: "Settings",
-    to: "/settings",
+    url: "/app/settings",
     icon: Settings,
-    variant: "default" as const,
-  },
-  {
-    title: "Support",
-    icon: HelpCircle,
-    variant: "default" as const,
-    submenu: [
-      {
-        title: "Help Center",
-        to: "/support",
-        icon: HelpCircle,
-      },
-      {
-        title: "Contact",
-        to: "/contact",
-        icon: Phone,
-      },
-    ],
   },
 ];
-
-export type NavItem = {
-  title: string;
-  to?: string;
-  icon: any;
-  variant: "default" | "ghost";
-  submenu?: NavItem[];
-};

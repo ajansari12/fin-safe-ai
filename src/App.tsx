@@ -10,6 +10,7 @@ import ThirdPartyRiskPage from './pages/ThirdPartyRisk';
 import ScenarioTestingPage from './pages/ScenarioTesting';
 import IntegrationsPage from './pages/Integrations';
 import AnalyticsPage from './pages/Analytics';
+import OrganizationalIntelligencePage from './pages/OrganizationalIntelligence';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedAIAssistantContext';
@@ -81,6 +82,11 @@ function App() {
                   <AnalyticsPage />
                 </ProtectedRoute>
               } />
+              <Route path="/app/organizational-intelligence" element={
+                <ProtectedRoute>
+                  <OrganizationalIntelligencePage />
+                </ProtectedRoute>
+              } />
               
               {/* Legacy routes - redirect to new structure */}
               <Route path="/dashboard" element={<Navigate to="/app/dashboard" />} />
@@ -89,6 +95,7 @@ function App() {
               <Route path="/scenario-testing" element={<Navigate to="/app/scenario-testing" />} />
               <Route path="/integrations" element={<Navigate to="/app/integrations" />} />
               <Route path="/analytics" element={<Navigate to="/app/analytics" />} />
+              <Route path="/organizational-intelligence" element={<Navigate to="/app/organizational-intelligence" />} />
               
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" />} />
