@@ -86,8 +86,8 @@ class WorkflowOrchestrationService {
 
       return {
         ...data,
-        workflow_definition: data.workflow_definition as Workflow['workflow_definition'],
-        triggers: data.triggers as Record<string, any>,
+        workflow_definition: data.workflow_definition as unknown as Workflow['workflow_definition'],
+        triggers: data.triggers as unknown as Record<string, any>,
         status: data.status as Workflow['status']
       };
     } catch (error) {
@@ -117,8 +117,8 @@ class WorkflowOrchestrationService {
 
       return (data || []).map((item: any) => ({
         ...item,
-        workflow_definition: item.workflow_definition as Workflow['workflow_definition'],
-        triggers: item.triggers as Record<string, any>,
+        workflow_definition: item.workflow_definition as unknown as Workflow['workflow_definition'],
+        triggers: item.triggers as unknown as Record<string, any>,
         status: item.status as Workflow['status']
       }));
     } catch (error) {
@@ -189,7 +189,7 @@ class WorkflowOrchestrationService {
       }
 
       // Start workflow execution (this would be handled by a background process in production)
-      this.processWorkflowExecution(executionData.id, workflow.workflow_definition as any);
+      this.processWorkflowExecution(executionData.id, workflow.workflow_definition as unknown as any);
 
       return executionData.id;
     } catch (error) {
