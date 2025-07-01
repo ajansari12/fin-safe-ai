@@ -52,6 +52,18 @@ export interface SupplyChainDependency {
 }
 
 class EnhancedThirdPartyRiskService {
+  // Create vendor assessment method for the form
+  async createVendorAssessment(assessmentData: any): Promise<VendorAssessment> {
+    const { data, error } = await supabase
+      .from('vendor_assessments')
+      .insert([assessmentData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   // Enhanced vendor assessment with sophisticated scoring
   async performComprehensiveAssessment(vendorProfileId: string): Promise<VendorAssessment> {
     const profile = await getCurrentUserProfile();
@@ -108,18 +120,6 @@ class EnhancedThirdPartyRiskService {
       status: 'completed'
     };
 
-    const { data, error } = await supabase
-      .from('vendor_assessments')
-      .insert([assessmentData])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  // Create vendor assessment method for the form
-  async createVendorAssessment(assessmentData: any): Promise<VendorAssessment> {
     const { data, error } = await supabase
       .from('vendor_assessments')
       .insert([assessmentData])
