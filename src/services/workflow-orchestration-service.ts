@@ -67,7 +67,7 @@ class WorkflowOrchestrationService {
   async createWorkflow(workflow: Omit<Workflow, 'id' | 'created_at' | 'updated_at'>): Promise<Workflow> {
     try {
       const { data, error } = await supabase
-        .from('workflows' as any)
+        .from('workflows')
         .insert([workflow])
         .select()
         .single();
@@ -92,7 +92,7 @@ class WorkflowOrchestrationService {
   async getWorkflows(orgId: string, status?: string): Promise<Workflow[]> {
     try {
       let query = supabase
-        .from('workflows' as any)
+        .from('workflows')
         .select('*')
         .eq('org_id', orgId)
         .order('updated_at', { ascending: false });
@@ -123,7 +123,7 @@ class WorkflowOrchestrationService {
   async updateWorkflow(workflowId: string, updates: Partial<Workflow>): Promise<void> {
     try {
       const { error } = await supabase
-        .from('workflows' as any)
+        .from('workflows')
         .update(updates)
         .eq('id', workflowId);
 
@@ -142,7 +142,7 @@ class WorkflowOrchestrationService {
     try {
       // Get workflow definition
       const { data: workflow, error: workflowError } = await supabase
-        .from('workflows' as any)
+        .from('workflows')
         .select('*')
         .eq('id', workflowId)
         .single();

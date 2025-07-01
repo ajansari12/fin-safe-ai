@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface WorkflowPrediction {
@@ -217,7 +216,7 @@ class IntelligentAutomationService {
       };
 
       const { data, error } = await supabase
-        .from('automation_rules' as any)
+        .from('automation_rules')
         .insert([ruleData])
         .select()
         .single();
@@ -241,7 +240,7 @@ class IntelligentAutomationService {
   async getAutomationRules(orgId: string): Promise<AutomationRule[]> {
     try {
       const { data, error } = await supabase
-        .from('automation_rules' as any)
+        .from('automation_rules')
         .select('*')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
