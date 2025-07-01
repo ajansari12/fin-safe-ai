@@ -2,12 +2,12 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import LoginPage from './pages/Login';
+import LoginPage from './pages/auth/Login';
 import DashboardPage from './pages/Dashboard';
 import SettingsPage from './pages/Settings';
 import ThirdPartyRiskPage from './pages/ThirdPartyRisk';
 import ScenarioTestingPage from './pages/ScenarioTesting';
-import IntegrationPage from './pages/Integration';
+import IntegrationsPage from './pages/Integrations';
 import AnalyticsPage from './pages/Analytics';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
@@ -64,9 +64,9 @@ function App() {
                   <ScenarioTestingPage />
                 </ProtectedRoute>
               } />
-              <Route path="/integration" element={
+              <Route path="/integrations" element={
                 <ProtectedRoute>
-                  <IntegrationPage />
+                  <IntegrationsPage />
                 </ProtectedRoute>
               } />
               <Route path="/analytics" element={
