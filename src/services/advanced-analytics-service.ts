@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -422,92 +423,6 @@ class AdvancedAnalyticsService {
     recommendations.push('Consider A/B testing new model versions');
     
     return recommendations;
-  }
-
-  async detectAnomalies(dataSource: string): Promise<any> {
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) return null;
-
-    console.log(`Detecting anomalies in ${dataSource} for org ${profile.organization_id}`);
-    
-    // Simulate anomaly detection
-    const anomalies = await this.performAnomalyDetection(dataSource, profile.organization_id);
-    
-    // Store detected anomalies
-    if (anomalies.length > 0) {
-      await this.storeAnomalies(anomalies, profile.organization_id);
-    }
-    
-    return {
-      data_source: dataSource,
-      anomalies_detected: anomalies.length,
-      anomalies: anomalies,
-      detection_timestamp: new Date().toISOString()
-    };
-  }
-
-  async analyzeRiskCorrelations(): Promise<any> {
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) return null;
-
-    console.log(`Analyzing risk correlations for org ${profile.organization_id}`);
-    
-    // Simulate correlation analysis
-    const correlations = await this.performCorrelationAnalysis(profile.organization_id);
-    
-    // Store correlation results
-    if (correlations.length > 0) {
-      await this.storeCorrelations(correlations, profile.organization_id);
-    }
-    
-    return {
-      correlations_found: correlations.length,
-      correlations: correlations,
-      analysis_timestamp: new Date().toISOString()
-    };
-  }
-
-  async generateInsights(): Promise<any> {
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) return null;
-
-    try {
-      // Get recent anomalies
-      const { data: anomalies } = await supabase
-        .from('anomaly_detections')
-        .select('*')
-        .eq('org_id', profile.organization_id)
-        .order('detected_at', { ascending: false })
-        .limit(10);
-
-      // Get recent correlations
-      const { data: correlations } = await supabase
-        .from('risk_correlations')
-        .select('*')
-        .eq('org_id', profile.organization_id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      const anomalyInsights = (anomalies || []).map(a => 
-        `${a.anomaly_type} anomaly detected with ${a.severity_score > 0.7 ? 'high' : 'medium'} severity`
-      );
-
-      const correlationInsights = (correlations || []).map(c => 
-        `${c.correlation_strength} correlation found between ${c.factor_a_type} and ${c.factor_b_type}`
-      );
-
-      const recommendations = this.generateGeneralRecommendations(anomalies || [], correlations || []);
-
-      return {
-        anomaly_insights: anomalyInsights,
-        correlation_insights: correlationInsights,
-        recommendations: recommendations,
-        generated_at: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('Error generating insights:', error);
-      return null;
-    }
   }
 
   private async performAnomalyDetection(dataSource: string, orgId: string): Promise<any[]> {

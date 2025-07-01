@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -109,6 +108,18 @@ class EnhancedThirdPartyRiskService {
       status: 'completed'
     };
 
+    const { data, error } = await supabase
+      .from('vendor_assessments')
+      .insert([assessmentData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Create vendor assessment method for the form
+  async createVendorAssessment(assessmentData: any): Promise<VendorAssessment> {
     const { data, error } = await supabase
       .from('vendor_assessments')
       .insert([assessmentData])

@@ -1,241 +1,299 @@
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  BarChart3, 
   Brain, 
   Search, 
-  FileText, 
-  Zap, 
-  Settings,
-  TrendingUp,
+  TrendingUp, 
+  AlertTriangle, 
+  BarChart3,
+  Zap,
   Target,
-  Users
-} from "lucide-react";
-import UnifiedAnalyticsDashboard from "./UnifiedAnalyticsDashboard";
-import NaturalLanguageQuery from "./NaturalLanguageQuery";
-import AdvancedReportBuilder from "./AdvancedReportBuilder";
-import PredictiveAnalyticsChart from "./PredictiveAnalyticsChart";
-import RiskHeatmap from "./RiskHeatmap";
-import ComplianceScorecard from "./ComplianceScorecard";
+  Activity
+} from 'lucide-react';
+import { advancedAnalyticsService } from '@/services/advanced-analytics-service';
+import { toast } from 'sonner';
 
 const EnhancedAnalyticsHub: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('dashboards');
+  const [naturalLanguageQuery, setNaturalLanguageQuery] = useState('');
+  const [queryResults, setQueryResults] = useState<any>(null);
+  const [insights, setInsights] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('query');
 
-  const analyticsFeatures = [
-    {
-      id: 'unified',
-      title: 'Unified Dashboards',
-      description: 'Executive and operational dashboards with real-time insights',
-      icon: BarChart3,
-      badge: 'Interactive'
-    },
-    {
-      id: 'nlp',
-      title: 'Natural Language Queries',
-      description: 'Ask questions about your data in plain English',
-      icon: Search,
-      badge: 'AI-Powered'
-    },
-    {
-      id: 'predictive',
-      title: 'Predictive Analytics',
-      description: 'Machine learning models for risk prediction and anomaly detection',
-      icon: Brain,
-      badge: 'ML-Driven'
-    },
-    {
-      id: 'reporting',
-      title: 'Advanced Reporting',
-      description: 'Automated report generation with customizable templates',
-      icon: FileText,
-      badge: 'Automated'
+  useEffect(() => {
+    loadInsights();
+  }, []);
+
+  const loadInsights = async () => {
+    try {
+      const automatedInsights = await advancedAnalyticsService.generateAutomatedInsights();
+      setInsights(automatedInsights);
+    } catch (error) {
+      console.error('Error loading insights:', error);
+      toast.error('Failed to load insights');
     }
-  ];
+  };
+
+  const handleNaturalLanguageQuery = async () => {
+    if (!naturalLanguageQuery.trim()) return;
+
+    setLoading(true);
+    try {
+      const results = await advancedAnalyticsService.processNaturalLanguageQuery(naturalLanguageQuery);
+      setQueryResults(results);
+      toast.success('Query processed successfully');
+    } catch (error) {
+      console.error('Error processing query:', error);
+      toast.error('Failed to process query');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Hub</h1>
+          <h2 className="text-2xl font-bold tracking-tight">Advanced Analytics Hub</h2>
           <p className="text-muted-foreground">
-            Comprehensive business intelligence platform for risk management
+            AI-powered insights and natural language querying for risk data
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Zap className="h-3 w-3" />
-            AI-Enhanced
-          </Badge>
-          <Badge variant="outline" className="flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" />
-            Real-time
-          </Badge>
-        </div>
-      </div>
-
-      {/* Feature Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {analyticsFeatures.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <Card 
-              key={feature.id} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab(feature.id === 'unified' ? 'dashboards' : feature.id === 'nlp' ? 'query' : feature.id === 'predictive' ? 'predictive' : 'reports')}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <Icon className="h-5 w-5 text-blue-600" />
-                  <Badge variant="secondary" className="text-xs">
-                    {feature.badge}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <h3 className="font-medium mb-1">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {feature.description}
-                </p>
-              </CardContent>
-            </Card>
-          );
-        })}
+        <Button className="flex items-center gap-2">
+          <Brain className="h-4 w-4" />
+          AI Insights
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="dashboards" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Dashboards
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="query" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
-            Query
+            Natural Language Query
           </TabsTrigger>
-          <TabsTrigger value="predictive" className="flex items-center gap-2">
+          <TabsTrigger value="insights" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
-            Predictive
+            AI Insights
           </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Reports
+          <TabsTrigger value="anomalies" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Anomaly Detection
           </TabsTrigger>
-          <TabsTrigger value="visualizations" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Visualizations
+          <TabsTrigger value="correlations" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Risk Correlations
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboards" className="space-y-6">
-          <UnifiedAnalyticsDashboard />
-        </TabsContent>
-
         <TabsContent value="query" className="space-y-6">
-          <NaturalLanguageQuery />
-        </TabsContent>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Natural Language Query
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ask anything about your risk data... e.g., 'Show me vendor risks trending upward'"
+                  value={naturalLanguageQuery}
+                  onChange={(e) => setNaturalLanguageQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleNaturalLanguageQuery()}
+                />
+                <Button onClick={handleNaturalLanguageQuery} disabled={loading}>
+                  {loading ? 'Processing...' : 'Query'}
+                </Button>
+              </div>
 
-        <TabsContent value="predictive" className="space-y-6">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5" />
-                  Predictive Analytics Suite
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Advanced machine learning models for risk prediction and pattern analysis
-                </p>
-              </CardHeader>
-              <CardContent>
-                <PredictiveAnalyticsChart />
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Anomaly Detection</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="mb-2">AI-powered anomaly detection</p>
-                    <p className="text-sm">Continuously monitors for unusual patterns</p>
-                    <Button size="sm" className="mt-4">
-                      Configure Detection
-                    </Button>
+              {queryResults && (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{queryResults.metadata.total_rows}</div>
+                      <div className="text-sm text-muted-foreground">Results Found</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{queryResults.metadata.execution_time}ms</div>
+                      <div className="text-sm text-muted-foreground">Query Time</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{queryResults.insights.length}</div>
+                      <div className="text-sm text-muted-foreground">Insights</div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Monte Carlo Simulation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="mb-2">Risk scenario modeling</p>
-                    <p className="text-sm">Run simulations with 1000+ iterations</p>
-                    <Button size="sm" className="mt-4">
-                      Run Simulation
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
+                  {queryResults.insights.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">Query Insights</h4>
+                      <div className="space-y-2">
+                        {queryResults.insights.map((insight: string, index: number) => (
+                          <div key={index} className="p-3 bg-blue-50 rounded-lg text-sm">
+                            {insight}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-        <TabsContent value="reports" className="space-y-6">
-          <AdvancedReportBuilder />
-        </TabsContent>
-
-        <TabsContent value="visualizations" className="space-y-6">
-          <div className="grid gap-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Risk Heatmap</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <RiskHeatmap />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Compliance Scorecard</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ComplianceScorecard />
-                </CardContent>
-              </Card>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Interactive Data Explorer</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Drag-and-drop interface for creating custom visualizations
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Settings className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-medium mb-2">Interactive Data Explorer</h3>
-                  <p className="mb-4">Build custom charts and visualizations with your risk data</p>
-                  <Button>
-                    Launch Explorer
-                  </Button>
+                  {queryResults.visualization_suggestions.length > 0 && (
+                    <div>
+                      <h4 className="font-medium mb-2">Suggested Visualizations</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {queryResults.visualization_suggestions.map((suggestion: string, index: number) => (
+                          <Badge key={index} variant="outline">
+                            {suggestion}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {insights.map((insight) => (
+              <Card key={insight.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {insight.type === 'anomaly' && <AlertTriangle className="h-4 w-4 text-orange-500" />}
+                      {insight.type === 'correlation' && <TrendingUp className="h-4 w-4 text-blue-500" />}
+                      {insight.type === 'prediction' && <Target className="h-4 w-4 text-purple-500" />}
+                      <span className="text-sm font-medium">{insight.insight_type}</span>
+                    </div>
+                    <Badge variant="outline" className={getSeverityColor(insight.severity)}>
+                      {insight.severity}
+                    </Badge>
+                  </div>
+                  <CardTitle className="text-base">{insight.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">{insight.description}</p>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Confidence:</span>
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full" 
+                        style={{ width: `${insight.confidence * 100}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-xs font-medium">{(insight.confidence * 100).toFixed(0)}%</span>
+                  </div>
+
+                  {insight.recommendations.length > 0 && (
+                    <div>
+                      <h5 className="text-xs font-medium text-muted-foreground mb-1">Recommendations:</h5>
+                      <ul className="text-xs space-y-1">
+                        {insight.recommendations.slice(0, 2).map((rec: string, index: number) => (
+                          <li key={index} className="flex items-start gap-1">
+                            <span className="text-blue-500 mt-0.5">•</span>
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {insights.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Brain className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No Insights Available</h3>
+                <p className="text-gray-500">AI insights will appear here as data is analyzed.</p>
               </CardContent>
             </Card>
-          </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="anomalies" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Anomaly Detection
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="text-center p-4 bg-red-50 rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">
+                    {insights.filter(i => i.type === 'anomaly' && i.severity === 'critical').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Critical Anomalies</div>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {insights.filter(i => i.type === 'anomaly' && i.severity === 'high').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">High Priority</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {insights.filter(i => i.type === 'anomaly').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Detected</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="correlations" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Risk Correlations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="text-center p-4 bg-purple-50 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {insights.filter(i => i.type === 'correlation' && i.severity === 'critical').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Strong Correlations</div>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {insights.filter(i => i.type === 'correlation' && i.severity === 'medium').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Moderate Correlations</div>
+                </div>
+                <div className="text-center p-4 bg-green-50 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {insights.filter(i => i.type === 'correlation').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Identified</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
