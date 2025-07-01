@@ -21,6 +21,9 @@ export interface MicroserviceRecord {
   updated_at: string;
 }
 
+// Legacy interface for backward compatibility
+export interface MicroserviceConfig extends Omit<MicroserviceRecord, 'id' | 'org_id' | 'created_at' | 'updated_at'> {}
+
 export interface ServiceInstance {
   instanceId: string;
   host: string;

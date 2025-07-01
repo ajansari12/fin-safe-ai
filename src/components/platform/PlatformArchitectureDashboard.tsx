@@ -14,7 +14,7 @@ import {
   TrendingUp,
   Database,
   Cpu,
-  Memory,
+  HardDrive,
   Zap
 } from "lucide-react";
 import { databaseMicroservicesRegistry, MicroserviceRecord } from "@/services/platform/database-microservices-registry";
@@ -246,7 +246,7 @@ const PlatformArchitectureDashboard: React.FC = () => {
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Memory className="h-4 w-4 text-green-500" />
+                      <HardDrive className="h-4 w-4 text-green-500" />
                       <span className="text-sm">Memory Usage</span>
                     </div>
                     <div className="text-right">
@@ -360,7 +360,7 @@ const PlatformArchitectureDashboard: React.FC = () => {
                   {Object.entries(deploymentStats.deploymentsByEnvironment).map(([env, count]) => (
                     <div key={env} className="flex justify-between">
                       <span className="text-sm capitalize">{env}:</span>
-                      <span className="font-medium">{count}</span>
+                      <span className="font-medium">{count as React.ReactNode}</span>
                     </div>
                   ))}
                 </CardContent>
