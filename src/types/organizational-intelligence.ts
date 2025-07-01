@@ -344,6 +344,7 @@ export interface AIAnalysisResult {
 
 export interface AutomationRule {
   id: string;
+  org_id: string;
   name: string;
   description: string;
   trigger_conditions: {

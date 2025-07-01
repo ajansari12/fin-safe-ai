@@ -140,7 +140,7 @@ export class IntelligentAutomationEngine {
         {
           metric: 'incident_severity',
           operator: 'eq',
-          value: 'critical'
+          value: 4 // critical level as number
         }
       ],
       actions: [
@@ -248,11 +248,11 @@ export class IntelligentAutomationEngine {
 
   async executeRule(ruleId: string, context: any): Promise<boolean> {
     try {
-      // Update execution count
+      // Update execution count using a raw update
       await supabase
         .from('automation_rules')
         .update({ 
-          execution_count: supabase.sql`execution_count + 1`,
+          execution_count: context.current_count + 1,
           last_executed_at: new Date().toISOString()
         })
         .eq('id', ruleId);
