@@ -1,113 +1,155 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Brain, 
+  Zap, 
   TrendingUp, 
-  AlertTriangle, 
-  CheckCircle,
-  Activity,
-  Zap,
   Target,
-  Users
+  BarChart3,
+  Settings
 } from 'lucide-react';
+import PredictiveInsightsPanel from './PredictiveInsightsPanel';
+import IntelligentAutomationPanel from './IntelligentAutomationPanel';
 
 interface AdvancedIntelligenceDashboardProps {
   orgId: string;
+  profileId?: string;
 }
 
-const AdvancedIntelligenceDashboard: React.FC<AdvancedIntelligenceDashboardProps> = ({ orgId }) => {
-  const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState({
-    intelligenceScore: 0,
-    activeInsights: 0,
-    automationRules: 0,
-    riskScore: 'Low',
-  });
+const AdvancedIntelligenceDashboard: React.FC<AdvancedIntelligenceDashboardProps> = ({ 
+  orgId, 
+  profileId = orgId 
+}) => {
+  const [activeTab, setActiveTab] = useState('insights');
 
-  useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setDashboardData({
-        intelligenceScore: 87.5,
-        activeInsights: 24,
-        automationRules: 12,
-        riskScore: 'Medium',
-      });
-      setLoading(false);
-    }, 1000);
-  }, [orgId]);
-  
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Brain className="h-8 w-8 text-blue-500" />
+          <Brain className="h-8 w-8 text-purple-500" />
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Advanced Intelligence Dashboard</h2>
             <p className="text-muted-foreground">
-              AI-powered organizational insights and predictive analytics
+              AI-powered predictive insights and intelligent automation for your organization
             </p>
           </div>
         </div>
       </div>
 
-      {/* Dashboard content would go here */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Intelligence Score</CardTitle>
-            <Brain className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">87.5</div>
-            <p className="text-xs text-muted-foreground">
-              +2.1% from last month
-            </p>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="insights" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Predictive Insights
+          </TabsTrigger>
+          <TabsTrigger value="automation" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Automation
+          </TabsTrigger>
+          <TabsTrigger value="recommendations" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Recommendations
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Insights</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">24</div>
-            <p className="text-xs text-muted-foreground">
-              +5 new this week
-            </p>
-          </CardContent>
-        </Card>
+        <TabsContent value="insights" className="space-y-4">
+          <PredictiveInsightsPanel orgId={orgId} profileId={profileId} />
+        </TabsContent>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Automation Rules</CardTitle>
-            <Zap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">
-              8 active, 4 pending
-            </p>
-          </CardContent>
-        </Card>
+        <TabsContent value="automation" className="space-y-4">
+          <IntelligentAutomationPanel orgId={orgId} />
+        </TabsContent>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Risk Score</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Medium</div>
-            <p className="text-xs text-muted-foreground">
-              Stable trend
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="recommendations" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-green-500" />
+                Strategic Recommendations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Enhanced Recommendations Coming Soon</h3>
+                <p className="text-muted-foreground">
+                  Advanced recommendation engine with strategic insights and action plans
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
+                Intelligence Analytics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-600">94%</div>
+                    <div className="text-sm text-muted-foreground">Prediction Accuracy</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-green-600">87%</div>
+                    <div className="text-sm text-muted-foreground">Automation Success</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-600">156</div>
+                    <div className="text-sm text-muted-foreground">Insights Generated</div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="mt-6">
+                <h4 className="font-medium mb-4">Recent Intelligence Activities</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                    <Brain className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <div className="font-medium">Risk Trend Analysis Completed</div>
+                      <div className="text-sm text-muted-foreground">Identified potential compliance gaps for Q2</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                    <Zap className="h-5 w-5 text-green-500" />
+                    <div>
+                      <div className="font-medium">Automation Rule Implemented</div>
+                      <div className="text-sm text-muted-foreground">KRI breach monitoring now automated</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                    <Target className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <div className="font-medium">Strategic Recommendation Generated</div>
+                      <div className="text-sm text-muted-foreground">Opportunity to improve efficiency by 18%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

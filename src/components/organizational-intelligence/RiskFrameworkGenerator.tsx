@@ -12,11 +12,13 @@ import {
   FileText,
   Download,
   Brain,
-  Zap
+  Zap,
+  TrendingUp
 } from 'lucide-react';
 import IntelligentFrameworkGenerator from './IntelligentFrameworkGenerator';
 import FrameworkLibrary from './FrameworkLibrary';
 import FrameworkImplementationTracker from './FrameworkImplementationTracker';
+import AdvancedIntelligenceDashboard from './AdvancedIntelligenceDashboard';
 
 interface RiskFrameworkGeneratorProps {
   orgId: string;
@@ -41,7 +43,7 @@ const RiskFrameworkGenerator: React.FC<RiskFrameworkGeneratorProps> = ({ orgId, 
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="generator" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Generator
@@ -53,6 +55,10 @@ const RiskFrameworkGenerator: React.FC<RiskFrameworkGeneratorProps> = ({ orgId, 
           <TabsTrigger value="implementation" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             Implementation
+          </TabsTrigger>
+          <TabsTrigger value="intelligence" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Intelligence
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
@@ -70,6 +76,10 @@ const RiskFrameworkGenerator: React.FC<RiskFrameworkGeneratorProps> = ({ orgId, 
 
         <TabsContent value="implementation" className="space-y-4">
           <FrameworkImplementationTracker orgId={orgId} />
+        </TabsContent>
+
+        <TabsContent value="intelligence" className="space-y-4">
+          <AdvancedIntelligenceDashboard orgId={orgId} profileId={profileId} />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
@@ -120,6 +130,14 @@ const RiskFrameworkGenerator: React.FC<RiskFrameworkGeneratorProps> = ({ orgId, 
                     <div>
                       <div className="font-medium">New Sector Templates</div>
                       <div className="text-sm text-muted-foreground">Added fintech and insurance specific frameworks</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <div className="font-medium">Predictive Intelligence Integration</div>
+                      <div className="text-sm text-muted-foreground">AI-powered insights now available for framework optimization</div>
                     </div>
                   </div>
                 </div>

@@ -8,295 +8,324 @@ import {
   Zap, 
   Settings, 
   Play, 
-  Pause, 
-  BarChart3,
-  CheckCircle2,
+  Pause,
+  CheckCircle,
   AlertTriangle,
   Clock,
-  TrendingUp
+  BarChart3,
+  Target,
+  Bell
 } from 'lucide-react';
-import type { AutomationRule } from '@/types/organizational-intelligence';
+import { intelligentAutomationEngine } from '@/services/intelligent-automation-engine';
+import { AutomationRule } from '@/types/organizational-intelligence';
+import { toast } from '@/hooks/use-toast';
 
 interface IntelligentAutomationPanelProps {
   orgId: string;
 }
 
-const IntelligentAutomationPanel: React.FC<IntelligentAutomationPanelProps> = ({ orgId }) => {
+const IntelligentAutomationPanel: React.FC<IntelligentAutomationPanelProps> = ({ 
+  orgId 
+}) => {
   const [automationRules, setAutomationRules] = useState<AutomationRule[]>([]);
+  const [availableRules, setAvailableRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [implementingRules, setImplementingRules] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadAutomationRules();
+    loadAutomationData();
   }, [orgId]);
 
-  const loadAutomationRules = async () => {
+  const loadAutomationData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Mock automation rules - in real implementation, this would come from the database
-      const mockRules: AutomationRule[] = [
-        {
-          id: 'auto-1',
-          name: 'Risk Threshold Monitoring',
-          description: 'Automatically alert when risk scores exceed acceptable thresholds',
-          trigger_conditions: [
-            { metric: 'risk_score', operator: 'gt', value: 75 }
-          ],
-          actions: [
-            { type: 'alert', parameters: { recipients: ['risk-team'], severity: 'high' } },
-            { type: 'escalate', parameters: { level: 2, department: 'risk_management' } }
-          ],
-          is_active: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'auto-2',
-          name: 'Compliance Violation Detection',
-          description: 'Automatically detect and report compliance violations',
-          trigger_conditions: [
-            { metric: 'compliance_score', operator: 'lt', value: 80 }
-          ],
-          actions: [
-            { type: 'alert', parameters: { recipients: ['compliance-team'], severity: 'critical' } },
-            { type: 'report', parameters: { template: 'compliance_violation', frequency: 'immediate' } }
-          ],
-          is_active: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'auto-3',
-          name: 'Performance Optimization',
-          description: 'Automatically optimize system performance based on usage patterns',
-          trigger_conditions: [
-            { metric: 'system_load', operator: 'gt', value: 85 }
-          ],
-          actions: [
-            { type: 'remediate', parameters: { action: 'scale_resources', threshold: 90 } },
-            { type: 'alert', parameters: { recipients: ['ops-team'], severity: 'medium' } }
-          ],
-          is_active: false,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'auto-4',
-          name: 'Incident Response Automation',
-          description: 'Automatically initiate incident response procedures',
-          trigger_conditions: [
-            { metric: 'incident_severity', operator: 'gte', value: 4 }
-          ],
-          actions: [
-            { type: 'escalate', parameters: { level: 3, notify_executive: true } },
-            { type: 'remediate', parameters: { action: 'activate_continuity_plan' } }
-          ],
-          is_active: true,
-          created_at: new Date().toISOString()
-        }
-      ];
+      const [activeRules, opportunities] = await Promise.all([
+        intelligentAutomationEngine.getActiveRules(orgId),
+        intelligentAutomationEngine.analyzeAutomationOpportunities(orgId)
+      ]);
 
-      setAutomationRules(mockRules);
+      setAutomationRules(activeRules);
+      setAvailableRules(opportunities.filter(rule => 
+        !activeRules.some(active => active.name === rule.name)
+      ));
     } catch (error) {
-      console.error('Error loading automation rules:', error);
+      console.error('Error loading automation data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleAutomationRule = async (ruleId: string, isActive: boolean) => {
+  const handleImplementRule = async (rule: AutomationRule) => {
+    setImplementingRules(prev => new Set([...prev, rule.id]));
+    
     try {
-      setAutomationRules(prev => 
-        prev.map(rule => 
-          rule.id === ruleId ? { ...rule, is_active: isActive } : rule
-        )
-      );
+      const success = await intelligentAutomationEngine.implementAutomationRule(rule);
       
-      // In real implementation, this would update the database
-      console.log(`Automation rule ${ruleId} ${isActive ? 'activated' : 'deactivated'}`);
+      if (success) {
+        setAutomationRules(prev => [...prev, rule]);
+        setAvailableRules(prev => prev.filter(r => r.id !== rule.id));
+        
+        toast({
+          title: "Automation Rule Implemented",
+          description: `${rule.name} has been successfully activated.`
+        });
+      } else {
+        toast({
+          title: "Implementation Failed",
+          description: "Failed to implement the automation rule. Please try again.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
-      console.error('Error toggling automation rule:', error);
+      console.error('Error implementing rule:', error);
+      toast({
+        title: "Implementation Error",
+        description: "An error occurred while implementing the rule.",
+        variant: "destructive"
+      });
+    } finally {
+      setImplementingRules(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(rule.id);
+        return newSet;
+      });
     }
   };
 
-  const getActionIcon = (actionType: string) => {
-    switch (actionType) {
-      case 'alert': return AlertTriangle;
-      case 'escalate': return TrendingUp;
-      case 'remediate': return Settings;
-      case 'report': return BarChart3;
-      default: return Zap;
-    }
+  const handleToggleRule = async (ruleId: string, isActive: boolean) => {
+    // Implementation would update the rule status in the database
+    console.log(`Toggling rule ${ruleId} to ${isActive ? 'active' : 'inactive'}`);
   };
 
-  const getActionColor = (actionType: string) => {
-    switch (actionType) {
-      case 'alert': return 'text-yellow-600 bg-yellow-50';
-      case 'escalate': return 'text-red-600 bg-red-50';
-      case 'remediate': return 'text-blue-600 bg-blue-50';
-      case 'report': return 'text-green-600 bg-green-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
+  const getRuleIcon = (ruleName: string) => {
+    if (ruleName.includes('Risk')) return Target;
+    if (ruleName.includes('Compliance')) return CheckCircle;
+    if (ruleName.includes('Incident')) return AlertTriangle;
+    if (ruleName.includes('KRI')) return BarChart3;
+    return Settings;
+  };
+
+  const getRuleColor = (ruleName: string) => {
+    if (ruleName.includes('Risk')) return 'text-red-500';
+    if (ruleName.includes('Compliance')) return 'text-green-500';
+    if (ruleName.includes('Incident')) return 'text-orange-500';
+    if (ruleName.includes('KRI')) return 'text-blue-500';
+    return 'text-gray-500';
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Zap className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-pulse" />
-            <p>Loading automation rules...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {[1, 2, 3].map(i => (
+          <Card key={i} className="animate-pulse">
+            <CardHeader>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 rounded"></div>
+                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     );
   }
 
-  const activeRules = automationRules.filter(rule => rule.is_active).length;
-  const totalActions = automationRules.reduce((sum, rule) => sum + rule.actions.length, 0);
-
   return (
     <div className="space-y-6">
-      {/* Automation Overview */}
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Zap className="h-8 w-8 text-yellow-500" />
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Intelligent Automation</h2>
+            <p className="text-muted-foreground">
+              AI-powered automation rules and workflows
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">
+            {automationRules.length} Active Rules
+          </Badge>
+          <Button onClick={loadAutomationData} variant="outline">
+            <Settings className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Active Automation Rules */}
+      {automationRules.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Play className="h-5 w-5 text-green-500" />
+              Active Automation Rules
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {automationRules.map((rule) => {
+                const IconComponent = getRuleIcon(rule.name);
+                
+                return (
+                  <div key={rule.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <IconComponent className={`h-6 w-6 ${getRuleColor(rule.name)} mt-0.5`} />
+                      <div className="flex-1">
+                        <h4 className="font-medium">{rule.name}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {rule.description}
+                        </p>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <span>
+                            Triggers: {rule.trigger_conditions.length}
+                          </span>
+                          <span>
+                            Actions: {rule.actions.length}
+                          </span>
+                          <span>
+                            Created: {new Date(rule.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <Badge variant={rule.is_active ? "default" : "secondary"}>
+                        {rule.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <Switch
+                        checked={rule.is_active}
+                        onCheckedChange={(checked) => handleToggleRule(rule.id, checked)}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Available Automation Opportunities */}
+      {availableRules.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-blue-500" />
+              Recommended Automation Opportunities
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              AI-identified opportunities to automate manual processes
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {availableRules.map((rule) => {
+                const IconComponent = getRuleIcon(rule.name);
+                const isImplementing = implementingRules.has(rule.id);
+                
+                return (
+                  <div key={rule.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <IconComponent className={`h-6 w-6 ${getRuleColor(rule.name)} mt-0.5`} />
+                        <div className="flex-1">
+                          <h4 className="font-medium">{rule.name}</h4>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {rule.description}
+                          </p>
+                          
+                          <div className="mt-3 space-y-2">
+                            <div>
+                              <span className="text-sm font-medium">Trigger Conditions:</span>
+                              <ul className="text-sm text-muted-foreground mt-1 ml-4">
+                                {rule.trigger_conditions.map((condition, index) => (
+                                  <li key={index}>
+                                    • {condition.metric} {condition.operator} {condition.value}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            
+                            <div>
+                              <span className="text-sm font-medium">Automated Actions:</span>
+                              <ul className="text-sm text-muted-foreground mt-1 ml-4">
+                                {rule.actions.map((action, index) => (
+                                  <li key={index}>
+                                    • {action.type}: {JSON.stringify(action.parameters).slice(0, 50)}...
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        onClick={() => handleImplementRule(rule)}
+                        disabled={isImplementing}
+                        className="ml-4"
+                      >
+                        {isImplementing ? (
+                          <>
+                            <Clock className="h-4 w-4 mr-2 animate-spin" />
+                            Implementing...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="h-4 w-4 mr-2" />
+                            Implement
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Automation Statistics */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-6 w-6 text-blue-500" />
-            Intelligent Automation
-          </CardTitle>
-          <p className="text-sm text-gray-600">
-            AI-powered automation rules for proactive risk and compliance management
-          </p>
+          <CardTitle>Automation Impact</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{activeRules}</div>
-              <div className="text-sm text-gray-600">Active Rules</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{totalActions}</div>
-              <div className="text-sm text-gray-600">Total Actions</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">24/7</div>
-              <div className="text-sm text-gray-600">Monitoring</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-2xl font-bold text-orange-600">85%</div>
-              <div className="text-sm text-gray-600">Efficiency Gain</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Automation Rules */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Automation Rules</CardTitle>
-            <Button size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Configure Rules
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {automationRules.map((rule) => (
-            <div key={rule.id} className="border rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    {rule.is_active ? (
-                      <Play className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <Pause className="h-5 w-5 text-gray-400" />
-                    )}
-                    <div>
-                      <h3 className="font-medium">{rule.name}</h3>
-                      <p className="text-sm text-gray-600">{rule.description}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Badge variant={rule.is_active ? "default" : "secondary"}>
-                    {rule.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                  <Switch
-                    checked={rule.is_active}
-                    onCheckedChange={(checked) => toggleAutomationRule(rule.id, checked)}
-                  />
-                </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {automationRules.length}
               </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">Trigger Conditions</h4>
-                  <div className="space-y-1">
-                    {rule.trigger_conditions.map((condition, index) => (
-                      <div key={index} className="text-sm bg-gray-50 p-2 rounded">
-                        <span className="font-medium">{condition.metric}</span>
-                        <span className="mx-2">{condition.operator}</span>
-                        <span className="font-medium">{condition.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-sm mb-2">Automated Actions</h4>
-                  <div className="space-y-2">
-                    {rule.actions.map((action, index) => {
-                      const ActionIcon = getActionIcon(action.type);
-                      return (
-                        <div key={index} className={`flex items-center gap-2 text-sm p-2 rounded ${getActionColor(action.type)}`}>
-                          <ActionIcon className="h-4 w-4" />
-                          <span className="font-medium">{action.type.replace('_', ' ')}</span>
-                          {action.parameters.severity && (
-                            <Badge variant="outline" className="text-xs">
-                              {action.parameters.severity}
-                            </Badge>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+              <div className="text-sm text-muted-foreground">Active Rules</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {availableRules.length}
               </div>
-
-              <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Created {new Date(rule.created_at).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <span>98.5% reliability</span>
-                </div>
+              <div className="text-sm text-muted-foreground">Opportunities</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {Math.round((automationRules.length / (automationRules.length + availableRules.length)) * 100)}%
               </div>
+              <div className="text-sm text-muted-foreground">Automation Coverage</div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Performance Metrics */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Automation Performance</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-lg font-bold text-green-600">99.8%</div>
-              <div className="text-sm text-gray-600">Uptime</div>
-              <div className="text-xs text-gray-500 mt-1">Last 30 days</div>
-            </div>
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-lg font-bold text-blue-600">1,247</div>
-              <div className="text-sm text-gray-600">Actions Executed</div>
-              <div className="text-xs text-gray-500 mt-1">This month</div>
-            </div>
-            <div className="text-center p-4 border rounded-lg">
-              <div className="text-lg font-bold text-purple-600">2.3s</div>
-              <div className="text-sm text-gray-600">Avg Response Time</div>
-              <div className="text-xs text-gray-500 mt-1">From trigger to action</div>
+            
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                24/7
+              </div>
+              <div className="text-sm text-muted-foreground">Monitoring Active</div>
             </div>
           </div>
         </CardContent>
