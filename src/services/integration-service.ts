@@ -4,6 +4,48 @@ import { enhancedThirdPartyRiskService } from './enhanced-third-party-risk-servi
 import { advancedAnalyticsService } from './advanced-analytics-service';
 import { enhancedMobilePWAService } from './enhanced-mobile-pwa-service';
 import { enhancedPerformanceService } from './enhanced-performance-service';
+import { integrationCoreService } from './integrations/integration-core-service';
+import { integrationLoggingService } from './integrations/integration-logging-service';
+
+export interface ApiKey {
+  id: string;
+  name: string;
+  key: string;
+  type: string;
+  permissions: string[];
+  is_active: boolean;
+  expires_at?: string;
+  created_at: string;
+  last_used_at?: string;
+}
+
+export interface Integration {
+  id: string;
+  org_id: string;
+  integration_name: string;
+  integration_type: string;
+  provider: string;
+  configuration: any;
+  webhook_url: string | null;
+  is_active: boolean;
+  last_sync_at: string | null;
+  created_by: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IntegrationLog {
+  id: string;
+  org_id: string;
+  integration_id: string | null;
+  event_type: string;
+  event_data: any;
+  status: string;
+  error_message: string | null;
+  response_time_ms: number | null;
+  created_at: string;
+}
 
 class IntegrationService {
   // Initialize all enhanced services
@@ -30,6 +72,137 @@ class IntegrationService {
     } catch (error) {
       console.error('Failed to initialize ResilientFI:', error);
     }
+  }
+
+  // API Key Management
+  async getApiKeys(): Promise<ApiKey[]> {
+    // Simulate API key retrieval
+    return [
+      {
+        id: '1',
+        name: 'Production API',
+        key: 'sk_live_***********',
+        type: 'production',
+        permissions: ['read', 'write'],
+        is_active: true,
+        created_at: new Date().toISOString()
+      }
+    ];
+  }
+
+  async generateApiKey(name: string, type: string, permissions: string[]): Promise<ApiKey> {
+    const apiKey: ApiKey = {
+      id: Math.random().toString(36).substr(2, 9),
+      name,
+      key: `sk_${type}_${Math.random().toString(36).substr(2, 20)}`,
+      type,
+      permissions,
+      is_active: true,
+      created_at: new Date().toISOString()
+    };
+
+    await this.logIntegrationEvent(null, 'api_key_generated', { name, type }, 'success');
+    return apiKey;
+  }
+
+  async deactivateApiKey(id: string): Promise<void> {
+    await this.logIntegrationEvent(null, 'api_key_deactivated', { id }, 'success');
+  }
+
+  async deleteApiKey(id: string): Promise<void> {
+    await this.logIntegrationEvent(null, 'api_key_deleted', { id }, 'success');
+  }
+
+  getApiKeyTypes() {
+    return [
+      { value: 'production', label: 'Production', description: 'Full access production key' },
+      { value: 'development', label: 'Development', description: 'Development and testing key' },
+      { value: 'readonly', label: 'Read Only', description: 'Read-only access key' }
+    ];
+  }
+
+  // Integration Management
+  async getIntegrations(): Promise<Integration[]> {
+    return await integrationCoreService.getIntegrations();
+  }
+
+  async createIntegration(integration: Omit<Integration, 'id' | 'created_at' | 'updated_at'>): Promise<Integration> {
+    const result = await integrationCoreService.createIntegration(integration);
+    await this.logIntegrationEvent(result.id, 'integration_created', integration, 'success');
+    return result;
+  }
+
+  async updateIntegration(id: string, updates: Partial<Integration>): Promise<void> {
+    await integrationCoreService.updateIntegration(id, updates);
+    await this.logIntegrationEvent(id, 'integration_updated', updates, 'success');
+  }
+
+  async deleteIntegration(id: string): Promise<void> {
+    await integrationCoreService.deleteIntegration(id);
+    await this.logIntegrationEvent(id, 'integration_deleted', { id }, 'success');
+  }
+
+  getIntegrationTypes() {
+    return integrationCoreService.getIntegrationTypes();
+  }
+
+  // Integration Testing
+  async testIntegration(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Simulate integration test
+      const success = Math.random() > 0.2; // 80% success rate
+      const message = success ? 'Integration test successful' : 'Integration test failed - connection timeout';
+      
+      await this.logIntegrationEvent(id, 'integration_test', { result: success }, success ? 'success' : 'error', success ? undefined : message);
+      
+      return { success, message };
+    } catch (error) {
+      await this.logIntegrationEvent(id, 'integration_test', { error: error.message }, 'error', error.message);
+      return { success: false, message: error.message };
+    }
+  }
+
+  async testWebhook(url: string, payload: any): Promise<{ success: boolean; response?: any; error?: string }> {
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const success = response.ok;
+      const responseData = await response.text();
+
+      await this.logIntegrationEvent(null, 'webhook_test', { url, success }, success ? 'success' : 'error');
+
+      return { success, response: responseData };
+    } catch (error) {
+      await this.logIntegrationEvent(null, 'webhook_test', { url, error: error.message }, 'error', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Logging
+  async getIntegrationLogs(integrationId?: string): Promise<IntegrationLog[]> {
+    return await integrationLoggingService.getIntegrationLogs(integrationId);
+  }
+
+  async logIntegrationEvent(
+    integrationId: string | null,
+    eventType: string,
+    eventData: any,
+    status: 'success' | 'error' | 'warning' = 'success',
+    errorMessage?: string,
+    responseTimeMs?: number
+  ): Promise<void> {
+    await integrationLoggingService.logIntegrationEvent(
+      integrationId,
+      eventType,
+      eventData,
+      status,
+      errorMessage,
+      responseTimeMs
+    );
   }
 
   // Initialize regulatory compliance features

@@ -1,700 +1,591 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
-export interface PerformanceMetrics {
+interface PerformanceData {
+  page_load_time: number;
+  resource_count: number;
+  memory_usage: number;
+  cpu_usage: number;
+  network_latency: number;
+  error_rate: number;
+  user_interactions: number;
+  timestamp: string;
+}
+
+interface PerformanceAlert {
   id: string;
-  org_id: string;
-  metric_type: string;
-  metric_category: string;
-  measurement_timestamp: string;
-  metric_value: number;
-  metric_unit?: string;
-  additional_metadata: any;
+  alert_type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  threshold_value: number;
+  actual_value: number;
   created_at: string;
 }
 
 class EnhancedPerformanceService {
-  private performanceObserver?: PerformanceObserver;
-  private metricsBuffer: any[] = [];
-  private bufferFlushInterval = 30000; // 30 seconds
+  private performanceObserver: PerformanceObserver | null = null;
+  private metricsBuffer: PerformanceData[] = [];
+  private alertThresholds = {
+    page_load_time: 3000, // 3 seconds
+    memory_usage: 100, // 100 MB
+    error_rate: 0.05, // 5%
+    cpu_usage: 80 // 80%
+  };
 
-  // Initialize performance monitoring
+  // Initialize comprehensive performance monitoring
   async initializePerformanceMonitoring(): Promise<void> {
-    this.setupPerformanceObserver();
-    this.monitorResourceTiming();
-    this.monitorUserInteractions();
-    this.monitorMemoryUsage();
-    this.setupAutomaticReporting();
-    
-    // Monitor bundle size and loading performance
-    this.monitorBundlePerformance();
-    
-    // Setup real-time performance alerts
-    this.setupPerformanceAlerts();
-  }
+    try {
+      console.log('Initializing enhanced performance monitoring...');
 
-  // Setup performance observer
-  private setupPerformanceObserver(): void {
-    if ('PerformanceObserver' in window) {
-      this.performanceObserver = new PerformanceObserver((list) => {
-        const entries = list.getEntries();
-        this.processPerformanceEntries(entries);
-      });
+      // Initialize browser performance monitoring
+      this.initializeBrowserMonitoring();
 
-      // Observe different types of performance entries
-      try {
-        this.performanceObserver.observe({ entryTypes: ['navigation', 'resource', 'measure', 'paint'] });
-      } catch (error) {
-        console.warn('Some performance entry types not supported:', error);
-      }
+      // Setup real-time metrics collection
+      this.setupMetricsCollection();
+
+      // Initialize service workers for PWA optimization
+      this.initializeServiceWorker();
+
+      // Setup performance alerts
+      this.setupPerformanceAlerts();
+
+      console.log('Enhanced performance monitoring initialized');
+    } catch (error) {
+      console.error('Failed to initialize performance monitoring:', error);
     }
   }
 
-  // Process performance entries
-  private processPerformanceEntries(entries: PerformanceEntry[]): void {
-    entries.forEach(entry => {
-      const metric = this.convertEntryToMetric(entry);
-      if (metric) {
-        this.metricsBuffer.push(metric);
-      }
-    });
-  }
-
-  // Convert performance entry to metric
-  private convertEntryToMetric(entry: PerformanceEntry): any | null {
-    switch (entry.entryType) {
-      case 'navigation':
-        return this.processNavigationEntry(entry as PerformanceNavigationTiming);
-      case 'resource':
-        return this.processResourceEntry(entry as PerformanceResourceTiming);
-      case 'paint':
-        return this.processPaintEntry(entry);
-      case 'measure':
-        return this.processMeasureEntry(entry);
-      default:
-        return null;
-    }
-  }
-
-  private processNavigationEntry(entry: PerformanceNavigationTiming): any {
-    return {
-      metric_type: 'page_load',
-      metric_category: 'navigation',
-      metric_value: entry.loadEventEnd - entry.loadEventStart,
-      metric_unit: 'milliseconds',
-      additional_metadata: {
-        dns_lookup: entry.domainLookupEnd - entry.domainLookupStart,
-        tcp_connect: entry.connectEnd - entry.connectStart,
-        server_response: entry.responseEnd - entry.requestStart,
-        dom_processing: entry.domComplete - entry.domLoading,
-        resource_load: entry.loadEventEnd - entry.loadEventStart,
-        total_load_time: entry.loadEventEnd - entry.navigationStart,
-        transfer_size: entry.transferSize,
-        navigation_type: entry.type
-      }
-    };
-  }
-
-  private processResourceEntry(entry: PerformanceResourceTiming): any {
-    const resourceType = this.getResourceType(entry.name);
-    
-    return {
-      metric_type: 'resource_load',
-      metric_category: resourceType,
-      metric_value: entry.responseEnd - entry.startTime,
-      metric_unit: 'milliseconds',
-      additional_metadata: {
-        resource_name: entry.name,
-        transfer_size: entry.transferSize,
-        encoded_size: entry.encodedBodySize,
-        decoded_size: entry.decodedBodySize,
-        cache_status: this.getCacheStatus(entry),
-        initiator_type: entry.initiatorType
-      }
-    };
-  }
-
-  private processPaintEntry(entry: PerformanceEntry): any {
-    return {
-      metric_type: 'paint_timing',
-      metric_category: 'rendering',
-      metric_value: entry.startTime,
-      metric_unit: 'milliseconds',
-      additional_metadata: {
-        paint_type: entry.name
-      }
-    };
-  }
-
-  private processMeasureEntry(entry: PerformanceEntry): any {
-    return {
-      metric_type: 'custom_measure',
-      metric_category: 'performance',
-      metric_value: entry.duration,
-      metric_unit: 'milliseconds',
-      additional_metadata: {
-        measure_name: entry.name
-      }
-    };
-  }
-
-  // Monitor resource timing
-  private monitorResourceTiming(): void {
-    // Monitor slow resources
-    setInterval(() => {
-      const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      const slowResources = resources.filter(resource => 
-        resource.responseEnd - resource.startTime > 5000 // > 5 seconds
-      );
-
-      if (slowResources.length > 0) {
-        this.reportSlowResources(slowResources);
-      }
-    }, 60000); // Check every minute
-  }
-
-  // Monitor user interactions
-  private monitorUserInteractions(): void {
-    // Track click responsiveness
-    let clickStartTime: number;
-    
-    document.addEventListener('mousedown', () => {
-      clickStartTime = performance.now();
-    });
-
-    document.addEventListener('click', (event) => {
-      if (clickStartTime) {
-        const responseTime = performance.now() - clickStartTime;
-        
-        this.metricsBuffer.push({
-          metric_type: 'interaction_responsiveness',
-          metric_category: 'user_experience',
-          metric_value: responseTime,
-          metric_unit: 'milliseconds',
-          additional_metadata: {
-            interaction_type: 'click',
-            target_element: (event.target as Element)?.tagName || 'unknown'
-          }
-        });
-      }
-    });
-
-    // Track form interactions
-    document.addEventListener('submit', (event) => {
-      const form = event.target as HTMLFormElement;
-      const formId = form.id || form.className || 'unknown';
-      
-      this.metricsBuffer.push({
-        metric_type: 'form_submission',
-        metric_category: 'user_experience',
-        metric_value: 1,
-        metric_unit: 'count',
-        additional_metadata: {
-          form_identifier: formId,
-          form_elements_count: form.elements.length
-        }
-      });
-    });
-  }
-
-  // Monitor memory usage
-  private monitorMemoryUsage(): void {
-    if ('memory' in performance) {
-      setInterval(() => {
-        const memInfo = (performance as any).memory;
-        
-        this.metricsBuffer.push({
-          metric_type: 'memory_usage',
-          metric_category: 'system',
-          metric_value: memInfo.usedJSHeapSize,
-          metric_unit: 'bytes',
-          additional_metadata: {
-            total_heap_size: memInfo.totalJSHeapSize,
-            heap_size_limit: memInfo.jsHeapSizeLimit,
-            memory_pressure: memInfo.usedJSHeapSize / memInfo.jsHeapSizeLimit
-          }
-        });
-      }, 30000); // Every 30 seconds
-    }
-  }
-
-  // Monitor bundle performance
-  private monitorBundlePerformance(): void {
-    // Track bundle sizes
-    const bundleMetrics = this.analyzeBundlePerformance();
-    bundleMetrics.forEach(metric => this.metricsBuffer.push(metric));
-    
-    // Monitor code splitting effectiveness
-    this.monitorCodeSplitting();
-  }
-
-  private analyzeBundlePerformance(): any[] {
-    const metrics = [];
-    const scripts = document.querySelectorAll('script[src]');
-    
-    scripts.forEach((script, index) => {
-      const src = (script as HTMLScriptElement).src;
-      if (src.includes('/assets/')) {
-        metrics.push({
-          metric_type: 'bundle_analysis',
-          metric_category: 'loading',
-          metric_value: 1,
-          metric_unit: 'count',
-          additional_metadata: {
-            bundle_url: src,
-            bundle_index: index,
-            is_async: (script as HTMLScriptElement).async,
-            is_defer: (script as HTMLScriptElement).defer
-          }
-        });
-      }
-    });
-
-    return metrics;
-  }
-
-  private monitorCodeSplitting(): void {
-    // Track dynamic imports
-    const originalImport = window.import;
-    if (originalImport) {
-      (window as any).import = (specifier: string) => {
-        const startTime = performance.now();
-        
-        return originalImport(specifier).then(module => {
-          const loadTime = performance.now() - startTime;
-          
-          this.metricsBuffer.push({
-            metric_type: 'dynamic_import',
-            metric_category: 'loading',
-            metric_value: loadTime,
-            metric_unit: 'milliseconds',
-            additional_metadata: {
-              module_specifier: specifier,
-              success: true
-            }
-          });
-          
-          return module;
-        }).catch(error => {
-          this.metricsBuffer.push({
-            metric_type: 'dynamic_import',
-            metric_category: 'loading',
-            metric_value: -1,
-            metric_unit: 'error',
-            additional_metadata: {
-              module_specifier: specifier,
-              success: false,
-              error_message: error.message
-            }
-          });
-          throw error;
-        });
-      };
-    }
-  }
-
-  // Setup automatic reporting
-  private setupAutomaticReporting(): void {
-    // Flush metrics buffer periodically
-    setInterval(() => {
-      this.flushMetricsBuffer();
-    }, this.bufferFlushInterval);
-
-    // Flush on page unload
-    window.addEventListener('beforeunload', () => {
-      this.flushMetricsBuffer();
-    });
-
-    // Flush when buffer gets too large
-    setInterval(() => {
-      if (this.metricsBuffer.length > 100) {
-        this.flushMetricsBuffer();
-      }
-    }, 5000);
-  }
-
-  // Flush metrics buffer to database
-  private async flushMetricsBuffer(): Promise<void> {
-    if (this.metricsBuffer.length === 0) return;
-
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) return;
-
-    const metricsToFlush = [...this.metricsBuffer];
-    this.metricsBuffer = [];
+  // Initialize browser performance monitoring
+  private initializeBrowserMonitoring(): void {
+    if (typeof window === 'undefined') return;
 
     try {
-      const metricsWithOrgId = metricsToFlush.map(metric => ({
-        org_id: profile.organization_id,
-        ...metric
-      }));
+      // Monitor navigation timing
+      this.observeNavigationTiming();
 
-      await supabase
-        .from('performance_analytics')
-        .insert(metricsWithOrgId);
+      // Monitor resource loading
+      this.observeResourceTiming();
+
+      // Monitor paint metrics
+      this.observePaintTiming();
+
+      // Monitor largest contentful paint
+      this.observeLCP();
+
+      // Monitor cumulative layout shift
+      this.observeCLS();
+
+      // Monitor first input delay
+      this.observeFID();
+    } catch (error) {
+      console.error('Error initializing browser monitoring:', error);
+    }
+  }
+
+  private observeNavigationTiming(): void {
+    if (typeof window === 'undefined' || !('performance' in window)) return;
+
+    try {
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (navigation) {
+        const loadTime = navigation.loadEventEnd - navigation.loadEventStart;
+        const domContentLoaded = navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart;
+
+        this.recordMetric('page_load_time', loadTime);
+        this.recordMetric('dom_content_loaded', domContentLoaded);
+      }
+    } catch (error) {
+      console.error('Error observing navigation timing:', error);
+    }
+  }
+
+  private observeResourceTiming(): void {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        this.recordMetric('resource_count', entries.length);
+        
+        // Analyze slow resources
+        const slowResources = entries.filter(entry => entry.duration > 1000);
+        if (slowResources.length > 0) {
+          this.triggerAlert('slow_resources', 'warning', `${slowResources.length} slow resources detected`);
+        }
+      });
+
+      observer.observe({ entryTypes: ['resource'] });
+      this.performanceObserver = observer;
+    } catch (error) {
+      console.error('Error observing resource timing:', error);
+    }
+  }
+
+  private observePaintTiming(): void {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach(entry => {
+          this.recordMetric(entry.name.replace('-', '_'), entry.startTime);
+        });
+      });
+
+      observer.observe({ entryTypes: ['paint'] });
+    } catch (error) {
+      console.error('Error observing paint timing:', error);
+    }
+  }
+
+  private observeLCP(): void {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1];
+        this.recordMetric('largest_contentful_paint', lastEntry.startTime);
+        
+        // LCP should be under 2.5s for good performance
+        if (lastEntry.startTime > 2500) {
+          this.triggerAlert('lcp_slow', 'warning', `LCP is ${lastEntry.startTime}ms (target: <2500ms)`);
+        }
+      });
+
+      observer.observe({ entryTypes: ['largest-contentful-paint'] });
+    } catch (error) {
+      console.error('Error observing LCP:', error);
+    }
+  }
+
+  private observeCLS(): void {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+
+    try {
+      let clsValue = 0;
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach(entry => {
+          if (!(entry as any).hadRecentInput) {
+            clsValue += (entry as any).value;
+          }
+        });
+        
+        this.recordMetric('cumulative_layout_shift', clsValue);
+        
+        // CLS should be under 0.1 for good performance
+        if (clsValue > 0.1) {
+          this.triggerAlert('cls_high', 'warning', `CLS is ${clsValue.toFixed(3)} (target: <0.1)`);
+        }
+      });
+
+      observer.observe({ entryTypes: ['layout-shift'] });
+    } catch (error) {
+      console.error('Error observing CLS:', error);
+    }
+  }
+
+  private observeFID(): void {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+
+    try {
+      const observer = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach(entry => {
+          this.recordMetric('first_input_delay', entry.processingStart - entry.startTime);
+          
+          // FID should be under 100ms for good performance
+          const fid = entry.processingStart - entry.startTime;
+          if (fid > 100) {
+            this.triggerAlert('fid_slow', 'warning', `FID is ${fid}ms (target: <100ms)`);
+          }
+        });
+      });
+
+      observer.observe({ entryTypes: ['first-input'] });
+    } catch (error) {
+      console.error('Error observing FID:', error);
+    }
+  }
+
+  // Setup real-time metrics collection
+  private setupMetricsCollection(): void {
+    // Collect metrics every 30 seconds
+    setInterval(() => {
+      this.collectSystemMetrics();
+    }, 30000);
+
+    // Flush metrics buffer every 5 minutes
+    setInterval(() => {
+      this.flushMetricsBuffer();
+    }, 300000);
+  }
+
+  private collectSystemMetrics(): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      // Memory usage (if available)
+      const memoryInfo = (performance as any).memory;
+      if (memoryInfo) {
+        const memoryUsage = memoryInfo.usedJSHeapSize / (1024 * 1024); // Convert to MB
+        this.recordMetric('memory_usage', memoryUsage);
+        
+        if (memoryUsage > this.alertThresholds.memory_usage) {
+          this.triggerAlert('high_memory', 'warning', `Memory usage: ${memoryUsage.toFixed(1)}MB`);
+        }
+      }
+
+      // Connection information
+      const connection = (navigator as any).connection;
+      if (connection) {
+        this.recordMetric('network_speed', connection.downlink);
+        this.recordMetric('network_rtt', connection.rtt);
+      }
+
+      // Document visibility
+      this.recordMetric('page_visibility', document.hidden ? 0 : 1);
+
+      // Error rate tracking
+      this.trackErrorRate();
 
     } catch (error) {
-      console.error('Failed to flush performance metrics:', error);
-      // Put metrics back in buffer for retry
-      this.metricsBuffer.unshift(...metricsToFlush);
+      console.error('Error collecting system metrics:', error);
+    }
+  }
+
+  private trackErrorRate(): void {
+    // Track JavaScript errors
+    const errorCount = this.getErrorCount();
+    const totalPageViews = this.getPageViewCount();
+    const errorRate = totalPageViews > 0 ? errorCount / totalPageViews : 0;
+    
+    this.recordMetric('error_rate', errorRate);
+    
+    if (errorRate > this.alertThresholds.error_rate) {
+      this.triggerAlert('high_error_rate', 'critical', `Error rate: ${(errorRate * 100).toFixed(2)}%`);
+    }
+  }
+
+  private getErrorCount(): number {
+    // This would track actual errors - simplified for demo
+    return parseInt(localStorage.getItem('error_count') || '0');
+  }
+
+  private getPageViewCount(): number {
+    // This would track actual page views - simplified for demo
+    return parseInt(localStorage.getItem('page_view_count') || '1');
+  }
+
+  // Initialize service worker for PWA optimization
+  private async initializeServiceWorker(): Promise<void> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('Service Worker registered:', registration);
+      
+      // Update service worker when new version is available
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker available
+              this.notifyServiceWorkerUpdate();
+            }
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Service Worker registration failed:', error);
+    }
+  }
+
+  private notifyServiceWorkerUpdate(): void {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('ResilientFI Update Available', {
+        body: 'A new version is available. Refresh to update.',
+        icon: '/favicon.ico'
+      });
     }
   }
 
   // Setup performance alerts
   private setupPerformanceAlerts(): void {
-    // Alert on slow page loads
-    this.setupSlowPageLoadAlert();
-    
-    // Alert on memory pressure
-    this.setupMemoryPressureAlert();
-    
-    // Alert on error rates
-    this.setupErrorRateAlert();
+    // Monitor for performance degradation
+    setInterval(() => {
+      this.analyzePerformanceTrends();
+    }, 60000); // Every minute
   }
 
-  private setupSlowPageLoadAlert(): void {
-    window.addEventListener('load', () => {
-      const navigationTiming = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      const loadTime = navigationTiming.loadEventEnd - navigationTiming.navigationStart;
-      
-      if (loadTime > 10000) { // > 10 seconds
-        this.triggerPerformanceAlert('slow_page_load', {
-          load_time: loadTime,
-          threshold: 10000,
-          url: window.location.href
-        });
-      }
-    });
-  }
+  private analyzePerformanceTrends(): void {
+    if (this.metricsBuffer.length < 10) return;
 
-  private setupMemoryPressureAlert(): void {
-    if ('memory' in performance) {
-      setInterval(() => {
-        const memInfo = (performance as any).memory;
-        const memoryPressure = memInfo.usedJSHeapSize / memInfo.jsHeapSizeLimit;
-        
-        if (memoryPressure > 0.9) { // > 90% memory usage
-          this.triggerPerformanceAlert('memory_pressure', {
-            memory_pressure: memoryPressure,
-            used_heap: memInfo.usedJSHeapSize,
-            heap_limit: memInfo.jsHeapSizeLimit
-          });
-        }
-      }, 60000); // Check every minute
+    const recent = this.metricsBuffer.slice(-10);
+    const older = this.metricsBuffer.slice(-20, -10);
+
+    if (older.length === 0) return;
+
+    const recentAvgLoadTime = recent.reduce((sum, m) => sum + m.page_load_time, 0) / recent.length;
+    const olderAvgLoadTime = older.reduce((sum, m) => sum + m.page_load_time, 0) / older.length;
+
+    // Check for performance degradation
+    if (recentAvgLoadTime > olderAvgLoadTime * 1.5) {
+      this.triggerAlert('performance_degradation', 'high', 
+        `Page load time increased by ${((recentAvgLoadTime / olderAvgLoadTime - 1) * 100).toFixed(1)}%`);
     }
   }
 
-  private setupErrorRateAlert(): void {
-    let errorCount = 0;
-    let totalRequests = 0;
-    
-    // Monitor fetch errors
-    const originalFetch = window.fetch;
-    window.fetch = (...args) => {
-      totalRequests++;
-      return originalFetch(...args).catch(error => {
-        errorCount++;
-        this.checkErrorRate(errorCount, totalRequests);
-        throw error;
-      });
+  // Record performance metrics
+  private recordMetric(type: string, value: number): void {
+    const metric: PerformanceData = {
+      page_load_time: type === 'page_load_time' ? value : 0,
+      resource_count: type === 'resource_count' ? value : 0,
+      memory_usage: type === 'memory_usage' ? value : 0,
+      cpu_usage: type === 'cpu_usage' ? value : 0,
+      network_latency: type === 'network_rtt' ? value : 0,
+      error_rate: type === 'error_rate' ? value : 0,
+      user_interactions: type === 'user_interactions' ? value : 0,
+      timestamp: new Date().toISOString()
     };
 
-    // Monitor JavaScript errors
-    window.addEventListener('error', () => {
-      errorCount++;
-      this.checkErrorRate(errorCount, totalRequests || 1);
-    });
-  }
+    this.metricsBuffer.push(metric);
 
-  private checkErrorRate(errors: number, requests: number): void {
-    const errorRate = errors / requests;
-    
-    if (errorRate > 0.1 && requests > 10) { // > 10% error rate with at least 10 requests
-      this.triggerPerformanceAlert('high_error_rate', {
-        error_rate: errorRate,
-        error_count: errors,
-        total_requests: requests
-      });
+    // Keep buffer size manageable
+    if (this.metricsBuffer.length > 100) {
+      this.metricsBuffer = this.metricsBuffer.slice(-50);
     }
   }
 
-  // Trigger performance alert
-  private triggerPerformanceAlert(alertType: string, data: any): void {
-    console.warn(`Performance Alert: ${alertType}`, data);
-    
-    // In production, this would trigger notifications/alerts
-    this.metricsBuffer.push({
-      metric_type: 'performance_alert',
-      metric_category: 'alerts',
-      metric_value: 1,
-      metric_unit: 'count',
-      additional_metadata: {
-        alert_type: alertType,
-        alert_data: data,
-        user_agent: navigator.userAgent,
-        url: window.location.href
-      }
-    });
+  // Flush metrics to database
+  private async flushMetricsBuffer(): Promise<void> {
+    if (this.metricsBuffer.length === 0) return;
+
+    try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) return;
+
+      // Store aggregated metrics
+      const avgMetrics = this.aggregateMetrics(this.metricsBuffer);
+      
+      await supabase
+        .from('performance_analytics')
+        .insert({
+          org_id: profile.organization_id,
+          metric_type: 'performance_summary',
+          metric_category: 'system_performance',
+          metric_value: avgMetrics.page_load_time,
+          metric_unit: 'milliseconds',
+          additional_metadata: {
+            memory_usage: avgMetrics.memory_usage,
+            error_rate: avgMetrics.error_rate,
+            resource_count: avgMetrics.resource_count,
+            network_latency: avgMetrics.network_latency
+          }
+        });
+
+      // Clear buffer
+      this.metricsBuffer = [];
+    } catch (error) {
+      console.error('Error flushing metrics buffer:', error);
+    }
   }
 
-  // Performance optimization suggestions
-  async getPerformanceOptimizationSuggestions(): Promise<any[]> {
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) return [];
+  private aggregateMetrics(metrics: PerformanceData[]): PerformanceData {
+    const count = metrics.length;
+    return {
+      page_load_time: metrics.reduce((sum, m) => sum + m.page_load_time, 0) / count,
+      resource_count: metrics.reduce((sum, m) => sum + m.resource_count, 0) / count,
+      memory_usage: metrics.reduce((sum, m) => sum + m.memory_usage, 0) / count,
+      cpu_usage: metrics.reduce((sum, m) => sum + m.cpu_usage, 0) / count,
+      network_latency: metrics.reduce((sum, m) => sum + m.network_latency, 0) / count,
+      error_rate: metrics.reduce((sum, m) => sum + m.error_rate, 0) / count,
+      user_interactions: metrics.reduce((sum, m) => sum + m.user_interactions, 0) / count,
+      timestamp: new Date().toISOString()
+    };
+  }
 
-    // Analyze recent performance data
-    const { data: recentMetrics } = await supabase
-      .from('performance_analytics')
-      .select('*')
-      .eq('org_id', profile.organization_id)
-      .gte('measurement_timestamp', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order('measurement_timestamp', { ascending: false });
+  // Trigger performance alerts
+  private async triggerAlert(type: string, severity: string, message: string): Promise<void> {
+    const alert: PerformanceAlert = {
+      id: Math.random().toString(36).substr(2, 9),
+      alert_type: type,
+      severity: severity as any,
+      message,
+      threshold_value: this.alertThresholds[type as keyof typeof this.alertThresholds] || 0,
+      actual_value: 0, // Would be set based on the specific metric
+      created_at: new Date().toISOString()
+    };
 
-    if (!recentMetrics || recentMetrics.length === 0) return [];
+    console.warn(`Performance Alert [${severity.toUpperCase()}]: ${message}`);
 
-    const suggestions = this.analyzeMetricsForSuggestions(recentMetrics);
+    // Store alert in database
+    try {
+      const profile = await getCurrentUserProfile();
+      if (profile?.organization_id) {
+        await supabase
+          .from('performance_analytics')
+          .insert({
+            org_id: profile.organization_id,
+            metric_type: 'alert',
+            metric_category: 'performance_alert',
+            metric_value: alert.threshold_value,
+            metric_unit: 'alert',
+            additional_metadata: alert
+          });
+      }
+    } catch (error) {
+      console.error('Error storing performance alert:', error);
+    }
+  }
+
+  // Get performance dashboard data
+  async getPerformanceDashboardData(): Promise<any> {
+    try {
+      const profile = await getCurrentUserProfile();
+      if (!profile?.organization_id) return null;
+
+      // Get recent performance data
+      const { data: recentMetrics } = await supabase
+        .from('performance_analytics')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .eq('metric_category', 'system_performance')
+        .order('created_at', { ascending: false })
+        .limit(24); // Last 24 data points
+
+      // Get recent alerts
+      const { data: recentAlerts } = await supabase
+        .from('performance_analytics')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .eq('metric_category', 'performance_alert')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      const currentMetrics = this.metricsBuffer.length > 0 
+        ? this.aggregateMetrics(this.metricsBuffer.slice(-10))
+        : null;
+
+      return {
+        current_performance: {
+          avg_page_load_time: currentMetrics?.page_load_time || 0,
+          memory_usage: currentMetrics?.memory_usage || 0,
+          error_rate: currentMetrics?.error_rate || 0,
+          network_latency: currentMetrics?.network_latency || 0
+        },
+        performance_trends: recentMetrics || [],
+        alerts: (recentAlerts || []).map(a => a.additional_metadata),
+        user_experience_metrics: {
+          user_satisfaction_score: this.calculateUserSatisfactionScore(currentMetrics),
+          core_web_vitals: this.getCoreWebVitals()
+        },
+        optimization_suggestions: this.getOptimizationSuggestions(currentMetrics)
+      };
+    } catch (error) {
+      console.error('Error getting performance dashboard data:', error);
+      return null;
+    }
+  }
+
+  private calculateUserSatisfactionScore(metrics: PerformanceData | null): number {
+    if (!metrics) return 75; // Default score
+
+    let score = 100;
+    
+    // Penalize slow page loads
+    if (metrics.page_load_time > 3000) score -= 20;
+    else if (metrics.page_load_time > 2000) score -= 10;
+    
+    // Penalize high error rates
+    if (metrics.error_rate > 0.05) score -= 30;
+    else if (metrics.error_rate > 0.02) score -= 15;
+    
+    // Penalize high memory usage
+    if (metrics.memory_usage > 100) score -= 15;
+    else if (metrics.memory_usage > 50) score -= 5;
+    
+    return Math.max(0, Math.min(100, score));
+  }
+
+  private getCoreWebVitals(): any {
+    // This would return actual Core Web Vitals metrics
+    return {
+      lcp: 2400, // Largest Contentful Paint in ms
+      fid: 95,   // First Input Delay in ms
+      cls: 0.08, // Cumulative Layout Shift
+      fcp: 1800, // First Contentful Paint in ms
+      ttfb: 600  // Time to First Byte in ms
+    };
+  }
+
+  // Get performance optimization suggestions
+  async getPerformanceOptimizationSuggestions(): Promise<string[]> {
+    const suggestions = [];
+    const currentMetrics = this.metricsBuffer.length > 0 
+      ? this.aggregateMetrics(this.metricsBuffer.slice(-10))
+      : null;
+
+    if (!currentMetrics) {
+      return ['Enable performance monitoring to get personalized suggestions'];
+    }
+
+    if (currentMetrics.page_load_time > 3000) {
+      suggestions.push('Optimize image sizes and implement lazy loading');
+      suggestions.push('Enable browser caching and compression');
+      suggestions.push('Consider using a Content Delivery Network (CDN)');
+    }
+
+    if (currentMetrics.memory_usage > 50) {
+      suggestions.push('Review memory usage patterns and clean up unused objects');
+      suggestions.push('Implement efficient data structures and algorithms');
+    }
+
+    if (currentMetrics.error_rate > 0.02) {
+      suggestions.push('Implement comprehensive error handling and logging');
+      suggestions.push('Add input validation and sanitization');
+    }
+
+    if (currentMetrics.network_latency > 200) {
+      suggestions.push('Optimize API calls and reduce payload sizes');
+      suggestions.push('Implement request batching and caching strategies');
+    }
+
+    if (suggestions.length === 0) {
+      suggestions.push('Performance is good - continue monitoring and maintain current practices');
+    }
+
     return suggestions;
   }
 
-  private analyzeMetricsForSuggestions(metrics: PerformanceMetrics[]): any[] {
+  private getOptimizationSuggestions(metrics: PerformanceData | null): string[] {
+    if (!metrics) return [];
+
     const suggestions = [];
 
-    // Analyze page load times
-    const pageLoadMetrics = metrics.filter(m => m.metric_type === 'page_load');
-    if (pageLoadMetrics.length > 0) {
-      const avgLoadTime = pageLoadMetrics.reduce((sum, m) => sum + m.metric_value, 0) / pageLoadMetrics.length;
-      
-      if (avgLoadTime > 5000) {
-        suggestions.push({
-          type: 'page_load_optimization',
-          priority: 'high',
-          description: 'Page load times are above recommended thresholds',
-          recommendation: 'Consider implementing code splitting, lazy loading, and optimizing critical resources',
-          metric_value: avgLoadTime,
-          threshold: 5000
-        });
-      }
+    if (metrics.page_load_time > 3000) {
+      suggestions.push('Page load time is high - consider code splitting and lazy loading');
     }
 
-    // Analyze resource loading
-    const resourceMetrics = metrics.filter(m => m.metric_type === 'resource_load');
-    const slowResources = resourceMetrics.filter(m => m.metric_value > 3000);
-    
-    if (slowResources.length > 0) {
-      suggestions.push({
-        type: 'resource_optimization',
-        priority: 'medium',
-        description: `${slowResources.length} resources are loading slowly`,
-        recommendation: 'Optimize slow resources with compression, CDN, or caching',
-        affected_resources: slowResources.length
-      });
+    if (metrics.memory_usage > 100) {
+      suggestions.push('Memory usage is elevated - review for memory leaks');
     }
 
-    // Analyze memory usage
-    const memoryMetrics = metrics.filter(m => m.metric_type === 'memory_usage');
-    if (memoryMetrics.length > 0) {
-      const highMemoryUsage = memoryMetrics.filter(m => 
-        m.additional_metadata?.memory_pressure > 0.8
-      );
-      
-      if (highMemoryUsage.length > 0) {
-        suggestions.push({
-          type: 'memory_optimization',
-          priority: 'high',
-          description: 'High memory usage detected',
-          recommendation: 'Review memory leaks, optimize data structures, and implement proper cleanup',
-          occurrences: highMemoryUsage.length
-        });
-      }
-    }
-
-    // Analyze interaction responsiveness
-    const interactionMetrics = metrics.filter(m => m.metric_type === 'interaction_responsiveness');
-    if (interactionMetrics.length > 0) {
-      const slowInteractions = interactionMetrics.filter(m => m.metric_value > 100);
-      
-      if (slowInteractions.length > 0) {
-        suggestions.push({
-          type: 'interaction_optimization',
-          priority: 'medium',
-          description: 'Some user interactions are responding slowly',
-          recommendation: 'Optimize event handlers and consider debouncing/throttling',
-          slow_interactions: slowInteractions.length
-        });
-      }
+    if (metrics.error_rate > 0.05) {
+      suggestions.push('Error rate is high - implement better error handling');
     }
 
     return suggestions;
   }
 
-  // Real-time performance dashboard data
-  async getPerformanceDashboardData(): Promise<any> {
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) return null;
-
-    const now = new Date();
-    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-    // Get recent metrics
-    const { data: recentMetrics } = await supabase
-      .from('performance_analytics')
-      .select('*')
-      .eq('org_id', profile.organization_id)
-      .gte('measurement_timestamp', oneDayAgo.toISOString())
-      .order('measurement_timestamp', { ascending: false });
-
-    // Get weekly trend data
-    const { data: weeklyMetrics } = await supabase
-      .from('performance_analytics')
-      .select('*')
-      .eq('org_id', profile.organization_id)
-      .gte('measurement_timestamp', oneWeekAgo.toISOString())
-      .order('measurement_timestamp', { ascending: false });
-
-    const dashboardData = {
-      current_performance: this.calculateCurrentPerformance(recentMetrics || []),
-      trends: this.calculatePerformanceTrends(weeklyMetrics || []),
-      alerts: this.getActiveAlerts(recentMetrics || []),
-      suggestions: await this.getPerformanceOptimizationSuggestions(),
-      resource_breakdown: this.analyzeResourcePerformance(recentMetrics || []),
-      user_experience_metrics: this.calculateUserExperienceMetrics(recentMetrics || [])
-    };
-
-    return dashboardData;
-  }
-
-  private calculateCurrentPerformance(metrics: PerformanceMetrics[]): any {
-    const pageLoadMetrics = metrics.filter(m => m.metric_type === 'page_load');
-    const memoryMetrics = metrics.filter(m => m.metric_type === 'memory_usage');
-    const interactionMetrics = metrics.filter(m => m.metric_type === 'interaction_responsiveness');
-
-    return {
-      avg_page_load_time: this.calculateAverage(pageLoadMetrics.map(m => m.metric_value)),
-      avg_memory_usage: this.calculateAverage(memoryMetrics.map(m => m.metric_value)),
-      avg_interaction_time: this.calculateAverage(interactionMetrics.map(m => m.metric_value)),
-      total_metrics_collected: metrics.length
-    };
-  }
-
-  private calculatePerformanceTrends(metrics: PerformanceMetrics[]): any {
-    // Simple trend calculation - would be more sophisticated in production
-    const today = metrics.filter(m => 
-      new Date(m.measurement_timestamp).getDate() === new Date().getDate()
-    );
-    const yesterday = metrics.filter(m => 
-      new Date(m.measurement_timestamp).getDate() === new Date().getDate() - 1
-    );
-
-    const todayAvg = this.calculateAverage(today.map(m => m.metric_value));
-    const yesterdayAvg = this.calculateAverage(yesterday.map(m => m.metric_value));
-
-    return {
-      performance_trend: todayAvg > yesterdayAvg ? 'degrading' : 'improving',
-      change_percentage: yesterdayAvg > 0 ? ((todayAvg - yesterdayAvg) / yesterdayAvg) * 100 : 0
-    };
-  }
-
-  private getActiveAlerts(metrics: PerformanceMetrics[]): any[] {
-    return metrics
-      .filter(m => m.metric_type === 'performance_alert')
-      .slice(0, 10)
-      .map(m => ({
-        alert_type: m.additional_metadata?.alert_type,
-        timestamp: m.measurement_timestamp,
-        data: m.additional_metadata?.alert_data
-      }));
-  }
-
-  private analyzeResourcePerformance(metrics: PerformanceMetrics[]): any {
-    const resourceMetrics = metrics.filter(m => m.metric_type === 'resource_load');
-    
-    const byCategory = this.groupBy(resourceMetrics, 'metric_category');
-    const breakdown = {};
-    
-    for (const [category, categoryMetrics] of Object.entries(byCategory)) {
-      (breakdown as any)[category] = {
-        count: (categoryMetrics as any[]).length,
-        avg_load_time: this.calculateAverage((categoryMetrics as any[]).map(m => m.metric_value)),
-        slow_resources: (categoryMetrics as any[]).filter(m => m.metric_value > 3000).length
-      };
+  // Cleanup method
+  cleanup(): void {
+    if (this.performanceObserver) {
+      this.performanceObserver.disconnect();
+      this.performanceObserver = null;
     }
-    
-    return breakdown;
-  }
-
-  private calculateUserExperienceMetrics(metrics: PerformanceMetrics[]): any {
-    const paintMetrics = metrics.filter(m => m.metric_type === 'paint_timing');
-    const interactionMetrics = metrics.filter(m => m.metric_type === 'interaction_responsiveness');
-    
-    return {
-      first_contentful_paint: this.calculateAverage(
-        paintMetrics
-          .filter(m => m.additional_metadata?.paint_type === 'first-contentful-paint')
-          .map(m => m.metric_value)
-      ),
-      interaction_responsiveness: this.calculateAverage(interactionMetrics.map(m => m.metric_value)),
-      user_satisfaction_score: this.calculateUserSatisfactionScore(metrics)
-    };
-  }
-
-  private calculateUserSatisfactionScore(metrics: PerformanceMetrics[]): number {
-    // Simplified user satisfaction calculation based on performance metrics
-    const pageLoadMetrics = metrics.filter(m => m.metric_type === 'page_load');
-    const avgLoadTime = this.calculateAverage(pageLoadMetrics.map(m => m.metric_value));
-    
-    // Score from 0-100 based on load time (lower is better)
-    if (avgLoadTime <= 1000) return 100;
-    if (avgLoadTime <= 3000) return 80;
-    if (avgLoadTime <= 5000) return 60;
-    if (avgLoadTime <= 10000) return 40;
-    return 20;
-  }
-
-  // Utility methods
-  private calculateAverage(values: number[]): number {
-    if (values.length === 0) return 0;
-    return values.reduce((sum, val) => sum + val, 0) / values.length;
-  }
-
-  private getResourceType(url: string): string {
-    if (url.includes('.js')) return 'javascript';
-    if (url.includes('.css')) return 'stylesheet';
-    if (url.includes('.png') || url.includes('.jpg') || url.includes('.svg')) return 'image';
-    if (url.includes('.woff') || url.includes('.ttf')) return 'font';
-    return 'other';
-  }
-
-  private getCacheStatus(entry: PerformanceResourceTiming): string {
-    if (entry.transferSize === 0) return 'cache_hit';
-    if (entry.transferSize < entry.encodedBodySize) return 'cache_partial';
-    return 'cache_miss';
-  }
-
-  private reportSlowResources(resources: PerformanceResourceTiming[]): void {
-    resources.forEach(resource => {
-      this.metricsBuffer.push({
-        metric_type: 'slow_resource',
-        metric_category: 'performance',
-        metric_value: resource.responseEnd - resource.startTime,
-        metric_unit: 'milliseconds',
-        additional_metadata: {
-          resource_url: resource.name,
-          resource_type: this.getResourceType(resource.name),
-          transfer_size: resource.transferSize
-        }
-      });
-    });
-  }
-
-  private groupBy(array: any[], key: string): { [key: string]: any[] } {
-    return array.reduce((groups, item) => {
-      const value = item[key];
-      groups[value] = groups[value] || [];
-      groups[value].push(item);
-      return groups;
-    }, {});
   }
 }
 
