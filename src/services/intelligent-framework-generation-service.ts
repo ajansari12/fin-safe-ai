@@ -1,1114 +1,696 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
 import { 
   OrganizationalProfile, 
-  SectorThreshold, 
+  GeneratedFrameworkData, 
+  FrameworkComponent,
+  SectorThreshold,
   FrameworkGenerationRule,
   ControlLibraryItem,
-  RegulatoryMapping,
-  GeneratedFrameworkData,
-  FrameworkComponent
-} from "@/types/organizational-intelligence";
+  RegulatoryMapping
+} from '@/types/organizational-intelligence';
 
-export interface FrameworkGenerationOptions {
-  includeTemplates?: boolean;
-  customization?: Record<string, any>;
-  priority?: 'speed' | 'thoroughness' | 'compliance';
+export interface FrameworkGenerationRequest {
+  profileId: string;
+  frameworkTypes: string[];
+  customizations?: Record<string, any>;
 }
 
-export interface GeneratedFrameworkResult {
+export interface FrameworkGenerationResult {
   framework: GeneratedFrameworkData;
   components: FrameworkComponent[];
-  recommendations: string[];
-  implementation_plan: {
-    phases: {
+  effectiveness_score: number;
+  implementationPlan: {
+    total_duration: string;
+    phases: Array<{
       name: string;
       duration: string;
-      tasks: string[];
-      dependencies: string[];
-    }[];
-    total_estimated_hours: number;
-    success_metrics: string[];
+      deliverables: string[];
+    }>;
+    resource_allocation: string;
   };
 }
 
 class IntelligentFrameworkGenerationService {
-  /**
-   * Generate a comprehensive governance framework based on organizational profile
-   */
-  async generateGovernanceFramework(
-    profileId: string, 
-    options: FrameworkGenerationOptions = {}
-  ): Promise<GeneratedFrameworkResult> {
-    try {
-      // Get organizational profile
-      const profile = await this.getOrganizationalProfile(profileId);
-      if (!profile) {
-        throw new Error('Organizational profile not found');
-      }
-
-      // Get applicable generation rules
-      const rules = await this.getApplicableRules(profile, 'governance');
-      
-      // Generate framework based on organization characteristics
-      const frameworkData = await this.buildGovernanceStructure(profile, rules);
-      
-      // Save generated framework
-      const framework = await this.saveGeneratedFramework({
-        org_id: profile.organization_id,
-        profile_id: profileId,
-        framework_type: 'governance',
-        framework_name: `${profile.name} Governance Framework`,
-        framework_data: frameworkData,
-        generation_metadata: {
-          rules_applied: rules.map(r => r.id),
-          generation_date: new Date().toISOString(),
-          customization_options: options,
-          profile_characteristics: {
-            employee_count: profile.employee_count,
-            asset_size: profile.asset_size,
-            complexity: profile.operational_complexity || 'medium',
-            maturity: profile.governance_maturity || 'developing'
-          }
-        }
-      });
-
-      // Generate components
-      const components = await this.generateGovernanceComponents(framework.id, frameworkData);
-      
-      // Create implementation plan
-      const implementationPlan = this.createGovernanceImplementationPlan(profile, frameworkData);
-
-      return {
-        framework,
-        components,
-        recommendations: this.generateGovernanceRecommendations(profile, frameworkData),
-        implementation_plan: implementationPlan
-      };
-
-    } catch (error) {
-      console.error('Error generating governance framework:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Generate risk appetite framework with intelligent thresholds
-   */
-  async generateRiskAppetiteFramework(
-    profileId: string,
-    options: FrameworkGenerationOptions = {}
-  ): Promise<GeneratedFrameworkResult> {
-    try {
-      const profile = await this.getOrganizationalProfile(profileId);
-      if (!profile) {
-        throw new Error('Organizational profile not found');
-      }
-
-      // Get sector-specific thresholds
-      const sectorThresholds = await this.getSectorThresholds(profile.sub_sector);
-      
-      // Generate risk appetite statements
-      const riskAppetiteData = await this.buildRiskAppetiteFramework(profile, sectorThresholds);
-      
-      const framework = await this.saveGeneratedFramework({
-        org_id: profile.organization_id,
-        profile_id: profileId,
-        framework_type: 'risk_appetite',
-        framework_name: `${profile.name} Risk Appetite Framework`,
-        framework_data: riskAppetiteData,
-        generation_metadata: {
-          sector_thresholds_used: sectorThresholds.map(t => t.id),
-          generation_date: new Date().toISOString(),
-          risk_maturity: profile.risk_maturity,
-          complexity_level: profile.operational_complexity || 'medium'
-        }
-      });
-
-      const components = await this.generateRiskAppetiteComponents(framework.id, riskAppetiteData);
-      const implementationPlan = this.createRiskAppetiteImplementationPlan(profile, riskAppetiteData);
-
-      return {
-        framework,
-        components,
-        recommendations: this.generateRiskAppetiteRecommendations(profile, riskAppetiteData),
-        implementation_plan: implementationPlan
-      };
-
-    } catch (error) {
-      console.error('Error generating risk appetite framework:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Generate impact tolerance framework with business function mapping
-   */
-  async generateImpactToleranceFramework(
-    profileId: string,
-    options: FrameworkGenerationOptions = {}
-  ): Promise<GeneratedFrameworkResult> {
-    try {
-      const profile = await this.getOrganizationalProfile(profileId);
-      if (!profile) {
-        throw new Error('Organizational profile not found');
-      }
-
-      // Get business functions
-      const businessFunctions = await this.getBusinessFunctions(profile.organization_id);
-      
-      // Get sector thresholds for RTO/RPO
-      const sectorThresholds = await this.getSectorThresholds(profile.sub_sector);
-      
-      // Generate impact tolerance framework
-      const impactToleranceData = await this.buildImpactToleranceFramework(
-        profile, 
-        businessFunctions, 
-        sectorThresholds
-      );
-      
-      const framework = await this.saveGeneratedFramework({
-        org_id: profile.organization_id,
-        profile_id: profileId,
-        framework_type: 'impact_tolerance',
-        framework_name: `${profile.name} Impact Tolerance Framework`,
-        framework_data: impactToleranceData,
-        generation_metadata: {
-          business_functions_analyzed: businessFunctions.length,
-          sector_benchmarks_applied: sectorThresholds.length,
-          regulatory_alignment: profile.regulatory_complexity || 'medium'
-        }
-      });
-
-      const components = await this.generateImpactToleranceComponents(framework.id, impactToleranceData);
-      const implementationPlan = this.createImpactToleranceImplementationPlan(profile, impactToleranceData);
-
-      return {
-        framework,
-        components,
-        recommendations: this.generateImpactToleranceRecommendations(profile, impactToleranceData),
-        implementation_plan: implementationPlan
-      };
-
-    } catch (error) {
-      console.error('Error generating impact tolerance framework:', error);
-      throw error;
-    }
-  }
-
-  // Helper methods
   private async getOrganizationalProfile(profileId: string): Promise<OrganizationalProfile | null> {
-    const { data, error } = await supabase
-      .from('organizational_profiles')
-      .select('*')
-      .eq('id', profileId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('organizational_profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single();
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching organizational profile:', error);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
       console.error('Error fetching organizational profile:', error);
       return null;
     }
-
-    return data as OrganizationalProfile;
   }
 
-  private async getSectorThresholds(sector: string): Promise<SectorThreshold[]> {
-    const { data, error } = await supabase
+  private async getSectorThresholds(sector: string, subSector?: string): Promise<SectorThreshold[]> {
+    let query = supabase
       .from('sector_thresholds')
       .select('*')
       .eq('sector', sector);
+
+    if (subSector) {
+      query = query.eq('sub_sector', subSector);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching sector thresholds:', error);
       return [];
     }
 
-    return data.map(item => ({
-      ...item,
-      metric_name: item.metric_name,
-      recommended_value: item.recommended_value
-    })) as SectorThreshold[];
+    return data || [];
   }
 
-  private async getApplicableRules(
-    profile: OrganizationalProfile, 
-    ruleType: string
-  ): Promise<FrameworkGenerationRule[]> {
+  private async getFrameworkGenerationRules(orgCriteria: Record<string, any>): Promise<FrameworkGenerationRule[]> {
+    // This is a simplified example. In a real application, you would need a more sophisticated
+    // way to match the organization criteria against the rules.
     const { data, error } = await supabase
       .from('framework_generation_rules')
-      .select('*')
-      .eq('rule_type', ruleType)
-      .eq('is_active', true)
-      .order('priority', { ascending: false });
+      .select('*');
 
     if (error) {
-      console.error('Error fetching generation rules:', error);
+      console.error('Error fetching framework generation rules:', error);
       return [];
     }
 
-    // Filter rules based on org criteria
-    return data.filter(rule => this.evaluateRuleCriteria(rule.org_criteria, profile)) as FrameworkGenerationRule[];
-  }
-
-  private evaluateRuleCriteria(criteria: Record<string, any>, profile: OrganizationalProfile): boolean {
-    // Simple criteria evaluation logic
-    for (const [key, condition] of Object.entries(criteria)) {
-      const profileValue = (profile as any)[key];
-      
-      if (typeof condition === 'object' && condition !== null) {
-        if (condition.min !== undefined && profileValue < condition.min) return false;
-        if (condition.max !== undefined && profileValue > condition.max) return false;
-        if (condition.equals !== undefined && profileValue !== condition.equals) return false;
-      } else if (profileValue !== condition) {
-        return false;
+    // Basic filter - needs to be replaced with a proper matching logic
+    const filteredRules = data?.filter(rule => {
+      for (const key in orgCriteria) {
+        if (rule.org_criteria[key] !== orgCriteria[key]) {
+          return false;
+        }
       }
-    }
-    
-    return true;
+      return true;
+    }) || [];
+
+    return filteredRules;
   }
 
-  private async buildGovernanceStructure(
-    profile: OrganizationalProfile, 
-    rules: FrameworkGenerationRule[]
-  ): Promise<Record<string, any>> {
-    const complexity = profile.operational_complexity || 'medium';
-    const size = profile.employee_count;
-    
-    return {
-      board_structure: this.generateBoardStructure(profile, rules),
-      committees: this.generateCommitteeStructure(profile, rules),
-      reporting_lines: this.generateReportingStructure(profile),
-      policies_required: this.generateRequiredPolicies(profile),
-      meeting_schedules: this.generateMeetingSchedules(profile),
-      stakeholder_engagement: this.generateStakeholderFramework(profile)
-    };
-  }
-
-  private generateBoardStructure(profile: OrganizationalProfile, rules: FrameworkGenerationRule[]) {
-    const size = profile.employee_count;
-    const complexity = profile.operational_complexity || 'medium';
-    
-    let recommendedSize = 7; // Default
-    if (size < 100) recommendedSize = 5;
-    else if (size > 1000) recommendedSize = 9;
-    
-    return {
-      recommended_size: recommendedSize,
-      independence_ratio: complexity === 'high' ? 0.75 : 0.6,
-      required_expertise: this.getRequiredBoardExpertise(profile),
-      term_limits: complexity === 'high' ? 6 : 9,
-      evaluation_frequency: 'annual'
-    };
-  }
-
-  private getRequiredBoardExpertise(profile: OrganizationalProfile): string[] {
-    const expertise = ['governance', 'risk_management', 'financial'];
-    
-    if (profile.sub_sector === 'banking') {
-      expertise.push('banking_regulation', 'credit_risk');
-    }
-    
-    if (profile.technology_maturity === 'advanced') {
-      expertise.push('cybersecurity', 'digital_transformation');
-    }
-    
-    return expertise;
-  }
-
-  private generateCommitteeStructure(profile: OrganizationalProfile, rules: FrameworkGenerationRule[]) {
-    const committees = ['audit', 'risk'];
-    const size = profile.employee_count;
-    
-    if (size > 500) {
-      committees.push('governance', 'technology');
-    }
-    
-    if (profile.sub_sector === 'banking' && size > 1000) {
-      committees.push('model_risk', 'credit');
-    }
-    
-    return committees.map(name => ({
-      name,
-      size: this.getCommitteeSize(name, profile),
-      meeting_frequency: this.getCommitteeMeetingFrequency(name, profile),
-      charter_requirements: this.getCommitteeCharter(name, profile)
-    }));
-  }
-
-  private getCommitteeSize(committee: string, profile: OrganizationalProfile): number {
-    const baseSize = profile.employee_count > 500 ? 5 : 3;
-    return committee === 'audit' ? Math.max(baseSize, 3) : baseSize;
-  }
-
-  private getCommitteeMeetingFrequency(committee: string, profile: OrganizationalProfile): string {
-    const complexity = profile.regulatory_complexity || 'medium';
-    
-    if (committee === 'audit') return 'quarterly';
-    if (committee === 'risk' && complexity === 'high') return 'monthly';
-    
-    return 'quarterly';
-  }
-
-  private getCommitteeCharter(committee: string, profile: OrganizationalProfile): string[] {
-    // Return committee-specific charter requirements
-    const baseCharter = ['oversight', 'reporting', 'approval_authority'];
-    
-    if (committee === 'audit') {
-      baseCharter.push('external_auditor_oversight', 'internal_audit_oversight');
-    }
-    
-    return baseCharter;
-  }
-
-  private generateReportingStructure(profile: OrganizationalProfile) {
-    const size = profile.employee_count;
-    const complexity = profile.operational_complexity || 'medium';
-    
-    if (size > 1000 || complexity === 'high') {
-      return {
-        model: 'three_lines_of_defense',
-        reporting_frequency: 'monthly',
-        escalation_thresholds: 'defined',
-        independence_required: true
-      };
-    }
-    
-    return {
-      model: 'simplified',
-      reporting_frequency: 'quarterly',
-      escalation_thresholds: 'basic',
-      independence_required: false
-    };
-  }
-
-  private generateRequiredPolicies(profile: OrganizationalProfile): string[] {
-    const policies = [
-      'governance_policy',
-      'risk_management_policy',
-      'audit_policy',
-      'conflict_of_interest_policy'
-    ];
-    
-    if (profile.sub_sector === 'banking') {
-      policies.push('credit_policy', 'aml_policy', 'privacy_policy');
-    }
-    
-    return policies;
-  }
-
-  private generateMeetingSchedules(profile: OrganizationalProfile) {
-    const complexity = profile.regulatory_complexity || 'medium';
-    
-    return {
-      board_meetings: complexity === 'high' ? 'monthly' : 'quarterly',
-      committee_meetings: this.getCommitteeMeetingSchedule(profile),
-      annual_planning: 'required',
-      strategy_sessions: complexity === 'high' ? 'semi_annual' : 'annual'
-    };
-  }
-
-  private getCommitteeMeetingSchedule(profile: OrganizationalProfile) {
-    return {
-      audit: 'quarterly',
-      risk: profile.regulatory_complexity === 'high' ? 'monthly' : 'quarterly',
-      governance: 'semi_annual',
-      technology: 'quarterly'
-    };
-  }
-
-  private generateStakeholderFramework(profile: OrganizationalProfile) {
-    const stakeholders = profile.stakeholder_types || ['shareholders', 'customers', 'regulators'];
-    
-    return {
-      stakeholder_mapping: stakeholders,
-      engagement_methods: this.getEngagementMethods(stakeholders),
-      communication_frequency: this.getCommunicationFrequency(profile),
-      feedback_mechanisms: this.getFeedbackMechanisms(stakeholders)
-    };
-  }
-
-  private getEngagementMethods(stakeholders: string[]): Record<string, string[]> {
-    const methods: Record<string, string[]> = {};
-    
-    stakeholders.forEach(stakeholder => {
-      switch (stakeholder) {
-        case 'shareholders':
-          methods[stakeholder] = ['annual_meeting', 'quarterly_reports', 'investor_calls'];
-          break;
-        case 'regulators':
-          methods[stakeholder] = ['regulatory_reports', 'examination_meetings', 'consultation_responses'];
-          break;
-        case 'customers':
-          methods[stakeholder] = ['surveys', 'feedback_portals', 'service_reviews'];
-          break;
-        default:
-          methods[stakeholder] = ['periodic_updates', 'meetings'];
-      }
-    });
-    
-    return methods;
-  }
-
-  private getCommunicationFrequency(profile: OrganizationalProfile): Record<string, string> {
-    const complexity = profile.regulatory_complexity || 'medium';
-    
-    return {
-      shareholders: 'quarterly',
-      regulators: complexity === 'high' ? 'monthly' : 'quarterly',
-      customers: 'as_needed',
-      employees: 'monthly'
-    };
-  }
-
-  private getFeedbackMechanisms(stakeholders: string[]): string[] {
-    const mechanisms = ['surveys', 'meetings', 'digital_platforms'];
-    
-    if (stakeholders.includes('customers')) {
-      mechanisms.push('customer_portal', 'complaint_system');
-    }
-    
-    return mechanisms;
-  }
-
-  private async buildRiskAppetiteFramework(
-    profile: OrganizationalProfile,
-    sectorThresholds: SectorThreshold[]
-  ): Promise<Record<string, any>> {
-    return {
-      risk_categories: this.generateRiskCategories(profile),
-      appetite_statements: this.generateAppetiteStatements(profile, sectorThresholds),
-      tolerance_thresholds: this.generateToleranceThresholds(profile, sectorThresholds),
-      monitoring_framework: this.generateMonitoringFramework(profile),
-      escalation_procedures: this.generateEscalationProcedures(profile)
-    };
-  }
-
-  private generateRiskCategories(profile: OrganizationalProfile): string[] {
-    const categories = ['operational', 'credit', 'market', 'liquidity', 'technology'];
-    
-    if (profile.sub_sector === 'banking') {
-      categories.push('regulatory', 'model_risk');
-    }
-    
-    return categories;
-  }
-
-  private generateAppetiteStatements(
-    profile: OrganizationalProfile,
-    sectorThresholds: SectorThreshold[]
-  ): Record<string, any> {
-    const statements: Record<string, any> = {};
-    
-    sectorThresholds.forEach(threshold => {
-      statements[threshold.metric_name] = {
-        statement: `We maintain ${threshold.metric_name} within ${threshold.recommended_value}% of benchmark`,
-        rationale: threshold.rationale,
-        measurement: threshold.threshold_type,
-        threshold: threshold.recommended_value
-      };
-    });
-    
-    return statements;
-  }
-
-  private generateToleranceThresholds(
-    profile: OrganizationalProfile,
-    sectorThresholds: SectorThreshold[]
-  ): Record<string, any> {
-    const thresholds: Record<string, any> = {};
-    
-    sectorThresholds.forEach(threshold => {
-      thresholds[threshold.metric_name] = {
-        green: threshold.recommended_value * 0.8,
-        amber: threshold.recommended_value,
-        red: threshold.recommended_value * 1.2
-      };
-    });
-    
-    return thresholds;
-  }
-
-  private generateMonitoringFramework(profile: OrganizationalProfile) {
-    return {
-      frequency: profile.regulatory_complexity === 'high' ? 'daily' : 'weekly',
-      reporting: 'monthly',
-      escalation: 'immediate_for_breaches',
-      review_cycle: 'quarterly'
-    };
-  }
-
-  private generateEscalationProcedures(profile: OrganizationalProfile) {
-    return {
-      level_1: 'risk_manager',
-      level_2: 'cro',
-      level_3: 'risk_committee',
-      level_4: 'board',
-      timeframes: {
-        level_1: '1_hour',
-        level_2: '4_hours',
-        level_3: '24_hours',
-        level_4: '48_hours'
-      }
-    };
-  }
-
-  private async buildImpactToleranceFramework(
-    profile: OrganizationalProfile,
-    businessFunctions: any[],
-    sectorThresholds: SectorThreshold[]
-  ): Promise<Record<string, any>> {
-    return {
-      business_functions: this.analyzeBusinessFunctions(businessFunctions, profile),
-      impact_tolerances: this.generateImpactTolerances(businessFunctions, sectorThresholds),
-      recovery_objectives: this.generateRecoveryObjectives(businessFunctions, sectorThresholds),
-      dependency_mapping: this.generateDependencyMapping(businessFunctions),
-      continuity_strategies: this.generateContinuityStrategies(businessFunctions, profile)
-    };
-  }
-
-  private analyzeBusinessFunctions(businessFunctions: any[], profile: OrganizationalProfile) {
-    return businessFunctions.map(func => ({
-      ...func,
-      criticality_score: this.calculateCriticalityScore(func, profile),
-      impact_assessment: this.assessImpact(func, profile),
-      dependencies: this.identifyDependencies(func)
-    }));
-  }
-
-  private calculateCriticalityScore(businessFunction: any, profile: OrganizationalProfile): number {
-    let score = 1;
-    
-    if (businessFunction.criticality === 'critical') score = 5;
-    else if (businessFunction.criticality === 'high') score = 4;
-    else if (businessFunction.criticality === 'medium') score = 3;
-    
-    // Adjust based on organization characteristics
-    if (profile.sub_sector === 'banking' && businessFunction.category === 'payments') {
-      score = Math.max(score, 4);
-    }
-    
-    return score;
-  }
-
-  private assessImpact(businessFunction: any, profile: OrganizationalProfile) {
-    return {
-      financial: this.assessFinancialImpact(businessFunction, profile),
-      operational: this.assessOperationalImpact(businessFunction),
-      regulatory: this.assessRegulatoryImpact(businessFunction, profile),
-      reputational: this.assessReputationalImpact(businessFunction)
-    };
-  }
-
-  private assessFinancialImpact(businessFunction: any, profile: OrganizationalProfile): string {
-    const assetSize = profile.asset_size;
-    
-    if (businessFunction.criticality === 'critical') {
-      return assetSize > 10000000000 ? 'very_high' : 'high';
-    }
-    
-    return 'medium';
-  }
-
-  private assessOperationalImpact(businessFunction: any): string {
-    return businessFunction.criticality === 'critical' ? 'high' : 'medium';
-  }
-
-  private assessRegulatoryImpact(businessFunction: any, profile: OrganizationalProfile): string {
-    if (profile.sub_sector === 'banking' && businessFunction.category === 'payments') {
-      return 'high';
-    }
-    
-    return profile.regulatory_complexity || 'medium';
-  }
-
-  private assessReputationalImpact(businessFunction: any): string {
-    return businessFunction.category === 'customer_facing' ? 'high' : 'medium';
-  }
-
-  private identifyDependencies(businessFunction: any): string[] {
-    // Simple dependency identification
-    const dependencies = ['technology', 'personnel'];
-    
-    if (businessFunction.category === 'payments') {
-      dependencies.push('external_systems', 'network_connectivity');
-    }
-    
-    return dependencies;
-  }
-
-  private generateImpactTolerances(
-    businessFunctions: any[],
-    sectorThresholds: SectorThreshold[]
-  ): Record<string, any> {
-    const tolerances: Record<string, any> = {};
-    
-    businessFunctions.forEach(func => {
-      tolerances[func.id] = {
-        max_downtime: this.calculateMaxDowntime(func, sectorThresholds),
-        max_data_loss: this.calculateMaxDataLoss(func, sectorThresholds),
-        service_degradation: this.calculateServiceDegradation(func)
-      };
-    });
-    
-    return tolerances;
-  }
-
-  private calculateMaxDowntime(businessFunction: any, sectorThresholds: SectorThreshold[]): string {
-    const rtoThreshold = sectorThresholds.find(t => t.threshold_type === 'rto');
-    
-    if (businessFunction.criticality === 'critical') {
-      return rtoThreshold ? `${rtoThreshold.recommended_value}h` : '4h';
-    }
-    
-    return '24h';
-  }
-
-  private calculateMaxDataLoss(businessFunction: any, sectorThresholds: SectorThreshold[]): string {
-    const rpoThreshold = sectorThresholds.find(t => t.threshold_type === 'rpo');
-    
-    if (businessFunction.criticality === 'critical') {
-      return rpoThreshold ? `${rpoThreshold.recommended_value}h` : '1h';
-    }
-    
-    return '24h';
-  }
-
-  private calculateServiceDegradation(businessFunction: any): Record<string, any> {
-    return {
-      acceptable_performance_loss: businessFunction.criticality === 'critical' ? '10%' : '25%',
-      max_degradation_period: businessFunction.criticality === 'critical' ? '1h' : '4h'
-    };
-  }
-
-  private generateRecoveryObjectives(
-    businessFunctions: any[],
-    sectorThresholds: SectorThreshold[]
-  ): Record<string, any> {
-    const objectives: Record<string, any> = {};
-    
-    businessFunctions.forEach(func => {
-      objectives[func.id] = {
-        rto: this.calculateMaxDowntime(func, sectorThresholds),
-        rpo: this.calculateMaxDataLoss(func, sectorThresholds),
-        minimum_service_level: this.calculateMinimumServiceLevel(func)
-      };
-    });
-    
-    return objectives;
-  }
-
-  private calculateMinimumServiceLevel(businessFunction: any): string {
-    switch (businessFunction.criticality) {
-      case 'critical': return '90%';
-      case 'high': return '75%';
-      default: return '50%';
-    }
-  }
-
-  private generateDependencyMapping(businessFunctions: any[]): Record<string, any> {
-    const mapping: Record<string, any> = {};
-    
-    businessFunctions.forEach(func => {
-      mapping[func.id] = {
-        internal_dependencies: this.identifyInternalDependencies(func),
-        external_dependencies: this.identifyExternalDependencies(func),
-        technology_dependencies: this.identifyTechnologyDependencies(func)
-      };
-    });
-    
-    return mapping;
-  }
-
-  private identifyInternalDependencies(businessFunction: any): string[] {
-    return ['hr', 'it_support', 'facilities'];
-  }
-
-  private identifyExternalDependencies(businessFunction: any): string[] {
-    const deps = ['internet_provider', 'cloud_services'];
-    
-    if (businessFunction.category === 'payments') {
-      deps.push('payment_networks', 'correspondent_banks');
-    }
-    
-    return deps;
-  }
-
-  private identifyTechnologyDependencies(businessFunction: any): string[] {
-    return ['core_systems', 'databases', 'network_infrastructure'];
-  }
-
-  private generateContinuityStrategies(businessFunctions: any[], profile: OrganizationalProfile) {
-    return businessFunctions.map(func => ({
-      function_id: func.id,
-      primary_strategy: this.getPrimaryStrategy(func),
-      backup_strategy: this.getBackupStrategy(func),
-      recovery_resources: this.getRecoveryResources(func, profile),
-      testing_requirements: this.getTestingRequirements(func)
-    }));
-  }
-
-  private getPrimaryStrategy(businessFunction: any): string {
-    if (businessFunction.criticality === 'critical') {
-      return 'hot_site';
-    }
-    return 'cold_site';
-  }
-
-  private getBackupStrategy(businessFunction: any): string {
-    return 'manual_procedures';
-  }
-
-  private getRecoveryResources(businessFunction: any, profile: OrganizationalProfile): Record<string, any> {
-    return {
-      personnel: Math.ceil(profile.employee_count * 0.1),
-      technology: 'backup_systems',
-      facilities: 'alternate_location'
-    };
-  }
-
-  private getTestingRequirements(businessFunction: any): Record<string, any> {
-    return {
-      frequency: businessFunction.criticality === 'critical' ? 'quarterly' : 'annually',
-      scope: 'full_recovery_test',
-      success_criteria: 'meet_rto_rpo'
-    };
-  }
-
-  private async getBusinessFunctions(orgId: string): Promise<any[]> {
+  private async getControlLibraryItems(riskCategories: string[]): Promise<ControlLibraryItem[]> {
     const { data, error } = await supabase
-      .from('business_functions')
+      .from('control_libraries')
       .select('*')
-      .eq('org_id', orgId);
+      .contains('risk_categories', riskCategories);
 
     if (error) {
-      console.error('Error fetching business functions:', error);
+      console.error('Error fetching control library items:', error);
       return [];
     }
 
     return data || [];
   }
 
-  private async saveGeneratedFramework(frameworkData: Partial<GeneratedFrameworkData>): Promise<GeneratedFrameworkData> {
+  private async getRegulatoryMappings(sectors: string[]): Promise<RegulatoryMapping[]> {
     const { data, error } = await supabase
+      .from('regulatory_mapping')
+      .select('*')
+      .contains('applicable_sectors', sectors);
+
+    if (error) {
+      console.error('Error fetching regulatory mappings:', error);
+      return [];
+    }
+
+    return data || [];
+  }
+
+  private async generateGovernanceFramework(profile: OrganizationalProfile): Promise<any> {
+    // Fetch relevant data based on the profile
+    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
+    const frameworkRules = await this.getFrameworkGenerationRules({
+      employee_count: profile.employee_count,
+      asset_size: profile.asset_size
+    });
+
+    // Example: Construct a basic framework
+    const frameworkData = {
+      name: 'Basic Governance Framework',
+      description: 'A basic governance framework tailored for the organization.',
+      elements: [
+        'Board of Directors',
+        'Audit Committee',
+        'Risk Management Committee'
+      ],
+      sector_thresholds: sectorThresholds,
+      framework_rules: frameworkRules
+    };
+
+    return frameworkData;
+  }
+
+  private async generateRiskAppetiteFramework(profile: OrganizationalProfile): Promise<any> {
+    // Fetch relevant data based on the profile
+    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
+    const frameworkRules = await this.getFrameworkGenerationRules({
+      employee_count: profile.employee_count,
+      asset_size: profile.asset_size
+    });
+
+    // Example: Construct a basic framework
+    const frameworkData = {
+      name: 'Basic Risk Appetite Framework',
+      description: 'A basic risk appetite framework tailored for the organization.',
+      elements: [
+        'Risk Identification',
+        'Risk Assessment',
+        'Risk Response'
+      ],
+      sector_thresholds: sectorThresholds,
+      framework_rules: frameworkRules
+    };
+
+    return frameworkData;
+  }
+
+  private async generateImpactToleranceFramework(profile: OrganizationalProfile): Promise<any> {
+    // Fetch relevant data based on the profile
+    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
+    const frameworkRules = await this.getFrameworkGenerationRules({
+      employee_count: profile.employee_count,
+      asset_size: profile.asset_size
+    });
+
+    // Example: Construct a basic framework
+    const frameworkData = {
+      name: 'Basic Impact Tolerance Framework',
+      description: 'A basic impact tolerance framework tailored for the organization.',
+      elements: [
+        'Impact Identification',
+        'Impact Assessment',
+        'Impact Response'
+      ],
+      sector_thresholds: sectorThresholds,
+      framework_rules: frameworkRules
+    };
+
+    return frameworkData;
+  }
+
+  private async generateControlFramework(profile: OrganizationalProfile): Promise<any> {
+    // Fetch relevant data based on the profile
+    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
+    const frameworkRules = await this.getFrameworkGenerationRules({
+      employee_count: profile.employee_count,
+      asset_size: profile.asset_size
+    });
+    const controlLibraryItems = await this.getControlLibraryItems(['operational', 'cyber']);
+
+    // Example: Construct a basic framework
+    const frameworkData = {
+      name: 'Basic Control Framework',
+      description: 'A basic control framework tailored for the organization.',
+      elements: [
+        'Control Identification',
+        'Control Assessment',
+        'Control Implementation'
+      ],
+      sector_thresholds: sectorThresholds,
+      framework_rules: frameworkRules,
+      control_library_items: controlLibraryItems
+    };
+
+    return frameworkData;
+  }
+
+  private async generateComplianceFramework(profile: OrganizationalProfile): Promise<any> {
+    // Fetch relevant data based on the profile
+    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
+    const frameworkRules = await this.getFrameworkGenerationRules({
+      employee_count: profile.employee_count,
+      asset_size: profile.asset_size
+    });
+    const regulatoryMappings = await this.getRegulatoryMappings([profile.sub_sector]);
+
+    // Example: Construct a basic framework
+    const frameworkData = {
+      name: 'Basic Compliance Framework',
+      description: 'A basic compliance framework tailored for the organization.',
+      elements: [
+        'Compliance Identification',
+        'Compliance Assessment',
+        'Compliance Implementation'
+      ],
+      sector_thresholds: sectorThresholds,
+      framework_rules: frameworkRules,
+      regulatory_mappings: regulatoryMappings
+    };
+
+    return frameworkData;
+  }
+
+  private async generateScenarioTestingFramework(profile: OrganizationalProfile): Promise<any> {
+    // Fetch relevant data based on the profile
+    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
+    const frameworkRules = await this.getFrameworkGenerationRules({
+      employee_count: profile.employee_count,
+      asset_size: profile.asset_size
+    });
+
+    // Example: Construct a basic framework
+    const frameworkData = {
+      name: 'Basic Scenario Testing Framework',
+      description: 'A basic scenario testing framework tailored for the organization.',
+      elements: [
+        'Scenario Identification',
+        'Scenario Assessment',
+        'Scenario Implementation'
+      ],
+      sector_thresholds: sectorThresholds,
+      framework_rules: frameworkRules
+    };
+
+    return frameworkData;
+  }
+
+  private async generateGovernanceComponents(profile: OrganizationalProfile, frameworkData: any): Promise<FrameworkComponent[]> {
+    const components: FrameworkComponent[] = [
+      {
+        id: '1',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'committee',
+        component_name: 'Audit Committee',
+        component_description: 'Responsible for overseeing the financial reporting process.',
+        component_data: {
+          responsibilities: ['Financial reporting', 'Internal controls', 'External audit']
+        },
+        dependencies: [],
+        implementation_priority: 1,
+        estimated_effort_hours: 40,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'policy',
+        component_name: 'Whistleblower Policy',
+        component_description: 'Provides a mechanism for employees to report concerns.',
+        component_data: {
+          reporting_channels: ['Email', 'Phone', 'In-person']
+        },
+        dependencies: [],
+        implementation_priority: 2,
+        estimated_effort_hours: 20,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    return components;
+  }
+
+  private async generateRiskAppetiteComponents(profile: OrganizationalProfile, frameworkData: any): Promise<FrameworkComponent[]> {
+    const components: FrameworkComponent[] = [
+      {
+        id: '3',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'policy',
+        component_name: 'Risk Appetite Statement',
+        component_description: 'Defines the level of risk the organization is willing to accept.',
+        component_data: {
+          risk_categories: ['Financial', 'Operational', 'Compliance']
+        },
+        dependencies: [],
+        implementation_priority: 1,
+        estimated_effort_hours: 40,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '4',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'kri',
+        component_name: 'Key Risk Indicators',
+        component_description: 'Metrics used to monitor the organization\'s risk exposure.',
+        component_data: {
+          metrics: ['Revenue', 'Customer Churn', 'Employee Turnover']
+        },
+        dependencies: [],
+        implementation_priority: 2,
+        estimated_effort_hours: 20,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    return components;
+  }
+
+  private async generateImpactToleranceComponents(profile: OrganizationalProfile, frameworkData: any): Promise<FrameworkComponent[]> {
+    const components: FrameworkComponent[] = [
+      {
+        id: '5',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'policy',
+        component_name: 'Business Continuity Plan',
+        component_description: 'Defines how the organization will continue to operate during a disruption.',
+        component_data: {
+          recovery_time_objective: '4 hours',
+          recovery_point_objective: '1 hour'
+        },
+        dependencies: [],
+        implementation_priority: 1,
+        estimated_effort_hours: 40,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '6',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'procedure',
+        component_name: 'Disaster Recovery Plan',
+        component_description: 'Defines how the organization will recover from a disaster.',
+        component_data: {
+          recovery_location: 'Offsite',
+          backup_frequency: 'Daily'
+        },
+        dependencies: [],
+        implementation_priority: 2,
+        estimated_effort_hours: 20,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    return components;
+  }
+
+  private async generateControlComponents(profile: OrganizationalProfile, frameworkData: any): Promise<FrameworkComponent[]> {
+    const components: FrameworkComponent[] = [
+      {
+        id: '7',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'control',
+        component_name: 'Multi-Factor Authentication',
+        component_description: 'Requires users to provide multiple factors of authentication.',
+        component_data: {
+          authentication_factors: ['Password', 'One-Time Password']
+        },
+        dependencies: [],
+        implementation_priority: 1,
+        estimated_effort_hours: 40,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '8',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'control',
+        component_name: 'Data Encryption',
+        component_description: 'Encrypts data at rest and in transit.',
+        component_data: {
+          encryption_algorithm: 'AES-256'
+        },
+        dependencies: [],
+        implementation_priority: 2,
+        estimated_effort_hours: 20,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    return components;
+  }
+
+  private async generateComplianceComponents(profile: OrganizationalProfile, frameworkData: any): Promise<FrameworkComponent[]> {
+    const components: FrameworkComponent[] = [
+      {
+        id: '9',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'procedure',
+        component_name: 'Compliance Monitoring',
+        component_description: 'Monitors the organization\'s compliance with regulations.',
+        component_data: {
+          monitoring_frequency: 'Monthly',
+          reporting_requirements: ['Annual Report']
+        },
+        dependencies: [],
+        implementation_priority: 1,
+        estimated_effort_hours: 40,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '10',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'procedure',
+        component_name: 'Regulatory Reporting',
+        component_description: 'Reports the organization\'s compliance with regulations.',
+        component_data: {
+          reporting_frequency: 'Annually',
+          reporting_format: 'XML'
+        },
+        dependencies: [],
+        implementation_priority: 2,
+        estimated_effort_hours: 20,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    return components;
+  }
+
+  private async generateScenarioTestingComponents(profile: OrganizationalProfile, frameworkData: any): Promise<FrameworkComponent[]> {
+    const components: FrameworkComponent[] = [
+      {
+        id: '11',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'scenario',
+        component_name: 'Cyber Attack Scenario',
+        component_description: 'Tests the organization\'s ability to respond to a cyber attack.',
+        component_data: {
+          attack_vector: 'Phishing',
+          impact: 'Data Breach'
+        },
+        dependencies: [],
+        implementation_priority: 1,
+        estimated_effort_hours: 40,
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '12',
+        framework_id: '', // needs to be updated after framework creation
+        component_type: 'scenario',
+        component_name: 'Natural Disaster Scenario',
+        component_description: 'Tests the organization\'s ability to respond to a natural disaster.',
+        component_data: {
+          disaster_type: 'Hurricane',
+          impact: 'Loss of Facilities'
+        },
+        dependencies: [],
+        implementation_priority: 2,
+        estimated_effort_hours: 20,
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    return components;
+  }
+
+  /**
+   * Main method to generate frameworks based on organizational profile
+   */
+  async generateFrameworks(request: FrameworkGenerationRequest): Promise<FrameworkGenerationResult[]> {
+    const { profileId, frameworkTypes, customizations = {} } = request;
+    
+    // Get organizational profile
+    const profile = await this.getOrganizationalProfile(profileId);
+    if (!profile) {
+      throw new Error('Organizational profile not found');
+    }
+
+    // Generate frameworks for each requested type
+    const results: FrameworkGenerationResult[] = [];
+    
+    for (const frameworkType of frameworkTypes) {
+      try {
+        const result = await this.generateSingleFramework(profile, frameworkType, customizations);
+        results.push(result);
+      } catch (error) {
+        console.error(`Error generating ${frameworkType} framework:`, error);
+        // Continue with other frameworks even if one fails
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Generate a single framework based on type and profile
+   */
+  private async generateSingleFramework(
+    profile: OrganizationalProfile, 
+    frameworkType: string, 
+    customizations: Record<string, any>
+  ): Promise<FrameworkGenerationResult> {
+    let frameworkData: any;
+    let components: FrameworkComponent[] = [];
+    
+    switch (frameworkType) {
+      case 'governance':
+        frameworkData = await this.generateGovernanceFramework(profile);
+        components = await this.generateGovernanceComponents(profile, frameworkData);
+        break;
+      case 'risk_appetite':
+        frameworkData = await this.generateRiskAppetiteFramework(profile);
+        components = await this.generateRiskAppetiteComponents(profile, frameworkData);
+        break;
+      case 'impact_tolerance':
+        frameworkData = await this.generateImpactToleranceFramework(profile);
+        components = await this.generateImpactToleranceComponents(profile, frameworkData);
+        break;
+      case 'control':
+        frameworkData = await this.generateControlFramework(profile);
+        components = await this.generateControlComponents(profile, frameworkData);
+        break;
+      case 'compliance':
+        frameworkData = await this.generateComplianceFramework(profile);
+        components = await this.generateComplianceComponents(profile, frameworkData);
+        break;
+      case 'scenario_testing':
+        frameworkData = await this.generateScenarioTestingFramework(profile);
+        components = await this.generateScenarioTestingComponents(profile, frameworkData);
+        break;
+      default:
+        throw new Error(`Unknown framework type: ${frameworkType}`);
+    }
+
+    // Save framework to database
+    const { data: savedFramework, error } = await supabase
       .from('generated_frameworks')
-      .insert([frameworkData])
+      .insert({
+        org_id: profile.org_id,
+        profile_id: profile.id,
+        framework_type: frameworkType,
+        framework_name: frameworkData.name,
+        framework_version: '1.0',
+        generation_metadata: {
+          generated_at: new Date().toISOString(),
+          profile_characteristics: {
+            sector: profile.sub_sector,
+            size: profile.employee_count,
+            maturity: profile.risk_maturity
+          }
+        },
+        framework_data: frameworkData,
+        customization_options: customizations,
+        implementation_status: 'generated'
+      })
       .select()
       .single();
 
     if (error) {
-      throw error;
+      throw new Error(`Failed to save framework: ${error.message}`);
     }
 
-    return data as GeneratedFrameworkData;
-  }
+    // Save components
+    const componentsWithFrameworkId = components.map(component => ({
+      ...component,
+      framework_id: savedFramework.id
+    }));
 
-  private async generateGovernanceComponents(
-    frameworkId: string,
-    frameworkData: Record<string, any>
-  ): Promise<FrameworkComponent[]> {
-    const components: Partial<FrameworkComponent>[] = [];
-    
-    // Generate committee components
-    if (frameworkData.committees) {
-      frameworkData.committees.forEach((committee: any, index: number) => {
-        components.push({
-          framework_id: frameworkId,
-          component_type: 'committee',
-          component_name: `${committee.name} Committee`,
-          component_description: `${committee.name} committee with ${committee.size} members meeting ${committee.meeting_frequency}`,
-          component_data: committee,
-          implementation_priority: index + 1,
-          estimated_effort_hours: 40
-        });
-      });
-    }
-    
-    // Generate policy components
-    if (frameworkData.policies_required) {
-      frameworkData.policies_required.forEach((policy: string, index: number) => {
-        components.push({
-          framework_id: frameworkId,
-          component_type: 'policy',
-          component_name: policy.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          component_description: `Policy document for ${policy}`,
-          component_data: { policy_type: policy },
-          implementation_priority: index + 1,
-          estimated_effort_hours: 20
-        });
-      });
-    }
-
-    const { data, error } = await supabase
+    const { error: componentsError } = await supabase
       .from('framework_components')
-      .insert(components)
-      .select();
+      .insert(componentsWithFrameworkId);
 
-    if (error) {
-      throw error;
+    if (componentsError) {
+      console.error('Error saving components:', componentsError);
     }
 
-    return data as FrameworkComponent[];
-  }
+    // Calculate effectiveness score
+    const effectivenessScore = this.calculateFrameworkEffectiveness(profile, frameworkData, components);
 
-  private async generateRiskAppetiteComponents(
-    frameworkId: string,
-    frameworkData: Record<string, any>
-  ): Promise<FrameworkComponent[]> {
-    const components: Partial<FrameworkComponent>[] = [];
-    
-    // Generate KRI components
-    if (frameworkData.appetite_statements) {
-      Object.entries(frameworkData.appetite_statements).forEach(([key, statement]: [string, any], index) => {
-        components.push({
-          framework_id: frameworkId,
-          component_type: 'kri',
-          component_name: `${key} KRI`,
-          component_description: statement.statement,
-          component_data: statement,
-          implementation_priority: index + 1,
-          estimated_effort_hours: 16
-        });
-      });
-    }
+    // Generate implementation plan
+    const implementationPlan = this.generateImplementationPlan(frameworkType, components);
 
-    const { data, error } = await supabase
-      .from('framework_components')
-      .insert(components)
-      .select();
-
-    if (error) {
-      throw error;
-    }
-
-    return data as FrameworkComponent[];
-  }
-
-  private async generateImpactToleranceComponents(
-    frameworkId: string,
-    frameworkData: Record<string, any>
-  ): Promise<FrameworkComponent[]> {
-    const components: Partial<FrameworkComponent>[] = [];
-    
-    // Generate business function tolerance components
-    if (frameworkData.impact_tolerances) {
-      Object.entries(frameworkData.impact_tolerances).forEach(([functionId, tolerance]: [string, any], index) => {
-        components.push({
-          framework_id: frameworkId,
-          component_type: 'procedure',
-          component_name: `Impact Tolerance for ${functionId}`,
-          component_description: `Impact tolerance definition and monitoring procedures`,
-          component_data: tolerance,
-          implementation_priority: index + 1,
-          estimated_effort_hours: 12
-        });
-      });
-    }
-
-    const { data, error } = await supabase
-      .from('framework_components')
-      .insert(components)
-      .select();
-
-    if (error) {
-      throw error;
-    }
-
-    return data as FrameworkComponent[];
-  }
-
-  private createGovernanceImplementationPlan(
-    profile: OrganizationalProfile,
-    frameworkData: Record<string, any>
-  ) {
     return {
-      phases: [
-        {
-          name: 'Foundation Setup',
-          duration: '2-3 months',
-          tasks: [
-            'Establish board composition',
-            'Create committee charters',
-            'Define reporting structures'
-          ],
-          dependencies: []
-        },
-        {
-          name: 'Policy Development',
-          duration: '3-4 months',
-          tasks: [
-            'Develop governance policies',
-            'Create committee procedures',
-            'Implement reporting frameworks'
-          ],
-          dependencies: ['Foundation Setup']
-        },
-        {
-          name: 'Implementation & Testing',
-          duration: '2-3 months',
-          tasks: [
-            'Conduct initial committee meetings',
-            'Test reporting procedures',
-            'Train stakeholders'
-          ],
-          dependencies: ['Policy Development']
-        }
-      ],
-      total_estimated_hours: this.calculateTotalHours(frameworkData.committees?.length || 2, 60),
-      success_metrics: [
-        'All committees established and operational',
-        'Policies approved and implemented',
-        'Reporting procedures functioning',
-        'Stakeholder satisfaction > 80%'
-      ]
+      framework: savedFramework,
+      components: componentsWithFrameworkId,
+      effectiveness_score: effectivenessScore,
+      implementationPlan
     };
   }
 
-  private createRiskAppetiteImplementationPlan(
-    profile: OrganizationalProfile,
-    frameworkData: Record<string, any>
-  ) {
+  /**
+   * Calculate framework effectiveness based on profile alignment
+   */
+  private calculateFrameworkEffectiveness(
+    profile: OrganizationalProfile, 
+    frameworkData: any, 
+    components: FrameworkComponent[]
+  ): number {
+    let score = 70; // Base score
+
+    // Sector alignment
+    if (profile.sub_sector && frameworkData.sector_alignment) {
+      score += 10;
+    }
+
+    // Maturity alignment
+    if (profile.risk_maturity === 'sophisticated') {
+      score += 10;
+    } else if (profile.risk_maturity === 'advanced') {
+      score += 7;
+    } else if (profile.risk_maturity === 'developing') {
+      score += 5;
+    }
+
+    // Component completeness
+    const componentScore = Math.min(components.length * 2, 20);
+    score += componentScore;
+
+    return Math.min(score, 100);
+  }
+
+  /**
+   * Generate implementation plan based on framework type and components
+   */
+  private generateImplementationPlan(frameworkType: string, components: FrameworkComponent[]): {
+    total_duration: string;
+    phases: Array<{
+      name: string;
+      duration: string;
+      deliverables: string[];
+    }>;
+    resource_allocation: string;
+  } {
+    const totalHours = components.reduce((sum, component) => sum + (component.estimated_effort_hours || 40), 0);
+    const totalWeeks = Math.ceil(totalHours / 40);
+    
+    const phases = [
+      {
+        name: 'Planning & Design',
+        duration: `${Math.ceil(totalWeeks * 0.3)} weeks`,
+        deliverables: [
+          'Framework architecture design',
+          'Implementation roadmap',
+          'Resource allocation plan'
+        ]
+      },
+      {
+        name: 'Core Implementation',
+        duration: `${Math.ceil(totalWeeks * 0.5)} weeks`,
+        deliverables: components.slice(0, Math.ceil(components.length / 2)).map(c => c.component_name)
+      },
+      {
+        name: 'Integration & Testing',
+        duration: `${Math.ceil(totalWeeks * 0.2)} weeks`,
+        deliverables: [
+          'Component integration',
+          'Framework testing',
+          'Performance validation'
+        ]
+      }
+    ];
+
     return {
-      phases: [
-        {
-          name: 'Framework Design',
-          duration: '1-2 months',
-          tasks: [
-            'Define risk appetite statements',
-            'Set tolerance thresholds',
-            'Design monitoring procedures'
-          ],
-          dependencies: []
-        },
-        {
-          name: 'System Implementation',
-          duration: '2-3 months',
-          tasks: [
-            'Implement monitoring systems',
-            'Configure alerting mechanisms',
-            'Integrate with existing systems'
-          ],
-          dependencies: ['Framework Design']
-        },
-        {
-          name: 'Validation & Launch',
-          duration: '1-2 months',
-          tasks: [
-            'Validate thresholds',
-            'Test escalation procedures',
-            'Train users'
-          ],
-          dependencies: ['System Implementation']
-        }
-      ],
-      total_estimated_hours: this.calculateTotalHours(Object.keys(frameworkData.appetite_statements || {}).length, 20),
-      success_metrics: [
-        'All KRIs operational',
-        'Monitoring systems functional',
-        'Escalation procedures tested',
-        'Risk appetite adherence > 95%'
-      ]
+      total_duration: `${totalWeeks} weeks`,
+      phases,
+      resource_allocation: totalHours < 200 ? 'Small team (2-3 people)' : 
+                          totalHours < 500 ? 'Medium team (4-6 people)' : 
+                          'Large team (7+ people)'
     };
-  }
-
-  private createImpactToleranceImplementationPlan(
-    profile: OrganizationalProfile,
-    frameworkData: Record<string, any>
-  ) {
-    return {
-      phases: [
-        {
-          name: 'Business Function Analysis',
-          duration: '2-3 months',
-          tasks: [
-            'Map business functions',
-            'Assess criticality',
-            'Define impact tolerances'
-          ],
-          dependencies: []
-        },
-        {
-          name: 'Recovery Planning',
-          duration: '3-4 months',
-          tasks: [
-            'Develop recovery procedures',
-            'Identify resources',
-            'Create contingency plans'
-          ],
-          dependencies: ['Business Function Analysis']
-        },
-        {
-          name: 'Testing & Validation',
-          duration: '2-3 months',
-          tasks: [
-            'Conduct scenario tests',
-            'Validate recovery procedures',
-            'Update documentation'
-          ],
-          dependencies: ['Recovery Planning']
-        }
-      ],
-      total_estimated_hours: this.calculateTotalHours(Object.keys(frameworkData.impact_tolerances || {}).length, 15),
-      success_metrics: [
-        'All business functions mapped',
-        'Recovery procedures tested',
-        'Impact tolerances validated',
-        'Stakeholder approval obtained'
-      ]
-    };
-  }
-
-  private calculateTotalHours(components: number, hoursPerComponent: number): number {
-    return components * hoursPerComponent;
-  }
-
-  private generateGovernanceRecommendations(
-    profile: OrganizationalProfile,
-    frameworkData: Record<string, any>
-  ): string[] {
-    const recommendations = [
-      'Consider establishing a governance office for ongoing coordination',
-      'Implement regular effectiveness assessments for all committees',
-      'Develop clear communication channels between board and management'
-    ];
-
-    if (profile.governance_maturity === 'basic') {
-      recommendations.push('Focus on foundational governance practices before advanced frameworks');
-    }
-
-    return recommendations;
-  }
-
-  private generateRiskAppetiteRecommendations(
-    profile: OrganizationalProfile,
-    frameworkData: Record<string, any>
-  ): string[] {
-    const recommendations = [
-      'Regularly review and update risk appetite statements',
-      'Ensure alignment between risk appetite and business strategy',
-      'Implement automated monitoring where possible'
-    ];
-
-    if (profile.risk_maturity === 'basic') {
-      recommendations.push('Start with simple risk appetite statements and evolve over time');
-    }
-
-    return recommendations;
-  }
-
-  private generateImpactToleranceRecommendations(
-    profile: OrganizationalProfile,
-    frameworkData: Record<string, any>
-  ): string[] {
-    const recommendations = [
-      'Regularly test recovery procedures to ensure effectiveness',
-      'Update impact tolerances based on business changes',
-      'Consider automation for critical business functions'
-    ];
-
-    if (profile.operational_complexity === 'high') {
-      recommendations.push('Prioritize the most critical business functions for immediate implementation');
-    }
-
-    return recommendations;
   }
 }
 
