@@ -2609,6 +2609,75 @@ export type Database = {
           },
         ]
       }
+      deployment_history: {
+        Row: {
+          artifacts: Json
+          completed_at: string | null
+          created_at: string
+          deployed_by: string | null
+          deployed_by_name: string | null
+          deployment_config: Json
+          deployment_logs: Json
+          deployment_strategy: string
+          deployment_version: string
+          duration_seconds: number | null
+          environment: string
+          health_check_status: string | null
+          id: string
+          org_id: string
+          rollback_reason: string | null
+          rollback_target_version: string | null
+          service_name: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          artifacts?: Json
+          completed_at?: string | null
+          created_at?: string
+          deployed_by?: string | null
+          deployed_by_name?: string | null
+          deployment_config?: Json
+          deployment_logs?: Json
+          deployment_strategy?: string
+          deployment_version: string
+          duration_seconds?: number | null
+          environment?: string
+          health_check_status?: string | null
+          id?: string
+          org_id: string
+          rollback_reason?: string | null
+          rollback_target_version?: string | null
+          service_name: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          artifacts?: Json
+          completed_at?: string | null
+          created_at?: string
+          deployed_by?: string | null
+          deployed_by_name?: string | null
+          deployment_config?: Json
+          deployment_logs?: Json
+          deployment_strategy?: string
+          deployment_version?: string
+          duration_seconds?: number | null
+          environment?: string
+          health_check_status?: string | null
+          id?: string
+          org_id?: string
+          rollback_reason?: string | null
+          rollback_target_version?: string | null
+          service_name?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       device_fingerprints: {
         Row: {
           created_at: string
@@ -4442,6 +4511,63 @@ export type Database = {
           },
         ]
       }
+      microservices: {
+        Row: {
+          circuit_breaker_config: Json
+          created_at: string
+          created_by: string | null
+          endpoints: Json
+          environment: string
+          health_check_url: string
+          id: string
+          instances: Json
+          last_health_check: string | null
+          org_id: string
+          region: string
+          scaling_config: Json
+          service_name: string
+          service_version: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          circuit_breaker_config?: Json
+          created_at?: string
+          created_by?: string | null
+          endpoints?: Json
+          environment?: string
+          health_check_url: string
+          id?: string
+          instances?: Json
+          last_health_check?: string | null
+          org_id: string
+          region?: string
+          scaling_config?: Json
+          service_name: string
+          service_version?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          circuit_breaker_config?: Json
+          created_at?: string
+          created_by?: string | null
+          endpoints?: Json
+          environment?: string
+          health_check_url?: string
+          id?: string
+          instances?: Json
+          last_health_check?: string | null
+          org_id?: string
+          region?: string
+          scaling_config?: Json
+          service_name?: string
+          service_version?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       onboarding_sessions: {
         Row: {
           completion_percentage: number | null
@@ -4557,6 +4683,72 @@ export type Database = {
           sector?: string | null
           size?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          cache_hit_rate: number
+          cpu_usage: number
+          created_at: string
+          custom_metrics: Json
+          database_connections: number
+          disk_usage: number
+          error_rate: number
+          id: string
+          memory_usage: number
+          metric_timestamp: string
+          network_latency_ms: number
+          org_id: string
+          queue_depth: number
+          region: string
+          response_time_ms: number
+          service_name: string
+          system_metrics: Json
+          throughput_rps: number
+          user_experience_metrics: Json
+        }
+        Insert: {
+          cache_hit_rate?: number
+          cpu_usage?: number
+          created_at?: string
+          custom_metrics?: Json
+          database_connections?: number
+          disk_usage?: number
+          error_rate?: number
+          id?: string
+          memory_usage?: number
+          metric_timestamp?: string
+          network_latency_ms?: number
+          org_id: string
+          queue_depth?: number
+          region?: string
+          response_time_ms?: number
+          service_name: string
+          system_metrics?: Json
+          throughput_rps?: number
+          user_experience_metrics?: Json
+        }
+        Update: {
+          cache_hit_rate?: number
+          cpu_usage?: number
+          created_at?: string
+          custom_metrics?: Json
+          database_connections?: number
+          disk_usage?: number
+          error_rate?: number
+          id?: string
+          memory_usage?: number
+          metric_timestamp?: string
+          network_latency_ms?: number
+          org_id?: string
+          queue_depth?: number
+          region?: string
+          response_time_ms?: number
+          service_name?: string
+          system_metrics?: Json
+          throughput_rps?: number
+          user_experience_metrics?: Json
         }
         Relationships: []
       }
@@ -7007,7 +7199,20 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      performance_dashboard_metrics: {
+        Row: {
+          avg_cpu_usage: number | null
+          avg_error_rate: number | null
+          avg_memory_usage: number | null
+          avg_response_time: number | null
+          avg_throughput: number | null
+          metric_count: number | null
+          metric_hour: string | null
+          org_id: string | null
+          service_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_kri_appetite_variance: {
@@ -7067,6 +7272,18 @@ export type Database = {
       detect_data_patterns: {
         Args: { data_content: string; org_id: string }
         Returns: Json
+      }
+      get_user_org_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      refresh_performance_dashboard: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_onboarding_step: {
         Args: {

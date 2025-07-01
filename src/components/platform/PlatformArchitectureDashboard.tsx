@@ -1,619 +1,398 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { 
   Server, 
-  Cloud, 
-  Zap, 
-  Shield, 
   Activity, 
-  Globe, 
-  Database, 
-  Cpu,
-  BarChart3,
-  Settings,
-  AlertTriangle,
-  CheckCircle,
+  Clock, 
+  AlertTriangle, 
+  CheckCircle, 
   TrendingUp,
-  Network
+  Database,
+  Cpu,
+  Memory,
+  Zap
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { microservicesRegistry } from "@/services/platform/microservices-registry";
-import { intelligentCacheManager } from "@/services/platform/intelligent-cache-manager";
-import { performanceMonitor } from "@/services/platform/performance-monitor";
-
-interface PlatformMetrics {
-  totalServices: number;
-  healthyServices: number;
-  averageResponseTime: number;
-  totalRequests: number;
-  errorRate: number;
-  cacheHitRate: number;
-  activeRegions: number;
-  deployments: number;
-}
+import { databaseMicroservicesRegistry, MicroserviceRecord } from "@/services/platform/database-microservices-registry";
+import { databasePerformanceMonitor, DashboardMetrics } from "@/services/platform/database-performance-monitor";
+import { databaseDeploymentManager, DeploymentRecord } from "@/services/platform/database-deployment-manager";
 
 const PlatformArchitectureDashboard: React.FC = () => {
-  const [metrics, setMetrics] = useState<PlatformMetrics>({
-    totalServices: 0,
-    healthyServices: 0,
-    averageResponseTime: 0,
-    totalRequests: 0,
-    errorRate: 0,
-    cacheHitRate: 0,
-    activeRegions: 0,
-    deployments: 0
-  });
-  
+  const [services, setServices] = useState<MicroserviceRecord[]>([]);
+  const [metrics, setMetrics] = useState<DashboardMetrics[]>([]);
+  const [deployments, setDeployments] = useState<DeploymentRecord[]>([]);
+  const [deploymentStats, setDeploymentStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadPlatformMetrics();
-    const interval = setInterval(loadPlatformMetrics, 30000);
-    return () => clearInterval(interval);
+    loadDashboardData();
   }, []);
 
-  const loadPlatformMetrics = async () => {
+  const loadDashboardData = async () => {
     try {
-      // Simulate loading platform metrics
-      setMetrics({
-        totalServices: 24,
-        healthyServices: 23,
-        averageResponseTime: 145,
-        totalRequests: 1250000,
-        errorRate: 0.0023,
-        cacheHitRate: 0.94,
-        activeRegions: 6,
-        deployments: 12
-      });
-    } catch (error) {
-      console.error('Error loading platform metrics:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load platform metrics",
-        variant: "destructive"
-      });
+      setLoading(true);
+      setError(null);
+
+      const [servicesData, metricsData, deploymentsData, statsData] = await Promise.all([
+        databaseMicroservicesRegistry.discoverServices(),
+        databasePerformanceMonitor.getDashboardMetrics(),
+        databaseDeploymentManager.getActiveDeployments(),
+        databaseDeploymentManager.getDeploymentStats(7) // Last 7 days
+      ]);
+
+      setServices(servicesData);
+      setMetrics(metricsData);
+      setDeployments(deploymentsData);
+      setDeploymentStats(statsData);
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load platform data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAutoScale = async () => {
-    try {
-      await microservicesRegistry.evaluateScaling();
-      toast({
-        title: "Auto-scaling initiated",
-        description: "Services are being scaled based on current demand"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to initiate auto-scaling",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleCacheOptimization = async () => {
-    try {
-      await intelligentCacheManager.optimizeCacheConfiguration('default');
-      toast({
-        title: "Cache optimization completed",
-        description: "Cache configuration has been optimized for better performance"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to optimize cache configuration",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handlePerformanceAnalysis = async () => {
-    try {
-      const report = await performanceMonitor.generatePerformanceReport({
-        start: new Date(Date.now() - 24 * 60 * 60 * 1000),
-        end: new Date()
-      });
-      
-      toast({
-        title: "Performance analysis completed",
-        description: "Detailed performance report has been generated"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate performance analysis",
-        variant: "destructive"
-      });
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+      case 'healthy':
+      case 'completed':
+        return 'bg-green-500';
+      case 'degraded':
+      case 'in_progress':
+        return 'bg-yellow-500';
+      case 'failed':
+      case 'unhealthy':
+        return 'bg-red-500';
+      default:
+        return 'bg-gray-500';
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Activity className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading platform metrics...</p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+            </Card>
+          ))}
         </div>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <Card className="border-red-200">
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-2 text-red-600">
+            <AlertTriangle className="h-5 w-5" />
+            <p>{error}</p>
+          </div>
+          <Button onClick={loadDashboardData} className="mt-4">
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const healthyServices = services.filter(s => s.status === 'active').length;
+  const totalServices = services.length;
+  const activeDeployments = deployments.length;
+  const systemHealth = totalServices > 0 ? Math.round((healthyServices / totalServices) * 100) : 100;
+
   return (
     <div className="space-y-6">
-      {/* Platform Status Alert */}
-      <Alert className="border-l-4 border-l-green-500">
-        <CheckCircle className="h-4 w-4" />
-        <AlertDescription>
-          <div className="flex items-center justify-between">
-            <div>
-              <strong>Platform Status:</strong> All systems operational ({metrics.healthyServices}/{metrics.totalServices} services healthy)
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleAutoScale} size="sm" variant="outline">
-                Auto-Scale Services
-              </Button>
-              <Button onClick={handleCacheOptimization} size="sm" variant="outline">
-                Optimize Cache
-              </Button>
-              <Button onClick={handlePerformanceAnalysis} size="sm" variant="outline">
-                Performance Analysis
-              </Button>
-            </div>
-          </div>
-        </AlertDescription>
-      </Alert>
-
-      {/* Platform Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Services</CardTitle>
-            <Server className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium">Active Services</CardTitle>
+            <Server className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalServices}</div>
+            <div className="text-2xl font-bold">{healthyServices}/{totalServices}</div>
             <p className="text-xs text-muted-foreground">
-              {metrics.healthyServices} healthy, {metrics.totalServices - metrics.healthyServices} unhealthy
+              {systemHealth}% system health
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Response Time</CardTitle>
-            <Zap className="h-4 w-4 text-yellow-600" />
+            <CardTitle className="text-sm font-medium">Active Deployments</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{metrics.averageResponseTime}ms</div>
+            <div className="text-2xl font-bold">{activeDeployments}</div>
             <p className="text-xs text-muted-foreground">
-              Average across all services
+              Currently in progress
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
-            <BarChart3 className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(metrics.totalRequests / 1000000).toFixed(1)}M</div>
-            <p className="text-xs text-muted-foreground">
-              Requests processed today
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{(metrics.errorRate * 100).toFixed(3)}%</div>
-            <p className="text-xs text-muted-foreground">
-              Well below SLA threshold
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cache Hit Rate</CardTitle>
-            <Database className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{(metrics.cacheHitRate * 100).toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              Multi-tier caching performance
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Regions</CardTitle>
-            <Globe className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.activeRegions}</div>
-            <p className="text-xs text-muted-foreground">
-              Global deployment footprint
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Deployments</CardTitle>
-            <Cloud className="h-4 w-4 text-indigo-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.deployments}</div>
-            <p className="text-xs text-muted-foreground">
-              Successful deployments today
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Platform Health</CardTitle>
-            <Cpu className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <div className="text-2xl font-bold">Excellent</div>
-              <Badge variant="outline" className="text-green-600 bg-green-50">
-                99.97%
-              </Badge>
+            <div className="text-2xl font-bold">
+              {deploymentStats ? Math.round((deploymentStats.successfulDeployments / Math.max(deploymentStats.totalDeployments, 1)) * 100) : 0}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Overall system availability
+              Last 7 days
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Deploy Time</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {deploymentStats ? Math.round(deploymentStats.averageDuration / 60) : 0}m
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Average duration
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Detailed Platform Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="microservices">Microservices</TabsTrigger>
-          <TabsTrigger value="caching">Caching</TabsTrigger>
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="services" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="deployment">Deployment</TabsTrigger>
-          <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+          <TabsTrigger value="deployments">Deployments</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="services" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Microservices Registry</CardTitle>
+              <CardDescription>
+                Active services and their health status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {services.map((service) => (
+                  <div key={service.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-3 h-3 rounded-full ${getStatusColor(service.status)}`} />
+                      <div>
+                        <p className="font-medium">{service.service_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          v{service.service_version} • {service.environment} • {service.region}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={service.status === 'active' ? 'default' : 'destructive'}>
+                        {service.status}
+                      </Badge>
+                      <Badge variant="outline">
+                        {service.instances.length} instances
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                {services.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No services registered yet
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="performance" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Architecture Overview</CardTitle>
-                <CardDescription>High-level platform architecture status</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+            {metrics.slice(0, 4).map((metric) => (
+              <Card key={`${metric.service_name}-${metric.metric_hour}`}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{metric.service_name}</CardTitle>
+                  <CardDescription>
+                    Last hour metrics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Microservices Architecture</span>
-                    <Badge variant="outline" className="text-green-600">Active</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Service Mesh</span>
-                    <Badge variant="outline" className="text-blue-600">Optimized</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">API Gateway</span>
-                    <Badge variant="outline" className="text-green-600">Healthy</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Event-Driven Architecture</span>
-                    <Badge variant="outline" className="text-purple-600">Processing</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Circuit Breakers</span>
-                    <Badge variant="outline" className="text-orange-600">Monitoring</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Insights</CardTitle>
-                <CardDescription>Real-time performance metrics and trends</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Response times optimized</p>
-                      <p className="text-xs text-muted-foreground">Average 145ms across all services</p>
+                    <div className="flex items-center space-x-2">
+                      <Cpu className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm">CPU Usage</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Auto-scaling active</p>
-                      <p className="text-xs text-muted-foreground">3 services scaled in last hour</p>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">{Math.round(metric.avg_cpu_usage)}%</div>
+                      <Progress value={metric.avg_cpu_usage} className="w-20 h-2" />
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Cache optimization completed</p>
-                      <p className="text-xs text-muted-foreground">Hit rate improved to 94%</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="microservices" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Microservices Management</CardTitle>
-              <CardDescription>Service registry, discovery, and health monitoring</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">Auth Service</h4>
-                      <Badge className="bg-green-100 text-green-800">Healthy</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">4 instances running</p>
-                    <p className="text-xs text-muted-foreground">v2.1.3 • us-east-1, eu-west-1</p>
                   </div>
                   
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">Document Service</h4>
-                      <Badge className="bg-green-100 text-green-800">Healthy</Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Memory className="h-4 w-4 text-green-500" />
+                      <span className="text-sm">Memory Usage</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">6 instances running</p>
-                    <p className="text-xs text-muted-foreground">v1.8.2 • global deployment</p>
+                    <div className="text-right">
+                      <div className="text-sm font-medium">{Math.round(metric.avg_memory_usage)}%</div>
+                      <Progress value={metric.avg_memory_usage} className="w-20 h-2" />
+                    </div>
                   </div>
                   
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">Analytics Service</h4>
-                      <Badge className="bg-yellow-100 text-yellow-800">Scaling</Badge>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Zap className="h-4 w-4 text-yellow-500" />
+                      <span className="text-sm">Response Time</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">3 to 5 instances</p>
-                    <p className="text-xs text-muted-foreground">v3.2.1 • high demand detected</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="caching" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Intelligent Caching</CardTitle>
-              <CardDescription>Multi-tier caching performance and optimization</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">L1</div>
-                    <div className="text-sm font-medium">Memory Cache</div>
-                    <div className="text-lg font-semibold">98.2%</div>
-                    <div className="text-xs text-muted-foreground">Hit Rate</div>
+                    <div className="text-sm font-medium">{Math.round(metric.avg_response_time)}ms</div>
                   </div>
                   
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">L2</div>
-                    <div className="text-sm font-medium">Distributed Cache</div>
-                    <div className="text-lg font-semibold">89.7%</div>
-                    <div className="text-xs text-muted-foreground">Hit Rate</div>
-                  </div>
-                  
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">L3</div>
-                    <div className="text-sm font-medium">Persistent Cache</div>
-                    <div className="text-lg font-semibold">76.3%</div>
-                    <div className="text-xs text-muted-foreground">Hit Rate</div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="performance" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Monitoring</CardTitle>
-              <CardDescription>Real-time performance analytics and optimization</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-medium mb-3">System Performance</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Average Response Time</span>
-                      <span className="font-mono text-sm">145ms</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">P95 Response Time</span>
-                      <span className="font-mono text-sm">287ms</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">P99 Response Time</span>
-                      <span className="font-mono text-sm">445ms</span>
-                    </div>
-                    <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <TrendingUp className="h-4 w-4 text-purple-500" />
                       <span className="text-sm">Throughput</span>
-                      <span className="font-mono text-sm">2,847 req/s</span>
                     </div>
+                    <div className="text-sm font-medium">{Math.round(metric.avg_throughput)} req/s</div>
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          
+          {metrics.length === 0 && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center text-muted-foreground">
+                  No performance metrics available yet
                 </div>
-                
-                <div>
-                  <h4 className="font-medium mb-3">User Experience</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Page Load Time</span>
-                      <span className="font-mono text-sm">1.2s</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Time to Interactive</span>
-                      <span className="font-mono text-sm">1.8s</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Largest Contentful Paint</span>
-                      <span className="font-mono text-sm">1.4s</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">Cumulative Layout Shift</span>
-                      <span className="font-mono text-sm">0.03</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="deployment" className="space-y-4">
+        <TabsContent value="deployments" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Global Deployment</CardTitle>
-              <CardDescription>Multi-region deployment and disaster recovery status</CardDescription>
+              <CardTitle>Active Deployments</CardTitle>
+              <CardDescription>
+                Currently running deployment operations
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium mb-3">Active Regions</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <span className="text-sm">US East (N. Virginia)</span>
-                        <Badge className="bg-green-100 text-green-800">Primary</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <span className="text-sm">EU West (Ireland)</span>
-                        <Badge className="bg-blue-100 text-blue-800">Active</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <span className="text-sm">Asia Pacific (Tokyo)</span>
-                        <Badge className="bg-blue-100 text-blue-800">Active</Badge>
-                      </div>
-                      <div className="flex items-center justify-between p-2 border rounded">
-                        <span className="text-sm">CA Central (Toronto)</span>
-                        <Badge className="bg-blue-100 text-blue-800">Active</Badge>
+                {deployments.map((deployment) => (
+                  <div key={deployment.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-3 h-3 rounded-full ${getStatusColor(deployment.status)}`} />
+                      <div>
+                        <p className="font-medium">{deployment.service_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          v{deployment.deployment_version} • {deployment.environment} • {deployment.deployment_strategy}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium mb-3">Disaster Recovery</h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">RTO (Recovery Time Objective)</span>
-                        <span className="font-mono text-sm text-green-600">Less than 15 min</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">RPO (Recovery Point Objective)</span>
-                        <span className="font-mono text-sm text-green-600">Less than 5 min</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Last DR Test</span>
-                        <span className="font-mono text-sm">2 days ago</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">DR Test Result</span>
-                        <Badge className="bg-green-100 text-green-800">Passed</Badge>
-                      </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant={deployment.status === 'completed' ? 'default' : 'secondary'}>
+                        {deployment.status}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {deployment.deployed_by_name}
+                      </span>
                     </div>
                   </div>
-                </div>
+                ))}
+                {deployments.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No active deployments
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="monitoring" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Advanced Monitoring</CardTitle>
-              <CardDescription>Comprehensive system monitoring and alerting</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium mb-3">Active Monitors</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Application Performance Monitoring</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Real User Monitoring</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Synthetic Transactions</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Infrastructure Monitoring</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">Security Monitoring</span>
-                      </div>
-                    </div>
+          {deploymentStats && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Deployment Stats</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total:</span>
+                    <span className="font-medium">{deploymentStats.totalDeployments}</span>
                   </div>
-                  
-                  <div>
-                    <h4 className="font-medium mb-3">Alert Summary</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Active Alerts</span>
-                        <Badge variant="outline">0</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Alerts Today</span>
-                        <Badge variant="outline">3</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">MTTR (Mean Time to Resolution)</span>
-                        <span className="font-mono text-sm">8.5 min</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Alert Noise Ratio</span>
-                        <span className="font-mono text-sm text-green-600">2.1%</span>
-                      </div>
-                    </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Successful:</span>
+                    <span className="font-medium text-green-600">{deploymentStats.successfulDeployments}</span>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Failed:</span>
+                    <span className="font-medium text-red-600">{deploymentStats.failedDeployments}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Rollbacks:</span>
+                    <span className="font-medium text-yellow-600">{deploymentStats.rollbacks}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">By Environment</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {Object.entries(deploymentStats.deploymentsByEnvironment).map(([env, count]) => (
+                    <div key={env} className="flex justify-between">
+                      <span className="text-sm capitalize">{env}:</span>
+                      <span className="font-medium">{count}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Performance</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm">Avg Duration:</span>
+                    <span className="font-medium">{Math.round(deploymentStats.averageDuration / 60)}m</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Success Rate:</span>
+                    <span className="font-medium">
+                      {Math.round((deploymentStats.successfulDeployments / Math.max(deploymentStats.totalDeployments, 1)) * 100)}%
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
+
+      <div className="flex justify-end">
+        <Button onClick={loadDashboardData} variant="outline">
+          Refresh Data
+        </Button>
+      </div>
     </div>
   );
 };
