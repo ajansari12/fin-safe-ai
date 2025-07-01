@@ -906,7 +906,7 @@ export async function getComplianceAnalytics(orgId: string): Promise<ComplianceA
     }>();
 
     policies?.forEach(policy => {
-      if (policy.governance_policy_reviews) {
+      if (policy.governance_policy_reviews && Array.isArray(policy.governance_policy_reviews)) {
         policy.governance_policy_reviews.forEach((review: any) => {
           const key = review.reviewer_id || 'unknown';
           if (!reviewerMap.has(key)) {
@@ -1063,15 +1063,26 @@ export async function getOverduePolicyReviews(): Promise<OverduePolicyReview[]> 
       throw error;
     }
 
-    const formatted = (overdueReviews || []).map(review => ({
-      id: review.id,
-      policy_id: review.policy_id,
-      policy_title: review.governance_policies.title,
-      framework_id: review.governance_policies.framework_id,
-      framework_title: review.governance_policies.governance_frameworks.title,
-      next_review_date: review.next_review_date,
-      days_overdue: Math.floor((new Date().getTime() - new Date(review.next_review_date).getTime()) / (1000 * 60 * 60 * 24))
-    }));
+    const formatted = (overdueReviews || []).map(review => {
+      // Handle the case where governance_policies might be an array or single object
+      const policy = Array.isArray(review.governance_policies) 
+        ? review.governance_policies[0] 
+        : review.governance_policies;
+      
+      const framework = Array.isArray(policy?.governance_frameworks)
+        ? policy.governance_frameworks[0]
+        : policy?.governance_frameworks;
+
+      return {
+        id: review.id,
+        policy_id: review.policy_id,
+        policy_title: policy?.title || 'Unknown Policy',
+        framework_id: policy?.framework_id || '',
+        framework_title: framework?.title || 'Unknown Framework',
+        next_review_date: review.next_review_date,
+        days_overdue: Math.floor((new Date().getTime() - new Date(review.next_review_date).getTime()) / (1000 * 60 * 60 * 24))
+      };
+    });
 
     return formatted;
   } catch (error) {

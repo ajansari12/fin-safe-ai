@@ -48,13 +48,24 @@ export async function getOverduePolicyReviews(): Promise<PolicyReview[]> {
       throw error;
     }
 
-    return (overdueReviews || []).map(review => ({
-      id: review.id,
-      policy_title: review.governance_policies.title,
-      framework_title: review.governance_policies.governance_frameworks.title,
-      next_review_date: review.next_review_date,
-      days_overdue: Math.floor((new Date().getTime() - new Date(review.next_review_date).getTime()) / (1000 * 60 * 60 * 24))
-    }));
+    return (overdueReviews || []).map(review => {
+      // Handle the case where governance_policies might be an array or single object
+      const policy = Array.isArray(review.governance_policies) 
+        ? review.governance_policies[0] 
+        : review.governance_policies;
+      
+      const framework = Array.isArray(policy?.governance_frameworks)
+        ? policy.governance_frameworks[0]
+        : policy?.governance_frameworks;
+
+      return {
+        id: review.id,
+        policy_title: policy?.title || 'Unknown Policy',
+        framework_title: framework?.title || 'Unknown Framework',
+        next_review_date: review.next_review_date,
+        days_overdue: Math.floor((new Date().getTime() - new Date(review.next_review_date).getTime()) / (1000 * 60 * 60 * 24))
+      };
+    });
   } catch (error) {
     console.error('Error fetching overdue policy reviews:', error);
     return [];

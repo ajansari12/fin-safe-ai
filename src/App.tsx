@@ -10,6 +10,14 @@ import { OnboardingProvider } from "./contexts/OnboardingContext";
 import { TypeSafeErrorBoundary } from "./components/error/TypeSafeErrorBoundary";
 import "./App.css";
 
+// Import page components
+import Home from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
+import Modules from "./pages/Modules";
+import GovernanceModule from "./pages/modules/Governance";
+import RiskManagementModule from "./pages/modules/RiskManagement";
+import SelfAssessmentModule from "./pages/modules/SelfAssessment";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -37,9 +45,13 @@ const App = () => {
             <AuthProvider>
               <OnboardingProvider>
                 <Routes>
-                  {navItems.map(({ to, page }) => (
-                    <Route key={to} path={to} element={page} />
-                  ))}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/modules" element={<Modules />} />
+                  <Route path="/modules/governance" element={<GovernanceModule />} />
+                  <Route path="/modules/risk-management" element={<RiskManagementModule />} />
+                  <Route path="/modules/self-assessment" element={<SelfAssessmentModule />} />
+                  {/* Add other routes as needed */}
                 </Routes>
               </OnboardingProvider>
             </AuthProvider>
