@@ -193,12 +193,16 @@ class EnhancedPerformanceService {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach(entry => {
-          this.recordMetric('first_input_delay', entry.processingStart - entry.startTime);
-          
-          // FID should be under 100ms for good performance
-          const fid = entry.processingStart - entry.startTime;
-          if (fid > 100) {
-            this.triggerAlert('fid_slow', 'warning', `FID is ${fid}ms (target: <100ms)`);
+          // Safe access to processingStart property
+          const fidEntry = entry as any;
+          if (fidEntry.processingStart !== undefined) {
+            const fid = fidEntry.processingStart - entry.startTime;
+            this.recordMetric('first_input_delay', fid);
+            
+            // FID should be under 100ms for good performance
+            if (fid > 100) {
+              this.triggerAlert('fid_slow', 'warning', `FID is ${fid}ms (target: <100ms)`);
+            }
           }
         });
       });

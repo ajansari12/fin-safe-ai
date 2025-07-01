@@ -7,15 +7,24 @@ export interface QueryResult {
   insights: string[];
   visualization_suggestions: string[];
   execution_time_ms: number;
+  data: any[];
+  metadata: {
+    total_rows: number;
+    columns: string[];
+    execution_time: number;
+  };
 }
 
 export interface AnalyticsInsight {
   id: string;
   insight_type: string;
+  type: string;
   title: string;
   description: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
+  impact: 'low' | 'medium' | 'high' | 'critical';
   confidence_score: number;
+  confidence: number;
   recommendations: string[];
   data_points: any[];
   created_at: string;
@@ -23,7 +32,7 @@ export interface AnalyticsInsight {
 
 class AdvancedAnalyticsService {
   // Process natural language queries
-  async processNaturalLanguageQuery(query: string): Promise<QueryResult> {
+  async processNaturalLanguageQuery(query: string, orgId?: string): Promise<QueryResult> {
     const startTime = Date.now();
     
     try {
@@ -37,7 +46,13 @@ class AdvancedAnalyticsService {
         results,
         insights,
         visualization_suggestions: visualizationSuggestions,
-        execution_time_ms: Date.now() - startTime
+        execution_time_ms: Date.now() - startTime,
+        data: results,
+        metadata: {
+          total_rows: results.length,
+          columns: results.length > 0 ? Object.keys(results[0]) : [],
+          execution_time: Date.now() - startTime
+        }
       };
     } catch (error) {
       console.error('Error processing natural language query:', error);
@@ -46,7 +61,7 @@ class AdvancedAnalyticsService {
   }
 
   // Generate automated insights
-  async generateAutomatedInsights(): Promise<AnalyticsInsight[]> {
+  async generateAutomatedInsights(orgId?: string): Promise<AnalyticsInsight[]> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return [];
 
@@ -282,10 +297,13 @@ class AdvancedAnalyticsService {
     return (anomalies || []).map(anomaly => ({
       id: anomaly.id,
       insight_type: 'anomaly',
+      type: 'anomaly',
       title: `Anomaly Detected: ${anomaly.anomaly_type}`,
       description: `Detected unusual pattern in ${anomaly.detection_source} with ${anomaly.confidence_score}% confidence`,
       severity: this.mapSeverityScore(anomaly.severity_score),
+      impact: this.mapSeverityScore(anomaly.severity_score),
       confidence_score: anomaly.confidence_score,
+      confidence: anomaly.confidence_score / 100,
       recommendations: this.generateAnomalyRecommendations(anomaly),
       data_points: [anomaly.detected_values],
       created_at: anomaly.detected_at
@@ -303,10 +321,13 @@ class AdvancedAnalyticsService {
     return (correlations || []).map(correlation => ({
       id: correlation.id,
       insight_type: 'correlation',
+      type: 'correlation',
       title: `Risk Correlation Identified`,
       description: `Strong ${correlation.correlation_strength} correlation (${(correlation.correlation_coefficient * 100).toFixed(1)}%) between ${correlation.factor_a_type} and ${correlation.factor_b_type}`,
       severity: this.mapCorrelationSeverity(Math.abs(correlation.correlation_coefficient)),
+      impact: this.mapCorrelationSeverity(Math.abs(correlation.correlation_coefficient)),
       confidence_score: correlation.statistical_significance * 100,
+      confidence: correlation.statistical_significance,
       recommendations: this.generateCorrelationRecommendations(correlation),
       data_points: [correlation.correlation_context],
       created_at: correlation.created_at
@@ -325,10 +346,13 @@ class AdvancedAnalyticsService {
     return (models || []).map(model => ({
       id: model.id,
       insight_type: 'prediction',
+      type: 'prediction',
       title: `Predictive Model Update: ${model.model_name}`,
       description: `Model accuracy: ${(model.model_accuracy * 100).toFixed(1)}% for ${model.target_variable}`,
       severity: this.mapAccuracySeverity(model.model_accuracy),
+      impact: this.mapAccuracySeverity(model.model_accuracy),
       confidence_score: model.model_accuracy * 100,
+      confidence: model.model_accuracy,
       recommendations: this.generatePredictiveRecommendations(model),
       data_points: [model.model_parameters],
       created_at: model.last_trained_at || model.created_at
@@ -398,6 +422,92 @@ class AdvancedAnalyticsService {
     recommendations.push('Consider A/B testing new model versions');
     
     return recommendations;
+  }
+
+  async detectAnomalies(dataSource: string): Promise<any> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    console.log(`Detecting anomalies in ${dataSource} for org ${profile.organization_id}`);
+    
+    // Simulate anomaly detection
+    const anomalies = await this.performAnomalyDetection(dataSource, profile.organization_id);
+    
+    // Store detected anomalies
+    if (anomalies.length > 0) {
+      await this.storeAnomalies(anomalies, profile.organization_id);
+    }
+    
+    return {
+      data_source: dataSource,
+      anomalies_detected: anomalies.length,
+      anomalies: anomalies,
+      detection_timestamp: new Date().toISOString()
+    };
+  }
+
+  async analyzeRiskCorrelations(): Promise<any> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    console.log(`Analyzing risk correlations for org ${profile.organization_id}`);
+    
+    // Simulate correlation analysis
+    const correlations = await this.performCorrelationAnalysis(profile.organization_id);
+    
+    // Store correlation results
+    if (correlations.length > 0) {
+      await this.storeCorrelations(correlations, profile.organization_id);
+    }
+    
+    return {
+      correlations_found: correlations.length,
+      correlations: correlations,
+      analysis_timestamp: new Date().toISOString()
+    };
+  }
+
+  async generateInsights(): Promise<any> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    try {
+      // Get recent anomalies
+      const { data: anomalies } = await supabase
+        .from('anomaly_detections')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('detected_at', { ascending: false })
+        .limit(10);
+
+      // Get recent correlations
+      const { data: correlations } = await supabase
+        .from('risk_correlations')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const anomalyInsights = (anomalies || []).map(a => 
+        `${a.anomaly_type} anomaly detected with ${a.severity_score > 0.7 ? 'high' : 'medium'} severity`
+      );
+
+      const correlationInsights = (correlations || []).map(c => 
+        `${c.correlation_strength} correlation found between ${c.factor_a_type} and ${c.factor_b_type}`
+      );
+
+      const recommendations = this.generateGeneralRecommendations(anomalies || [], correlations || []);
+
+      return {
+        anomaly_insights: anomalyInsights,
+        correlation_insights: correlationInsights,
+        recommendations: recommendations,
+        generated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error generating insights:', error);
+      return null;
+    }
   }
 
   private async performAnomalyDetection(dataSource: string, orgId: string): Promise<any[]> {
