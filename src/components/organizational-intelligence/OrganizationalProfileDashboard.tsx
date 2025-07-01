@@ -6,31 +6,25 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Building2, 
-  TrendingUp, 
-  Shield, 
   Users, 
-  Globe, 
-  Target,
-  AlertTriangle,
+  Building2, 
+  Shield, 
+  TrendingUp, 
+  AlertCircle,
   CheckCircle2,
-  Brain,
+  Target,
+  BarChart3,
   FileText,
-  Settings,
-  BarChart3
+  Award,
+  Lightbulb
 } from 'lucide-react';
 import { organizationalIntelligenceService } from '@/services/organizational-intelligence-service';
 import { toast } from 'sonner';
-import type { 
-  OrganizationalProfile, 
-  ProfileAssessment,
-  GeneratedFramework 
-} from '@/types/organizational-intelligence';
+import type { OrganizationalProfile, ProfileAssessment } from '@/types/organizational-intelligence';
 
 const OrganizationalProfileDashboard: React.FC = () => {
   const [profile, setProfile] = useState<OrganizationalProfile | null>(null);
   const [assessment, setAssessment] = useState<ProfileAssessment | null>(null);
-  const [frameworks, setFrameworks] = useState<GeneratedFramework[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -57,40 +51,23 @@ const OrganizationalProfileDashboard: React.FC = () => {
     }
   };
 
-  const generateFramework = async () => {
-    if (!profile) return;
-
-    try {
-      toast.loading('Generating customized risk framework...');
-      
-      const framework = await organizationalIntelligenceService.generateRiskFramework(profile.id);
-      if (framework) {
-        setFrameworks([...frameworks, framework]);
-        toast.success('Risk framework generated successfully!');
-      }
-    } catch (error) {
-      console.error('Error generating framework:', error);
-      toast.error('Failed to generate risk framework');
+  const getRiskLevelColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'low': return 'bg-green-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'high': return 'bg-orange-500';
+      case 'critical': return 'bg-red-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  const getMaturityColor = (maturity?: string) => {
+  const getMaturityColor = (maturity: string) => {
     switch (maturity) {
-      case 'sophisticated': return 'bg-green-100 text-green-800 border-green-200';
-      case 'advanced': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'developing': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'basic': return 'bg-orange-100 text-orange-800 border-orange-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getRiskLevelColor = (level?: string) => {
-    switch (level) {
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'basic': return 'text-red-600';
+      case 'developing': return 'text-yellow-600';
+      case 'advanced': return 'text-blue-600';
+      case 'sophisticated': return 'text-green-600';
+      default: return 'text-gray-600';
     }
   };
 
@@ -98,8 +75,8 @@ const OrganizationalProfileDashboard: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <Brain className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-pulse" />
-          <p className="text-gray-600">Analyzing organizational profile...</p>
+          <Users className="h-12 w-12 mx-auto mb-4 text-blue-500 animate-pulse" />
+          <p className="text-gray-600">Loading organizational profile...</p>
         </div>
       </div>
     );
@@ -107,14 +84,13 @@ const OrganizationalProfileDashboard: React.FC = () => {
 
   if (!profile) {
     return (
-      <Card>
+      <Card className="w-full max-w-4xl mx-auto">
         <CardContent className="text-center py-12">
           <Building2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Profile Found</h3>
-          <p className="text-gray-500 mb-4">Complete the organizational assessment to see your profile</p>
-          <Button className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Start Assessment
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Profile Available</h3>
+          <p className="text-gray-500 mb-4">Complete an organizational assessment to generate your profile.</p>
+          <Button onClick={() => window.location.href = '/app/organizational-intelligence'}>
+            Take Assessment
           </Button>
         </CardContent>
       </Card>
@@ -123,354 +99,256 @@ const OrganizationalProfileDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Organizational Intelligence</h2>
-          <p className="text-muted-foreground">
-            AI-powered organizational profiling and risk framework generation
-          </p>
-        </div>
-        <Button onClick={generateFramework} className="flex items-center gap-2">
-          <Brain className="h-4 w-4" />
-          Generate Framework
-        </Button>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Profile Score</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold">{profile.profile_score || 0}</span>
-                  <span className="text-sm text-gray-500">/ 100</span>
-                </div>
-              </div>
-              <BarChart3 className="h-8 w-8 text-blue-500" />
+      {/* Profile Header */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-6 w-6 text-blue-500" />
+                Organizational Profile
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Last updated: {new Date(profile.updated_at).toLocaleDateString()}
+              </p>
             </div>
-            <Progress value={profile.profile_score || 0} className="mt-2" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completeness</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold">{profile.completeness_percentage || 0}</span>
-                  <span className="text-sm text-gray-500">%</span>
-                </div>
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">{profile.profile_score || 0}</div>
+                <div className="text-xs text-gray-500">Profile Score</div>
               </div>
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
-            </div>
-            <Progress value={profile.completeness_percentage || 0} className="mt-2" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Risk Maturity</p>
-                <Badge variant="outline" className={getMaturityColor(profile.risk_maturity)}>
-                  {profile.risk_maturity?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not Set'}
-                </Badge>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{profile.completeness_percentage || 0}%</div>
+                <div className="text-xs text-gray-500">Complete</div>
               </div>
-              <Shield className="h-8 w-8 text-purple-500" />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Risk Level</p>
-                <Badge variant="outline" className={getRiskLevelColor(assessment?.risk_level)}>
-                  {assessment?.risk_level?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Analyzing'}
-                </Badge>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+          <Progress value={profile.completeness_percentage || 0} className="w-full" />
+        </CardHeader>
+      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="basic">Basic Info</TabsTrigger>
-          <TabsTrigger value="risk">Risk Profile</TabsTrigger>
-          <TabsTrigger value="operations">Operations</TabsTrigger>
           <TabsTrigger value="assessment">Assessment</TabsTrigger>
+          <TabsTrigger value="maturity">Maturity</TabsTrigger>
+          <TabsTrigger value="recommendations">Insights</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Basic Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Sub-sector:</span>
+                  <Badge variant="outline">
+                    {profile.sub_sector?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Employees:</span>
+                  <span className="text-sm font-medium">{profile.employee_count?.toLocaleString() || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Asset Size:</span>
+                  <span className="text-sm font-medium">
+                    {profile.asset_size ? `$${(profile.asset_size / 1000000).toFixed(0)}M` : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Geographic Scope:</span>
+                  <Badge variant="secondary">
+                    {profile.geographic_scope?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Risk Profile */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Risk Profile
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Risk Maturity:</span>
+                  <span className={`text-sm font-medium ${getMaturityColor(profile.risk_maturity || '')}`}>
+                    {profile.risk_maturity?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Compliance Maturity:</span>
+                  <span className={`text-sm font-medium ${getMaturityColor(profile.compliance_maturity || '')}`}>
+                    {profile.compliance_maturity?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Risk Culture:</span>
+                  <Badge variant="outline">
+                    {profile.risk_culture?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Previous Incidents:</span>
+                  <span className="text-sm font-medium">{profile.previous_incidents || 0}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Technology Profile */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Technology & Strategy
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Tech Maturity:</span>
+                  <span className={`text-sm font-medium ${getMaturityColor(profile.technology_maturity || '')}`}>
+                    {profile.technology_maturity?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Digital Transform:</span>
+                  <span className={`text-sm font-medium ${getMaturityColor(profile.digital_transformation || '')}`}>
+                    {profile.digital_transformation?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Market Position:</span>
+                  <Badge variant="outline">
+                    {profile.market_position?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Growth Strategy:</span>
+                  <Badge variant="secondary">
+                    {profile.growth_strategy?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Regulatory and Business Context */}
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  Organization Summary
-                </CardTitle>
+                <CardTitle className="text-base">Regulatory Environment</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Sub-Sector:</span>
-                  <span className="text-sm">
-                    {profile.sub_sector?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                  </span>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Primary Regulators</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.primary_regulators?.map((regulator, index) => (
+                      <Badge key={index} variant="outline">{regulator}</Badge>
+                    )) || <span className="text-sm text-gray-500">None specified</span>}
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Employee Count:</span>
-                  <span className="text-sm">{profile.employee_count?.toLocaleString() || 'Not specified'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Asset Size:</span>
-                  <span className="text-sm">
-                    {profile.asset_size ? `$${(profile.asset_size / 1000000).toLocaleString()}M` : 'Not specified'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Geographic Scope:</span>
-                  <span className="text-sm">
-                    {profile.geographic_scope?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Customer Base:</span>
-                  <span className="text-sm">
-                    {profile.customer_base?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                  </span>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Applicable Frameworks</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.applicable_frameworks?.map((framework, index) => (
+                      <Badge key={index} variant="secondary">{framework}</Badge>
+                    )) || <span className="text-sm text-gray-500">None specified</span>}
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Strategic Profile
-                </CardTitle>
+                <CardTitle className="text-base">Business Context</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Growth Strategy:</span>
-                  <Badge variant="outline">
-                    {profile.growth_strategy?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not set'}
-                  </Badge>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Business Lines</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.business_lines?.map((line, index) => (
+                      <Badge key={index} variant="outline">{line}</Badge>
+                    )) || <span className="text-sm text-gray-500">None specified</span>}
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Digital Strategy:</span>
-                  <Badge variant="outline">
-                    {profile.digital_strategy?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not set'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Market Position:</span>
-                  <Badge variant="outline">
-                    {profile.market_position?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not set'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">Competitive Strategy:</span>
-                  <Badge variant="outline">
-                    {profile.competitive_strategy?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not set'}
-                  </Badge>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm text-gray-600">Geographic Locations:</span>
+                    <div className="text-lg font-semibold">{profile.geographic_locations || 1}</div>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-600">Third-party Dependencies:</span>
+                    <div className="text-lg font-semibold">{profile.third_party_dependencies || 0}</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="basic" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Sub-Sector</span>
-                <p className="text-sm text-gray-600">
-                  {profile.sub_sector?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Employee Count</span>
-                <p className="text-sm text-gray-600">{profile.employee_count?.toLocaleString() || 'Not specified'}</p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Asset Size</span>
-                <p className="text-sm text-gray-600">
-                  {profile.asset_size ? `$${(profile.asset_size / 1000000).toLocaleString()}M` : 'Not specified'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Geographic Scope</span>
-                <p className="text-sm text-gray-600">
-                  {profile.geographic_scope?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Customer Base</span>
-                <p className="text-sm text-gray-600">
-                  {profile.customer_base?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Business Lines</span>
-                <div className="flex flex-wrap gap-1">
-                  {profile.business_lines?.map((line, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {line.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </Badge>
-                  )) || <p className="text-sm text-gray-600">Not specified</p>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="risk" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Risk Profile</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Risk Maturity</span>
-                <Badge variant="outline" className={getMaturityColor(profile.risk_maturity)}>
-                  {profile.risk_maturity?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not Set'}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Compliance Maturity</span>
-                <Badge variant="outline" className={getMaturityColor(profile.compliance_maturity)}>
-                  {profile.compliance_maturity?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not Set'}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Risk Culture</span>
-                <p className="text-sm text-gray-600">
-                  {profile.risk_culture?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Regulatory History</span>
-                <p className="text-sm text-gray-600">
-                  {profile.regulatory_history?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not specified'}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Previous Incidents</span>
-                <p className="text-sm text-gray-600">{profile.previous_incidents || 0}</p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Primary Regulators</span>
-                <div className="flex flex-wrap gap-1">
-                  {profile.primary_regulators?.map((regulator, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {regulator}
-                    </Badge>
-                  )) || <p className="text-sm text-gray-600">Not specified</p>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="operations" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Operational Complexity</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Technology Maturity</span>
-                <Badge variant="outline" className={getMaturityColor(profile.technology_maturity)}>
-                  {profile.technology_maturity?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not Set'}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Digital Transformation</span>
-                <Badge variant="outline">
-                  {profile.digital_transformation?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Not Set'}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Geographic Locations</span>
-                <p className="text-sm text-gray-600">{profile.geographic_locations || 1}</p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Third Party Dependencies</span>
-                <p className="text-sm text-gray-600">{profile.third_party_dependencies || 0}</p>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">International Exposure</span>
-                <Badge variant="outline">
-                  {profile.international_exposure ? 'Yes' : 'No'}
-                </Badge>
-              </div>
-              <div className="space-y-2">
-                <span className="text-sm font-medium">Applicable Frameworks</span>
-                <div className="flex flex-wrap gap-1">
-                  {profile.applicable_frameworks?.map((framework, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {framework}
-                    </Badge>
-                  )) || <p className="text-sm text-gray-600">Not specified</p>}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         <TabsContent value="assessment" className="space-y-6">
           {assessment ? (
             <>
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">{assessment.score}</div>
-                    <div className="text-sm text-gray-600">Overall Score</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Badge variant="outline" className={getRiskLevelColor(assessment.risk_level)}>
-                      {assessment.risk_level.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </Badge>
-                    <div className="text-sm text-gray-600 mt-2">Risk Level</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4 text-center">
-                    <Badge variant="outline" className={getMaturityColor(assessment.maturity_level)}>
-                      {assessment.maturity_level.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </Badge>
-                    <div className="text-sm text-gray-600 mt-2">Maturity Level</div>
-                  </CardContent>
-                </Card>
-              </div>
+              {/* Risk Assessment Summary */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-6 w-6" />
+                    Risk Assessment Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-6 md:grid-cols-3">
+                    <div className="text-center">
+                      <div className={`w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center ${getRiskLevelColor(assessment.risk_level)}`}>
+                        <AlertCircle className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="text-lg font-semibold">{assessment.risk_level?.toUpperCase()}</div>
+                      <div className="text-sm text-gray-600">Risk Level</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-full bg-blue-500 mx-auto mb-2 flex items-center justify-center">
+                        <Award className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="text-lg font-semibold">{assessment.maturity_level?.toUpperCase()}</div>
+                      <div className="text-sm text-gray-600">Maturity Level</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-16 h-16 rounded-full bg-green-500 mx-auto mb-2 flex items-center justify-center">
+                        <BarChart3 className="h-8 w-8 text-white" />
+                      </div>
+                      <div className="text-lg font-semibold">{assessment.score}</div>
+                      <div className="text-sm text-gray-600">Overall Score</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
+              {/* Strengths and Weaknesses */}
               <div className="grid gap-6 md:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <CardTitle className="text-base flex items-center gap-2 text-green-600">
+                      <CheckCircle2 className="h-5 w-5" />
                       Strengths
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
                       {assessment.strengths.map((strength, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
-                          {strength}
+                        <li key={index} className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{strength}</span>
                         </li>
                       ))}
                     </ul>
@@ -479,55 +357,17 @@ const OrganizationalProfileDashboard: React.FC = () => {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
+                    <CardTitle className="text-base flex items-center gap-2 text-red-600">
+                      <AlertCircle className="h-5 w-5" />
                       Areas for Improvement
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
                       {assessment.weaknesses.map((weakness, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0" />
-                          {weakness}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Target className="h-5 w-5 text-blue-500" />
-                      Recommendations
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {assessment.recommendations.map((recommendation, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                          {recommendation}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5 text-purple-500" />
-                      Next Steps
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {assessment.next_steps.map((step, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0" />
-                          {step}
+                        <li key={index} className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{weakness}</span>
                         </li>
                       ))}
                     </ul>
@@ -538,8 +378,101 @@ const OrganizationalProfileDashboard: React.FC = () => {
           ) : (
             <Card>
               <CardContent className="text-center py-12">
-                <Brain className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500">Assessment data not available</p>
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Assessment Unavailable</h3>
+                <p className="text-gray-500">Complete your organizational profile to generate an assessment.</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="maturity" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Maturity Assessment</CardTitle>
+              <p className="text-sm text-gray-600">
+                Evaluate your organization's maturity across key dimensions
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {[
+                { label: 'Risk Management Maturity', value: profile.risk_maturity, icon: Shield },
+                { label: 'Compliance Maturity', value: profile.compliance_maturity, icon: FileText },
+                { label: 'Technology Maturity', value: profile.technology_maturity, icon: TrendingUp },
+                { label: 'Digital Transformation', value: profile.digital_transformation, icon: Target }
+              ].map((item, index) => {
+                const maturityLevels = ['basic', 'developing', 'advanced', 'sophisticated'];
+                const currentIndex = maturityLevels.indexOf(item.value || 'basic');
+                const percentage = ((currentIndex + 1) / maturityLevels.length) * 100;
+                
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <item.icon className="h-5 w-5 text-blue-500" />
+                        <span className="font-medium">{item.label}</span>
+                      </div>
+                      <Badge variant="outline" className={getMaturityColor(item.value || '')}>
+                        {item.value?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'N/A'}
+                      </Badge>
+                    </div>
+                    <Progress value={percentage} className="h-2" />
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="recommendations" className="space-y-6">
+          {assessment ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lightbulb className="h-6 w-6 text-yellow-500" />
+                    Strategic Recommendations
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {assessment.recommendations.map((recommendation, index) => (
+                      <li key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
+                        <Lightbulb className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">{recommendation}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-6 w-6 text-green-500" />
+                    Next Steps
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {assessment.next_steps.map((step, index) => (
+                      <li key={index} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                        <div className="w-6 h-6 rounded-full bg-green-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                          {index + 1}
+                        </div>
+                        <span className="text-sm">{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="text-center py-12">
+                <Lightbulb className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Recommendations Unavailable</h3>
+                <p className="text-gray-500">Complete your organizational assessment to receive personalized recommendations.</p>
               </CardContent>
             </Card>
           )}
