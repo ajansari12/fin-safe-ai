@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react';
 import { advancedAnalyticsService } from '@/services/advanced-analytics-service';
 import { toast } from 'sonner';
+import PredictiveAnalyticsPanel from './PredictiveAnalyticsPanel';
 
 const EnhancedAnalyticsHub: React.FC = () => {
   const [naturalLanguageQuery, setNaturalLanguageQuery] = useState('');
@@ -71,7 +71,7 @@ const EnhancedAnalyticsHub: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Advanced Analytics Hub</h2>
           <p className="text-muted-foreground">
-            AI-powered insights and natural language querying for risk data
+            AI-powered insights and predictive analytics for comprehensive risk management
           </p>
         </div>
         <Button className="flex items-center gap-2">
@@ -81,10 +81,14 @@ const EnhancedAnalyticsHub: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="query" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
             Natural Language Query
+          </TabsTrigger>
+          <TabsTrigger value="predictive" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Predictive Analytics
           </TabsTrigger>
           <TabsTrigger value="insights" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
@@ -167,6 +171,10 @@ const EnhancedAnalyticsHub: React.FC = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="predictive" className="space-y-6">
+          <PredictiveAnalyticsPanel />
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
