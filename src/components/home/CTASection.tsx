@@ -15,13 +15,13 @@ const CTASection = () => {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button asChild size="lg" variant="default" className="bg-white text-primary hover:bg-slate-100 text-base">
-            <Link to="/start">
+            <Link to="/register">
               Get Started
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-base">
-            <Link to="/demo">Request Demo</Link>
+            <Link to="/contact">Request Demo</Link>
           </Button>
         </div>
       </div>

@@ -51,10 +51,10 @@ const Hero = () => {
               }`}
             >
               <Button asChild size="lg" className="text-base rounded-xl">
-                <Link to="/integration-framework">Get Started</Link>
+                <Link to="/register">Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="text-base rounded-xl">
-                <Link to="/integration-framework">View Integration Framework</Link>
+                <Link to="/features">Learn More</Link>
               </Button>
             </div>
 
