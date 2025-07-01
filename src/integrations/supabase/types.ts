@@ -150,6 +150,57 @@ export type Database = {
         }
         Relationships: []
       }
+      anomaly_detections: {
+        Row: {
+          anomaly_type: string
+          baseline_values: Json
+          confidence_score: number
+          created_at: string
+          detected_at: string
+          detected_values: Json
+          detection_source: string
+          deviation_metrics: Json
+          id: string
+          investigation_notes: string | null
+          investigation_status: string
+          org_id: string
+          resolved_at: string | null
+          severity_score: number
+        }
+        Insert: {
+          anomaly_type: string
+          baseline_values?: Json
+          confidence_score: number
+          created_at?: string
+          detected_at?: string
+          detected_values?: Json
+          detection_source: string
+          deviation_metrics?: Json
+          id?: string
+          investigation_notes?: string | null
+          investigation_status?: string
+          org_id: string
+          resolved_at?: string | null
+          severity_score: number
+        }
+        Update: {
+          anomaly_type?: string
+          baseline_values?: Json
+          confidence_score?: number
+          created_at?: string
+          detected_at?: string
+          detected_values?: Json
+          detection_source?: string
+          deviation_metrics?: Json
+          id?: string
+          investigation_notes?: string | null
+          investigation_status?: string
+          org_id?: string
+          resolved_at?: string | null
+          severity_score?: number
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -4705,6 +4756,51 @@ export type Database = {
         }
         Relationships: []
       }
+      offline_sync_queue: {
+        Row: {
+          action_data: Json
+          action_type: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          last_retry_at: string | null
+          org_id: string
+          retry_count: number | null
+          sync_status: string
+          synced_at: string | null
+          user_id: string
+        }
+        Insert: {
+          action_data?: Json
+          action_type: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          last_retry_at?: string | null
+          org_id: string
+          retry_count?: number | null
+          sync_status?: string
+          synced_at?: string | null
+          user_id: string
+        }
+        Update: {
+          action_data?: Json
+          action_type?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          last_retry_at?: string | null
+          org_id?: string
+          retry_count?: number | null
+          sync_status?: string
+          synced_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_sessions: {
         Row: {
           completion_percentage: number | null
@@ -4901,6 +4997,42 @@ export type Database = {
         }
         Relationships: []
       }
+      performance_analytics: {
+        Row: {
+          additional_metadata: Json | null
+          created_at: string
+          id: string
+          measurement_timestamp: string
+          metric_category: string
+          metric_type: string
+          metric_unit: string | null
+          metric_value: number
+          org_id: string
+        }
+        Insert: {
+          additional_metadata?: Json | null
+          created_at?: string
+          id?: string
+          measurement_timestamp?: string
+          metric_category: string
+          metric_type: string
+          metric_unit?: string | null
+          metric_value: number
+          org_id: string
+        }
+        Update: {
+          additional_metadata?: Json | null
+          created_at?: string
+          id?: string
+          measurement_timestamp?: string
+          metric_category?: string
+          metric_type?: string
+          metric_unit?: string | null
+          metric_value?: number
+          org_id?: string
+        }
+        Relationships: []
+      }
       performance_metrics: {
         Row: {
           cache_hit_rate: number
@@ -4964,6 +5096,57 @@ export type Database = {
           system_metrics?: Json
           throughput_rps?: number
           user_experience_metrics?: Json
+        }
+        Relationships: []
+      }
+      predictive_models: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          feature_variables: Json
+          id: string
+          last_trained_at: string | null
+          model_accuracy: number | null
+          model_name: string
+          model_parameters: Json
+          model_status: string
+          model_type: string
+          org_id: string
+          target_variable: string
+          training_data_period: unknown | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          feature_variables?: Json
+          id?: string
+          last_trained_at?: string | null
+          model_accuracy?: number | null
+          model_name: string
+          model_parameters?: Json
+          model_status?: string
+          model_type: string
+          org_id: string
+          target_variable: string
+          training_data_period?: unknown | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          feature_variables?: Json
+          id?: string
+          last_trained_at?: string | null
+          model_accuracy?: number | null
+          model_name?: string
+          model_parameters?: Json
+          model_status?: string
+          model_type?: string
+          org_id?: string
+          target_variable?: string
+          training_data_period?: unknown | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -5087,6 +5270,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          id: string
+          is_active: boolean | null
+          notification_preferences: Json | null
+          org_id: string
+          subscription_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          is_active?: boolean | null
+          notification_preferences?: Json | null
+          org_id: string
+          subscription_data: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          is_active?: boolean | null
+          notification_preferences?: Json | null
+          org_id?: string
+          subscription_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       recovery_contacts: {
         Row: {
@@ -5611,6 +5830,54 @@ export type Database = {
         }
         Relationships: []
       }
+      risk_correlations: {
+        Row: {
+          analysis_period: unknown
+          correlation_coefficient: number
+          correlation_context: Json | null
+          correlation_strength: string
+          created_at: string
+          factor_a_id: string | null
+          factor_a_type: string
+          factor_b_id: string | null
+          factor_b_type: string
+          id: string
+          org_id: string
+          statistical_significance: number | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_period: unknown
+          correlation_coefficient: number
+          correlation_context?: Json | null
+          correlation_strength: string
+          created_at?: string
+          factor_a_id?: string | null
+          factor_a_type: string
+          factor_b_id?: string | null
+          factor_b_type: string
+          id?: string
+          org_id: string
+          statistical_significance?: number | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_period?: unknown
+          correlation_coefficient?: number
+          correlation_context?: Json | null
+          correlation_strength?: string
+          created_at?: string
+          factor_a_id?: string | null
+          factor_a_type?: string
+          factor_b_id?: string | null
+          factor_b_type?: string
+          id?: string
+          org_id?: string
+          statistical_significance?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       risk_intelligence: {
         Row: {
           attribution: string
@@ -5786,6 +6053,56 @@ export type Database = {
           },
         ]
       }
+      scenario_monte_carlo_simulations: {
+        Row: {
+          confidence_interval: number
+          created_at: string
+          id: string
+          number_of_iterations: number
+          org_id: string
+          risk_metrics: Json
+          scenario_test_id: string
+          simulation_parameters: Json
+          simulation_results: Json
+          statistical_summary: Json
+          updated_at: string
+        }
+        Insert: {
+          confidence_interval?: number
+          created_at?: string
+          id?: string
+          number_of_iterations?: number
+          org_id: string
+          risk_metrics?: Json
+          scenario_test_id: string
+          simulation_parameters?: Json
+          simulation_results?: Json
+          statistical_summary?: Json
+          updated_at?: string
+        }
+        Update: {
+          confidence_interval?: number
+          created_at?: string
+          id?: string
+          number_of_iterations?: number
+          org_id?: string
+          risk_metrics?: Json
+          scenario_test_id?: string
+          simulation_parameters?: Json
+          simulation_results?: Json
+          statistical_summary?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_monte_carlo_simulations_scenario_test_id_fkey"
+            columns: ["scenario_test_id"]
+            isOneToOne: false
+            referencedRelation: "scenario_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenario_results: {
         Row: {
           affected_functions_count: number | null
@@ -5850,6 +6167,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scenario_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          impact_parameters: Json
+          is_regulatory_required: boolean | null
+          org_id: string
+          probability_distributions: Json
+          recovery_assumptions: Json
+          regulatory_framework: string | null
+          scenario_description: string
+          stress_factors: Json
+          template_name: string
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          impact_parameters?: Json
+          is_regulatory_required?: boolean | null
+          org_id: string
+          probability_distributions?: Json
+          recovery_assumptions?: Json
+          regulatory_framework?: string | null
+          scenario_description: string
+          stress_factors?: Json
+          template_name: string
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          impact_parameters?: Json
+          is_regulatory_required?: boolean | null
+          org_id?: string
+          probability_distributions?: Json
+          recovery_assumptions?: Json
+          regulatory_framework?: string | null
+          scenario_description?: string
+          stress_factors?: Json
+          template_name?: string
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       scenario_test_controls: {
         Row: {
@@ -6494,6 +6862,48 @@ export type Database = {
         }
         Relationships: []
       }
+      supply_chain_dependencies: {
+        Row: {
+          created_at: string
+          criticality_level: string
+          dependency_description: string | null
+          dependency_type: string
+          dependent_vendor_id: string
+          id: string
+          mitigation_strategies: Json | null
+          org_id: string
+          primary_vendor_id: string
+          risk_multiplier: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criticality_level?: string
+          dependency_description?: string | null
+          dependency_type: string
+          dependent_vendor_id: string
+          id?: string
+          mitigation_strategies?: Json | null
+          org_id: string
+          primary_vendor_id: string
+          risk_multiplier?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criticality_level?: string
+          dependency_description?: string | null
+          dependency_type?: string
+          dependent_vendor_id?: string
+          id?: string
+          mitigation_strategies?: Json | null
+          org_id?: string
+          primary_vendor_id?: string
+          risk_multiplier?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sync_events: {
         Row: {
           created_at: string
@@ -6949,6 +7359,69 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_assessments: {
+        Row: {
+          assessment_date: string
+          assessment_methodology: Json
+          assessment_type: string
+          assessor_id: string | null
+          compliance_score: number | null
+          created_at: string
+          financial_score: number | null
+          id: string
+          mitigation_recommendations: Json
+          next_assessment_date: string | null
+          operational_score: number | null
+          org_id: string
+          overall_risk_score: number
+          risk_factors: Json
+          security_score: number | null
+          status: string
+          updated_at: string
+          vendor_profile_id: string
+        }
+        Insert: {
+          assessment_date?: string
+          assessment_methodology?: Json
+          assessment_type?: string
+          assessor_id?: string | null
+          compliance_score?: number | null
+          created_at?: string
+          financial_score?: number | null
+          id?: string
+          mitigation_recommendations?: Json
+          next_assessment_date?: string | null
+          operational_score?: number | null
+          org_id: string
+          overall_risk_score: number
+          risk_factors?: Json
+          security_score?: number | null
+          status?: string
+          updated_at?: string
+          vendor_profile_id: string
+        }
+        Update: {
+          assessment_date?: string
+          assessment_methodology?: Json
+          assessment_type?: string
+          assessor_id?: string | null
+          compliance_score?: number | null
+          created_at?: string
+          financial_score?: number | null
+          id?: string
+          mitigation_recommendations?: Json
+          next_assessment_date?: string | null
+          operational_score?: number | null
+          org_id?: string
+          overall_risk_score?: number
+          risk_factors?: Json
+          security_score?: number | null
+          status?: string
+          updated_at?: string
+          vendor_profile_id?: string
+        }
+        Relationships: []
+      }
       vendor_business_functions: {
         Row: {
           business_function_id: string
@@ -7114,6 +7587,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vendor_monitoring_feeds: {
+        Row: {
+          alert_thresholds: Json
+          created_at: string
+          current_status: string
+          feed_source: string
+          feed_type: string
+          id: string
+          last_check_at: string | null
+          monitoring_frequency: string
+          org_id: string
+          risk_indicators: Json
+          updated_at: string
+          vendor_profile_id: string
+        }
+        Insert: {
+          alert_thresholds?: Json
+          created_at?: string
+          current_status?: string
+          feed_source: string
+          feed_type: string
+          id?: string
+          last_check_at?: string | null
+          monitoring_frequency?: string
+          org_id: string
+          risk_indicators?: Json
+          updated_at?: string
+          vendor_profile_id: string
+        }
+        Update: {
+          alert_thresholds?: Json
+          created_at?: string
+          current_status?: string
+          feed_source?: string
+          feed_type?: string
+          id?: string
+          last_check_at?: string | null
+          monitoring_frequency?: string
+          org_id?: string
+          risk_indicators?: Json
+          updated_at?: string
+          vendor_profile_id?: string
+        }
+        Relationships: []
       }
       vendor_sla_alerts: {
         Row: {

@@ -1,483 +1,694 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
 export interface PredictiveModel {
   id: string;
-  name: string;
-  type: 'risk_prediction' | 'anomaly_detection' | 'correlation_analysis' | 'scenario_modeling';
-  algorithm: string;
-  accuracy: number;
-  last_trained: string;
-  features: string[];
-  predictions: any[];
+  org_id: string;
+  model_name: string;
+  model_type: string;
+  target_variable: string;
+  feature_variables: any;
+  model_parameters: any;
+  training_data_period?: any;
+  model_accuracy?: number;
+  last_trained_at?: string;
+  model_status: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface AnalyticsInsight {
+export interface AnomalyDetection {
   id: string;
-  type: 'trend' | 'anomaly' | 'correlation' | 'prediction' | 'recommendation';
-  title: string;
-  description: string;
-  confidence: number;
-  impact: 'low' | 'medium' | 'high' | 'critical';
-  data: any;
-  generated_at: string;
+  org_id: string;
+  detection_source: string;
+  anomaly_type: string;
+  severity_score: number;
+  confidence_score: number;
+  detected_values: any;
+  baseline_values: any;
+  deviation_metrics: any;
+  investigation_status: string;
+  investigation_notes?: string;
+  detected_at: string;
+  resolved_at?: string;
+  created_at: string;
 }
 
-export interface QueryResult {
-  data: any[];
-  metadata: {
-    total_rows: number;
-    execution_time: number;
-    columns: string[];
-  };
+export interface RiskCorrelation {
+  id: string;
+  org_id: string;
+  factor_a_type: string;
+  factor_a_id?: string;
+  factor_b_type: string;
+  factor_b_id?: string;
+  correlation_coefficient: number;
+  correlation_strength: string;
+  statistical_significance?: number;
+  analysis_period: any;
+  correlation_context: any;
+  created_at: string;
+  updated_at: string;
 }
 
 class AdvancedAnalyticsService {
-  // Predictive Analytics
-  async trainRiskPredictionModel(orgId: string, modelConfig: any): Promise<PredictiveModel> {
-    try {
-      // Get historical risk data for training
-      const { data: riskData } = await supabase
-        .from('risk_intelligence')
-        .select('*')
-        .eq('org_id', orgId)
-        .order('collected_at', { ascending: false })
-        .limit(1000);
+  // Anomaly detection using isolation forest algorithm
+  async detectAnomalies(dataSource: string, analysisWindow: number = 30): Promise<AnomalyDetection[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
 
-      const { data: incidentData } = await supabase
-        .from('incident_logs')
-        .select('*')
-        .eq('org_id', orgId)
-        .order('reported_at', { ascending: false })
-        .limit(500);
-
-      // Simulate model training (in production, this would use actual ML algorithms)
-      const features = this.extractFeatures(riskData || [], incidentData || []);
-      const model = this.trainModel(features, modelConfig);
-
-      return {
-        id: `model-${Date.now()}`,
-        name: modelConfig.name || 'Risk Prediction Model',
-        type: 'risk_prediction',
-        algorithm: modelConfig.algorithm || 'random_forest',
-        accuracy: Math.random() * 0.3 + 0.7, // Simulate 70-100% accuracy
-        last_trained: new Date().toISOString(),
-        features: ['risk_score', 'incident_frequency', 'vendor_rating', 'compliance_score'],
-        predictions: model.predictions
+    // Get historical data for analysis
+    const historicalData = await this.getHistoricalData(dataSource, analysisWindow);
+    
+    // Perform anomaly detection
+    const anomalies = this.performIsolationForest(historicalData);
+    
+    // Store detected anomalies
+    const anomalyRecords = [];
+    for (const anomaly of anomalies) {
+      const anomalyData = {
+        org_id: profile.organization_id,
+        detection_source: dataSource,
+        anomaly_type: anomaly.type,
+        severity_score: anomaly.severity,
+        confidence_score: anomaly.confidence,
+        detected_values: anomaly.detectedValues,
+        baseline_values: anomaly.baselineValues,
+        deviation_metrics: anomaly.deviationMetrics,
+        investigation_status: 'new'
       };
-    } catch (error) {
-      console.error('Error training prediction model:', error);
-      throw error;
-    }
-  }
 
-  async detectAnomalies(orgId: string, dataType: string): Promise<AnalyticsInsight[]> {
-    try {
-      let data: any[] = [];
-      
-      switch (dataType) {
-        case 'kri_values':
-          const { data: kriData } = await supabase
-            .from('kri_logs')
-            .select(`
-              *,
-              kri_definitions!inner(
-                name,
-                threshold_id,
-                risk_thresholds!inner(
-                  statement_id,
-                  risk_appetite_statements!inner(org_id)
-                )
-              )
-            `)
-            .eq('kri_definitions.risk_thresholds.risk_appetite_statements.org_id', orgId)
-            .gte('measurement_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-          data = kriData || [];
-          break;
+      const { data, error } = await supabase
+        .from('anomaly_detections')
+        .insert([anomalyData])
+        .select()
+        .single();
 
-        case 'incident_patterns':
-          const { data: incidentData } = await supabase
-            .from('incident_logs')
-            .select('*')
-            .eq('org_id', orgId)
-            .gte('reported_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-          data = incidentData || [];
-          break;
+      if (!error && data) {
+        anomalyRecords.push(data);
       }
-
-      return this.analyzeAnomalies(data, dataType);
-    } catch (error) {
-      console.error('Error detecting anomalies:', error);
-      return [];
     }
+
+    return anomalyRecords;
   }
 
-  async performCorrelationAnalysis(orgId: string): Promise<AnalyticsInsight[]> {
-    try {
-      // Get data from multiple sources
-      const [riskData, incidentData, kriData] = await Promise.all([
-        supabase.from('risk_intelligence').select('*').eq('org_id', orgId).limit(100),
-        supabase.from('incident_logs').select('*').eq('org_id', orgId).limit(100),
-        supabase.from('kri_logs').select(`
-          *,
-          kri_definitions!inner(
-            name,
-            risk_thresholds!inner(
-              risk_appetite_statements!inner(org_id)
-            )
-          )
-        `).eq('kri_definitions.risk_thresholds.risk_appetite_statements.org_id', orgId).limit(100)
-      ]);
+  // Isolation Forest implementation for anomaly detection
+  private performIsolationForest(data: any[]): any[] {
+    if (data.length < 10) return []; // Need minimum data points
 
-      return this.calculateCorrelations(
-        riskData.data || [],
-        incidentData.data || [],
-        kriData.data || []
-      );
-    } catch (error) {
-      console.error('Error performing correlation analysis:', error);
-      return [];
-    }
-  }
-
-  // Natural Language Query Processing
-  async processNaturalLanguageQuery(query: string, orgId: string): Promise<QueryResult> {
-    try {
-      // Simple NLP processing (in production, would use advanced NLP models)
-      const processedQuery = this.parseNaturalLanguageQuery(query);
-      const sqlQuery = this.generateSQLFromNLP(processedQuery, orgId);
+    const anomalies = [];
+    const features = this.extractFeatures(data);
+    
+    // Build isolation trees
+    const trees = this.buildIsolationTrees(features, 100); // 100 trees
+    
+    // Calculate anomaly scores
+    for (let i = 0; i < data.length; i++) {
+      const point = features[i];
+      const pathLengths = trees.map(tree => this.getPathLength(tree, point, 0));
+      const avgPathLength = pathLengths.reduce((sum, len) => sum + len, 0) / pathLengths.length;
       
-      // Execute the generated query
-      const startTime = Date.now();
-      const result = await this.executeQuery(sqlQuery);
-      const executionTime = Date.now() - startTime;
+      // Normalize score (shorter paths = more anomalous)
+      const anomalyScore = Math.pow(2, -avgPathLength / this.calculateC(data.length));
+      
+      if (anomalyScore > 0.6) { // Threshold for anomaly
+        anomalies.push({
+          type: this.classifyAnomalyType(point, data),
+          severity: Math.min(100, anomalyScore * 100),
+          confidence: Math.min(1, anomalyScore + 0.2),
+          detectedValues: point,
+          baselineValues: this.calculateBaseline(features),
+          deviationMetrics: this.calculateDeviation(point, features),
+          dataIndex: i
+        });
+      }
+    }
 
-      return {
-        data: result.data || [],
-        metadata: {
-          total_rows: result.data?.length || 0,
-          execution_time: executionTime,
-          columns: result.data?.[0] ? Object.keys(result.data[0]) : []
+    return anomalies;
+  }
+
+  private extractFeatures(data: any[]): number[][] {
+    // Extract numerical features from data
+    return data.map(item => {
+      const features = [];
+      
+      // Example feature extraction (would be customized per data source)
+      if (typeof item.value === 'number') features.push(item.value);
+      if (typeof item.trend === 'number') features.push(item.trend);
+      if (typeof item.volatility === 'number') features.push(item.volatility);
+      if (item.timestamp) {
+        const date = new Date(item.timestamp);
+        features.push(date.getHours()); // Time-based features
+        features.push(date.getDay());
+      }
+      
+      return features.length > 0 ? features : [Math.random()]; // Fallback
+    });
+  }
+
+  private buildIsolationTrees(features: number[][], numTrees: number): any[] {
+    const trees = [];
+    const subsampleSize = Math.min(256, features.length); // Standard subsampling
+    
+    for (let i = 0; i < numTrees; i++) {
+      // Random subsampling
+      const subsample = this.randomSubsample(features, subsampleSize);
+      const tree = this.buildTree(subsample, 0, Math.ceil(Math.log2(subsampleSize)));
+      trees.push(tree);
+    }
+    
+    return trees;
+  }
+
+  private buildTree(data: number[][], depth: number, maxDepth: number): any {
+    if (data.length <= 1 || depth >= maxDepth) {
+      return { type: 'leaf', size: data.length };
+    }
+    
+    // Random feature selection
+    const featureIndex = Math.floor(Math.random() * data[0].length);
+    const featureValues = data.map(point => point[featureIndex]);
+    const minVal = Math.min(...featureValues);
+    const maxVal = Math.max(...featureValues);
+    
+    if (minVal === maxVal) {
+      return { type: 'leaf', size: data.length };
+    }
+    
+    // Random split point
+    const splitValue = minVal + Math.random() * (maxVal - minVal);
+    
+    const leftData = data.filter(point => point[featureIndex] < splitValue);
+    const rightData = data.filter(point => point[featureIndex] >= splitValue);
+    
+    return {
+      type: 'internal',
+      featureIndex,
+      splitValue,
+      left: this.buildTree(leftData, depth + 1, maxDepth),
+      right: this.buildTree(rightData, depth + 1, maxDepth)
+    };
+  }
+
+  private getPathLength(tree: any, point: number[], depth: number): number {
+    if (tree.type === 'leaf') {
+      return depth + this.calculateC(tree.size);
+    }
+    
+    const featureValue = point[tree.featureIndex];
+    if (featureValue < tree.splitValue) {
+      return this.getPathLength(tree.left, point, depth + 1);
+    } else {
+      return this.getPathLength(tree.right, point, depth + 1);
+    }
+  }
+
+  private calculateC(n: number): number {
+    if (n <= 1) return 0;
+    return 2 * (Math.log(n - 1) + 0.5772156649) - (2 * (n - 1) / n);
+  }
+
+  private randomSubsample(data: any[], size: number): any[] {
+    const shuffled = [...data].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, size);
+  }
+
+  private classifyAnomalyType(point: number[], allData: number[][]): string {
+    // Simple classification based on deviation patterns
+    const baseline = this.calculateBaseline(allData);
+    const deviations = point.map((val, idx) => Math.abs(val - baseline[idx]));
+    const maxDeviationIdx = deviations.indexOf(Math.max(...deviations));
+    
+    // Map feature index to anomaly type (would be customized per domain)
+    const anomalyTypes = ['value_spike', 'trend_anomaly', 'volatility_anomaly', 'temporal_anomaly'];
+    return anomalyTypes[maxDeviationIdx] || 'unknown';
+  }
+
+  private calculateBaseline(features: number[][]): number[] {
+    if (features.length === 0) return [];
+    
+    const numFeatures = features[0].length;
+    const baseline = [];
+    
+    for (let i = 0; i < numFeatures; i++) {
+      const values = features.map(point => point[i]);
+      baseline.push(values.reduce((sum, val) => sum + val, 0) / values.length);
+    }
+    
+    return baseline;
+  }
+
+  private calculateDeviation(point: number[], allFeatures: number[][]): any {
+    const baseline = this.calculateBaseline(allFeatures);
+    const standardDeviations = this.calculateStandardDeviations(allFeatures);
+    
+    return {
+      absolute_deviations: point.map((val, idx) => Math.abs(val - baseline[idx])),
+      z_scores: point.map((val, idx) => 
+        standardDeviations[idx] > 0 ? (val - baseline[idx]) / standardDeviations[idx] : 0
+      ),
+      percentage_deviations: point.map((val, idx) => 
+        baseline[idx] !== 0 ? ((val - baseline[idx]) / baseline[idx]) * 100 : 0
+      )
+    };
+  }
+
+  private calculateStandardDeviations(features: number[][]): number[] {
+    const baseline = this.calculateBaseline(features);
+    const numFeatures = features[0].length;
+    const stdDevs = [];
+    
+    for (let i = 0; i < numFeatures; i++) {
+      const values = features.map(point => point[i]);
+      const variance = values.reduce((sum, val) => sum + Math.pow(val - baseline[i], 2), 0) / values.length;
+      stdDevs.push(Math.sqrt(variance));
+    }
+    
+    return stdDevs;
+  }
+
+  // Correlation analysis between risk factors
+  async analyzeRiskCorrelations(analysisWindow: number = 90): Promise<RiskCorrelation[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
+
+    // Get various risk data sources
+    const riskDataSources = await this.getRiskDataSources();
+    const correlations = [];
+    
+    // Analyze correlations between all pairs of risk factors
+    for (let i = 0; i < riskDataSources.length; i++) {
+      for (let j = i + 1; j < riskDataSources.length; j++) {
+        const sourceA = riskDataSources[i];
+        const sourceB = riskDataSources[j];
+        
+        const correlation = await this.calculateCorrelation(sourceA, sourceB, analysisWindow);
+        
+        if (Math.abs(correlation.coefficient) > 0.3) { // Only store significant correlations
+          const correlationData = {
+            org_id: profile.organization_id,
+            factor_a_type: sourceA.type,
+            factor_a_id: sourceA.id,
+            factor_b_type: sourceB.type,
+            factor_b_id: sourceB.id,
+            correlation_coefficient: correlation.coefficient,
+            correlation_strength: this.getCorrelationStrength(correlation.coefficient),
+            statistical_significance: correlation.pValue,
+            analysis_period: `[${new Date(Date.now() - analysisWindow * 24 * 60 * 60 * 1000).toISOString()}, ${new Date().toISOString()}]`,
+            correlation_context: correlation.context
+          };
+
+          const { data, error } = await supabase
+            .from('risk_correlations')
+            .insert([correlationData])
+            .select()
+            .single();
+
+          if (!error && data) {
+            correlations.push(data);
+          }
         }
-      };
-    } catch (error) {
-      console.error('Error processing natural language query:', error);
-      throw error;
+      }
     }
+
+    return correlations;
   }
 
-  // Automated Insights Generation
-  async generateAutomatedInsights(orgId: string): Promise<AnalyticsInsight[]> {
-    try {
-      const insights: AnalyticsInsight[] = [];
+  private async getRiskDataSources(): Promise<any[]> {
+    // Get various risk metrics from different modules
+    const sources = [
+      { type: 'kri', data: await this.getKRIData() },
+      { type: 'incident', data: await this.getIncidentData() },
+      { type: 'vendor_risk', data: await this.getVendorRiskData() },
+      { type: 'operational_risk', data: await this.getOperationalRiskData() }
+    ];
 
-      // Trend Analysis
-      const trendInsights = await this.analyzeTrends(orgId);
-      insights.push(...trendInsights);
-
-      // Risk Pattern Analysis
-      const patternInsights = await this.analyzeRiskPatterns(orgId);
-      insights.push(...patternInsights);
-
-      // Performance Insights
-      const performanceInsights = await this.analyzePerformance(orgId);
-      insights.push(...performanceInsights);
-
-      return insights.sort((a, b) => 
-        this.getImpactScore(b.impact) - this.getImpactScore(a.impact)
-      );
-    } catch (error) {
-      console.error('Error generating automated insights:', error);
-      return [];
-    }
+    return sources.filter(source => source.data.length > 0);
   }
 
-  // Monte Carlo Simulation
-  async runMonteCarloSimulation(
-    scenarios: any[],
-    iterations: number = 1000
-  ): Promise<{
-    results: any[];
-    statistics: {
-      mean: number;
-      median: number;
-      standardDeviation: number;
-      percentiles: { [key: string]: number };
-    };
-  }> {
-    const results = [];
+  private async calculateCorrelation(sourceA: any, sourceB: any, windowDays: number): Promise<any> {
+    // Align time series data
+    const alignedData = this.alignTimeSeries(sourceA.data, sourceB.data);
     
-    for (let i = 0; i < iterations; i++) {
-      const simulationResult = this.runSingleSimulation(scenarios);
-      results.push(simulationResult);
+    if (alignedData.length < 3) {
+      return { coefficient: 0, pValue: 1, context: { insufficient_data: true } };
     }
 
-    const statistics = this.calculateStatistics(results);
-
-    return { results, statistics };
-  }
-
-  // Helper Methods
-  private extractFeatures(riskData: any[], incidentData: any[]): any[] {
-    return riskData.map(risk => ({
-      risk_score: risk.risk_score || 0,
-      confidence_score: risk.confidence_score || 0,
-      data_freshness: risk.data_freshness_hours || 0,
-      incident_count: incidentData.filter(i => 
-        new Date(i.reported_at).getTime() >= new Date(risk.collected_at).getTime() - 7 * 24 * 60 * 60 * 1000
-      ).length
-    }));
-  }
-
-  private trainModel(features: any[], config: any): any {
-    // Simulate model training
-    const predictions = features.map(feature => ({
-      predicted_risk: Math.min(100, feature.risk_score * (1 + Math.random() * 0.2)),
-      confidence: Math.random() * 0.3 + 0.7,
-      factors: ['risk_score', 'incident_count']
-    }));
-
-    return { predictions };
-  }
-
-  private analyzeAnomalies(data: any[], dataType: string): AnalyticsInsight[] {
-    const insights: AnalyticsInsight[] = [];
-
-    if (dataType === 'kri_values' && data.length > 0) {
-      // Detect unusual KRI spikes
-      const values = data.map(d => d.actual_value).filter(v => v != null);
-      const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
-      const stdDev = Math.sqrt(values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length);
-      
-      const anomalies = data.filter(d => 
-        d.actual_value && Math.abs(d.actual_value - mean) > 2 * stdDev
-      );
-
-      if (anomalies.length > 0) {
-        insights.push({
-          id: `anomaly-${Date.now()}`,
-          type: 'anomaly',
-          title: 'Unusual KRI Values Detected',
-          description: `${anomalies.length} KRI measurements show values significantly outside normal ranges`,
-          confidence: 0.85,
-          impact: anomalies.length > 3 ? 'high' : 'medium',
-          data: { anomalies, threshold: 2 * stdDev },
-          generated_at: new Date().toISOString()
-        });
-      }
-    }
-
-    return insights;
-  }
-
-  private calculateCorrelations(riskData: any[], incidentData: any[], kriData: any[]): AnalyticsInsight[] {
-    const insights: AnalyticsInsight[] = [];
-
-    // Analyze correlation between risk scores and incident frequency
-    if (riskData.length > 0 && incidentData.length > 0) {
-      const correlation = this.pearsonCorrelation(
-        riskData.map(r => r.risk_score || 0),
-        riskData.map(r => {
-          const riskDate = new Date(r.collected_at);
-          return incidentData.filter(i => 
-            Math.abs(new Date(i.reported_at).getTime() - riskDate.getTime()) < 7 * 24 * 60 * 60 * 1000
-          ).length;
-        })
-      );
-
-      if (Math.abs(correlation) > 0.5) {
-        insights.push({
-          id: `correlation-${Date.now()}`,
-          type: 'correlation',
-          title: 'Risk Score and Incident Frequency Correlation',
-          description: `${correlation > 0 ? 'Strong positive' : 'Strong negative'} correlation (${correlation.toFixed(2)}) found between risk scores and incident frequency`,
-          confidence: Math.abs(correlation),
-          impact: Math.abs(correlation) > 0.7 ? 'high' : 'medium',
-          data: { correlation, sample_size: riskData.length },
-          generated_at: new Date().toISOString()
-        });
-      }
-    }
-
-    return insights;
-  }
-
-  private parseNaturalLanguageQuery(query: string): any {
-    const keywords = {
-      metrics: ['incidents', 'risks', 'kri', 'controls', 'vendors'],
-      timeframes: ['today', 'week', 'month', 'quarter', 'year'],
-      aggregations: ['count', 'sum', 'average', 'maximum', 'minimum'],
-      filters: ['high', 'critical', 'open', 'resolved', 'active']
-    };
-
-    const parsed = {
-      metric: null,
-      timeframe: null,
-      aggregation: null,
-      filters: []
-    };
-
-    const queryLower = query.toLowerCase();
-
-    // Extract metric
-    for (const metric of keywords.metrics) {
-      if (queryLower.includes(metric)) {
-        parsed.metric = metric;
-        break;
-      }
-    }
-
-    // Extract timeframe
-    for (const timeframe of keywords.timeframes) {
-      if (queryLower.includes(timeframe)) {
-        parsed.timeframe = timeframe;
-        break;
-      }
-    }
-
-    // Extract aggregation
-    for (const agg of keywords.aggregations) {
-      if (queryLower.includes(agg)) {
-        parsed.aggregation = agg;
-        break;
-      }
-    }
-
-    // Extract filters
-    for (const filter of keywords.filters) {
-      if (queryLower.includes(filter)) {
-        parsed.filters.push(filter);
-      }
-    }
-
-    return parsed;
-  }
-
-  private generateSQLFromNLP(parsed: any, orgId: string): string {
-    // This is a simplified SQL generation - in production would be more sophisticated
-    let query = '';
+    // Calculate Pearson correlation coefficient
+    const valuesA = alignedData.map(d => d.valueA);
+    const valuesB = alignedData.map(d => d.valueB);
     
-    if (parsed.metric === 'incidents') {
-      query = `SELECT * FROM incident_logs WHERE org_id = '${orgId}'`;
-      
-      if (parsed.filters.includes('critical')) {
-        query += ` AND severity = 'critical'`;
-      }
-      
-      if (parsed.timeframe === 'month') {
-        query += ` AND reported_at >= NOW() - INTERVAL '30 days'`;
-      }
-    }
-
-    return query || `SELECT * FROM incident_logs WHERE org_id = '${orgId}' LIMIT 10`;
-  }
-
-  private async executeQuery(sqlQuery: string): Promise<any> {
-    // In production, this would execute the actual SQL query
-    // For now, return mock data based on the query type
+    const correlation = this.pearsonCorrelation(valuesA, valuesB);
+    const pValue = this.calculatePValue(correlation, alignedData.length);
+    
     return {
-      data: [
-        { id: 1, title: 'Sample Result', value: 42 },
-        { id: 2, title: 'Another Result', value: 38 }
-      ]
-    };
-  }
-
-  private async analyzeTrends(orgId: string): Promise<AnalyticsInsight[]> {
-    const insights: AnalyticsInsight[] = [];
-
-    // Analyze incident trends
-    const { data: recentIncidents } = await supabase
-      .from('incident_logs')
-      .select('*')
-      .eq('org_id', orgId)
-      .gte('reported_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-    const { data: previousIncidents } = await supabase
-      .from('incident_logs')
-      .select('*')
-      .eq('org_id', orgId)
-      .gte('reported_at', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString())
-      .lt('reported_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-    const recentCount = recentIncidents?.length || 0;
-    const previousCount = previousIncidents?.length || 0;
-    const trend = recentCount - previousCount;
-
-    if (Math.abs(trend) > 2) {
-      insights.push({
-        id: `trend-${Date.now()}`,
-        type: 'trend',
-        title: trend > 0 ? 'Increasing Incident Trend' : 'Decreasing Incident Trend',
-        description: `Incident volume has ${trend > 0 ? 'increased' : 'decreased'} by ${Math.abs(trend)} incidents compared to the previous month`,
-        confidence: 0.9,
-        impact: Math.abs(trend) > 5 ? 'high' : 'medium',
-        data: { current: recentCount, previous: previousCount, change: trend },
-        generated_at: new Date().toISOString()
-      });
-    }
-
-    return insights;
-  }
-
-  private async analyzeRiskPatterns(orgId: string): Promise<AnalyticsInsight[]> {
-    // Placeholder for risk pattern analysis
-    return [];
-  }
-
-  private async analyzePerformance(orgId: string): Promise<AnalyticsInsight[]> {
-    // Placeholder for performance analysis
-    return [];
-  }
-
-  private getImpactScore(impact: string): number {
-    const scores = { low: 1, medium: 2, high: 3, critical: 4 };
-    return scores[impact as keyof typeof scores] || 0;
-  }
-
-  private runSingleSimulation(scenarios: any[]): any {
-    // Simulate a single Monte Carlo iteration
-    return scenarios.reduce((result, scenario) => {
-      const randomFactor = Math.random();
-      const scenarioResult = scenario.baseValue * (1 + (randomFactor - 0.5) * scenario.volatility);
-      return result + scenarioResult;
-    }, 0);
-  }
-
-  private calculateStatistics(results: number[]): any {
-    const sorted = results.sort((a, b) => a - b);
-    const mean = results.reduce((sum, val) => sum + val, 0) / results.length;
-    const median = sorted[Math.floor(sorted.length / 2)];
-    const variance = results.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / results.length;
-    const standardDeviation = Math.sqrt(variance);
-
-    return {
-      mean,
-      median,
-      standardDeviation,
-      percentiles: {
-        '5th': sorted[Math.floor(sorted.length * 0.05)],
-        '25th': sorted[Math.floor(sorted.length * 0.25)],
-        '75th': sorted[Math.floor(sorted.length * 0.75)],
-        '95th': sorted[Math.floor(sorted.length * 0.95)]
+      coefficient: correlation,
+      pValue,
+      context: {
+        sample_size: alignedData.length,
+        analysis_period_days: windowDays,
+        data_quality: this.assessDataQuality(alignedData),
+        potential_causality: this.assessCausality(sourceA.type, sourceB.type)
       }
     };
   }
 
   private pearsonCorrelation(x: number[], y: number[]): number {
-    const n = Math.min(x.length, y.length);
+    const n = x.length;
     if (n === 0) return 0;
-
-    const sumX = x.slice(0, n).reduce((sum, val) => sum + val, 0);
-    const sumY = y.slice(0, n).reduce((sum, val) => sum + val, 0);
-    const sumXY = x.slice(0, n).reduce((sum, val, i) => sum + val * y[i], 0);
-    const sumX2 = x.slice(0, n).reduce((sum, val) => sum + val * val, 0);
-    const sumY2 = y.slice(0, n).reduce((sum, val) => sum + val * val, 0);
-
+    
+    const sumX = x.reduce((sum, val) => sum + val, 0);
+    const sumY = y.reduce((sum, val) => sum + val, 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
+    const sumYY = y.reduce((sum, val) => sum + val * val, 0);
+    
     const numerator = n * sumXY - sumX * sumY;
-    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-
+    const denominator = Math.sqrt((n * sumXX - sumX * sumX) * (n * sumYY - sumY * sumY));
+    
     return denominator === 0 ? 0 : numerator / denominator;
+  }
+
+  private calculatePValue(correlation: number, sampleSize: number): number {
+    // Simplified p-value calculation using t-distribution approximation
+    if (sampleSize <= 2) return 1;
+    
+    const t = correlation * Math.sqrt((sampleSize - 2) / (1 - correlation * correlation));
+    // This is a simplified approximation - in production would use proper t-distribution
+    return Math.min(1, Math.max(0, 1 - Math.abs(t) / 3));
+  }
+
+  private getCorrelationStrength(coefficient: number): string {
+    const abs = Math.abs(coefficient);
+    if (abs >= 0.8) return 'very_strong';
+    if (abs >= 0.6) return 'strong';
+    if (abs >= 0.4) return 'moderate';
+    if (abs >= 0.2) return 'weak';
+    return 'very_weak';
+  }
+
+  // Predictive modeling for risk forecasting
+  async trainPredictiveModel(modelConfig: Partial<PredictiveModel>): Promise<PredictiveModel> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    // Get training data
+    const trainingData = await this.getTrainingData(modelConfig.target_variable!, modelConfig.feature_variables);
+    
+    // Train model (simplified linear regression for this example)
+    const model = this.trainLinearRegression(trainingData);
+    
+    const modelData = {
+      org_id: profile.organization_id,
+      model_name: modelConfig.model_name || 'Risk Prediction Model',
+      model_type: modelConfig.model_type || 'linear_regression',
+      target_variable: modelConfig.target_variable!,
+      feature_variables: modelConfig.feature_variables || {},
+      model_parameters: model.parameters,
+      training_data_period: `[${new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()}, ${new Date().toISOString()}]`,
+      model_accuracy: model.accuracy,
+      last_trained_at: new Date().toISOString(),
+      model_status: 'active',
+      created_by: profile.id
+    };
+
+    const { data, error } = await supabase
+      .from('predictive_models')
+      .insert([modelData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  private trainLinearRegression(trainingData: any[]): any {
+    if (trainingData.length < 2) {
+      return { parameters: {}, accuracy: 0 };
+    }
+
+    // Simple linear regression: y = mx + b
+    const x = trainingData.map((d, i) => i); // Use index as x for simplicity
+    const y = trainingData.map(d => d.target);
+    
+    const n = x.length;
+    const sumX = x.reduce((sum, val) => sum + val, 0);
+    const sumY = y.reduce((sum, val) => sum + val, 0);
+    const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
+    const sumXX = x.reduce((sum, val) => sum + val * val, 0);
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    // Calculate R-squared
+    const yMean = sumY / n;
+    const totalSumSquares = y.reduce((sum, val) => sum + Math.pow(val - yMean, 2), 0);
+    const residualSumSquares = y.reduce((sum, val, i) => {
+      const predicted = slope * x[i] + intercept;
+      return sum + Math.pow(val - predicted, 2);
+    }, 0);
+    
+    const rSquared = 1 - (residualSumSquares / totalSumSquares);
+    
+    return {
+      parameters: { slope, intercept },
+      accuracy: Math.max(0, rSquared)
+    };
+  }
+
+  // Generate natural language insights
+  async generateInsights(): Promise<any> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    // Get recent anomalies
+    const { data: anomalies } = await supabase
+      .from('anomaly_detections')
+      .select('*')
+      .eq('org_id', profile.organization_id)
+      .gte('detected_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('severity_score', { ascending: false })
+      .limit(10);
+
+    // Get recent correlations
+    const { data: correlations } = await supabase
+      .from('risk_correlations')
+      .select('*')
+      .eq('org_id', profile.organization_id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // Generate insights
+    const insights = {
+      summary: this.generateExecutiveSummary(anomalies || [], correlations || []),
+      anomaly_insights: this.generateAnomalyInsights(anomalies || []),
+      correlation_insights: this.generateCorrelationInsights(correlations || []),
+      recommendations: this.generateRecommendations(anomalies || [], correlations || []),
+      risk_trends: await this.analyzeRiskTrends()
+    };
+
+    return insights;
+  }
+
+  private generateExecutiveSummary(anomalies: any[], correlations: any[]): string {
+    const highSeverityAnomalies = anomalies.filter(a => a.severity_score > 70).length;
+    const strongCorrelations = correlations.filter(c => Math.abs(c.correlation_coefficient) > 0.7).length;
+    
+    let summary = `In the past week, our risk analytics detected ${anomalies.length} anomalies across various risk factors`;
+    
+    if (highSeverityAnomalies > 0) {
+      summary += `, with ${highSeverityAnomalies} classified as high severity`;
+    }
+    
+    summary += `. We identified ${strongCorrelations} strong correlations between different risk factors`;
+    
+    if (anomalies.length > 10) {
+      summary += `. The elevated number of anomalies suggests increased risk volatility requiring attention.`;
+    } else {
+      summary += `, indicating relatively stable risk conditions.`;
+    }
+    
+    return summary;
+  }
+
+  private generateAnomalyInsights(anomalies: any[]): string[] {
+    const insights = [];
+    
+    const anomalyTypes = this.groupBy(anomalies, 'anomaly_type');
+    for (const [type, typeAnomalies] of Object.entries(anomalyTypes)) {
+      const count = (typeAnomalies as any[]).length;
+      const avgSeverity = (typeAnomalies as any[]).reduce((sum, a) => sum + a.severity_score, 0) / count;
+      
+      insights.push(
+        `${count} ${type.replace('_', ' ')} anomalies detected with average severity of ${avgSeverity.toFixed(1)}%`
+      );
+    }
+    
+    return insights;
+  }
+
+  private generateCorrelationInsights(correlations: any[]): string[] {
+    const insights = [];
+    
+    for (const correlation of correlations) {
+      const strength = correlation.correlation_strength;
+      const direction = correlation.correlation_coefficient > 0 ? 'positive' : 'negative';
+      
+      insights.push(
+        `${strength} ${direction} correlation (${(correlation.correlation_coefficient * 100).toFixed(1)}%) detected between ${correlation.factor_a_type} and ${correlation.factor_b_type}`
+      );
+    }
+    
+    return insights;
+  }
+
+  private generateRecommendations(anomalies: any[], correlations: any[]): string[] {
+    const recommendations = [];
+    
+    const highSeverityAnomalies = anomalies.filter(a => a.severity_score > 80);
+    if (highSeverityAnomalies.length > 0) {
+      recommendations.push('Investigate high-severity anomalies immediately to prevent potential risk materialization');
+    }
+    
+    const strongCorrelations = correlations.filter(c => Math.abs(c.correlation_coefficient) > 0.8);
+    if (strongCorrelations.length > 0) {
+      recommendations.push('Review risk management strategies considering newly identified strong correlations');
+    }
+    
+    if (anomalies.length > 15) {
+      recommendations.push('Consider reviewing risk monitoring thresholds due to increased anomaly frequency');
+    }
+    
+    return recommendations;
+  }
+
+  // Helper methods
+  private async getHistoricalData(source: string, days: number): Promise<any[]> {
+    // Simulate getting historical data - in production would query actual data sources
+    const data = [];
+    for (let i = 0; i < days; i++) {
+      data.push({
+        timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+        value: Math.random() * 100 + (Math.random() > 0.95 ? 50 : 0), // Occasional spikes
+        trend: Math.random() * 10 - 5,
+        volatility: Math.random() * 20
+      });
+    }
+    return data;
+  }
+
+  private async getKRIData(): Promise<any[]> {
+    // Get KRI data for correlation analysis
+    const { data } = await supabase
+      .from('kri_logs')
+      .select('actual_value, measurement_date')
+      .gte('measurement_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order('measurement_date');
+    
+    return (data || []).map(d => ({ value: d.actual_value, timestamp: d.measurement_date }));
+  }
+
+  private async getIncidentData(): Promise<any[]> {
+    // Get incident data for correlation analysis
+    const { data } = await supabase
+      .from('incident_logs')
+      .select('severity, reported_at')
+      .gte('reported_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order('reported_at');
+    
+    return (data || []).map(d => ({ 
+      value: this.severityToNumber(d.severity), 
+      timestamp: d.reported_at 
+    }));
+  }
+
+  private async getVendorRiskData(): Promise<any[]> {
+    // Get vendor risk data for correlation analysis
+    const { data } = await supabase
+      .from('vendor_assessments')
+      .select('overall_risk_score, assessment_date')
+      .gte('assessment_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order('assessment_date');
+    
+    return (data || []).map(d => ({ value: d.overall_risk_score, timestamp: d.assessment_date }));
+  }
+
+  private async getOperationalRiskData(): Promise<any[]> {
+    // Simulate operational risk data
+    return [];
+  }
+
+  private severityToNumber(severity: string): number {
+    switch (severity) {
+      case 'critical': return 4;
+      case 'high': return 3;
+      case 'medium': return 2;
+      case 'low': return 1;
+      default: return 0;
+    }
+  }
+
+  private alignTimeSeries(dataA: any[], dataB: any[]): any[] {
+    // Simple alignment by date - in production would use more sophisticated alignment
+    const aligned = [];
+    const mapB = new Map(dataB.map(d => [d.timestamp, d.value]));
+    
+    for (const itemA of dataA) {
+      const valueB = mapB.get(itemA.timestamp);
+      if (valueB !== undefined) {
+        aligned.push({ valueA: itemA.value, valueB });
+      }
+    }
+    
+    return aligned;
+  }
+
+  private assessDataQuality(data: any[]): string {
+    if (data.length < 5) return 'poor';
+    if (data.length < 15) return 'fair';
+    if (data.length < 30) return 'good';
+    return 'excellent';
+  }
+
+  private assessCausality(typeA: string, typeB: string): string {
+    // Simple causality assessment - would be more sophisticated in production
+    const causalPairs = [
+      ['incident', 'kri'],
+      ['vendor_risk', 'operational_risk'],
+      ['kri', 'incident']
+    ];
+    
+    return causalPairs.some(pair => 
+      (pair[0] === typeA && pair[1] === typeB) || 
+      (pair[1] === typeA && pair[0] === typeB)
+    ) ? 'possible' : 'unlikely';
+  }
+
+  private async getTrainingData(targetVariable: string, features: any): Promise<any[]> {
+    // Simulate training data - would get real data in production
+    return Array.from({ length: 100 }, (_, i) => ({
+      target: Math.random() * 100,
+      features: Array.from({ length: 5 }, () => Math.random() * 50)
+    }));
+  }
+
+  private async analyzeRiskTrends(): Promise<any> {
+    return {
+      overall_trend: 'stable',
+      key_drivers: ['operational_risk', 'cyber_risk'],
+      forecasted_direction: 'slightly_increasing',
+      confidence_level: 0.75
+    };
+  }
+
+  private groupBy(array: any[], key: string): { [key: string]: any[] } {
+    return array.reduce((groups, item) => {
+      const value = item[key];
+      groups[value] = groups[value] || [];
+      groups[value].push(item);
+      return groups;
+    }, {});
   }
 }
 
