@@ -33,6 +33,7 @@ export interface HealthCheckResult {
 
 class DeploymentManager {
   private activeDeployments = new Map<string, DeploymentStatus>();
+  private deploymentHistory: any[] = [];
 
   // Blue-Green Deployment
   async deployBlueGreen(config: DeploymentConfig): Promise<string> {
@@ -89,6 +90,17 @@ class DeploymentManager {
       deployment.status = 'completed';
       deployment.endTime = new Date();
 
+      // Store in deployment history
+      this.deploymentHistory.push({
+        deployment_id: deploymentId,
+        application_name: config.applicationName,
+        version: config.version,
+        strategy: config.strategy,
+        status: 'completed',
+        start_time: deployment.startTime.toISOString(),
+        end_time: deployment.endTime.toISOString()
+      });
+
     } catch (error) {
       deployment.status = 'failed';
       deployment.endTime = new Date();
@@ -142,6 +154,17 @@ class DeploymentManager {
 
       deployment.status = 'completed';
       deployment.endTime = new Date();
+
+      // Store in deployment history
+      this.deploymentHistory.push({
+        deployment_id: deploymentId,
+        application_name: config.applicationName,
+        version: config.version,
+        strategy: config.strategy,
+        status: 'completed',
+        start_time: deployment.startTime.toISOString(),
+        end_time: deployment.endTime.toISOString()
+      });
 
     } catch (error) {
       deployment.status = 'failed';
@@ -203,6 +226,17 @@ class DeploymentManager {
 
       deployment.endTime = new Date();
 
+      // Store in deployment history
+      this.deploymentHistory.push({
+        deployment_id: deploymentId,
+        application_name: config.applicationName,
+        version: config.version,
+        strategy: config.strategy,
+        status: 'completed',
+        start_time: deployment.startTime.toISOString(),
+        end_time: deployment.endTime.toISOString()
+      });
+
     } catch (error) {
       deployment.status = 'failed';
       deployment.endTime = new Date();
@@ -236,8 +270,8 @@ class DeploymentManager {
         break;
     }
 
-    // Store rollback information
-    await supabase.from('deployment_rollbacks').insert({
+    // Log rollback information
+    console.log(`Rollback completed for deployment ${deploymentId}`, {
       deployment_id: deploymentId,
       rollback_reason: deployment.rollbackTriggers.join(', '),
       rollback_time: new Date().toISOString(),
@@ -277,7 +311,8 @@ class DeploymentManager {
   async createEnvironment(environmentConfig: any): Promise<string> {
     const environmentId = this.generateEnvironmentId();
     
-    await supabase.from('deployment_environments').insert({
+    // Log environment creation
+    console.log(`Creating environment ${environmentId}`, {
       environment_id: environmentId,
       name: environmentConfig.name,
       type: environmentConfig.type,
@@ -296,11 +331,8 @@ class DeploymentManager {
     // Configure networking and security
     await this.configureEnvironmentSecurity(environmentConfig);
     
-    // Update environment status
-    await supabase
-      .from('deployment_environments')
-      .update({ status: 'active' })
-      .eq('environment_id', environmentId);
+    // Log environment completion
+    console.log(`Environment ${environmentId} created successfully`);
 
     return environmentId;
   }
@@ -311,14 +343,11 @@ class DeploymentManager {
   }
 
   async getDeploymentHistory(applicationName: string, limit: number = 50): Promise<any[]> {
-    const { data } = await supabase
-      .from('deployment_history')
-      .select('*')
-      .eq('application_name', applicationName)
-      .order('start_time', { ascending: false })
-      .limit(limit);
-
-    return data || [];
+    // Filter and return deployment history
+    return this.deploymentHistory
+      .filter(deployment => deployment.application_name === applicationName)
+      .slice(0, limit)
+      .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
   }
 
   // Private helper methods
@@ -364,7 +393,7 @@ class DeploymentManager {
           endpoint: `${environment}-${config.healthCheckUrl}`,
           status: 'unhealthy',
           responseTime: Date.now() - startTime,
-          errorMessage: error.message
+          errorMessage: error?.message || 'Unknown error'
         });
       }
     }
@@ -448,7 +477,7 @@ class DeploymentManager {
 
   private async versionInfrastructureConfig(config: any): Promise<string> {
     const changeId = `infra_${Date.now()}`;
-    await supabase.from('infrastructure_changes').insert({
+    console.log(`Versioning infrastructure config`, {
       change_id: changeId,
       configuration: config,
       status: 'pending',
@@ -473,10 +502,11 @@ class DeploymentManager {
   }
 
   private async updateInfrastructureState(changeId: string, status: string): Promise<void> {
-    await supabase
-      .from('infrastructure_changes')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('change_id', changeId);
+    console.log(`Infrastructure state updated`, {
+      change_id: changeId,
+      status,
+      updated_at: new Date().toISOString()
+    });
   }
 
   private async rollbackInfrastructureChanges(changeId: string): Promise<void> {
