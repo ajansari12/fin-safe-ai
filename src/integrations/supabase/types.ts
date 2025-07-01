@@ -1399,6 +1399,48 @@ export type Database = {
           },
         ]
       }
+      compliance_frameworks: {
+        Row: {
+          assessment_frequency: string
+          controls: Json
+          created_at: string
+          created_by: string | null
+          framework_name: string
+          framework_version: string
+          id: string
+          is_active: boolean
+          org_id: string
+          requirements: Json
+          updated_at: string
+        }
+        Insert: {
+          assessment_frequency?: string
+          controls?: Json
+          created_at?: string
+          created_by?: string | null
+          framework_name: string
+          framework_version: string
+          id?: string
+          is_active?: boolean
+          org_id: string
+          requirements?: Json
+          updated_at?: string
+        }
+        Update: {
+          assessment_frequency?: string
+          controls?: Json
+          created_at?: string
+          created_by?: string | null
+          framework_name?: string
+          framework_version?: string
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          requirements?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       compliance_policies: {
         Row: {
           auto_remediation: boolean
@@ -2609,6 +2651,51 @@ export type Database = {
         }
         Relationships: []
       }
+      dlp_patterns: {
+        Row: {
+          action_on_match: string
+          classification_level: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          org_id: string
+          pattern_name: string
+          pattern_regex: string
+          pattern_type: string
+          risk_score: number
+          updated_at: string
+        }
+        Insert: {
+          action_on_match?: string
+          classification_level: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          org_id: string
+          pattern_name: string
+          pattern_regex: string
+          pattern_type: string
+          risk_score?: number
+          updated_at?: string
+        }
+        Update: {
+          action_on_match?: string
+          classification_level?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          pattern_name?: string
+          pattern_regex?: string
+          pattern_type?: string
+          risk_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dlp_violations: {
         Row: {
           action_taken: string
@@ -3115,6 +3202,74 @@ export type Database = {
             columns: ["repository_id"]
             isOneToOne: false
             referencedRelation: "document_repositories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enhanced_auth_sessions: {
+        Row: {
+          authentication_factors: Json
+          auto_logout_at: string | null
+          behavioral_score: number | null
+          created_at: string
+          device_fingerprint_id: string | null
+          id: string
+          is_active: boolean
+          is_privileged: boolean | null
+          last_activity_at: string
+          location_data: Json | null
+          org_id: string
+          privileged_expires_at: string | null
+          risk_score: number
+          session_token: string
+          trust_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          authentication_factors?: Json
+          auto_logout_at?: string | null
+          behavioral_score?: number | null
+          created_at?: string
+          device_fingerprint_id?: string | null
+          id?: string
+          is_active?: boolean
+          is_privileged?: boolean | null
+          last_activity_at?: string
+          location_data?: Json | null
+          org_id: string
+          privileged_expires_at?: string | null
+          risk_score?: number
+          session_token: string
+          trust_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          authentication_factors?: Json
+          auto_logout_at?: string | null
+          behavioral_score?: number | null
+          created_at?: string
+          device_fingerprint_id?: string | null
+          id?: string
+          is_active?: boolean
+          is_privileged?: boolean | null
+          last_activity_at?: string
+          location_data?: Json | null
+          org_id?: string
+          privileged_expires_at?: string | null
+          risk_score?: number
+          session_token?: string
+          trust_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enhanced_auth_sessions_device_fingerprint_id_fkey"
+            columns: ["device_fingerprint_id"]
+            isOneToOne: false
+            referencedRelation: "device_fingerprints"
             referencedColumns: ["id"]
           },
         ]
@@ -5597,6 +5752,102 @@ export type Database = {
         }
         Relationships: []
       }
+      security_metrics: {
+        Row: {
+          baseline_value: number | null
+          created_at: string
+          id: string
+          measurement_date: string
+          measurement_period: string
+          metadata: Json | null
+          metric_name: string
+          metric_type: string
+          metric_unit: string | null
+          metric_value: number
+          org_id: string
+          threshold_critical: number | null
+          threshold_warning: number | null
+          trend_direction: string | null
+        }
+        Insert: {
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          measurement_date?: string
+          measurement_period?: string
+          metadata?: Json | null
+          metric_name: string
+          metric_type: string
+          metric_unit?: string | null
+          metric_value: number
+          org_id: string
+          threshold_critical?: number | null
+          threshold_warning?: number | null
+          trend_direction?: string | null
+        }
+        Update: {
+          baseline_value?: number | null
+          created_at?: string
+          id?: string
+          measurement_date?: string
+          measurement_period?: string
+          metadata?: Json | null
+          metric_name?: string
+          metric_type?: string
+          metric_unit?: string | null
+          metric_value?: number
+          org_id?: string
+          threshold_critical?: number | null
+          threshold_warning?: number | null
+          trend_direction?: string | null
+        }
+        Relationships: []
+      }
+      security_playbooks: {
+        Row: {
+          automation_level: string
+          created_at: string
+          created_by: string | null
+          escalation_rules: Json
+          id: string
+          is_active: boolean
+          org_id: string
+          playbook_name: string
+          priority: number
+          response_steps: Json
+          trigger_conditions: Json
+          updated_at: string
+        }
+        Insert: {
+          automation_level?: string
+          created_at?: string
+          created_by?: string | null
+          escalation_rules?: Json
+          id?: string
+          is_active?: boolean
+          org_id: string
+          playbook_name: string
+          priority?: number
+          response_steps?: Json
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Update: {
+          automation_level?: string
+          created_at?: string
+          created_by?: string | null
+          escalation_rules?: Json
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          playbook_name?: string
+          priority?: number
+          response_steps?: Json
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       security_threats: {
         Row: {
           affected_resources: Json
@@ -5912,6 +6163,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      threat_indicators: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          expires_at: string | null
+          first_seen_at: string
+          id: string
+          indicator_type: string
+          indicator_value: string
+          is_active: boolean
+          last_seen_at: string
+          metadata: Json | null
+          org_id: string
+          severity: string
+          source_feed: string
+          threat_type: string
+          updated_at: string
+        }
+        Insert: {
+          confidence_score: number
+          created_at?: string
+          expires_at?: string | null
+          first_seen_at?: string
+          id?: string
+          indicator_type: string
+          indicator_value: string
+          is_active?: boolean
+          last_seen_at?: string
+          metadata?: Json | null
+          org_id: string
+          severity: string
+          source_feed: string
+          threat_type: string
+          updated_at?: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          expires_at?: string | null
+          first_seen_at?: string
+          id?: string
+          indicator_type?: string
+          indicator_value?: string
+          is_active?: boolean
+          last_seen_at?: string
+          metadata?: Json | null
+          org_id?: string
+          severity?: string
+          source_feed?: string
+          threat_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       user_invitations: {
         Row: {

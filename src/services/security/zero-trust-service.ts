@@ -2,284 +2,647 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
-export interface DeviceFingerprint {
-  id: string;
-  user_id: string;
-  org_id: string;
-  device_id: string;
-  fingerprint_hash: string;
-  device_info: any;
-  risk_score: number;
-  is_trusted: boolean;
-  last_seen_at: string;
-  created_at: string;
-  updated_at: string;
+export interface ZeroTrustContext {
+  userId: string;
+  orgId: string;
+  deviceFingerprint?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  geolocation?: any;
+  sessionId?: string;
+  riskScore: number;
+  trustScore: number;
 }
 
-export interface AuthenticationSession {
-  id: string;
-  user_id: string;
-  org_id: string;
-  device_fingerprint_id: string;
-  session_token: string;
-  risk_score: number;
-  authentication_factors: string[];
-  location_data?: any;
-  expires_at: string;
-  last_activity_at: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+export interface SecurityEvent {
+  eventType: string;
+  eventCategory: string;
+  resourceType?: string;
+  resourceId?: string;
+  resourceName?: string;
+  actionPerformed: string;
+  actionDetails?: any;
+  riskScore?: number;
+  outcome: 'success' | 'failure' | 'blocked' | 'warning';
+  errorDetails?: string;
+  metadata?: any;
 }
 
-export interface BehavioralAnalytics {
-  id: string;
-  user_id: string;
-  org_id: string;
-  session_id?: string;
-  activity_type: string;
-  activity_data: any;
-  risk_indicators: any;
-  anomaly_score: number;
-  detected_at: string;
-  created_at: string;
+export interface ThreatIndicator {
+  indicatorType: 'ip' | 'domain' | 'hash' | 'email' | 'url';
+  indicatorValue: string;
+  threatType: 'malware' | 'phishing' | 'botnet' | 'apt' | 'suspicious';
+  confidenceScore: number;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  sourceFeed: string;
+  metadata?: any;
+}
+
+export interface ComplianceFramework {
+  frameworkName: string;
+  frameworkVersion: string;
+  requirements: any[];
+  controls: any[];
+  assessmentFrequency: 'monthly' | 'quarterly' | 'annually';
+}
+
+export interface SecurityPlaybook {
+  playbookName: string;
+  triggerConditions: any;
+  responseSteps: any[];
+  escalationRules: any;
+  automationLevel: 'manual' | 'semi-automated' | 'fully-automated';
+  priority: number;
 }
 
 class ZeroTrustService {
-  private deviceFingerprint: string | null = null;
-
-  private transformAuthenticationSession(data: any): AuthenticationSession {
-    return {
-      ...data,
-      authentication_factors: Array.isArray(data.authentication_factors) 
-        ? data.authentication_factors 
-        : JSON.parse(data.authentication_factors || '[]'),
-      location_data: typeof data.location_data === 'string' 
-        ? JSON.parse(data.location_data) 
-        : data.location_data
-    };
-  }
-
-  async generateDeviceFingerprint(): Promise<string> {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    ctx!.textBaseline = 'top';
-    ctx!.font = '14px Arial';
-    ctx!.fillText('Device fingerprint', 2, 2);
-    
-    const fingerprint = {
-      userAgent: navigator.userAgent,
-      language: navigator.language,
-      platform: navigator.platform,
-      screenResolution: `${screen.width}x${screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      canvas: canvas.toDataURL(),
-      webgl: this.getWebGLFingerprint(),
-      timestamp: Date.now()
-    };
-
-    const fingerprintString = JSON.stringify(fingerprint);
-    const hash = await this.hashString(fingerprintString);
-    this.deviceFingerprint = hash;
-    return hash;
-  }
-
-  private getWebGLFingerprint(): string {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl');
-    if (!gl) return 'no-webgl';
-    
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-    return debugInfo ? 
-      gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : 'unknown';
-  }
-
-  private async hashString(str: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(str);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  }
-
-  async registerDevice(): Promise<DeviceFingerprint> {
+  // Context Management
+  async createSecurityContext(userId: string, deviceInfo?: any, locationData?: any): Promise<ZeroTrustContext> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 
-    const fingerprint = await this.generateDeviceFingerprint();
-    const deviceInfo = {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      language: navigator.language,
-      screenResolution: `${screen.width}x${screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    // Calculate initial risk score based on context
+    const riskScore = await this.calculateRiskScore(userId, deviceInfo, locationData);
+    const trustScore = await this.calculateTrustScore(userId, deviceInfo);
+
+    const context: ZeroTrustContext = {
+      userId,
+      orgId: profile.organization_id,
+      deviceFingerprint: deviceInfo?.fingerprint,
+      ipAddress: deviceInfo?.ipAddress,
+      userAgent: deviceInfo?.userAgent,
+      geolocation: locationData,
+      riskScore,
+      trustScore
     };
 
-    const { data, error } = await supabase
-      .from('device_fingerprints')
-      .upsert({
-        user_id: profile.id,
-        org_id: profile.organization_id,
-        device_id: fingerprint,
-        fingerprint_hash: fingerprint,
-        device_info: deviceInfo,
-        risk_score: 0,
-        is_trusted: false
-      })
-      .select()
-      .single();
+    // Log the security context creation
+    await this.logSecurityEvent({
+      eventType: 'context_created',
+      eventCategory: 'authentication',
+      actionPerformed: 'create_security_context',
+      actionDetails: { riskScore, trustScore },
+      outcome: 'success'
+    }, context);
 
-    if (error) throw error;
-    return data;
+    return context;
   }
 
-  async createAuthSession(deviceFingerprintId: string): Promise<AuthenticationSession> {
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) throw new Error('No organization found');
-
-    const sessionToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8 hours
-
-    const locationData = await this.getLocationData();
-    const riskScore = await this.calculateSessionRisk(deviceFingerprintId, locationData);
-
-    const { data, error } = await supabase
-      .from('authentication_sessions')
-      .insert({
-        user_id: profile.id,
-        org_id: profile.organization_id,
-        device_fingerprint_id: deviceFingerprintId,
-        session_token: sessionToken,
-        risk_score: riskScore,
-        authentication_factors: ['password'],
-        location_data: locationData,
-        expires_at: expiresAt.toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return this.transformAuthenticationSession(data);
-  }
-
-  private async getLocationData(): Promise<any> {
-    try {
-      const response = await fetch('https://ipapi.co/json/');
-      return await response.json();
-    } catch {
-      return null;
-    }
-  }
-
-  private async calculateSessionRisk(deviceFingerprintId: string, locationData: any): Promise<number> {
-    const profile = await getCurrentUserProfile();
-    if (!profile) return 50;
-
-    const { data } = await supabase
-      .rpc('calculate_session_risk_score', {
-        user_id: profile.id,
-        device_fingerprint_id: deviceFingerprintId,
-        location_data: locationData
-      });
-
-    return data || 50;
-  }
-
-  async trackBehavior(activityType: string, activityData: any): Promise<void> {
-    const profile = await getCurrentUserProfile();
-    if (!profile?.organization_id) return;
-
-    const riskIndicators = this.analyzeBehavior(activityType, activityData);
-    const anomalyScore = this.calculateAnomalyScore(riskIndicators);
-
-    await supabase
-      .from('behavioral_analytics')
-      .insert({
-        user_id: profile.id,
-        org_id: profile.organization_id,
-        activity_type: activityType,
-        activity_data: activityData,
-        risk_indicators: riskIndicators,
-        anomaly_score: anomalyScore
-      });
-
-    // Trigger alerts if anomaly score is high
-    if (anomalyScore > 70) {
-      await this.triggerSecurityAlert(activityType, anomalyScore);
-    }
-  }
-
-  private analyzeBehavior(activityType: string, activityData: any): any {
-    const indicators: any = {};
+  async updateSecurityContext(context: ZeroTrustContext, updates: Partial<ZeroTrustContext>): Promise<ZeroTrustContext> {
+    const updatedContext = { ...context, ...updates };
     
-    // Analyze unusual access patterns
-    if (activityType === 'data_access') {
-      const currentHour = new Date().getHours();
-      if (currentHour < 6 || currentHour > 22) {
-        indicators.unusual_time = true;
+    // Recalculate risk and trust scores
+    updatedContext.riskScore = await this.calculateRiskScore(
+      updatedContext.userId,
+      { fingerprint: updatedContext.deviceFingerprint },
+      updatedContext.geolocation
+    );
+    
+    updatedContext.trustScore = await this.calculateTrustScore(
+      updatedContext.userId,
+      { fingerprint: updatedContext.deviceFingerprint }
+    );
+
+    return updatedContext;
+  }
+
+  // Risk Assessment
+  private async calculateRiskScore(userId: string, deviceInfo?: any, locationData?: any): Promise<number> {
+    let riskScore = 0;
+
+    // Check device trust
+    if (deviceInfo?.fingerprint) {
+      const { data: deviceData } = await supabase
+        .from('device_fingerprints')
+        .select('is_trusted, risk_score')
+        .eq('fingerprint_hash', deviceInfo.fingerprint)
+        .single();
+
+      if (!deviceData?.is_trusted) {
+        riskScore += 30;
+      }
+      riskScore += deviceData?.risk_score || 0;
+    } else {
+      riskScore += 20; // Unknown device
+    }
+
+    // Check location anomalies
+    if (locationData) {
+      const locationRisk = await this.assessLocationRisk(userId, locationData);
+      riskScore += locationRisk;
+    }
+
+    // Check threat indicators
+    if (deviceInfo?.ipAddress) {
+      const threatRisk = await this.checkThreatIndicators('ip', deviceInfo.ipAddress);
+      riskScore += threatRisk;
+    }
+
+    // Check user behavior patterns
+    const behaviorRisk = await this.assessBehaviorRisk(userId);
+    riskScore += behaviorRisk;
+
+    return Math.min(riskScore, 100);
+  }
+
+  private async calculateTrustScore(userId: string, deviceInfo?: any): Promise<number> {
+    let trustScore = 50; // Base trust score
+
+    // Check device trust history
+    if (deviceInfo?.fingerprint) {
+      const { data: deviceData } = await supabase
+        .from('device_fingerprints')
+        .select('is_trusted, last_seen_at')
+        .eq('fingerprint_hash', deviceInfo.fingerprint)
+        .single();
+
+      if (deviceData?.is_trusted) {
+        trustScore += 20;
+      }
+
+      // Recent activity increases trust
+      if (deviceData?.last_seen_at) {
+        const daysSinceLastSeen = Math.floor(
+          (Date.now() - new Date(deviceData.last_seen_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        if (daysSinceLastSeen < 7) {
+          trustScore += 10;
+        }
       }
     }
 
-    // Analyze rapid successive actions
-    if (activityData.timestamp) {
-      const timeSinceLastAction = Date.now() - activityData.timestamp;
-      if (timeSinceLastAction < 100) {
-        indicators.rapid_actions = true;
-      }
-    }
-
-    return indicators;
-  }
-
-  private calculateAnomalyScore(riskIndicators: any): number {
-    let score = 0;
-    
-    if (riskIndicators.unusual_time) score += 20;
-    if (riskIndicators.rapid_actions) score += 30;
-    if (riskIndicators.new_device) score += 40;
-    if (riskIndicators.unusual_location) score += 25;
-
-    return Math.min(score, 100);
-  }
-
-  private async triggerSecurityAlert(activityType: string, anomalyScore: number): Promise<void> {
-    console.log(`Security Alert: ${activityType} with anomaly score ${anomalyScore}`);
-    // In production, this would trigger real security alerts
-  }
-
-  async verifySession(sessionToken: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('authentication_sessions')
+    // Check user authentication history
+    const { data: authHistory } = await supabase
+      .from('security_logs')
       .select('*')
-      .eq('session_token', sessionToken)
-      .eq('is_active', true)
-      .single();
+      .eq('user_id', userId)
+      .eq('event_type', 'authentication')
+      .eq('outcome', 'success')
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    if (error || !data) return false;
+    if (authHistory && authHistory.length > 5) {
+      trustScore += 15; // Regular successful authentication
+    }
 
-    const now = new Date();
-    const expiresAt = new Date(data.expires_at);
-    
-    if (now > expiresAt) {
-      await this.invalidateSession(sessionToken);
+    return Math.min(trustScore, 100);
+  }
+
+  private async assessLocationRisk(userId: string, locationData: any): Promise<number> {
+    // Check if location is unusual for user
+    const { data: recentLocations } = await supabase
+      .from('security_logs')
+      .select('metadata')
+      .eq('user_id', userId)
+      .not('metadata->geolocation', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (!recentLocations || recentLocations.length === 0) {
+      return 15; // New location, moderate risk
+    }
+
+    // Simple location risk assessment based on distance from recent locations
+    const currentLocation = locationData;
+    let isUsualLocation = false;
+
+    for (const log of recentLocations) {
+      const logLocation = log.metadata?.geolocation;
+      if (logLocation && this.calculateDistance(currentLocation, logLocation) < 100) {
+        isUsualLocation = true;
+        break;
+      }
+    }
+
+    return isUsualLocation ? 0 : 25;
+  }
+
+  private calculateDistance(loc1: any, loc2: any): number {
+    // Simple haversine distance calculation
+    const R = 6371; // Earth's radius in km
+    const dLat = (loc2.latitude - loc1.latitude) * Math.PI / 180;
+    const dLon = (loc2.longitude - loc1.longitude) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(loc1.latitude * Math.PI / 180) * Math.cos(loc2.latitude * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  private async checkThreatIndicators(type: string, value: string): Promise<number> {
+    const { data: indicators } = await supabase
+      .from('threat_indicators')
+      .select('severity, confidence_score')
+      .eq('indicator_type', type)
+      .eq('indicator_value', value)
+      .eq('is_active', true);
+
+    if (!indicators || indicators.length === 0) {
+      return 0;
+    }
+
+    let maxRisk = 0;
+    for (const indicator of indicators) {
+      let risk = 0;
+      switch (indicator.severity) {
+        case 'critical': risk = 40; break;
+        case 'high': risk = 30; break;
+        case 'medium': risk = 20; break;
+        case 'low': risk = 10; break;
+      }
+      risk *= (indicator.confidence_score || 1);
+      maxRisk = Math.max(maxRisk, risk);
+    }
+
+    return maxRisk;
+  }
+
+  private async assessBehaviorRisk(userId: string): Promise<number> {
+    const { data: recentBehavior } = await supabase
+      .from('behavioral_analytics')
+      .select('anomaly_score')
+      .eq('user_id', userId)
+      .order('detected_at', { ascending: false })
+      .limit(5);
+
+    if (!recentBehavior || recentBehavior.length === 0) {
+      return 0;
+    }
+
+    const avgAnomalyScore = recentBehavior.reduce((sum, b) => sum + b.anomaly_score, 0) / recentBehavior.length;
+    return Math.min(avgAnomalyScore, 30);
+  }
+
+  // Security Event Logging
+  async logSecurityEvent(event: SecurityEvent, context: ZeroTrustContext): Promise<void> {
+    try {
+      await supabase.from('security_logs').insert({
+        org_id: context.orgId,
+        user_id: context.userId,
+        event_type: event.eventType,
+        event_category: event.eventCategory,
+        resource_type: event.resourceType,
+        resource_id: event.resourceId,
+        resource_name: event.resourceName,
+        action_performed: event.actionPerformed,
+        action_details: event.actionDetails || {},
+        risk_score: event.riskScore || context.riskScore,
+        ip_address: context.ipAddress,
+        user_agent: context.userAgent,
+        geolocation: context.geolocation,
+        device_fingerprint: context.deviceFingerprint,
+        session_id: context.sessionId,
+        outcome: event.outcome,
+        error_details: event.errorDetails,
+        metadata: event.metadata || {}
+      });
+    } catch (error) {
+      console.error('Failed to log security event:', error);
+    }
+  }
+
+  // Access Control
+  async authorizeAccess(context: ZeroTrustContext, resource: string, action: string): Promise<boolean> {
+    // Log access attempt
+    await this.logSecurityEvent({
+      eventType: 'access_attempt',
+      eventCategory: 'authorization',
+      resourceType: 'resource',
+      resourceName: resource,
+      actionPerformed: action,
+      outcome: 'success' // Will be updated based on result
+    }, context);
+
+    // Basic risk-based access control
+    if (context.riskScore > 70) {
+      await this.logSecurityEvent({
+        eventType: 'access_denied',
+        eventCategory: 'authorization',
+        resourceType: 'resource',
+        resourceName: resource,
+        actionPerformed: action,
+        outcome: 'blocked',
+        actionDetails: { reason: 'high_risk_score', riskScore: context.riskScore }
+      }, context);
       return false;
     }
 
-    // Update last activity
-    await supabase
-      .from('authentication_sessions')
-      .update({ last_activity_at: now.toISOString() })
-      .eq('session_token', sessionToken);
+    if (context.trustScore < 30) {
+      await this.logSecurityEvent({
+        eventType: 'access_denied',
+        eventCategory: 'authorization',
+        resourceType: 'resource',
+        resourceName: resource,
+        actionPerformed: action,
+        outcome: 'blocked',
+        actionDetails: { reason: 'low_trust_score', trustScore: context.trustScore }
+      }, context);
+      return false;
+    }
 
     return true;
   }
 
-  async invalidateSession(sessionToken: string): Promise<void> {
+  // Threat Intelligence
+  async addThreatIndicator(indicator: Omit<ThreatIndicator, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    await supabase.from('threat_indicators').insert({
+      org_id: profile.organization_id,
+      indicator_type: indicator.indicatorType,
+      indicator_value: indicator.indicatorValue,
+      threat_type: indicator.threatType,
+      confidence_score: indicator.confidenceScore,
+      severity: indicator.severity,
+      source_feed: indicator.sourceFeed,
+      metadata: indicator.metadata || {}
+    });
+  }
+
+  async getThreatIndicators(type?: string, severity?: string): Promise<any[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
+
+    let query = supabase
+      .from('threat_indicators')
+      .select('*')
+      .eq('org_id', profile.organization_id)
+      .eq('is_active', true);
+
+    if (type) {
+      query = query.eq('indicator_type', type);
+    }
+
+    if (severity) {
+      query = query.eq('severity', severity);
+    }
+
+    const { data } = await query.order('created_at', { ascending: false });
+    return data || [];
+  }
+
+  // Compliance Management
+  async addComplianceFramework(framework: Omit<ComplianceFramework, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    await supabase.from('compliance_frameworks').insert({
+      org_id: profile.organization_id,
+      framework_name: framework.frameworkName,
+      framework_version: framework.frameworkVersion,
+      requirements: framework.requirements,
+      controls: framework.controls,
+      assessment_frequency: framework.assessmentFrequency,
+      created_by: profile.id
+    });
+  }
+
+  async getComplianceFrameworks(): Promise<any[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
+
+    const { data } = await supabase
+      .from('compliance_frameworks')
+      .select('*')
+      .eq('org_id', profile.organization_id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    return data || [];
+  }
+
+  // Security Playbooks
+  async addSecurityPlaybook(playbook: Omit<SecurityPlaybook, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    await supabase.from('security_playbooks').insert({
+      org_id: profile.organization_id,
+      playbook_name: playbook.playbookName,
+      trigger_conditions: playbook.triggerConditions,
+      response_steps: playbook.responseSteps,
+      escalation_rules: playbook.escalationRules,
+      automation_level: playbook.automationLevel,
+      priority: playbook.priority,
+      created_by: profile.id
+    });
+  }
+
+  async getSecurityPlaybooks(): Promise<any[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
+
+    const { data } = await supabase
+      .from('security_playbooks')
+      .select('*')
+      .eq('org_id', profile.organization_id)
+      .eq('is_active', true)
+      .order('priority', { ascending: true });
+
+    return data || [];
+  }
+
+  // Security Metrics
+  async recordSecurityMetric(metricType: string, metricName: string, value: number, unit?: string, metadata?: any): Promise<void> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return;
+
+    await supabase.from('security_metrics').insert({
+      org_id: profile.organization_id,
+      metric_type: metricType,
+      metric_name: metricName,
+      metric_value: value,
+      metric_unit: unit,
+      metadata: metadata || {}
+    });
+  }
+
+  async getSecurityMetrics(type?: string, period?: string): Promise<any[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
+
+    let query = supabase
+      .from('security_metrics')
+      .select('*')
+      .eq('org_id', profile.organization_id);
+
+    if (type) {
+      query = query.eq('metric_type', type);
+    }
+
+    if (period) {
+      query = query.eq('measurement_period', period);
+    }
+
+    const { data } = await query.order('measurement_date', { ascending: false });
+    return data || [];
+  }
+
+  // Automated Response
+  async triggerSecurityResponse(eventType: string, context: ZeroTrustContext, severity: string): Promise<void> {
+    // Get applicable playbooks
+    const playbooks = await this.getSecurityPlaybooks();
+    const applicablePlaybooks = playbooks.filter(p => 
+      this.matchesTriggerConditions(p.trigger_conditions, { eventType, context, severity })
+    );
+
+    for (const playbook of applicablePlaybooks) {
+      await this.executePlaybook(playbook, context);
+    }
+  }
+
+  private matchesTriggerConditions(conditions: any, event: any): boolean {
+    // Simple condition matching - can be enhanced
+    return conditions.event_types?.includes(event.eventType) ||
+           conditions.severity_levels?.includes(event.severity) ||
+           conditions.risk_threshold <= event.context.riskScore;
+  }
+
+  private async executePlaybook(playbook: any, context: ZeroTrustContext): Promise<void> {
+    await this.logSecurityEvent({
+      eventType: 'playbook_executed',
+      eventCategory: 'response',
+      resourceType: 'playbook',
+      resourceName: playbook.playbook_name,
+      actionPerformed: 'execute_response',
+      outcome: 'success',
+      actionDetails: { playbookId: playbook.id, automationLevel: playbook.automation_level }
+    }, context);
+
+    // Execute response steps based on automation level
+    if (playbook.automation_level === 'fully-automated') {
+      // Execute all steps automatically
+      for (const step of playbook.response_steps) {
+        await this.executeResponseStep(step, context);
+      }
+    } else if (playbook.automation_level === 'semi-automated') {
+      // Execute some steps automatically, queue others for manual review
+      for (const step of playbook.response_steps) {
+        if (step.automated) {
+          await this.executeResponseStep(step, context);
+        } else {
+          await this.queueManualStep(step, context);
+        }
+      }
+    } else {
+      // Queue all steps for manual execution
+      for (const step of playbook.response_steps) {
+        await this.queueManualStep(step, context);
+      }
+    }
+  }
+
+  private async executeResponseStep(step: any, context: ZeroTrustContext): Promise<void> {
+    // Execute automated response step
+    switch (step.action_type) {
+      case 'block_user':
+        await this.blockUser(context.userId, step.duration || 3600);
+        break;
+      case 'invalidate_sessions':
+        await this.invalidateUserSessions(context.userId);
+        break;
+      case 'require_mfa':
+        await this.requireMFA(context.userId);
+        break;
+      case 'notify_security_team':
+        await this.notifySecurityTeam(step.message, context);
+        break;
+      default:
+        console.warn('Unknown response step action:', step.action_type);
+    }
+  }
+
+  private async queueManualStep(step: any, context: ZeroTrustContext): Promise<void> {
+    // Queue step for manual execution - would integrate with ticketing system
+    console.log('Queuing manual step:', step, context);
+  }
+
+  private async blockUser(userId: string, duration: number): Promise<void> {
+    // Implementation would block user access
+    console.log(`Blocking user ${userId} for ${duration} seconds`);
+  }
+
+  private async invalidateUserSessions(userId: string): Promise<void> {
     await supabase
-      .from('authentication_sessions')
+      .from('enhanced_auth_sessions')
       .update({ is_active: false })
-      .eq('session_token', sessionToken);
+      .eq('user_id', userId);
+  }
+
+  private async requireMFA(userId: string): Promise<void> {
+    // Implementation would require MFA for next login
+    console.log(`Requiring MFA for user ${userId}`);
+  }
+
+  private async notifySecurityTeam(message: string, context: ZeroTrustContext): Promise<void> {
+    // Implementation would send notifications to security team
+    console.log('Security team notification:', message, context);
+  }
+
+  // Analytics and Reporting
+  async getSecurityDashboardData(): Promise<any> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return null;
+
+    const [
+      recentEvents,
+      threatIndicators,
+      securityMetrics,
+      activePlaybooks
+    ] = await Promise.all([
+      this.getRecentSecurityEvents(),
+      this.getThreatIndicators(),
+      this.getSecurityMetrics(),
+      this.getSecurityPlaybooks()
+    ]);
+
+    return {
+      recentEvents,
+      threatIndicators: threatIndicators.length,
+      securityMetrics,
+      activePlaybooks: activePlaybooks.length,
+      riskLevel: this.calculateOverallRiskLevel(recentEvents),
+      complianceStatus: await this.getComplianceStatus()
+    };
+  }
+
+  private async getRecentSecurityEvents(limit: number = 50): Promise<any[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
+
+    const { data } = await supabase
+      .from('security_logs')
+      .select('*')
+      .eq('org_id', profile.organization_id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    return data || [];
+  }
+
+  private calculateOverallRiskLevel(events: any[]): string {
+    if (events.length === 0) return 'low';
+
+    const highRiskEvents = events.filter(e => e.risk_score > 70).length;
+    const mediumRiskEvents = events.filter(e => e.risk_score > 40 && e.risk_score <= 70).length;
+
+    if (highRiskEvents > 5) return 'critical';
+    if (highRiskEvents > 0 || mediumRiskEvents > 10) return 'high';
+    if (mediumRiskEvents > 0) return 'medium';
+    return 'low';
+  }
+
+  private async getComplianceStatus(): Promise<any> {
+    const frameworks = await this.getComplianceFrameworks();
+    const totalFrameworks = frameworks.length;
+    const compliantFrameworks = frameworks.filter(f => f.compliance_status === 'compliant').length;
+
+    return {
+      totalFrameworks,
+      compliantFrameworks,
+      compliancePercentage: totalFrameworks > 0 ? (compliantFrameworks / totalFrameworks) * 100 : 0
+    };
   }
 }
 

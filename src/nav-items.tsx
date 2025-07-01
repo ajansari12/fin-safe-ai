@@ -1,89 +1,331 @@
+import {
+  HomeIcon,
+  Settings,
+  BarChart3,
+  FileText,
+  Shield,
+  AlertTriangle,
+  Users,
+  TrendingUp,
+  CheckSquare,
+  BookOpen,
+  Clock,
+  Briefcase,
+  Target,
+  GitBranch,
+  Database,
+  Zap,
+  Brain,
+  MessageSquare,
+  Calendar,
+  Star,
+  Wrench,
+  Globe,
+  UserCheck,
+  PieChart,
+  PlayCircle,
+  Search,
+  Layers,
+  Activity,
+  Map,
+  Workflow,
+  Building,
+  HelpCircle,
+  Mail,
+  CreditCard,
+  ShieldCheck
+} from "lucide-react";
 
-import { HomeIcon, BarChart3, FileText, Users, Shield, Calendar, Briefcase, Settings, Globe, MessageSquare, Video, BookOpen, Brain, TrendingUp, GitBranch, Workflow, Building2, Network, AlertTriangle } from "lucide-react";
+export interface NavItem {
+  title: string;
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description?: string;
+  badge?: string;
+}
 
-export const navItems = [
+export const navItems: NavItem[] = [
   {
     title: "Home",
     to: "/",
     icon: HomeIcon,
-    variant: "default" as const,
   },
   {
     title: "Dashboard",
     to: "/dashboard",
-    icon: BarChart3,
-    variant: "ghost" as const,
+    icon: PieChart,
   },
   {
-    title: "Analytics Hub",
-    to: "/analytics-hub",
-    icon: TrendingUp,
-    variant: "ghost" as const,
-  },
-  {
-    title: "Collaboration",
-    to: "/collaboration",
-    icon: MessageSquare,
-    variant: "ghost" as const,
-  },
-  {
-    title: "Risk Appetite",
+    title: "Risk Management",
     to: "/risk-appetite",
-    icon: AlertTriangle,
-    variant: "ghost" as const,
+    icon: Target,
   },
   {
-    title: "Controls & KRI",
+    title: "Controls & KRIs",
     to: "/controls-and-kri",
-    icon: Shield,
-    variant: "ghost" as const,
+    icon: CheckSquare,
+  },
+  {
+    title: "Incident Management",
+    to: "/incident-log",
+    icon: AlertTriangle,
+  },
+  {
+    title: "Governance",
+    to: "/governance-framework",
+    icon: BookOpen,
   },
   {
     title: "Third Party Risk",
     to: "/third-party-risk",
-    icon: Network,
-    variant: "ghost" as const,
+    icon: Briefcase,
   },
   {
-    title: "Dependencies",
-    to: "/dependencies",
-    icon: GitBranch,
-    variant: "ghost" as const,
+    title: "Business Functions",
+    to: "/business-functions",
+    icon: Building,
+  },
+  {
+    title: "Impact Tolerances",
+    to: "/impact-tolerances",
+    icon: TrendingUp,
   },
   {
     title: "Business Continuity",
     to: "/business-continuity",
-    icon: Building2,
-    variant: "ghost" as const,
+    icon: Shield,
   },
   {
-    title: "Incident Log",
-    to: "/incident-log",
+    title: "Scenario Testing",
+    to: "/scenario-testing",
+    icon: PlayCircle,
+  },
+  {
+    title: "Dependencies",
+    to: "/dependencies",
+    icon: Layers,
+  },
+  {
+    title: "Dependency Mapping",
+    to: "/dependency-mapping",
+    icon: Map,
+  },
+  {
+    title: "Document Management",
+    to: "/document-management",
     icon: FileText,
-    variant: "ghost" as const,
   },
   {
-    title: "Governance",
-    to: "/governance",
-    icon: Briefcase,
-    variant: "ghost" as const,
+    title: "Audit & Compliance",
+    to: "/audit-and-compliance",
+    icon: CheckSquare,
   },
   {
-    title: "Documents",
-    to: "/documents",
-    icon: FileText,
-    variant: "ghost" as const,
+    title: "Analytics Hub",
+    to: "/analytics-hub",
+    icon: BarChart3,
   },
   {
     title: "Reporting",
     to: "/reporting",
-    icon: BarChart3,
-    variant: "ghost" as const,
+    icon: FileText,
   },
   {
     title: "Workflow Center",
     to: "/workflow-center",
     icon: Workflow,
-    variant: "ghost" as const,
+  },
+  {
+    title: "Workflow Orchestration",
+    to: "/workflow-orchestration",
+    icon: GitBranch,
+  },
+  {
+    title: "Collaboration",
+    to: "/collaboration-platform",
+    icon: MessageSquare,
+  },
+  {
+    title: "Integrations",
+    to: "/integrations",
+    icon: Database,
+  },
+  {
+    title: "Integration Framework",
+    to: "/integration-framework",
+    icon: Zap,
+  },
+  {
+    title: "Enterprise Security",
+    to: "/security/enterprise-security-center",
+    icon: ShieldCheck,
+    badge: "New"
+  },
+  {
+    title: "User Onboarding",
+    to: "/user-onboarding",
+    icon: UserCheck,
+  },
+  {
+    title: "Enterprise Onboarding",
+    to: "/enterprise-onboarding",
+    icon: Star,
+  },
+  {
+    title: "Deployment Center",
+    to: "/deployment-center",
+    icon: Wrench,
+  },
+  {
+    title: "Customer Success",
+    to: "/customer-success",
+    icon: Users,
+  },
+  {
+    title: "Settings",
+    to: "/settings",
+    icon: Settings,
+  },
+  {
+    title: "Support",
+    to: "/support",
+    icon: HelpCircle,
+  }
+];
+
+export const riskManagementItems: NavItem[] = [
+  {
+    title: "Risk Appetite",
+    to: "/risk-appetite",
+    icon: Target,
+  },
+  {
+    title: "Controls & KRIs",
+    to: "/controls-and-kri",
+    icon: CheckSquare,
+  },
+  {
+    title: "Incident Management",
+    to: "/incident-log",
+    icon: AlertTriangle,
+  },
+  {
+    title: "Third Party Risk",
+    to: "/third-party-risk",
+    icon: Briefcase,
+  }
+];
+
+export const governanceItems: NavItem[] = [
+  {
+    title: "Governance Framework",
+    to: "/governance-framework",
+    icon: BookOpen,
+  },
+  {
+    title: "Compliance",
+    to: "/compliance",
+    icon: CheckSquare,
+  },
+  {
+    title: "Audit & Compliance",
+    to: "/audit-and-compliance",
+    icon: Shield,
+  }
+];
+
+export const operationalItems: NavItem[] = [
+  {
+    title: "Business Functions",
+    to: "/business-functions",
+    icon: Building,
+  },
+  {
+    title: "Impact Tolerances",
+    to: "/impact-tolerances",
+    icon: TrendingUp,
+  },
+  {
+    title: "Business Continuity",
+    to: "/business-continuity",
+    icon: Shield,
+  },
+  {
+    title: "Scenario Testing",
+    to: "/scenario-testing",
+    icon: PlayCircle,
+  },
+  {
+    title: "Dependencies",
+    to: "/dependencies",
+    icon: Layers,
+  },
+  {
+    title: "Dependency Mapping",
+    to: "/dependency-mapping",
+    icon: Map,
+  }
+];
+
+export const analyticsItems: NavItem[] = [
+  {
+    title: "Analytics Hub",
+    to: "/analytics-hub",
+    icon: BarChart3,
+  },
+  {
+    title: "Reporting",
+    to: "/reporting",
+    icon: FileText,
+  },
+  {
+    title: "Dashboard",
+    to: "/dashboard",
+    icon: PieChart,
+  }
+];
+
+export const collaborationItems: NavItem[] = [
+  {
+    title: "Document Management",
+    to: "/document-management",
+    icon: FileText,
+  },
+  {
+    title: "Collaboration Platform",
+    to: "/collaboration-platform",
+    icon: MessageSquare,
+  },
+  {
+    title: "Workflow Center",
+    to: "/workflow-center",
+    icon: Workflow,
+  }
+];
+
+export const integrationItems: NavItem[] = [
+  {
+    title: "Integrations",
+    to: "/integrations",
+    icon: Database,
+  },
+  {
+    title: "Integration Framework",
+    to: "/integration-framework",
+    icon: Zap,
+  },
+  {
+    title: "Workflow Orchestration",
+    to: "/workflow-orchestration",
+    icon: GitBranch,
+  }
+];
+
+export const securityItems: NavItem[] = [
+  {
+    title: "Enterprise Security",
+    to: "/security/enterprise-security-center",
+    icon: ShieldCheck,
+    badge: "New"
   }
 ];
