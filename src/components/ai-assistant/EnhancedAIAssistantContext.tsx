@@ -1,8 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { aiAssistantService, WorkflowAnalysis, RiskSummary, SectorThreshold } from "@/services/ai-assistant-service";
 import { enhancedAIAssistantService } from "@/services/enhanced-ai-assistant-service";
+import { aiOrganizationalIntelligenceIntegration } from "@/services/ai-organizational-intelligence-integration";
 import { getUserOrganization } from "@/lib/supabase-utils";
 
 // Keep existing types from original context
@@ -49,11 +49,12 @@ interface EnhancedAIAssistantContextType {
   sectorRecommendations: SectorThreshold[];
   isAnalyzing: boolean;
   
-  // New methods
+  // New organizational intelligence methods
   generateWorkflowReport: () => Promise<void>;
   generateExecutiveReport: () => Promise<void>;
   getSectorGuidance: (metric: string) => Promise<void>;
   provideFeedback: (messageId: string, rating: number, comment?: string) => Promise<void>;
+  generateOrganizationalAnalysis: () => Promise<void>;
   
   // Quick actions
   explainTerm: (term: string) => void;
@@ -94,7 +95,7 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm your enhanced ResilientFI assistant with advanced AI capabilities:\n\n🔮 **Predictive Analytics** - Forecast risks and identify emerging patterns\n📊 **Intelligent Assessment** - AI-powered risk scoring with benchmarking\n💡 **Proactive Recommendations** - Personalized mitigation strategies\n📄 **Document Analysis** - Extract insights from reports and policies\n🚨 **Anomaly Detection** - Identify unusual patterns in your data\n\nTry asking: 'Predict next quarter risks' or 'Recommend mitigation strategies'",
+      content: "Hello! I'm your enhanced ResilientFI assistant with advanced organizational intelligence:\n\n🔮 **Predictive Analytics** - Forecast risks and identify emerging patterns\n📊 **Intelligent Assessment** - AI-powered risk scoring with benchmarking\n💡 **Proactive Recommendations** - Personalized mitigation strategies\n📄 **Document Analysis** - Extract insights from reports and policies\n🚨 **Anomaly Detection** - Identify unusual patterns in your data\n🎯 **Organizational Intelligence** - Comprehensive organizational profiling and analysis\n⚡ **Workflow Orchestration** - Automated workflow management\n🔄 **Real-Time Intelligence** - Live monitoring and insights\n\nTry asking: 'Analyze my organization' or 'Generate comprehensive insights'",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -115,6 +116,49 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     
     loadUserContext();
   }, [profile]);
+
+  // New organizational intelligence method
+  const generateOrganizationalAnalysis = async () => {
+    if (!profile?.organization_id) return;
+    
+    setIsAnalyzing(true);
+    try {
+      // This would require a profile ID, which we would get from the organizational intelligence service
+      // For now, we'll generate a mock analysis
+      const analysisContent = `**Comprehensive Organizational Intelligence Analysis:**\n\n` +
+        `🏢 **Organization Overview:**\n` +
+        `• Sector: ${orgSector || 'Not specified'}\n` +
+        `• Size: ${orgSize || 'Not specified'}\n` +
+        `• Current Assessment Status: In Progress\n\n` +
+        `🔍 **Key Insights:**\n` +
+        `• Risk maturity assessment recommended\n` +
+        `• Compliance framework evaluation needed\n` +
+        `• Technology modernization opportunities identified\n\n` +
+        `📈 **Recommendations:**\n` +
+        `• Complete organizational profile assessment\n` +
+        `• Implement risk management framework\n` +
+        `• Establish automated monitoring systems\n\n` +
+        `🎯 **Next Steps:**\n` +
+        `• Navigate to Organizational Intelligence module\n` +
+        `• Complete adaptive questionnaire\n` +
+        `• Review generated insights and recommendations`;
+      
+      const messageId = await aiAssistantService.logChatMessage('assistant', analysisContent, currentModule, ['organizational_intelligence']);
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: analysisContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['organizational_intelligence']
+      }]);
+    } catch (error) {
+      console.error('Error generating organizational analysis:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // Enhanced methods with new service integration
   const generateWorkflowReport = async () => {
@@ -226,7 +270,7 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     }
   };
 
-  // Enhanced message handling with new service
+  // Enhanced message handling with organizational intelligence integration
   const addUserMessage = async (message: string) => {
     const messageId = `msg-${Date.now()}`;
     const startTime = performance.now();
@@ -247,40 +291,62 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
       
       setIsLoading(true);
       
-      // Use enhanced AI service for processing
-      if (profile?.organization_id) {
+      // Check if this is an organizational intelligence query
+      const isOrgIntelligenceQuery = [
+        'analyze', 'organization', 'profile', 'maturity', 'intelligence', 
+        'assessment', 'comprehensive', 'insights', 'recommendations'
+      ].some(keyword => message.toLowerCase().includes(keyword));
+
+      let aiResponse = '';
+
+      if (isOrgIntelligenceQuery && profile?.organization_id) {
+        // Use organizational intelligence integration for contextual responses
+        const context = {
+          profileId: '', // Would be populated from organizational profile
+          orgId: profile.organization_id,
+          currentMaturityLevel: 'basic', // Would be populated from profile
+          riskScore: 50, // Would be calculated
+          completeness: 60 // Would be calculated
+        };
+        
+        aiResponse = await aiOrganizationalIntelligenceIntegration.generateContextualResponse(
+          message,
+          context
+        );
+      } else {
+        // Use standard enhanced AI service
         const org = await getUserOrganization();
-        const aiResponse = await enhancedAIAssistantService.processEnhancedMessage(
+        aiResponse = await enhancedAIAssistantService.processEnhancedMessage(
           message,
           {
             module: currentModule,
-            orgId: profile.organization_id,
+            orgId: profile?.organization_id,
             orgSector: org?.sector || 'banking',
-            userRole: profile.role
+            userRole: profile?.role
           }
         );
-        
-        const responseTime = performance.now() - startTime;
-        const assistantLogId = await aiAssistantService.logChatMessage(
-          'assistant', 
-          aiResponse, 
-          currentModule, 
-          ['enhanced_ai'], 
-          Math.round(responseTime)
-        );
-        
-        setAssistantMessages(prev => [
-          ...prev,
-          {
-            id: `response-${Date.now()}`,
-            role: "assistant",
-            content: aiResponse,
-            timestamp: new Date().toISOString(),
-            logId: assistantLogId,
-            knowledgeSources: ['enhanced_ai']
-          }
-        ]);
       }
+      
+      const responseTime = performance.now() - startTime;
+      const assistantLogId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        aiResponse, 
+        currentModule, 
+        ['enhanced_ai', 'organizational_intelligence'], 
+        Math.round(responseTime)
+      );
+      
+      setAssistantMessages(prev => [
+        ...prev,
+        {
+          id: `response-${Date.now()}`,
+          role: "assistant",
+          content: aiResponse,
+          timestamp: new Date().toISOString(),
+          logId: assistantLogId,
+          knowledgeSources: ['enhanced_ai', 'organizational_intelligence']
+        }
+      ]);
     } catch (error) {
       console.error('Error processing message:', error);
       setAssistantMessages(prev => [
@@ -343,7 +409,8 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
         generateWorkflowReport,
         generateExecutiveReport,
         getSectorGuidance,
-        provideFeedback
+        provideFeedback,
+        generateOrganizationalAnalysis
       }}
     >
       {children}

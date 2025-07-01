@@ -11,12 +11,17 @@ import {
   Target,
   TrendingUp,
   Users,
-  ArrowRight
+  ArrowRight,
+  Activity,
+  Workflow,
+  Zap
 } from 'lucide-react';
 import AdaptiveQuestionnaire from '@/components/organizational-intelligence/AdaptiveQuestionnaire';
 import OrganizationalProfileDashboard from '@/components/organizational-intelligence/OrganizationalProfileDashboard';
 import AdvancedIntelligenceDashboard from '@/components/organizational-intelligence/AdvancedIntelligenceDashboard';
 import IntelligentAutomationPanel from '@/components/organizational-intelligence/IntelligentAutomationPanel';
+import WorkflowOrchestrationPanel from '@/components/organizational-intelligence/WorkflowOrchestrationPanel';
+import RealTimeIntelligenceHub from '@/components/organizational-intelligence/RealTimeIntelligenceHub';
 import { organizationalIntelligenceService } from '@/services/organizational-intelligence-service';
 import { getCurrentUserProfile } from '@/lib/supabase-utils';
 import { toast } from 'sonner';
@@ -99,17 +104,17 @@ const OrganizationalIntelligence: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Organizational Intelligence</h1>
             <p className="text-muted-foreground">
-              AI-powered organizational profiling, predictive analytics, and intelligent automation
+              Advanced AI-powered organizational profiling, predictive analytics, and intelligent automation
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Brain className="h-8 w-8 text-blue-500" />
-            <span className="text-sm font-medium text-blue-600">Enhanced AI Engine</span>
+            <span className="text-sm font-medium text-blue-600">Enhanced AI Engine v2.0</span>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Overview
@@ -126,8 +131,16 @@ const OrganizationalIntelligence: React.FC = () => {
               <Brain className="h-4 w-4" />
               AI Intelligence
             </TabsTrigger>
+            <TabsTrigger value="realtime" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" />
+              Real-Time Hub
+            </TabsTrigger>
+            <TabsTrigger value="workflows" className="flex items-center gap-2">
+              <Workflow className="h-4 w-4" />
+              Workflows
+            </TabsTrigger>
             <TabsTrigger value="automation" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
+              <Zap className="h-4 w-4" />
               Automation
             </TabsTrigger>
             <TabsTrigger value="questionnaire" className="flex items-center gap-2">
@@ -143,30 +156,37 @@ const OrganizationalIntelligence: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Brain className="h-6 w-6 text-blue-500" />
-                    Welcome to Organizational Intelligence
+                    Welcome to Advanced Organizational Intelligence
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-6 md:grid-cols-3">
+                  <div className="grid gap-6 md:grid-cols-4">
                     <div className="text-center">
                       <FileText className="h-12 w-12 mx-auto mb-2 text-blue-500" />
                       <h3 className="font-medium mb-1">Smart Assessment</h3>
                       <p className="text-sm text-gray-600">
-                        Adaptive questionnaire that learns about your organization
+                        Adaptive questionnaire with AI-powered analysis
                       </p>
                     </div>
                     <div className="text-center">
-                      <Users className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                      <h3 className="font-medium mb-1">AI Profiling</h3>
+                      <Activity className="h-12 w-12 mx-auto mb-2 text-green-500" />
+                      <h3 className="font-medium mb-1">Real-Time Intelligence</h3>
                       <p className="text-sm text-gray-600">
-                        Multi-dimensional organizational analysis and scoring
+                        Live monitoring and predictive insights
                       </p>
                     </div>
                     <div className="text-center">
-                      <Target className="h-12 w-12 mx-auto mb-2 text-purple-500" />
-                      <h3 className="font-medium mb-1">Custom Frameworks</h3>
+                      <Workflow className="h-12 w-12 mx-auto mb-2 text-purple-500" />
+                      <h3 className="font-medium mb-1">Workflow Orchestration</h3>
                       <p className="text-sm text-gray-600">
-                        Tailored risk management frameworks for your organization
+                        Automated workflow management and execution
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <Zap className="h-12 w-12 mx-auto mb-2 text-orange-500" />
+                      <h3 className="font-medium mb-1">Intelligent Automation</h3>
+                      <p className="text-sm text-gray-600">
+                        AI-driven process automation and optimization
                       </p>
                     </div>
                   </div>
@@ -214,39 +234,39 @@ const OrganizationalIntelligence: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Quick Actions */}
+              {/* Advanced Features */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Quick Actions</CardTitle>
+                  <CardTitle className="text-base">Advanced Features</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setActiveTab('assessment')}
+                    onClick={() => setActiveTab('realtime')}
                     className="w-full justify-start"
                   >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Take Assessment
+                    <Activity className="h-4 w-4 mr-2" />
+                    Real-Time Intelligence
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setActiveTab('profile')}
+                    onClick={() => setActiveTab('workflows')}
                     className="w-full justify-start"
-                    disabled={!profile}
                   >
-                    <Users className="h-4 w-4 mr-2" />
-                    View Profile
+                    <Workflow className="h-4 w-4 mr-2" />
+                    Workflow Orchestration
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
+                    onClick={() => setActiveTab('automation')}
                     className="w-full justify-start"
                     disabled={!profile}
                   >
-                    <Target className="h-4 w-4 mr-2" />
-                    Generate Framework
+                    <Zap className="h-4 w-4 mr-2" />
+                    Intelligent Automation
                   </Button>
                 </CardContent>
               </Card>
@@ -254,29 +274,29 @@ const OrganizationalIntelligence: React.FC = () => {
               {/* Intelligence Features */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Intelligence Features</CardTitle>
+                  <CardTitle className="text-base">Intelligence Capabilities</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full" />
-                      <span className="text-sm">Adaptive Questioning</span>
+                      <span className="text-sm">Predictive Risk Analytics</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                      <span className="text-sm">Risk Pattern Recognition</span>
+                      <span className="text-sm">Intelligent Recommendations</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-purple-500 rounded-full" />
-                      <span className="text-sm">Framework Customization</span>
+                      <span className="text-sm">Maturity Progression Analysis</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-orange-500 rounded-full" />
-                      <span className="text-sm">Maturity Assessment</span>
+                      <span className="text-sm">Automated Workflow Orchestration</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-pink-500 rounded-full" />
-                      <span className="text-sm">Continuous Learning</span>
+                      <span className="text-sm">Real-Time Intelligence Hub</span>
                     </div>
                   </div>
                 </CardContent>
@@ -349,13 +369,50 @@ const OrganizationalIntelligence: React.FC = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="realtime" className="space-y-6">
+            {profile && userOrg ? (
+              <RealTimeIntelligenceHub 
+                orgId={userOrg.organization_id} 
+                profileId={profile.id} 
+              />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Activity className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Real-Time Intelligence Unavailable</h3>
+                  <p className="text-gray-500 mb-4">Complete your organizational profile to access real-time intelligence.</p>
+                  <Button onClick={() => setActiveTab('assessment')}>
+                    Complete Assessment
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="workflows" className="space-y-6">
+            {userOrg ? (
+              <WorkflowOrchestrationPanel orgId={userOrg.organization_id} />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Workflow className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Workflow Orchestration Unavailable</h3>
+                  <p className="text-gray-500 mb-4">Organization profile required for workflow management.</p>
+                  <Button onClick={() => setActiveTab('assessment')}>
+                    Complete Assessment
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
           <TabsContent value="automation" className="space-y-6">
             {profile ? (
               <IntelligentAutomationPanel orgId={profile.org_id} />
             ) : (
               <Card>
                 <CardContent className="text-center py-12">
-                  <Target className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <Zap className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Automation Unavailable</h3>
                   <p className="text-gray-500 mb-4">Complete your organizational profile to enable intelligent automation.</p>
                   <Button onClick={() => setActiveTab('assessment')}>
