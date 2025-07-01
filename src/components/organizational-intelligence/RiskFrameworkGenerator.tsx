@@ -10,160 +10,119 @@ import {
   CheckCircle,
   AlertTriangle,
   FileText,
-  Download
+  Download,
+  Brain,
+  Zap
 } from 'lucide-react';
+import IntelligentFrameworkGenerator from './IntelligentFrameworkGenerator';
+import FrameworkLibrary from './FrameworkLibrary';
+import FrameworkImplementationTracker from './FrameworkImplementationTracker';
 
 interface RiskFrameworkGeneratorProps {
   orgId: string;
+  profileId?: string;
 }
 
-const RiskFrameworkGenerator: React.FC<RiskFrameworkGeneratorProps> = ({ orgId }) => {
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleGenerateFramework = async () => {
-    setIsGenerating(true);
-    // Simulate framework generation
-    setTimeout(() => {
-      setIsGenerating(false);
-    }, 3000);
-  };
+const RiskFrameworkGenerator: React.FC<RiskFrameworkGeneratorProps> = ({ orgId, profileId = orgId }) => {
+  const [activeTab, setActiveTab] = useState('generator');
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Target className="h-8 w-8 text-red-500" />
+          <Brain className="h-8 w-8 text-blue-500" />
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Risk Framework Generator</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Intelligent Framework Generator</h2>
             <p className="text-muted-foreground">
-              AI-powered risk framework generation and customization
+              AI-powered risk management framework generation and management
             </p>
           </div>
         </div>
-        <Button onClick={handleGenerateFramework} disabled={isGenerating}>
-          {isGenerating ? (
-            <>
-              <Settings className="h-4 w-4 mr-2 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Target className="h-4 w-4 mr-2" />
-              Generate Framework
-            </>
-          )}
-        </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="components">Components</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="generator" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Generator
+          </TabsTrigger>
+          <TabsTrigger value="library" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Library
+          </TabsTrigger>
+          <TabsTrigger value="implementation" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Implementation
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                  Framework Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Completeness</span>
-                    <Badge variant="outline">85%</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Last Updated</span>
-                    <span className="text-sm text-muted-foreground">2 days ago</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-500" />
-                  Generated Documents
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-between">
-                    Risk Policy Framework
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-between">
-                    Control Matrix
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <TabsContent value="generator" className="space-y-4">
+          <IntelligentFrameworkGenerator orgId={orgId} profileId={profileId} />
         </TabsContent>
 
-        <TabsContent value="components" className="space-y-4">
+        <TabsContent value="library" className="space-y-4">
+          <FrameworkLibrary orgId={orgId} />
+        </TabsContent>
+
+        <TabsContent value="implementation" className="space-y-4">
+          <FrameworkImplementationTracker orgId={orgId} />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Framework Components</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                Framework Analytics
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <span>Risk Appetite Statement</span>
-                  </div>
-                  <Badge variant="outline">Complete</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                    <span>Risk Assessment Methodology</span>
-                  </div>
-                  <Badge variant="secondary">In Progress</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Settings className="h-5 w-5 text-gray-500" />
-                    <span>Control Framework</span>
-                  </div>
-                  <Badge variant="outline">Pending</Badge>
-                </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-600">92%</div>
+                    <div className="text-sm text-muted-foreground">Framework Effectiveness</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-green-600">85%</div>
+                    <div className="text-sm text-muted-foreground">Implementation Success</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="p-4 text-center">
+                    <div className="text-2xl font-bold text-purple-600">7.8/10</div>
+                    <div className="text-sm text-muted-foreground">User Satisfaction</div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="templates" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Available Templates</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-2">Basel III Framework</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Comprehensive banking risk management framework
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-2">ISO 31000</h4>
-                    <p className="text-sm text-muted-foreground">
-                      International risk management standard
-                    </p>
-                  </CardContent>
-                </Card>
+              
+              <div className="mt-6">
+                <h4 className="font-medium mb-4">Recent Improvements</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <div>
+                      <div className="font-medium">Enhanced AI Algorithm</div>
+                      <div className="text-sm text-muted-foreground">15% improvement in framework accuracy</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                    <Brain className="h-5 w-5 text-blue-500" />
+                    <div>
+                      <div className="font-medium">New Sector Templates</div>
+                      <div className="text-sm text-muted-foreground">Added fintech and insurance specific frameworks</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
