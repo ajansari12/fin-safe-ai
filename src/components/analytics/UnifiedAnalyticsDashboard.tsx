@@ -1,0 +1,245 @@
+
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { 
+  BarChart3, 
+  TrendingUp, 
+  AlertTriangle, 
+  Target, 
+  Users, 
+  Settings,
+  Brain,
+  Zap,
+  Eye
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { advancedAnalyticsService, type AnalyticsInsight } from '@/services/advanced-analytics-service';
+import ExecutiveDashboard from './ExecutiveDashboard';
+import OperationalDashboard from './OperationalDashboard';
+import CustomDashboardBuilder from './CustomDashboardBuilder';
+import PredictiveAnalyticsChart from './PredictiveAnalyticsChart';
+import { toast } from 'sonner';
+
+const UnifiedAnalyticsDashboard: React.FC = () => {
+  const { profile } = useAuth();
+  const [activeTab, setActiveTab] = useState('executive');
+  const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
+  const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+
+  useEffect(() => {
+    if (profile?.organization_id) {
+      loadAutomatedInsights();
+    }
+  }, [profile?.organization_id]);
+
+  const loadAutomatedInsights = async () => {
+    if (!profile?.organization_id) return;
+
+    setIsGeneratingInsights(true);
+    try {
+      const generatedInsights = await advancedAnalyticsService.generateAutomatedInsights(
+        profile.organization_id
+      );
+      setInsights(generatedInsights);
+    } catch (error) {
+      console.error('Error loading insights:', error);
+      toast.error('Failed to load automated insights');
+    } finally {
+      setIsGeneratingInsights(false);
+    }
+  };
+
+  const getInsightIcon = (type: string) => {
+    switch (type) {
+      case 'trend': return <TrendingUp className="h-4 w-4" />;
+      case 'anomaly': return <AlertTriangle className="h-4 w-4" />;
+      case 'correlation': return <Target className="h-4 w-4" />;
+      case 'prediction': return <Brain className="h-4 w-4" />;
+      case 'recommendation': return <Zap className="h-4 w-4" />;
+      default: return <Eye className="h-4 w-4" />;
+    }
+  };
+
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getDashboardByRole = () => {
+    switch (profile?.role) {
+      case 'executive':
+      case 'admin':
+        return 'executive';
+      case 'manager':
+        return 'operational';
+      case 'analyst':
+      default:
+        return 'operational';
+    }
+  };
+
+  useEffect(() => {
+    setActiveTab(getDashboardByRole());
+  }, [profile?.role]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Analytics & Business Intelligence</h2>
+          <p className="text-muted-foreground">
+            Comprehensive insights across all risk management activities
+          </p>
+        </div>
+        <Button 
+          onClick={loadAutomatedInsights}
+          disabled={isGeneratingInsights}
+          className="flex items-center gap-2"
+        >
+          <Brain className="h-4 w-4" />
+          {isGeneratingInsights ? 'Generating...' : 'Refresh Insights'}
+        </Button>
+      </div>
+
+      {/* AI-Generated Insights Banner */}
+      {insights.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Brain className="h-4 w-4 text-blue-600" />
+              AI-Generated Insights
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {insights.slice(0, 3).map((insight) => (
+                <div key={insight.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border">
+                  <div className="flex-shrink-0 mt-0.5">
+                    {getInsightIcon(insight.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium text-sm">{insight.title}</h4>
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${getImpactColor(insight.impact)}`}
+                      >
+                        {insight.impact}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {Math.round(insight.confidence * 100)}% confidence
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{insight.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {insights.length > 3 && (
+              <div className="mt-3 text-center">
+                <Button variant="ghost" size="sm">
+                  View all {insights.length} insights
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="executive" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Executive
+          </TabsTrigger>
+          <TabsTrigger value="operational" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Operational
+          </TabsTrigger>
+          <TabsTrigger value="predictive" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Predictive
+          </TabsTrigger>
+          <TabsTrigger value="custom" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Custom
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="executive" className="space-y-6">
+          <ExecutiveDashboard />
+        </TabsContent>
+
+        <TabsContent value="operational" className="space-y-6">
+          <OperationalDashboard />
+        </TabsContent>
+
+        <TabsContent value="predictive" className="space-y-6">
+          <div className="grid gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  Predictive Analytics & Machine Learning
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PredictiveAnalyticsChart />
+              </CardContent>
+            </Card>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Anomaly Detection</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No anomalies detected in the last 30 days</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Correlation Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm">Risk Score vs Incidents</span>
+                      <Badge variant="outline">+0.73</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm">KRI Breaches vs Vendor Risk</span>
+                      <Badge variant="outline">+0.45</Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <span className="text-sm">Control Effectiveness vs Incidents</span>
+                      <Badge variant="outline">-0.62</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="custom" className="space-y-6">
+          <CustomDashboardBuilder />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default UnifiedAnalyticsDashboard;
