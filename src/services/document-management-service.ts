@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -52,20 +51,46 @@ export interface DocumentRepository {
 }
 
 class DocumentManagementService {
-  async uploadDocument(documentData: Partial<Document>): Promise<Document> {
+  async uploadDocument(documentData: Omit<Document, 'id' | 'created_at' | 'updated_at'> & { title: string }): Promise<Document> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 
-    const completeDocumentData = {
-      ...documentData,
+    // Prepare the data for database insertion
+    const insertData = {
       org_id: profile.organization_id,
       uploaded_by: profile.id,
       uploaded_by_name: profile.full_name,
+      title: documentData.title,
+      description: documentData.description || null,
+      repository_id: documentData.repository_id || null,
+      parent_document_id: documentData.parent_document_id || null,
+      status: documentData.status || 'draft',
+      version_number: documentData.version_number || 1,
+      is_current_version: documentData.is_current_version ?? true,
+      is_archived: documentData.is_archived ?? false,
+      file_path: documentData.file_path || null,
+      file_size: documentData.file_size || null,
+      mime_type: documentData.mime_type || null,
+      checksum: documentData.checksum || null,
+      extraction_status: documentData.extraction_status || 'pending',
+      ai_analysis_status: documentData.ai_analysis_status || 'pending',
+      extracted_text: documentData.extracted_text || null,
+      ai_summary: documentData.ai_summary || null,
+      ai_confidence_score: documentData.ai_confidence_score || null,
+      key_risk_indicators: documentData.key_risk_indicators || [],
+      compliance_gaps: documentData.compliance_gaps || [],
+      document_classification: documentData.document_classification || {},
+      metadata: documentData.metadata || {},
+      tags: documentData.tags || [],
+      access_count: documentData.access_count || 0,
+      last_accessed_at: documentData.last_accessed_at || null,
+      review_due_date: documentData.review_due_date || null,
+      expiry_date: documentData.expiry_date || null
     };
 
     const { data, error } = await supabase
       .from('documents')
-      .insert(completeDocumentData)
+      .insert(insertData)
       .select()
       .single();
 
@@ -77,16 +102,20 @@ class DocumentManagementService {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 
-    const completeRepositoryData = {
-      ...repositoryData,
+    const insertData = {
       org_id: profile.organization_id,
       created_by: profile.id,
       created_by_name: profile.full_name,
+      name: repositoryData.name,
+      description: repositoryData.description || null,
+      document_type: repositoryData.document_type,
+      access_level: repositoryData.access_level,
+      retention_years: repositoryData.retention_years
     };
 
     const { data, error } = await supabase
       .from('document_repositories')
-      .insert(completeRepositoryData)
+      .insert(insertData)
       .select()
       .single();
 
