@@ -1,331 +1,260 @@
-import {
-  HomeIcon,
-  Settings,
-  BarChart3,
-  FileText,
-  Shield,
-  AlertTriangle,
-  Users,
-  TrendingUp,
-  CheckSquare,
-  BookOpen,
-  Clock,
-  Briefcase,
-  Target,
-  GitBranch,
-  Database,
+
+import { 
+  Home, 
+  FileText, 
+  Shield, 
+  Users, 
+  TrendingUp, 
+  Settings, 
+  AlertTriangle, 
+  CheckSquare, 
+  Database, 
   Zap,
-  Brain,
-  MessageSquare,
-  Calendar,
-  Star,
-  Wrench,
-  Globe,
-  UserCheck,
-  PieChart,
-  PlayCircle,
-  Search,
-  Layers,
   Activity,
-  Map,
-  Workflow,
-  Building,
-  HelpCircle,
-  Mail,
-  CreditCard,
-  ShieldCheck
+  BarChart3,
+  Cloud,
+  GitBranch,
+  Network,
+  Server,
+  Globe,
+  Target,
+  Layers,
+  Briefcase,
+  UserCheck,
+  Book,
+  Wrench,
+  Phone,
+  HelpCircle
 } from "lucide-react";
 
-export interface NavItem {
-  title: string;
-  to: string;
-  icon: React.ComponentType<{ className?: string }>;
-  description?: string;
-  badge?: string;
-}
-
-export const navItems: NavItem[] = [
+export const navItems = [
   {
     title: "Home",
     to: "/",
-    icon: HomeIcon,
+    icon: Home,
+    variant: "default" as const,
   },
   {
     title: "Dashboard",
     to: "/dashboard",
-    icon: PieChart,
+    icon: BarChart3,
+    variant: "default" as const,
+  },
+  {
+    title: "Modules",
+    icon: Layers,
+    variant: "default" as const,
+    submenu: [
+      {
+        title: "Overview",
+        to: "/modules",
+        icon: Layers,
+      },
+      {
+        title: "Governance",
+        to: "/modules/governance",
+        icon: Shield,
+      },
+      {
+        title: "Risk Management",
+        to: "/modules/risk-management",
+        icon: AlertTriangle,
+      },
+      {
+        title: "Self Assessment",
+        to: "/modules/self-assessment",
+        icon: CheckSquare,
+      },
+    ],
   },
   {
     title: "Risk Management",
-    to: "/risk-appetite",
-    icon: Target,
-  },
-  {
-    title: "Controls & KRIs",
-    to: "/controls-and-kri",
-    icon: CheckSquare,
-  },
-  {
-    title: "Incident Management",
-    to: "/incident-log",
     icon: AlertTriangle,
+    variant: "default" as const,
+    submenu: [
+      {
+        title: "Risk Appetite",
+        to: "/risk-appetite",
+        icon: Target,
+      },
+      {
+        title: "Risk Appetite Workflow",
+        to: "/risk-management/risk-appetite-workflow",
+        icon: GitBranch,
+      },
+      {
+        title: "Controls & KRIs",
+        to: "/controls-and-kri",
+        icon: CheckSquare,
+      },
+      {
+        title: "Impact Tolerances",
+        to: "/impact-tolerances",
+        icon: Activity,
+      },
+      {
+        title: "Business Functions",
+        to: "/business-functions",
+        icon: Briefcase,
+      },
+      {
+        title: "Dependencies",
+        to: "/dependencies",
+        icon: Network,
+      },
+      {
+        title: "Tolerance Framework",
+        to: "/tolerance-framework",
+        icon: Target,
+      },
+    ],
+  },
+  {
+    title: "Platform Architecture",
+    to: "/platform-architecture",
+    icon: Server,
+    variant: "default" as const,
+  },
+  {
+    title: "Security Center",
+    to: "/security/enterprise-security-center",
+    icon: Shield,
+    variant: "default" as const,
+  },
+  {
+    title: "Documents",
+    to: "/documents",
+    icon: FileText,
+    variant: "default" as const,
   },
   {
     title: "Governance",
-    to: "/governance-framework",
-    icon: BookOpen,
+    to: "/governance",
+    icon: Shield,
+    variant: "default" as const,
   },
   {
     title: "Third Party Risk",
     to: "/third-party-risk",
-    icon: Briefcase,
+    icon: Users,
+    variant: "default" as const,
   },
   {
-    title: "Business Functions",
-    to: "/business-functions",
-    icon: Building,
-  },
-  {
-    title: "Impact Tolerances",
-    to: "/impact-tolerances",
-    icon: TrendingUp,
-  },
-  {
-    title: "Business Continuity",
-    to: "/business-continuity",
-    icon: Shield,
-  },
-  {
-    title: "Scenario Testing",
-    to: "/scenario-testing",
-    icon: PlayCircle,
-  },
-  {
-    title: "Dependencies",
-    to: "/dependencies",
-    icon: Layers,
-  },
-  {
-    title: "Dependency Mapping",
-    to: "/dependency-mapping",
-    icon: Map,
-  },
-  {
-    title: "Document Management",
-    to: "/document-management",
-    icon: FileText,
-  },
-  {
-    title: "Audit & Compliance",
-    to: "/audit-and-compliance",
-    icon: CheckSquare,
+    title: "Incident Log",
+    to: "/incident-log",
+    icon: AlertTriangle,
+    variant: "default" as const,
   },
   {
     title: "Analytics Hub",
-    to: "/analytics-hub",
-    icon: BarChart3,
-  },
-  {
-    title: "Reporting",
-    to: "/reporting",
-    icon: FileText,
-  },
-  {
-    title: "Workflow Center",
-    to: "/workflow-center",
-    icon: Workflow,
-  },
-  {
-    title: "Workflow Orchestration",
-    to: "/workflow-orchestration",
-    icon: GitBranch,
-  },
-  {
-    title: "Collaboration",
-    to: "/collaboration-platform",
-    icon: MessageSquare,
-  },
-  {
-    title: "Integrations",
-    to: "/integrations",
-    icon: Database,
-  },
-  {
-    title: "Integration Framework",
-    to: "/integration-framework",
-    icon: Zap,
-  },
-  {
-    title: "Enterprise Security",
-    to: "/security/enterprise-security-center",
-    icon: ShieldCheck,
-    badge: "New"
-  },
-  {
-    title: "User Onboarding",
-    to: "/user-onboarding",
-    icon: UserCheck,
-  },
-  {
-    title: "Enterprise Onboarding",
-    to: "/enterprise-onboarding",
-    icon: Star,
-  },
-  {
-    title: "Deployment Center",
-    to: "/deployment-center",
-    icon: Wrench,
-  },
-  {
-    title: "Customer Success",
-    to: "/customer-success",
-    icon: Users,
-  },
-  {
-    title: "Settings",
-    to: "/settings",
-    icon: Settings,
-  },
-  {
-    title: "Support",
-    to: "/support",
-    icon: HelpCircle,
-  }
-];
-
-export const riskManagementItems: NavItem[] = [
-  {
-    title: "Risk Appetite",
-    to: "/risk-appetite",
-    icon: Target,
-  },
-  {
-    title: "Controls & KRIs",
-    to: "/controls-and-kri",
-    icon: CheckSquare,
-  },
-  {
-    title: "Incident Management",
-    to: "/incident-log",
-    icon: AlertTriangle,
-  },
-  {
-    title: "Third Party Risk",
-    to: "/third-party-risk",
-    icon: Briefcase,
-  }
-];
-
-export const governanceItems: NavItem[] = [
-  {
-    title: "Governance Framework",
-    to: "/governance-framework",
-    icon: BookOpen,
+    to: "/analytics",
+    icon: TrendingUp,
+    variant: "default" as const,
   },
   {
     title: "Compliance",
     to: "/compliance",
     icon: CheckSquare,
+    variant: "default" as const,
   },
   {
-    title: "Audit & Compliance",
-    to: "/audit-and-compliance",
-    icon: Shield,
-  }
-];
-
-export const operationalItems: NavItem[] = [
-  {
-    title: "Business Functions",
-    to: "/business-functions",
-    icon: Building,
-  },
-  {
-    title: "Impact Tolerances",
-    to: "/impact-tolerances",
-    icon: TrendingUp,
-  },
-  {
-    title: "Business Continuity",
-    to: "/business-continuity",
-    icon: Shield,
+    title: "Audit",
+    to: "/audit",
+    icon: CheckSquare,
+    variant: "default" as const,
   },
   {
     title: "Scenario Testing",
     to: "/scenario-testing",
-    icon: PlayCircle,
+    icon: Zap,
+    variant: "default" as const,
   },
   {
-    title: "Dependencies",
-    to: "/dependencies",
-    icon: Layers,
-  },
-  {
-    title: "Dependency Mapping",
-    to: "/dependency-mapping",
-    icon: Map,
-  }
-];
-
-export const analyticsItems: NavItem[] = [
-  {
-    title: "Analytics Hub",
-    to: "/analytics-hub",
-    icon: BarChart3,
+    title: "Business Continuity",
+    to: "/business-continuity",
+    icon: Activity,
+    variant: "default" as const,
   },
   {
     title: "Reporting",
     to: "/reporting",
     icon: FileText,
+    variant: "default" as const,
   },
-  {
-    title: "Dashboard",
-    to: "/dashboard",
-    icon: PieChart,
-  }
-];
-
-export const collaborationItems: NavItem[] = [
-  {
-    title: "Document Management",
-    to: "/document-management",
-    icon: FileText,
-  },
-  {
-    title: "Collaboration Platform",
-    to: "/collaboration-platform",
-    icon: MessageSquare,
-  },
-  {
-    title: "Workflow Center",
-    to: "/workflow-center",
-    icon: Workflow,
-  }
-];
-
-export const integrationItems: NavItem[] = [
   {
     title: "Integrations",
     to: "/integrations",
     icon: Database,
+    variant: "default" as const,
   },
   {
-    title: "Integration Framework",
-    to: "/integration-framework",
-    icon: Zap,
-  },
-  {
-    title: "Workflow Orchestration",
-    to: "/workflow-orchestration",
+    title: "Workflows",
+    to: "/workflows",
     icon: GitBranch,
-  }
+    variant: "default" as const,
+  },
+  {
+    title: "Deployment",
+    to: "/deployment",
+    icon: Cloud,
+    variant: "default" as const,
+  },
+  {
+    title: "Enterprise",
+    icon: Globe,
+    variant: "default" as const,
+    submenu: [
+      {
+        title: "Onboarding",
+        to: "/enterprise-onboarding",
+        icon: UserCheck,
+      },
+      {
+        title: "User Onboarding",
+        to: "/user-onboarding",
+        icon: Users,
+      },
+      {
+        title: "Customer Success",
+        to: "/customer-success",
+        icon: TrendingUp,
+      },
+      {
+        title: "Training Center",
+        to: "/training",
+        icon: Book,
+      },
+    ],
+  },
+  {
+    title: "Settings",
+    to: "/settings",
+    icon: Settings,
+    variant: "default" as const,
+  },
+  {
+    title: "Support",
+    icon: HelpCircle,
+    variant: "default" as const,
+    submenu: [
+      {
+        title: "Help Center",
+        to: "/support",
+        icon: HelpCircle,
+      },
+      {
+        title: "Contact",
+        to: "/contact",
+        icon: Phone,
+      },
+    ],
+  },
 ];
 
-export const securityItems: NavItem[] = [
-  {
-    title: "Enterprise Security",
-    to: "/security/enterprise-security-center",
-    icon: ShieldCheck,
-    badge: "New"
-  }
-];
+export type NavItem = {
+  title: string;
+  to?: string;
+  icon: any;
+  variant: "default" | "ghost";
+  submenu?: NavItem[];
+};
