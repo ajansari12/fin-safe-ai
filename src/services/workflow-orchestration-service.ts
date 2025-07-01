@@ -66,9 +66,16 @@ class WorkflowOrchestrationService {
   // Workflow Management
   async createWorkflow(workflow: Omit<Workflow, 'id' | 'created_at' | 'updated_at'>): Promise<Workflow> {
     try {
+      // Convert the workflow to match database schema
+      const workflowData = {
+        ...workflow,
+        workflow_definition: workflow.workflow_definition as any,
+        triggers: workflow.triggers as any
+      };
+
       const { data, error } = await supabase
         .from('workflows')
-        .insert([workflow])
+        .insert(workflowData)
         .select()
         .single();
 
@@ -122,9 +129,18 @@ class WorkflowOrchestrationService {
 
   async updateWorkflow(workflowId: string, updates: Partial<Workflow>): Promise<void> {
     try {
+      // Convert updates to match database schema
+      const updateData: any = { ...updates };
+      if (updates.workflow_definition) {
+        updateData.workflow_definition = updates.workflow_definition as any;
+      }
+      if (updates.triggers) {
+        updateData.triggers = updates.triggers as any;
+      }
+
       const { error } = await supabase
         .from('workflows')
-        .update(updates)
+        .update(updateData)
         .eq('id', workflowId);
 
       if (error) {
@@ -173,7 +189,7 @@ class WorkflowOrchestrationService {
       }
 
       // Start workflow execution (this would be handled by a background process in production)
-      this.processWorkflowExecution(executionData.id, workflow.workflow_definition);
+      this.processWorkflowExecution(executionData.id, workflow.workflow_definition as any);
 
       return executionData.id;
     } catch (error) {
