@@ -1,4 +1,3 @@
-
 import { enhancedOrganizationalIntelligenceService } from './enhanced-organizational-intelligence-service';
 import { organizationalIntelligenceService } from './organizational-intelligence-service';
 import type { 
@@ -34,7 +33,7 @@ class AIOrganizationalIntelligenceIntegration {
 
       return {
         analysis_id: `analysis-${Date.now()}`,
-        analysis_type: 'comprehensive',
+        analysis_type: 'predictive', // Changed from 'comprehensive' to valid type
         insights,
         recommendations,
         risk_predictions: riskPredictions,

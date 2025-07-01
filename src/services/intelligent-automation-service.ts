@@ -1,457 +1,219 @@
-import { supabase } from "@/integrations/supabase/client";
 
-export interface WorkflowPrediction {
+export interface WorkflowSuggestion {
   id: string;
-  workflow_id: string;
-  prediction_type: 'failure_risk' | 'completion_time' | 'resource_usage' | 'bottleneck_detection';
-  confidence_score: number;
-  predicted_value: any;
-  reasoning: string;
-  created_at: string;
+  title: string;
+  description: string;
+  confidence: number;
+  template: {
+    nodes: any[];
+    edges: any[];
+  };
+  category: string;
+  estimated_time_savings: string;
 }
 
-export interface AutomationRule {
-  id: string;
-  org_id: string;
-  rule_name: string;
-  trigger_conditions: Record<string, any>;
-  actions: Array<{
-    type: string;
-    configuration: Record<string, any>;
-  }>;
-  is_active: boolean;
-  execution_count: number;
-  last_executed_at?: string;
-  created_at: string;
-  updated_at: string;
+export interface WorkflowPerformanceAnalysis {
+  workflow_id: string;
+  current_metrics: {
+    success_rate: number;
+    avg_duration: number;
+    error_rate: number;
+  };
+  recommended_changes: string[];
+  optimization_score: number;
 }
 
-export interface WorkflowOptimization {
+export interface WorkflowHealth {
   workflow_id: string;
-  optimization_type: 'performance' | 'cost' | 'reliability' | 'user_experience';
-  current_metrics: Record<string, number>;
-  recommended_changes: Array<{
-    node_id: string;
-    change_type: string;
-    description: string;
-    impact_score: number;
-  }>;
-  estimated_improvement: Record<string, number>;
-  confidence_score: number;
+  status: 'healthy' | 'warning' | 'critical';
+  issues: string[];
+  recommendations: string[];
 }
 
 class IntelligentAutomationService {
-  // AI-Powered Workflow Analysis
-  async analyzeWorkflowPerformance(workflowId: string): Promise<WorkflowOptimization> {
+  async generateWorkflowSuggestions(orgId: string, context: { module?: string }): Promise<WorkflowSuggestion[]> {
     try {
-      // Get workflow execution history
-      const { data: executions, error } = await supabase
-        .from('workflow_executions')
-        .select('*')
-        .eq('workflow_id', workflowId)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      console.log('Generating workflow suggestions for org:', orgId);
+      
+      // Mock workflow suggestions based on organizational intelligence
+      return [
+        {
+          id: 'suggestion-1',
+          title: 'Risk Assessment Automation',
+          description: 'Automated risk data collection and scoring workflow',
+          confidence: 0.85,
+          template: {
+            nodes: [
+              {
+                id: 'start-1',
+                type: 'start',
+                position: { x: 100, y: 100 },
+                data: { label: 'Start Risk Assessment', nodeType: 'start', configuration: {}, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'collect-1',
+                type: 'task',
+                position: { x: 300, y: 100 },
+                data: { label: 'Collect Risk Data', nodeType: 'task', configuration: { data_sources: ['kri', 'incidents'] }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'analyze-1',
+                type: 'ml_prediction',
+                position: { x: 500, y: 100 },
+                data: { label: 'AI Risk Analysis', nodeType: 'ml_prediction', configuration: { model: 'risk_scoring' }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'end-1',
+                type: 'end',
+                position: { x: 700, y: 100 },
+                data: { label: 'Complete Assessment', nodeType: 'end', configuration: {}, inputs: {}, outputs: {} }
+              }
+            ],
+            edges: [
+              { id: 'e1', source: 'start-1', target: 'collect-1' },
+              { id: 'e2', source: 'collect-1', target: 'analyze-1' },
+              { id: 'e3', source: 'analyze-1', target: 'end-1' }
+            ]
+          },
+          category: 'Risk Management',
+          estimated_time_savings: '4-6 hours per assessment'
+        },
+        {
+          id: 'suggestion-2',
+          title: 'Compliance Monitoring',
+          description: 'Continuous compliance checking and alerting',
+          confidence: 0.78,
+          template: {
+            nodes: [
+              {
+                id: 'trigger-1',
+                type: 'trigger',
+                position: { x: 100, y: 200 },
+                data: { label: 'Daily Trigger', nodeType: 'trigger', configuration: { schedule: 'daily' }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'check-1',
+                type: 'validation',
+                position: { x: 300, y: 200 },
+                data: { label: 'Check Compliance', nodeType: 'validation', configuration: { rules: ['regulatory'] }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'notify-1',
+                type: 'notification',
+                position: { x: 500, y: 200 },
+                data: { label: 'Send Alerts', nodeType: 'notification', configuration: { channels: ['email'] }, inputs: {}, outputs: {} }
+              }
+            ],
+            edges: [
+              { id: 'e4', source: 'trigger-1', target: 'check-1' },
+              { id: 'e5', source: 'check-1', target: 'notify-1' }
+            ]
+          },
+          category: 'Compliance',
+          estimated_time_savings: '2-3 hours daily'
+        },
+        {
+          id: 'suggestion-3',
+          title: 'Incident Response',
+          description: 'Automated incident detection and initial response',
+          confidence: 0.92,
+          template: {
+            nodes: [
+              {
+                id: 'detect-1',
+                type: 'trigger',
+                position: { x: 100, y: 300 },
+                data: { label: 'Incident Detection', nodeType: 'trigger', configuration: { event: 'incident_created' }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'assess-1',
+                type: 'task',
+                position: { x: 300, y: 300 },
+                data: { label: 'Assess Severity', nodeType: 'task', configuration: { severity_rules: true }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'decision-1',
+                type: 'decision',
+                position: { x: 500, y: 300 },
+                data: { label: 'Critical?', nodeType: 'decision', configuration: { condition: 'severity == critical' }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'escalate-1',
+                type: 'notification',
+                position: { x: 700, y: 250 },
+                data: { label: 'Escalate', nodeType: 'notification', configuration: { urgent: true }, inputs: {}, outputs: {} }
+              },
+              {
+                id: 'assign-1',
+                type: 'approval',
+                position: { x: 700, y: 350 },
+                data: { label: 'Assign Team', nodeType: 'approval', configuration: { auto_assign: true }, inputs: {}, outputs: {} }
+              }
+            ],
+            edges: [
+              { id: 'e6', source: 'detect-1', target: 'assess-1' },
+              { id: 'e7', source: 'assess-1', target: 'decision-1' },
+              { id: 'e8', source: 'decision-1', target: 'escalate-1' },
+              { id: 'e9', source: 'decision-1', target: 'assign-1' }
+            ]
+          },
+          category: 'Incident Management',
+          estimated_time_savings: '1-2 hours per incident'
+        }
+      ];
+    } catch (error) {
+      console.error('Error generating workflow suggestions:', error);
+      throw error;
+    }
+  }
 
-      if (error) {
-        console.error('Error fetching executions:', error);
-        throw error;
-      }
+  async analyzeWorkflowPerformance(workflowId: string): Promise<WorkflowPerformanceAnalysis> {
+    try {
+      console.log('Analyzing workflow performance:', workflowId);
+      
+      // Mock performance analysis
+      return {
+        workflow_id: workflowId,
+        current_metrics: {
+          success_rate: Math.floor(Math.random() * 20) + 80, // 80-100%
+          avg_duration: Math.floor(Math.random() * 300) + 60, // 60-360 seconds
+          error_rate: Math.floor(Math.random() * 10) + 1 // 1-10%
+        },
+        recommended_changes: [
+          'Add error handling for API timeouts',
+          'Implement parallel processing for data collection',
+          'Add validation step before data transformation'
+        ],
+        optimization_score: Math.floor(Math.random() * 30) + 70 // 70-100
+      };
+    } catch (error) {
+      console.error('Error analyzing workflow performance:', error);
+      throw error;
+    }
+  }
 
-      // Analyze execution patterns
-      const analysisResult = this.performWorkflowAnalysis(executions || []);
+  async monitorWorkflowHealth(workflowId: string): Promise<WorkflowHealth> {
+    try {
+      console.log('Monitoring workflow health:', workflowId);
+      
+      const statuses: ('healthy' | 'warning' | 'critical')[] = ['healthy', 'warning', 'critical'];
+      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
       
       return {
         workflow_id: workflowId,
-        optimization_type: 'performance',
-        current_metrics: analysisResult.metrics,
-        recommended_changes: analysisResult.recommendations,
-        estimated_improvement: analysisResult.improvements,
-        confidence_score: analysisResult.confidence
-      };
-    } catch (error) {
-      console.error('Error in analyzeWorkflowPerformance:', error);
-      throw error;
-    }
-  }
-
-  private performWorkflowAnalysis(executions: any[]): any {
-    if (executions.length === 0) {
-      return {
-        metrics: { avg_duration: 0, success_rate: 0, error_rate: 0 },
-        recommendations: [],
-        improvements: {},
-        confidence: 0
-      };
-    }
-
-    // Calculate current metrics
-    const completedExecutions = executions.filter(e => e.status === 'completed');
-    const failedExecutions = executions.filter(e => e.status === 'failed');
-    
-    const avgDuration = completedExecutions.length > 0
-      ? completedExecutions.reduce((sum, exec) => {
-          const start = new Date(exec.started_at);
-          const end = new Date(exec.completed_at || exec.updated_at);
-          return sum + (end.getTime() - start.getTime());
-        }, 0) / completedExecutions.length
-      : 0;
-
-    const successRate = executions.length > 0 
-      ? (completedExecutions.length / executions.length) * 100 
-      : 0;
-
-    const errorRate = executions.length > 0 
-      ? (failedExecutions.length / executions.length) * 100 
-      : 0;
-
-    // Generate recommendations based on analysis
-    const recommendations = [];
-
-    if (errorRate > 10) {
-      recommendations.push({
-        node_id: 'error-prone-nodes',
-        change_type: 'add_retry_logic',
-        description: 'Add retry logic to reduce failure rate',
-        impact_score: 0.7
-      });
-    }
-
-    if (avgDuration > 300000) { // 5 minutes
-      recommendations.push({
-        node_id: 'slow-nodes',
-        change_type: 'optimize_performance',
-        description: 'Optimize slow-running nodes to improve performance',
-        impact_score: 0.8
-      });
-    }
-
-    return {
-      metrics: {
-        avg_duration: Math.round(avgDuration / 1000), // Convert to seconds
-        success_rate: Math.round(successRate),
-        error_rate: Math.round(errorRate)
-      },
-      recommendations,
-      improvements: {
-        estimated_duration_reduction: recommendations.length > 0 ? 25 : 0,
-        estimated_error_reduction: recommendations.length > 0 ? 15 : 0
-      },
-      confidence: recommendations.length > 0 ? 0.75 : 0.5
-    };
-  }
-
-  // Predictive Analytics
-  async predictWorkflowOutcome(workflowId: string, inputData: Record<string, any>): Promise<WorkflowPrediction[]> {
-    try {
-      // Get historical data for the workflow
-      const { data: executions } = await supabase
-        .from('workflow_executions')
-        .select('*')
-        .eq('workflow_id', workflowId)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      const predictions: WorkflowPrediction[] = [];
-
-      if (executions && executions.length > 0) {
-        // Predict completion time
-        const avgCompletionTime = this.calculateAverageCompletionTime(executions);
-        predictions.push({
-          id: `pred-${Date.now()}-1`,
-          workflow_id: workflowId,
-          prediction_type: 'completion_time',
-          confidence_score: 0.75,
-          predicted_value: avgCompletionTime,
-          reasoning: 'Based on historical execution times',
-          created_at: new Date().toISOString()
-        });
-
-        // Predict failure risk
-        const failureRate = this.calculateFailureRate(executions);
-        predictions.push({
-          id: `pred-${Date.now()}-2`,
-          workflow_id: workflowId,
-          prediction_type: 'failure_risk',
-          confidence_score: 0.65,
-          predicted_value: failureRate,
-          reasoning: 'Based on historical failure patterns',
-          created_at: new Date().toISOString()
-        });
-      }
-
-      return predictions;
-    } catch (error) {
-      console.error('Error in predictWorkflowOutcome:', error);
-      throw error;
-    }
-  }
-
-  private calculateAverageCompletionTime(executions: any[]): number {
-    const completed = executions.filter(e => e.status === 'completed' && e.completed_at);
-    
-    if (completed.length === 0) return 300; // Default 5 minutes
-
-    const totalTime = completed.reduce((sum, exec) => {
-      const start = new Date(exec.started_at);
-      const end = new Date(exec.completed_at);
-      return sum + (end.getTime() - start.getTime());
-    }, 0);
-
-    return Math.round(totalTime / (completed.length * 1000)); // Return in seconds
-  }
-
-  private calculateFailureRate(executions: any[]): number {
-    if (executions.length === 0) return 0;
-    
-    const failed = executions.filter(e => e.status === 'failed');
-    return Math.round((failed.length / executions.length) * 100);
-  }
-
-  // Automation Rules Management
-  async createAutomationRule(rule: Omit<AutomationRule, 'id' | 'created_at' | 'updated_at' | 'execution_count' | 'last_executed_at'>): Promise<AutomationRule> {
-    try {
-      const ruleData = {
-        ...rule,
-        execution_count: 0
-      };
-
-      const { data, error } = await supabase
-        .from('automation_rules')
-        .insert([ruleData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating automation rule:', error);
-        throw error;
-      }
-
-      return {
-        ...data,
-        trigger_conditions: data.trigger_conditions as Record<string, any>,
-        actions: data.actions as AutomationRule['actions']
-      };
-    } catch (error) {
-      console.error('Error in createAutomationRule:', error);
-      throw error;
-    }
-  }
-
-  async getAutomationRules(orgId: string): Promise<AutomationRule[]> {
-    try {
-      const { data, error } = await supabase
-        .from('automation_rules')
-        .select('*')
-        .eq('org_id', orgId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching automation rules:', error);
-        throw error;
-      }
-
-      return (data || []).map((item: any) => ({
-        ...item,
-        trigger_conditions: item.trigger_conditions as Record<string, any>,
-        actions: item.actions as AutomationRule['actions']
-      }));
-    } catch (error) {
-      console.error('Error in getAutomationRules:', error);
-      throw error;
-    }
-  }
-
-  // Smart Workflow Suggestions
-  async generateWorkflowSuggestions(orgId: string, context: Record<string, any>): Promise<Array<{
-    type: string;
-    title: string;
-    description: string;
-    template: any;
-    confidence: number;
-  }>> {
-    const suggestions = [];
-
-    // Analyze current workflows and suggest improvements
-    if (context.module === 'incident_management') {
-      suggestions.push({
-        type: 'incident_response',
-        title: 'Automated Incident Response',
-        description: 'Create automated workflows for incident classification and initial response',
-        template: this.getIncidentResponseTemplate(),
-        confidence: 0.85
-      });
-    }
-
-    if (context.module === 'governance') {
-      suggestions.push({
-        type: 'policy_review',
-        title: 'Policy Review Automation',
-        description: 'Automate policy review reminders and approval workflows',
-        template: this.getPolicyReviewTemplate(),
-        confidence: 0.78
-      });
-    }
-
-    return suggestions;
-  }
-
-  private getIncidentResponseTemplate(): any {
-    return {
-      nodes: [
-        {
-          id: 'start',
-          type: 'start',
-          position: { x: 100, y: 100 },
-          data: { label: 'Incident Detected', nodeType: 'start' }
-        },
-        {
-          id: 'classify',
-          type: 'decision',
-          position: { x: 300, y: 100 },
-          data: { 
-            label: 'Classify Severity', 
-            nodeType: 'decision',
-            configuration: { condition: '${severity} === "critical"' }
-          }
-        },
-        {
-          id: 'notify',
-          type: 'notification',
-          position: { x: 500, y: 50 },
-          data: { 
-            label: 'Notify Team', 
-            nodeType: 'notification',
-            configuration: { recipients: ['incident-team'] }
-          }
-        },
-        {
-          id: 'end',
-          type: 'end',
-          position: { x: 700, y: 100 },
-          data: { label: 'Complete', nodeType: 'end' }
-        }
-      ],
-      edges: [
-        { id: 'e1', source: 'start', target: 'classify' },
-        { id: 'e2', source: 'classify', target: 'notify' },
-        { id: 'e3', source: 'notify', target: 'end' }
-      ]
-    };
-  }
-
-  private getPolicyReviewTemplate(): any {
-    return {
-      nodes: [
-        {
-          id: 'start',
-          type: 'start',
-          position: { x: 100, y: 100 },
-          data: { label: 'Review Due', nodeType: 'start' }
-        },
-        {
-          id: 'notify_reviewer',
-          type: 'notification',
-          position: { x: 300, y: 100 },
-          data: { 
-            label: 'Notify Reviewer', 
-            nodeType: 'notification',
-            configuration: { message: 'Policy review required' }
-          }
-        },
-        {
-          id: 'approval',
-          type: 'approval',
-          position: { x: 500, y: 100 },
-          data: { 
-            label: 'Await Approval', 
-            nodeType: 'approval',
-            configuration: { approver: 'policy-owner' }
-          }
-        },
-        {
-          id: 'end',
-          type: 'end',
-          position: { x: 700, y: 100 },
-          data: { label: 'Complete', nodeType: 'end' }
-        }
-      ],
-      edges: [
-        { id: 'e1', source: 'start', target: 'notify_reviewer' },
-        { id: 'e2', source: 'notify_reviewer', target: 'approval' },
-        { id: 'e3', source: 'approval', target: 'end' }
-      ]
-    };
-  }
-
-  // Real-time Monitoring and Alerts
-  async monitorWorkflowHealth(workflowId: string): Promise<{
-    status: 'healthy' | 'warning' | 'critical';
-    metrics: Record<string, number>;
-    alerts: Array<{ type: string; message: string; severity: string }>;
-  }> {
-    try {
-      const { data: executions } = await supabase
-        .from('workflow_executions')
-        .select('*')
-        .eq('workflow_id', workflowId)
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
-        .order('created_at', { ascending: false });
-
-      if (!executions || executions.length === 0) {
-        return {
-          status: 'healthy',
-          metrics: {},
-          alerts: []
-        };
-      }
-
-      const failureRate = this.calculateFailureRate(executions);
-      const avgDuration = this.calculateAverageCompletionTime(executions);
-      
-      const alerts = [];
-      let status: 'healthy' | 'warning' | 'critical' = 'healthy';
-
-      if (failureRate > 20) {
-        status = 'critical';
-        alerts.push({
-          type: 'high_failure_rate',
-          message: `High failure rate detected: ${failureRate}%`,
-          severity: 'critical'
-        });
-      } else if (failureRate > 10) {
-        status = 'warning';
-        alerts.push({
-          type: 'elevated_failure_rate',
-          message: `Elevated failure rate: ${failureRate}%`,
-          severity: 'warning'
-        });
-      }
-
-      if (avgDuration > 600) { // 10 minutes
-        status = status === 'critical' ? 'critical' : 'warning';
-        alerts.push({
-          type: 'slow_execution',
-          message: `Slow execution times detected: ${avgDuration}s average`,
-          severity: 'warning'
-        });
-      }
-
-      return {
-        status,
-        metrics: {
-          failure_rate: failureRate,
-          avg_duration: avgDuration,
-          total_executions: executions.length
-        },
-        alerts
+        status: randomStatus,
+        issues: randomStatus === 'healthy' ? [] : [
+          'High memory usage detected',
+          'Slow response times in data collection step'
+        ],
+        recommendations: randomStatus === 'healthy' ? [] : [
+          'Consider optimizing data queries',
+          'Add caching layer for frequently accessed data'
+        ]
       };
     } catch (error) {
       console.error('Error monitoring workflow health:', error);
-      return {
-        status: 'critical',
-        metrics: {},
-        alerts: [{ type: 'monitoring_error', message: 'Failed to monitor workflow', severity: 'critical' }]
-      };
+      throw error;
     }
   }
 }

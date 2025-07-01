@@ -1,8 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Play, 
   Square, 
@@ -19,154 +18,152 @@ import {
   Brain
 } from 'lucide-react';
 
-interface WorkflowNodeType {
-  id: string;
-  node_type: string;
-  display_name: string;
-  description: string;
-  category: string;
-  icon_name: string;
-  color_class: string;
-  input_schema: Record<string, any>;
-  output_schema: Record<string, any>;
-  configuration_schema: Record<string, any>;
-  is_system: boolean;
-  is_active: boolean;
-}
-
 interface WorkflowNodePaletteProps {
   onNodeDragStart: (nodeType: string) => void;
   className?: string;
 }
 
-const ICON_MAP: Record<string, React.ComponentType<any>> = {
-  Play,
-  Square,
-  Diamond,
-  Settings,
-  GitBranch,
-  GitMerge,
-  Clock,
-  Zap,
-  UserCheck,
-  Bell,
-  RefreshCw,
-  CheckCircle,
-  Brain
-};
+const NODE_TYPES = [
+  {
+    type: 'start',
+    label: 'Start',
+    icon: Play,
+    description: 'Workflow entry point',
+    category: 'Flow Control'
+  },
+  {
+    type: 'end',
+    label: 'End',
+    icon: Square,
+    description: 'Workflow termination',
+    category: 'Flow Control'
+  },
+  {
+    type: 'task',
+    label: 'Task',
+    icon: Settings,
+    description: 'Execute an action',
+    category: 'Actions'
+  },
+  {
+    type: 'decision',
+    label: 'Decision',
+    icon: Diamond,
+    description: 'Branch based on condition',
+    category: 'Flow Control'
+  },
+  {
+    type: 'parallel',
+    label: 'Parallel',
+    icon: GitBranch,
+    description: 'Execute paths in parallel',
+    category: 'Flow Control'
+  },
+  {
+    type: 'merge',
+    label: 'Merge',
+    icon: GitMerge,
+    description: 'Merge parallel paths',
+    category: 'Flow Control'
+  },
+  {
+    type: 'delay',
+    label: 'Delay',
+    icon: Clock,
+    description: 'Wait for specified time',
+    category: 'Utility'
+  },
+  {
+    type: 'trigger',
+    label: 'Trigger',
+    icon: Zap,
+    description: 'Event-based activation',
+    category: 'Triggers'
+  },
+  {
+    type: 'approval',
+    label: 'Approval',
+    icon: UserCheck,
+    description: 'Require human approval',
+    category: 'Human Tasks'
+  },
+  {
+    type: 'notification',
+    label: 'Notification',
+    icon: Bell,
+    description: 'Send notifications',
+    category: 'Communication'
+  },
+  {
+    type: 'data_transform',
+    label: 'Transform',
+    icon: RefreshCw,
+    description: 'Transform data',
+    category: 'Data Processing'
+  },
+  {
+    type: 'validation',
+    label: 'Validation',
+    icon: CheckCircle,
+    description: 'Validate data/conditions',
+    category: 'Data Processing'
+  },
+  {
+    type: 'ml_prediction',
+    label: 'AI/ML',
+    icon: Brain,
+    description: 'Machine learning prediction',
+    category: 'AI/ML'
+  }
+];
 
-const WorkflowNodePalette: React.FC<WorkflowNodePaletteProps> = ({
-  onNodeDragStart,
-  className = ''
-}) => {
-  const [nodeTypes, setNodeTypes] = useState<WorkflowNodeType[]>([]);
-  const [loading, setLoading] = useState(true);
+const CATEGORIES = ['Flow Control', 'Actions', 'Triggers', 'Human Tasks', 'Communication', 'Data Processing', 'AI/ML', 'Utility'];
 
-  useEffect(() => {
-    loadNodeTypes();
-  }, []);
-
-  const loadNodeTypes = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('workflow_node_types')
-        .select('*')
-        .eq('is_active', true)
-        .order('category', { ascending: true })
-        .order('display_name', { ascending: true });
-
-      if (error) {
-        console.error('Error loading node types:', error);
-        return;
-      }
-
-      // Transform the data to match our TypeScript interface
-      const transformedData: WorkflowNodeType[] = (data || []).map(item => ({
-        id: item.id,
-        node_type: item.node_type,
-        display_name: item.display_name,
-        description: item.description || '',
-        category: item.category,
-        icon_name: item.icon_name || 'Square',
-        color_class: item.color_class || 'bg-gray-500',
-        input_schema: item.input_schema as Record<string, any> || {},
-        output_schema: item.output_schema as Record<string, any> || {},
-        configuration_schema: item.configuration_schema as Record<string, any> || {},
-        is_system: item.is_system || false,
-        is_active: item.is_active || true
-      }));
-
-      setNodeTypes(transformedData);
-    } catch (error) {
-      console.error('Error in loadNodeTypes:', error);
-    } finally {
-      setLoading(false);
-    }
+const WorkflowNodePalette: React.FC<WorkflowNodePaletteProps> = ({ onNodeDragStart, className }) => {
+  const handleDragStart = (nodeType: string) => {
+    onNodeDragStart(nodeType);
   };
 
-  if (loading) {
-    return (
-      <div className={`space-y-4 ${className}`}>
-        <div className="text-sm font-medium text-gray-700 mb-3">
-          Loading node types...
-        </div>
-      </div>
-    );
-  }
-
-  const categories = Array.from(new Set(nodeTypes.map(node => node.category)));
+  const groupedNodes = CATEGORIES.reduce((acc, category) => {
+    acc[category] = NODE_TYPES.filter(node => node.category === category);
+    return acc;
+  }, {} as Record<string, typeof NODE_TYPES>);
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="text-sm font-medium text-gray-700 mb-3">
-        Drag nodes to the canvas to build your workflow
+      <div className="text-sm font-medium text-gray-700 mb-4">
+        Drag nodes to canvas to build your workflow
       </div>
       
-      {categories.map(category => (
-        <Card key={category} className="overflow-hidden">
-          <CardHeader className="py-2">
-            <CardTitle className="text-sm capitalize flex items-center gap-2">
-              {category}
-              <Badge variant="outline" className="text-xs">
-                {nodeTypes.filter(node => node.category === category).length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-1 gap-2">
-              {nodeTypes
-                .filter(node => node.category === category)
-                .map((nodeType) => {
-                  const Icon = ICON_MAP[nodeType.icon_name] || Square;
-                  return (
-                    <div
-                      key={nodeType.node_type}
-                      draggable
-                      onDragStart={() => onNodeDragStart(nodeType.node_type)}
-                      className={`
-                        p-3 rounded-lg cursor-move text-white transition-all duration-200
-                        hover:scale-105 hover:shadow-lg active:scale-95
-                        ${nodeType.color_class}
-                      `}
-                      title={nodeType.description}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">
-                            {nodeType.display_name}
-                          </div>
-                          <div className="text-xs opacity-90 truncate">
-                            {nodeType.description}
-                          </div>
-                        </div>
-                      </div>
+      {CATEGORIES.map(category => (
+        groupedNodes[category].length > 0 && (
+          <Card key={category}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">{category}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {groupedNodes[category].map(node => {
+                const Icon = node.icon;
+                return (
+                  <div
+                    key={node.type}
+                    draggable
+                    onDragStart={() => handleDragStart(node.type)}
+                    className="flex items-center gap-3 p-2 border rounded-lg cursor-grab hover:bg-gray-50 active:cursor-grabbing transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                      <Icon className="h-4 w-4 text-blue-600" />
                     </div>
-                  );
-                })}
-            </div>
-          </CardContent>
-        </Card>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm">{node.label}</div>
+                      <div className="text-xs text-gray-500 truncate">{node.description}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        )
       ))}
     </div>
   );

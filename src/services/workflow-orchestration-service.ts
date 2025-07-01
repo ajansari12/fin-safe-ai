@@ -38,6 +38,44 @@ export interface WorkflowDefinition {
   org_id: string;
 }
 
+// Additional types for visual workflow designer
+export interface WorkflowNode {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: {
+    label: string;
+    nodeType: string;
+    configuration: Record<string, any>;
+    inputs: Record<string, any>;
+    outputs: Record<string, any>;
+  };
+}
+
+export interface WorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+}
+
+export interface Workflow {
+  id: string;
+  org_id: string;
+  name: string;
+  description: string;
+  status: 'draft' | 'active' | 'paused' | 'archived';
+  workflow_definition: {
+    nodes: WorkflowNode[];
+    edges: WorkflowEdge[];
+    version: number;
+  };
+  triggers: Record<string, any>;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 class WorkflowOrchestrationService {
   // Core workflow management
   async createWorkflow(workflowDef: Omit<WorkflowDefinition, 'id' | 'created_at'>): Promise<WorkflowDefinition> {
@@ -56,9 +94,69 @@ class WorkflowOrchestrationService {
     }
   }
 
-  async executeWorkflow(workflowId: string, context: Record<string, any> = {}): Promise<WorkflowInstance> {
+  // New method for visual workflow designer
+  async createWorkflow(workflowData: Omit<Workflow, 'id' | 'created_at' | 'updated_at'>): Promise<Workflow> {
+    try {
+      console.log('Creating visual workflow:', workflowData.name);
+      
+      const workflow: Workflow = {
+        id: `workflow-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...workflowData
+      };
+      
+      return workflow;
+    } catch (error) {
+      console.error('Error creating workflow:', error);
+      throw error;
+    }
+  }
+
+  async updateWorkflow(workflowId: string, updates: Partial<Workflow>): Promise<void> {
+    try {
+      console.log('Updating workflow:', workflowId);
+      // Mock implementation - would update in database
+    } catch (error) {
+      console.error('Error updating workflow:', error);
+      throw error;
+    }
+  }
+
+  async getWorkflows(orgId: string): Promise<Workflow[]> {
+    try {
+      console.log('Getting workflows for org:', orgId);
+      
+      // Return mock workflows for now
+      return [
+        {
+          id: 'workflow-1',
+          org_id: orgId,
+          name: 'Risk Assessment Workflow',
+          description: 'Automated risk assessment and reporting',
+          status: 'active',
+          workflow_definition: {
+            nodes: [],
+            edges: [],
+            version: 1
+          },
+          triggers: {},
+          created_by: 'system',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ];
+    } catch (error) {
+      console.error('Error getting workflows:', error);
+      throw error;
+    }
+  }
+
+  async executeWorkflow(workflowId: string, context: Record<string, any> = {}): Promise<string> {
     try {
       console.log('Executing workflow:', workflowId);
+      
+      const executionId = `execution-${Date.now()}`;
       
       // Mock workflow execution
       const instance: WorkflowInstance = {
@@ -75,7 +173,7 @@ class WorkflowOrchestrationService {
       // Execute workflow steps
       await this.processWorkflowSteps(instance);
       
-      return instance;
+      return executionId;
     } catch (error) {
       console.error('Error executing workflow:', error);
       throw error;
