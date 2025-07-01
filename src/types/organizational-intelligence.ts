@@ -1,3 +1,4 @@
+
 export type MaturityLevel = 'basic' | 'developing' | 'advanced' | 'sophisticated';
 
 export interface QuestionnaireTemplate {
@@ -95,6 +96,13 @@ export interface OrganizationalProfile {
   market_position: string;
   competitive_strategy?: string;
   international_exposure?: boolean;
+  // New enhanced properties
+  board_size?: number;
+  regulatory_complexity?: string;
+  business_model?: string;
+  operational_complexity?: string;
+  stakeholder_types?: string[];
+  governance_maturity?: string;
   created_at: string;
   updated_at: string;
 }
@@ -140,9 +148,93 @@ export interface RiskFrameworkTemplate {
 export interface SectorThreshold {
   id: string;
   sector: string;
-  metric: string;
-  recommendedValue: string;
-  rationale: string;
+  sub_sector?: string;
+  metric_name: string;
+  threshold_type: string;
+  recommended_value: number;
+  min_value?: number;
+  max_value?: number;
+  rationale?: string;
+  regulatory_basis?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FrameworkGenerationRule {
+  id: string;
+  rule_name: string;
+  rule_type: string;
+  org_criteria: Record<string, any>;
+  generation_logic: Record<string, any>;
+  priority: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ControlLibraryItem {
+  id: string;
+  control_name: string;
+  control_category: string;
+  control_type: string;
+  control_description: string;
+  implementation_guidance?: string;
+  testing_procedures?: string;
+  applicable_sectors: string[];
+  risk_categories: string[];
+  regulatory_references: string[];
+  effectiveness_metrics: Record<string, any>[];
+  cost_complexity: string;
+  automation_potential: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RegulatoryMapping {
+  id: string;
+  regulation_name: string;
+  jurisdiction: string;
+  applicable_sectors: string[];
+  requirement_reference: string;
+  requirement_description: string;
+  compliance_level: string;
+  implementation_guidance?: string;
+  related_controls: string[];
+  reporting_requirements?: string;
+  penalties_for_non_compliance?: string;
+  effective_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GeneratedFrameworkData {
+  id: string;
+  org_id: string;
+  profile_id: string;
+  framework_type: string;
+  framework_name: string;
+  framework_version: string;
+  generation_metadata: Record<string, any>;
+  framework_data: Record<string, any>;
+  customization_options: Record<string, any>;
+  implementation_status: string;
+  effectiveness_score?: number;
+  last_reviewed_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FrameworkComponent {
+  id: string;
+  framework_id: string;
+  component_type: string;
+  component_name: string;
+  component_description?: string;
+  component_data: Record<string, any>;
+  dependencies: string[];
+  implementation_priority: number;
+  estimated_effort_hours?: number;
+  created_at: string;
 }
 
 export interface WorkflowAnalysis {
