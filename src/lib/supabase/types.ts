@@ -1,4 +1,5 @@
 
+// Generic types for pagination and querying
 export interface QueryOptions {
   page?: number;
   pageSize?: number;
