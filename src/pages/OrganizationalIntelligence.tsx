@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import AuthenticatedLayout from '@/components/layout/AuthenticatedLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,8 @@ import {
 } from 'lucide-react';
 import AdaptiveQuestionnaire from '@/components/organizational-intelligence/AdaptiveQuestionnaire';
 import OrganizationalProfileDashboard from '@/components/organizational-intelligence/OrganizationalProfileDashboard';
+import AdvancedIntelligenceDashboard from '@/components/organizational-intelligence/AdvancedIntelligenceDashboard';
+import IntelligentAutomationPanel from '@/components/organizational-intelligence/IntelligentAutomationPanel';
 import { organizationalIntelligenceService } from '@/services/organizational-intelligence-service';
 import { getCurrentUserProfile } from '@/lib/supabase-utils';
 import { toast } from 'sonner';
@@ -98,17 +99,17 @@ const OrganizationalIntelligence: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Organizational Intelligence</h1>
             <p className="text-muted-foreground">
-              AI-powered organizational profiling and customized risk framework generation
+              AI-powered organizational profiling, predictive analytics, and intelligent automation
             </p>
           </div>
           <div className="flex items-center gap-2">
             <Brain className="h-8 w-8 text-blue-500" />
-            <span className="text-sm font-medium text-blue-600">Powered by AI</span>
+            <span className="text-sm font-medium text-blue-600">Enhanced AI Engine</span>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
               Overview
@@ -121,8 +122,16 @@ const OrganizationalIntelligence: React.FC = () => {
               <Users className="h-4 w-4" />
               Profile
             </TabsTrigger>
-            <TabsTrigger value="questionnaire" className="flex items-center gap-2">
+            <TabsTrigger value="intelligence" className="flex items-center gap-2">
               <Brain className="h-4 w-4" />
+              AI Intelligence
+            </TabsTrigger>
+            <TabsTrigger value="automation" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Automation
+            </TabsTrigger>
+            <TabsTrigger value="questionnaire" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
               Questionnaire
             </TabsTrigger>
           </TabsList>
@@ -321,6 +330,40 @@ const OrganizationalIntelligence: React.FC = () => {
 
           <TabsContent value="profile" className="space-y-6">
             <OrganizationalProfileDashboard />
+          </TabsContent>
+
+          <TabsContent value="intelligence" className="space-y-6">
+            {profile ? (
+              <AdvancedIntelligenceDashboard profile={profile} />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Brain className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">AI Intelligence Unavailable</h3>
+                  <p className="text-gray-500 mb-4">Complete your organizational profile to unlock AI-powered insights.</p>
+                  <Button onClick={() => setActiveTab('assessment')}>
+                    Complete Assessment
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="automation" className="space-y-6">
+            {profile ? (
+              <IntelligentAutomationPanel orgId={profile.org_id} />
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Target className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Automation Unavailable</h3>
+                  <p className="text-gray-500 mb-4">Complete your organizational profile to enable intelligent automation.</p>
+                  <Button onClick={() => setActiveTab('assessment')}>
+                    Complete Assessment
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="questionnaire" className="space-y-6">
