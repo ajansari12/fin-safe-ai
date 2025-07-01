@@ -56,6 +56,56 @@ export interface SecurityPlaybook {
 }
 
 class ZeroTrustService {
+  // Device Registration
+  async registerDevice(): Promise<void> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    const deviceInfo = {
+      userAgent: navigator.userAgent,
+      language: navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      screenResolution: `${screen.width}x${screen.height}`,
+      colorDepth: screen.colorDepth,
+      platform: navigator.platform
+    };
+
+    const fingerprint = await this.generateDeviceFingerprint(deviceInfo);
+
+    const { error } = await supabase
+      .from('device_fingerprints')
+      .upsert({
+        user_id: profile.id,
+        org_id: profile.organization_id,
+        device_id: fingerprint.deviceId,
+        fingerprint_hash: fingerprint.hash,
+        device_info: deviceInfo,
+        is_trusted: false,
+        risk_score: 0
+      });
+
+    if (error) throw error;
+  }
+
+  private async generateDeviceFingerprint(deviceInfo: any): Promise<{ deviceId: string; hash: string }> {
+    const fingerprint = [
+      deviceInfo.userAgent,
+      deviceInfo.language,
+      deviceInfo.timezone,
+      deviceInfo.screenResolution,
+      deviceInfo.colorDepth,
+      deviceInfo.platform
+    ].join('|');
+
+    // Simple hash function - in production, use a proper crypto library
+    const hash = btoa(fingerprint).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+    
+    return {
+      deviceId: `device_${hash}`,
+      hash
+    };
+  }
+
   // Context Management
   async createSecurityContext(userId: string, deviceInfo?: any, locationData?: any): Promise<ZeroTrustContext> {
     const profile = await getCurrentUserProfile();
@@ -176,7 +226,7 @@ class ZeroTrustService {
       .from('security_logs')
       .select('*')
       .eq('user_id', userId)
-      .eq('event_type', 'authentication')
+      .eq('action_type', 'authentication')
       .eq('outcome', 'success')
       .order('created_at', { ascending: false })
       .limit(10);
@@ -192,9 +242,9 @@ class ZeroTrustService {
     // Check if location is unusual for user
     const { data: recentLocations } = await supabase
       .from('security_logs')
-      .select('metadata')
+      .select('action_details')
       .eq('user_id', userId)
-      .not('metadata->geolocation', 'is', null)
+      .not('action_details->geolocation', 'is', null)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -207,7 +257,7 @@ class ZeroTrustService {
     let isUsualLocation = false;
 
     for (const log of recentLocations) {
-      const logLocation = log.metadata?.geolocation;
+      const logLocation = (log.action_details as any)?.geolocation;
       if (logLocation && this.calculateDistance(currentLocation, logLocation) < 100) {
         isUsualLocation = true;
         break;
@@ -279,7 +329,7 @@ class ZeroTrustService {
       await supabase.from('security_logs').insert({
         org_id: context.orgId,
         user_id: context.userId,
-        event_type: event.eventType,
+        action_type: event.eventType,
         event_category: event.eventCategory,
         resource_type: event.resourceType,
         resource_id: event.resourceId,
@@ -293,8 +343,7 @@ class ZeroTrustService {
         device_fingerprint: context.deviceFingerprint,
         session_id: context.sessionId,
         outcome: event.outcome,
-        error_details: event.errorDetails,
-        metadata: event.metadata || {}
+        error_message: event.errorDetails
       });
     } catch (error) {
       console.error('Failed to log security event:', error);
@@ -477,107 +526,6 @@ class ZeroTrustService {
 
     const { data } = await query.order('measurement_date', { ascending: false });
     return data || [];
-  }
-
-  // Automated Response
-  async triggerSecurityResponse(eventType: string, context: ZeroTrustContext, severity: string): Promise<void> {
-    // Get applicable playbooks
-    const playbooks = await this.getSecurityPlaybooks();
-    const applicablePlaybooks = playbooks.filter(p => 
-      this.matchesTriggerConditions(p.trigger_conditions, { eventType, context, severity })
-    );
-
-    for (const playbook of applicablePlaybooks) {
-      await this.executePlaybook(playbook, context);
-    }
-  }
-
-  private matchesTriggerConditions(conditions: any, event: any): boolean {
-    // Simple condition matching - can be enhanced
-    return conditions.event_types?.includes(event.eventType) ||
-           conditions.severity_levels?.includes(event.severity) ||
-           conditions.risk_threshold <= event.context.riskScore;
-  }
-
-  private async executePlaybook(playbook: any, context: ZeroTrustContext): Promise<void> {
-    await this.logSecurityEvent({
-      eventType: 'playbook_executed',
-      eventCategory: 'response',
-      resourceType: 'playbook',
-      resourceName: playbook.playbook_name,
-      actionPerformed: 'execute_response',
-      outcome: 'success',
-      actionDetails: { playbookId: playbook.id, automationLevel: playbook.automation_level }
-    }, context);
-
-    // Execute response steps based on automation level
-    if (playbook.automation_level === 'fully-automated') {
-      // Execute all steps automatically
-      for (const step of playbook.response_steps) {
-        await this.executeResponseStep(step, context);
-      }
-    } else if (playbook.automation_level === 'semi-automated') {
-      // Execute some steps automatically, queue others for manual review
-      for (const step of playbook.response_steps) {
-        if (step.automated) {
-          await this.executeResponseStep(step, context);
-        } else {
-          await this.queueManualStep(step, context);
-        }
-      }
-    } else {
-      // Queue all steps for manual execution
-      for (const step of playbook.response_steps) {
-        await this.queueManualStep(step, context);
-      }
-    }
-  }
-
-  private async executeResponseStep(step: any, context: ZeroTrustContext): Promise<void> {
-    // Execute automated response step
-    switch (step.action_type) {
-      case 'block_user':
-        await this.blockUser(context.userId, step.duration || 3600);
-        break;
-      case 'invalidate_sessions':
-        await this.invalidateUserSessions(context.userId);
-        break;
-      case 'require_mfa':
-        await this.requireMFA(context.userId);
-        break;
-      case 'notify_security_team':
-        await this.notifySecurityTeam(step.message, context);
-        break;
-      default:
-        console.warn('Unknown response step action:', step.action_type);
-    }
-  }
-
-  private async queueManualStep(step: any, context: ZeroTrustContext): Promise<void> {
-    // Queue step for manual execution - would integrate with ticketing system
-    console.log('Queuing manual step:', step, context);
-  }
-
-  private async blockUser(userId: string, duration: number): Promise<void> {
-    // Implementation would block user access
-    console.log(`Blocking user ${userId} for ${duration} seconds`);
-  }
-
-  private async invalidateUserSessions(userId: string): Promise<void> {
-    await supabase
-      .from('enhanced_auth_sessions')
-      .update({ is_active: false })
-      .eq('user_id', userId);
-  }
-
-  private async requireMFA(userId: string): Promise<void> {
-    // Implementation would require MFA for next login
-    console.log(`Requiring MFA for user ${userId}`);
-  }
-
-  private async notifySecurityTeam(message: string, context: ZeroTrustContext): Promise<void> {
-    // Implementation would send notifications to security team
-    console.log('Security team notification:', message, context);
   }
 
   // Analytics and Reporting

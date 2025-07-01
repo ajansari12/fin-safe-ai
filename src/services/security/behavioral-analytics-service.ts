@@ -107,6 +107,7 @@ class BehavioralAnalyticsService {
     
     // Find corresponding keydown event
     const keydownEvent = this.behaviorBuffer
+      .slice()
       .reverse()
       .find(e => e.eventType === 'keystroke' && e.data.key === event.key && !e.data.dwellTime);
     
@@ -366,7 +367,8 @@ class BehavioralAnalyticsService {
       .limit(1)
       .single();
 
-    return data?.activity_data?.profile || null;
+    const activityData = data?.activity_data as any;
+    return activityData?.profile || null;
   }
 
   private async calculateAnomalyScore(current: Partial<UserBehaviorProfile>, baseline: Partial<UserBehaviorProfile> | null): Promise<number> {
