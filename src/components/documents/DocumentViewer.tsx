@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -310,15 +309,12 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({
               <TabsContent value="comments">
                 <DocumentComments 
                   documentId={document.id}
-                  comments={comments}
-                  onCommentsUpdate={loadDocumentData}
                 />
               </TabsContent>
 
               <TabsContent value="versions">
                 <DocumentVersionHistory 
                   documentId={document.id}
-                  versions={versions}
                 />
               </TabsContent>
 

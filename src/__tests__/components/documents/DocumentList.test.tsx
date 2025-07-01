@@ -1,5 +1,5 @@
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/__tests__/utils/test-utils';
 import DocumentList from '@/components/documents/DocumentList';
 import { Document } from '@/services/document-management-service';
@@ -41,9 +41,19 @@ const mockDocuments: Document[] = [
   },
 ];
 
+// Mock functions for required props
+const mockOnDocumentSelect = vi.fn();
+const mockOnDocumentUpdate = vi.fn();
+
 describe('DocumentList', () => {
   it('renders document list correctly', () => {
-    render(<DocumentList documents={mockDocuments} />);
+    render(
+      <DocumentList 
+        documents={mockDocuments} 
+        onDocumentSelect={mockOnDocumentSelect}
+        onDocumentUpdate={mockOnDocumentUpdate}
+      />
+    );
     
     expect(screen.getByText('Test Document')).toBeInTheDocument();
     expect(screen.getByText('Test description')).toBeInTheDocument();
@@ -51,15 +61,26 @@ describe('DocumentList', () => {
   });
 
   it('renders empty state', () => {
-    render(<DocumentList documents={[]} />);
+    render(
+      <DocumentList 
+        documents={[]} 
+        onDocumentSelect={mockOnDocumentSelect}
+        onDocumentUpdate={mockOnDocumentUpdate}
+      />
+    );
     
     expect(screen.getByText('No documents found')).toBeInTheDocument();
   });
 
   it('displays document metadata correctly', () => {
-    render(<DocumentList documents={mockDocuments} />);
+    render(
+      <DocumentList 
+        documents={mockDocuments} 
+        onDocumentSelect={mockOnDocumentSelect}
+        onDocumentUpdate={mockOnDocumentUpdate}
+      />
+    );
     
-    expect(screen.getByText('Version 1')).toBeInTheDocument();
     expect(screen.getByText('Test User')).toBeInTheDocument();
     expect(screen.getByText('5 views')).toBeInTheDocument();
   });

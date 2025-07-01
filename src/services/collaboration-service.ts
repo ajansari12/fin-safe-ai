@@ -88,18 +88,20 @@ class CollaborationService {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) throw new Error('No organization found');
 
-    const session: Omit<CollaborationSession, 'id' | 'created_at' | 'updated_at'> = {
+    const participantData: Participant = {
+      user_id: profile.id,
+      user_name: profile.full_name || 'Unknown User',
+      role: profile.role,
+      joined_at: new Date().toISOString(),
+      last_activity: new Date().toISOString(),
+      status: 'online'
+    };
+
+    const sessionData = {
       org_id: profile.organization_id,
       document_id: documentId,
       session_type: type,
-      participants: [{
-        user_id: profile.id,
-        user_name: profile.full_name || 'Unknown User',
-        role: profile.role,
-        joined_at: new Date().toISOString(),
-        last_activity: new Date().toISOString(),
-        status: 'online'
-      }],
+      participants: [participantData],
       session_data: initialData || {},
       is_active: true,
       created_by: profile.id
@@ -107,12 +109,17 @@ class CollaborationService {
 
     const { data, error } = await supabase
       .from('collaboration_sessions')
-      .insert(session)
+      .insert(sessionData)
       .select()
       .single();
 
     if (error) throw error;
-    return data as CollaborationSession;
+    
+    return {
+      ...data,
+      participants: data.participants as Participant[],
+      session_data: data.session_data as Record<string, any>
+    } as CollaborationSession;
   }
 
   async joinSession(sessionId: string): Promise<void> {
@@ -127,8 +134,9 @@ class CollaborationService {
       .single();
 
     if (session) {
+      const currentParticipants = session.participants as Participant[];
       const updatedParticipants = [
-        ...session.participants.filter((p: Participant) => p.user_id !== profile.id),
+        ...currentParticipants.filter((p: Participant) => p.user_id !== profile.id),
         {
           user_id: profile.id,
           user_name: profile.full_name || 'Unknown User',
@@ -157,7 +165,8 @@ class CollaborationService {
       .single();
 
     if (session) {
-      const updatedParticipants = session.participants.map((p: Participant) =>
+      const currentParticipants = session.participants as Participant[];
+      const updatedParticipants = currentParticipants.map((p: Participant) =>
         p.user_id === profile.id
           ? {
               ...p,

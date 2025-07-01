@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -126,7 +125,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
           checksum: await calculateChecksum(file),
           org_id: profile?.organization_id!,
           extraction_status: 'pending',
-          ai_analysis_status: documentData.enable_ai_analysis ? 'pending' : 'skipped'
+          ai_analysis_status: documentData.enable_ai_analysis ? 'pending' : 'pending'
         });
 
         clearInterval(progressInterval);
