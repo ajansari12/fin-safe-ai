@@ -1,4 +1,3 @@
-
 interface PerformanceMetric {
   id: string;
   name: string;
@@ -297,7 +296,7 @@ class PerformanceMonitoringService {
       return {
         current_usage: currentUsage,
         predictions,
-        scaling_recommendations
+        scaling_recommendations: scalingRecommendations
       };
     } catch (error) {
       console.error('Error monitoring resource usage:', error);

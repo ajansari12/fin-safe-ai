@@ -1,4 +1,3 @@
-
 export type MaturityLevel = 'basic' | 'developing' | 'advanced' | 'sophisticated';
 
 export interface QuestionnaireTemplate {
@@ -297,4 +296,23 @@ export interface IntelligenceResponse<T = any> {
     model_version: string;
   };
   error?: string;
+}
+
+// Add missing test-related types
+export interface TestResult {
+  id: string;
+  name: string;
+  type: 'unit' | 'integration' | 'performance' | 'security';
+  status: 'passed' | 'failed' | 'running' | 'pending';
+  duration: number;
+  coverage?: number;
+  lastRun: string;
+  error?: string;
+}
+
+export interface TestSuite {
+  name: string;
+  tests: TestResult[];
+  totalCoverage: number;
+  passRate: number;
 }
