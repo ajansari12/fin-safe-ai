@@ -14,6 +14,7 @@ import {
   CheckCircle,
   TrendingUp
 } from 'lucide-react';
+import { performanceMonitoringService } from '@/services/performance-monitoring-service';
 
 interface PerformanceMetric {
   id: string;
@@ -45,70 +46,45 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ orgId }) => {
 
   const loadPerformanceMetrics = async () => {
     try {
-      // Mock performance metrics
-      const mockMetrics: PerformanceMetric[] = [
-        {
-          id: 'response-time',
-          name: 'Average Response Time',
-          value: 180,
-          unit: 'ms',
-          status: 'good',
-          trend: 'down',
-          target: 200
-        },
-        {
-          id: 'throughput',
-          name: 'Request Throughput',
-          value: 45,
-          unit: 'req/sec',
-          status: 'good',
-          trend: 'up',
-          target: 50
-        },
-        {
-          id: 'error-rate',
-          name: 'Error Rate',
-          value: 0.8,
-          unit: '%',
-          status: 'good',
-          trend: 'stable',
-          target: 1.0
-        },
-        {
-          id: 'cpu-usage',
-          name: 'CPU Utilization',
-          value: 68,
-          unit: '%',
-          status: 'warning',
-          trend: 'up',
-          target: 80
-        },
-        {
-          id: 'memory-usage',
-          name: 'Memory Usage',
-          value: 72,
-          unit: '%',
-          status: 'good',
-          trend: 'stable',
-          target: 85
-        },
-        {
-          id: 'db-connections',
-          name: 'Database Connections',
-          value: 15,
-          unit: 'active',
-          status: 'good',
-          trend: 'stable',
-          target: 20
-        }
-      ];
+      const rawMetrics = await performanceMonitoringService.collectMetrics(orgId);
+      
+      // Transform to UI format
+      const uiMetrics: PerformanceMetric[] = rawMetrics.map(metric => ({
+        id: metric.id,
+        name: metric.name,
+        value: metric.value,
+        unit: metric.unit,
+        status: getMetricStatus(metric.value, metric.category),
+        trend: 'stable' as const,
+        target: getTargetValue(metric.category)
+      }));
 
-      setMetrics(mockMetrics);
+      setMetrics(uiMetrics);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Error loading performance metrics:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getMetricStatus = (value: number, category: string): 'good' | 'warning' | 'critical' => {
+    switch (category) {
+      case 'application':
+        return value > 500 ? 'critical' : value > 200 ? 'warning' : 'good';
+      case 'infrastructure':
+        return value > 80 ? 'critical' : value > 65 ? 'warning' : 'good';
+      default:
+        return 'good';
+    }
+  };
+
+  const getTargetValue = (category: string): number => {
+    switch (category) {
+      case 'application': return 200;
+      case 'infrastructure': return 80;
+      case 'database': return 50;
+      default: return 100;
     }
   };
 
@@ -273,7 +249,7 @@ const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({ orgId }) => {
 
         <TabsContent value="database" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            {metrics.filter(m => ['db-connections'].includes(m.id)).map((metric) => (
+            {metrics.filter(m => ['db-response'].includes(m.id)).map((metric) => (
               <Card key={metric.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

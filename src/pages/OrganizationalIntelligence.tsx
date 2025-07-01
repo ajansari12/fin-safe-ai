@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,9 +16,9 @@ import WorkflowOrchestrationPanel from "@/components/organizational-intelligence
 import RealTimeIntelligenceHub from "@/components/organizational-intelligence/RealTimeIntelligenceHub";
 
 // Import Phase 4 components (placeholders for now)
-// import PerformanceMonitor from "@/components/organizational-intelligence/PerformanceMonitor";
-// import TestingDashboard from "@/components/organizational-intelligence/TestingDashboard";
-// import SystemHealth from "@/components/organizational-intelligence/SystemHealth";
+import PerformanceMonitor from "@/components/organizational-intelligence/PerformanceMonitor";
+import TestingDashboard from "@/components/organizational-intelligence/TestingDashboard";
+import SystemHealth from "@/components/organizational-intelligence/SystemHealth";
 
 const OrganizationalIntelligencePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
@@ -111,19 +110,11 @@ const OrganizationalIntelligencePage = () => {
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-6">
-            <div className="text-center py-12 text-muted-foreground">
-              <Activity className="h-16 w-16 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Performance Monitor</h3>
-              <p>Phase 4: Performance monitoring and optimization tools (Coming Soon)</p>
-            </div>
+            <PerformanceMonitor orgId={orgId} />
           </TabsContent>
 
           <TabsContent value="testing" className="space-y-6">
-            <div className="text-center py-12 text-muted-foreground">
-              <TestTube className="h-16 w-16 mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">Testing Dashboard</h3>
-              <p>Phase 4: Comprehensive testing and validation platform (Coming Soon)</p>
-            </div>
+            <TestingDashboard orgId={orgId} />
           </TabsContent>
         </Tabs>
       </div>
