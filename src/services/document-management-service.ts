@@ -37,16 +37,61 @@ export interface Document {
   updated_at: string;
 }
 
+export interface DocumentRepository {
+  id: string;
+  org_id: string;
+  name: string;
+  description?: string;
+  document_type: 'policy' | 'procedure' | 'risk_assessment' | 'audit_report' | 'compliance_doc' | 'contract' | 'other';
+  access_level: 'public' | 'internal' | 'confidential' | 'restricted';
+  retention_years: number;
+  created_by?: string;
+  created_by_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 class DocumentManagementService {
   async uploadDocument(documentData: Partial<Document>): Promise<Document> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    const completeDocumentData = {
+      ...documentData,
+      org_id: profile.organization_id,
+      uploaded_by: profile.id,
+      uploaded_by_name: profile.full_name,
+    };
+
     const { data, error } = await supabase
       .from('documents')
-      .insert(documentData)
+      .insert(completeDocumentData)
       .select()
       .single();
 
     if (error) throw error;
     return data as Document;
+  }
+
+  async createRepository(repositoryData: Omit<DocumentRepository, 'id' | 'org_id' | 'created_at' | 'updated_at' | 'created_by' | 'created_by_name'>): Promise<DocumentRepository> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    const completeRepositoryData = {
+      ...repositoryData,
+      org_id: profile.organization_id,
+      created_by: profile.id,
+      created_by_name: profile.full_name,
+    };
+
+    const { data, error } = await supabase
+      .from('document_repositories')
+      .insert(completeRepositoryData)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as DocumentRepository;
   }
 
   async getDocuments(): Promise<Document[]> {
@@ -63,7 +108,7 @@ class DocumentManagementService {
     return (data || []) as Document[];
   }
 
-  async getRepositories(): Promise<any[]> {
+  async getRepositories(): Promise<DocumentRepository[]> {
     const profile = await getCurrentUserProfile();
     if (!profile?.organization_id) return [];
 
@@ -73,7 +118,7 @@ class DocumentManagementService {
       .eq('org_id', profile.organization_id);
 
     if (error) return [];
-    return data || [];
+    return (data || []) as DocumentRepository[];
   }
 
   async getDocumentAnalytics(period: string): Promise<any> {

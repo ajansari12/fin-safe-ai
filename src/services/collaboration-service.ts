@@ -101,8 +101,8 @@ class CollaborationService {
       org_id: profile.organization_id,
       document_id: documentId,
       session_type: type,
-      participants: [participantData],
-      session_data: initialData || {},
+      participants: [participantData] as any, // Cast to any for JSON compatibility
+      session_data: initialData || {} as any,
       is_active: true,
       created_by: profile.id
     };
@@ -117,8 +117,8 @@ class CollaborationService {
     
     return {
       ...data,
-      participants: data.participants as Participant[],
-      session_data: data.session_data as Record<string, any>
+      participants: data.participants as unknown as Participant[],
+      session_data: data.session_data as unknown as Record<string, any>
     } as CollaborationSession;
   }
 
@@ -134,7 +134,7 @@ class CollaborationService {
       .single();
 
     if (session) {
-      const currentParticipants = session.participants as Participant[];
+      const currentParticipants = session.participants as unknown as Participant[];
       const updatedParticipants = [
         ...currentParticipants.filter((p: Participant) => p.user_id !== profile.id),
         {
@@ -149,7 +149,7 @@ class CollaborationService {
 
       await supabase
         .from('collaboration_sessions')
-        .update({ participants: updatedParticipants })
+        .update({ participants: updatedParticipants as any })
         .eq('id', sessionId);
     }
   }
@@ -165,7 +165,7 @@ class CollaborationService {
       .single();
 
     if (session) {
-      const currentParticipants = session.participants as Participant[];
+      const currentParticipants = session.participants as unknown as Participant[];
       const updatedParticipants = currentParticipants.map((p: Participant) =>
         p.user_id === profile.id
           ? {
@@ -179,7 +179,7 @@ class CollaborationService {
 
       await supabase
         .from('collaboration_sessions')
-        .update({ participants: updatedParticipants })
+        .update({ participants: updatedParticipants as any })
         .eq('id', sessionId);
     }
   }
@@ -573,7 +573,8 @@ class CollaborationService {
   private getActiveUsers(sessions: any[]): number {
     const uniqueUsers = new Set();
     sessions.forEach(session => {
-      session.participants?.forEach((p: Participant) => uniqueUsers.add(p.user_id));
+      const participants = session.participants as unknown as Participant[];
+      participants?.forEach((p: Participant) => uniqueUsers.add(p.user_id));
     });
     return uniqueUsers.size;
   }

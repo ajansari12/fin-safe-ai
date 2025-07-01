@@ -17,6 +17,15 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
+// Mock getCurrentUserProfile
+vi.mock('@/lib/supabase-utils', () => ({
+  getCurrentUserProfile: vi.fn(() => Promise.resolve({
+    id: 'test-user-id',
+    organization_id: 'test-org-id',
+    full_name: 'Test User'
+  }))
+}));
+
 describe('Document Management Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -31,6 +40,10 @@ describe('Document Management Service', () => {
         document_type: 'policy' as const,
         access_level: 'internal' as const,
         retention_years: 7,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        created_by: 'test-user-id',
+        created_by_name: 'Test User'
       };
 
       const { supabase } = await import('@/integrations/supabase/client');
@@ -91,11 +104,9 @@ describe('Document Management Service', () => {
       vi.mocked(supabase.from).mockReturnValue({
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            textSearch: vi.fn().mockReturnValue({
-              limit: vi.fn().mockResolvedValue({
-                data: mockDocuments,
-                error: null,
-              }),
+            or: vi.fn().mockResolvedValue({
+              data: mockDocuments,
+              error: null,
             }),
           }),
         }),
@@ -108,18 +119,6 @@ describe('Document Management Service', () => {
 
   describe('getDocumentAnalytics', () => {
     it('should return analytics data', async () => {
-      const { supabase } = await import('@/integrations/supabase/client');
-      vi.mocked(supabase.from).mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            gte: vi.fn().mockResolvedValue({
-              data: [],
-              error: null,
-            }),
-          }),
-        }),
-      } as any);
-
       const result = await documentManagementService.getDocumentAnalytics('month');
       expect(result).toHaveProperty('totalDocuments');
       expect(result).toHaveProperty('totalAccesses');
