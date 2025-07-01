@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -81,9 +80,21 @@ const WorkflowOrchestrationPanel: React.FC<WorkflowOrchestrationPanelProps> = ({
     try {
       setLoading(true);
       
-      const instance = await workflowOrchestrationService.executeWorkflow(workflowId, { org_id: orgId });
+      const executionId = await workflowOrchestrationService.executeWorkflow(workflowId, { org_id: orgId });
       
-      setInstances(prev => [...prev, instance]);
+      // Create a new instance based on the execution
+      const newInstance: WorkflowInstance = {
+        id: `instance-${Date.now()}`,
+        workflow_id: workflowId,
+        org_id: orgId,
+        status: 'active',
+        current_step: 'step-1',
+        context: { execution_id: executionId, completion_percentage: 0 },
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setInstances(prev => [...prev, newInstance]);
       toast.success('Workflow execution started');
       
     } catch (error) {

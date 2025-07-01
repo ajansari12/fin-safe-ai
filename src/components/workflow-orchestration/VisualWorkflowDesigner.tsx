@@ -126,7 +126,7 @@ const VisualWorkflowDesigner: React.FC<VisualWorkflowDesignerProps> = ({
       let savedWorkflow;
       if (workflowId) {
         await workflowOrchestrationService.updateWorkflow(workflowId, workflowData);
-        savedWorkflow = { ...workflowData, id: workflowId } as Workflow;
+        savedWorkflow = { ...workflowData, id: workflowId, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Workflow;
       } else {
         savedWorkflow = await workflowOrchestrationService.createWorkflow(workflowData);
       }

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { organizationalIntelligenceService } from './organizational-intelligence-service';
 import { enhancedOrganizationalIntelligenceService } from './enhanced-organizational-intelligence-service';
@@ -77,10 +76,10 @@ export interface Workflow {
 }
 
 class WorkflowOrchestrationService {
-  // Core workflow management
-  async createWorkflow(workflowDef: Omit<WorkflowDefinition, 'id' | 'created_at'>): Promise<WorkflowDefinition> {
+  // Create workflow from definition (legacy method)
+  async createWorkflowDefinition(workflowDef: Omit<WorkflowDefinition, 'id' | 'created_at'>): Promise<WorkflowDefinition> {
     try {
-      console.log('Creating workflow:', workflowDef.name);
+      console.log('Creating workflow definition:', workflowDef.name);
       
       // For now, return mock data as we don't have workflow tables yet
       return {
@@ -89,12 +88,12 @@ class WorkflowOrchestrationService {
         ...workflowDef
       } as WorkflowDefinition;
     } catch (error) {
-      console.error('Error creating workflow:', error);
+      console.error('Error creating workflow definition:', error);
       throw error;
     }
   }
 
-  // New method for visual workflow designer
+  // Create visual workflow (new method)
   async createWorkflow(workflowData: Omit<Workflow, 'id' | 'created_at' | 'updated_at'>): Promise<Workflow> {
     try {
       console.log('Creating visual workflow:', workflowData.name);
@@ -243,7 +242,7 @@ class WorkflowOrchestrationService {
       ]
     };
 
-    return this.createWorkflow(workflow);
+    return this.createWorkflowDefinition(workflow);
   }
 
   async createRiskMonitoringWorkflow(orgId: string): Promise<WorkflowDefinition> {
@@ -298,7 +297,7 @@ class WorkflowOrchestrationService {
       ]
     };
 
-    return this.createWorkflow(workflow);
+    return this.createWorkflowDefinition(workflow);
   }
 
   async createMaturityEnhancementWorkflow(orgId: string, targetArea: string): Promise<WorkflowDefinition> {
@@ -353,7 +352,7 @@ class WorkflowOrchestrationService {
       ]
     };
 
-    return this.createWorkflow(workflow);
+    return this.createWorkflowDefinition(workflow);
   }
 
   // Workflow execution engine
