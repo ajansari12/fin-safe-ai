@@ -1060,6 +1060,224 @@ export type Database = {
           },
         ]
       }
+      collaboration_comments: {
+        Row: {
+          attachments: Json | null
+          content: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          document_id: string | null
+          id: string
+          is_resolved: boolean | null
+          mentions: string[] | null
+          org_id: string
+          parent_comment_id: string | null
+          reactions: Json | null
+          resolved_at: string | null
+          resolved_by: string | null
+          thread_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          document_id?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          mentions?: string[] | null
+          org_id: string
+          parent_comment_id?: string | null
+          reactions?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          thread_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          document_id?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          mentions?: string[] | null
+          org_id?: string
+          parent_comment_id?: string | null
+          reactions?: Json | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          thread_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaboration_comments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collaboration_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "collaboration_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collaboration_meetings: {
+        Row: {
+          agenda: string[] | null
+          attendees: string[] | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          meeting_type: string | null
+          org_id: string
+          organizer_id: string | null
+          organizer_name: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          agenda?: string[] | null
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          meeting_type?: string | null
+          org_id: string
+          organizer_id?: string | null
+          organizer_name?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          agenda?: string[] | null
+          attendees?: string[] | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          meeting_type?: string | null
+          org_id?: string
+          organizer_id?: string | null
+          organizer_name?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      collaboration_notifications: {
+        Row: {
+          channels: string[]
+          created_at: string
+          delivered_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          org_id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string | null
+          title: string
+          urgency: string
+        }
+        Insert: {
+          channels?: string[]
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          org_id: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id?: string | null
+          title: string
+          urgency?: string
+        }
+        Update: {
+          channels?: string[]
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          org_id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string | null
+          title?: string
+          urgency?: string
+        }
+        Relationships: []
+      }
+      collaboration_sessions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          id: string
+          is_active: boolean
+          org_id: string
+          participants: Json
+          session_data: Json
+          session_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          id?: string
+          is_active?: boolean
+          org_id: string
+          participants?: Json
+          session_data?: Json
+          session_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          id?: string
+          is_active?: boolean
+          org_id?: string
+          participants?: Json
+          session_data?: Json
+          session_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaboration_sessions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_checks: {
         Row: {
           check_result: string
@@ -2946,6 +3164,57 @@ export type Database = {
         }
         Relationships: []
       }
+      external_stakeholders: {
+        Row: {
+          access_expires_at: string | null
+          access_level: string
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          is_active: boolean | null
+          last_login_at: string | null
+          name: string
+          org_id: string
+          organization: string
+          permitted_modules: string[] | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_expires_at?: string | null
+          access_level?: string
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean | null
+          last_login_at?: string | null
+          name: string
+          org_id: string
+          organization: string
+          permitted_modules?: string[] | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_expires_at?: string | null
+          access_level?: string
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          is_active?: boolean | null
+          last_login_at?: string | null
+          name?: string
+          org_id?: string
+          organization?: string
+          permitted_modules?: string[] | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       failure_scenarios: {
         Row: {
           affected_functions: Json | null
@@ -3806,6 +4075,57 @@ export type Database = {
           provider?: string
           updated_at?: string
           webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_articles: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          category: string
+          content: string
+          created_at: string
+          id: string
+          org_id: string
+          rating: number | null
+          rating_count: number | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          views: number | null
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          category: string
+          content: string
+          created_at?: string
+          id?: string
+          org_id: string
+          rating?: number | null
+          rating_count?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          views?: number | null
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          rating?: number | null
+          rating_count?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          views?: number | null
         }
         Relationships: []
       }
