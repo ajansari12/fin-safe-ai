@@ -16,8 +16,17 @@ import {
   Eye
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { advancedAnalyticsService, type AnalyticsInsight } from '@/services/advanced-analytics-service';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+interface AnalyticsInsight {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  impact: 'critical' | 'high' | 'medium' | 'low';
+  confidence: number;
+}
 
 // Lazy load heavy dashboard components
 const ExecutiveDashboard = lazy(() => import('./ExecutiveDashboard'));
@@ -69,10 +78,26 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
 
     setIsGeneratingInsights(true);
     try {
-      const generatedInsights = await advancedAnalyticsService.generateAutomatedInsights(
-        profile.organization_id
-      );
-      setInsights(generatedInsights);
+      // Load analytics insights from Supabase
+      const { data: insightsData, error } = await supabase
+        .from('analytics_insights')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('generated_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const transformedInsights: AnalyticsInsight[] = (insightsData || []).map(insight => ({
+        id: insight.id,
+        type: insight.insight_type,
+        title: insight.insight_data?.title || 'Analytics Insight',
+        description: insight.insight_data?.description || 'Analysis of organizational data patterns',
+        impact: insight.insight_data?.impact || 'medium',
+        confidence: insight.confidence_score || 0.75
+      }));
+
+      setInsights(transformedInsights);
     } catch (error) {
       console.error('Error loading insights:', error);
       toast.error('Failed to load automated insights');

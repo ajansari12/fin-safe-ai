@@ -18,8 +18,8 @@ import {
   Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { integrationService } from "@/services/integration-service";
-import { dataSyncService, SyncResult } from "@/services/integrations/data-sync-service";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface IntegrationStatus {
   id: string;
@@ -32,71 +32,107 @@ interface IntegrationStatus {
   errors: number;
 }
 
+interface SyncResult {
+  id: string;
+  started_at: string;
+  completed_at: string | null;
+  status: 'success' | 'partial' | 'failed';
+  records_processed: number;
+  records_success: number;
+  records_failed: number;
+  error_details?: string;
+}
+
 const IntegrationDashboard: React.FC = () => {
   const [integrations, setIntegrations] = useState<IntegrationStatus[]>([]);
   const [syncResults, setSyncResults] = useState<SyncResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (profile?.organization_id) {
+      loadDashboardData();
+    }
+  }, [profile?.organization_id]);
 
   const loadDashboardData = async () => {
+    if (!profile?.organization_id) return;
+
     try {
       setLoading(true);
       
-      const integrationsData = await integrationService.getIntegrations();
-      const logs = await integrationService.getIntegrationLogs();
+      // Load integrations data
+      const { data: integrationsData, error: integrationsError } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('created_at', { ascending: false });
+
+      if (integrationsError) throw integrationsError;
+
+      // Load integration logs for error counts
+      const { data: logsData, error: logsError } = await supabase
+        .from('integration_logs')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (logsError) throw logsError;
+
+      // Load sync events data
+      const { data: syncData, error: syncError } = await supabase
+        .from('sync_events')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (syncError) throw syncError;
       
-      // Transform data for dashboard display
-      const statusData = integrationsData.map(integration => ({
-        id: integration.id,
-        name: integration.integration_name,
-        type: integration.integration_type,
-        status: integration.is_active ? 'active' as const : 'inactive' as const,
-        lastSync: integration.last_sync_at,
-        health: integration.is_active ? 95 : 0,
-        recordsSync: Math.floor(Math.random() * 10000), // Mock data
-        errors: logs.filter(log => log.integration_id === integration.id && log.status === 'error').length
-      }));
+      // Transform integrations data for dashboard display
+      const statusData = (integrationsData || []).map(integration => {
+        const integrationLogs = (logsData || []).filter(log => log.integration_id === integration.id);
+        const errorLogs = integrationLogs.filter(log => log.status === 'error');
+        const successLogs = integrationLogs.filter(log => log.status === 'success');
+        
+        // Calculate health based on recent logs
+        const recentLogs = integrationLogs.slice(0, 10);
+        const successRate = recentLogs.length > 0 ? 
+          (recentLogs.filter(log => log.status === 'success').length / recentLogs.length) * 100 : 
+          (integration.is_active ? 85 : 0);
+
+        return {
+          id: integration.id,
+          name: integration.integration_name,
+          type: integration.integration_type,
+          status: !integration.is_active ? 'inactive' as const : 
+                  errorLogs.length > successLogs.length ? 'error' as const : 'active' as const,
+          lastSync: integration.last_sync_at,
+          health: Math.round(successRate),
+          recordsSync: integrationLogs.reduce((sum, log) => sum + (log.records_processed || 0), 0),
+          errors: errorLogs.length
+        };
+      });
       
       setIntegrations(statusData);
-      
-      // Mock sync results for demonstration
-      setSyncResults([
-        {
-          syncId: '1',
-          startTime: new Date(Date.now() - 3600000).toISOString(),
-          endTime: new Date(Date.now() - 3500000).toISOString(),
-          status: 'success',
-          recordsProcessed: 1250,
-          recordsSuccess: 1245,
-          recordsFailed: 5,
-          conflicts: [],
-          errors: []
-        },
-        {
-          syncId: '2',
-          startTime: new Date(Date.now() - 7200000).toISOString(),
-          endTime: new Date(Date.now() - 7100000).toISOString(),
-          status: 'partial',
-          recordsProcessed: 850,
-          recordsSuccess: 835,
-          recordsFailed: 15,
-          conflicts: [
-            {
-              recordId: '12345',
-              field: 'email',
-              sourceValue: 'john.doe@example.com',
-              targetValue: 'j.doe@example.com',
-              resolution: 'pending'
-            }
-          ],
-          errors: ['Validation failed for 15 records']
-        }
-      ]);
+
+      // Transform sync events data
+      const syncResultsData = (syncData || []).map(sync => ({
+        id: sync.id,
+        started_at: sync.created_at,
+        completed_at: sync.processed_at,
+        status: sync.sync_status === 'completed' ? 'success' as const :
+                sync.sync_status === 'failed' ? 'failed' as const : 'partial' as const,
+        records_processed: (sync.event_data as any)?.records_processed || 0,
+        records_success: (sync.event_data as any)?.records_success || 0,
+        records_failed: (sync.event_data as any)?.records_failed || 0,
+        error_details: sync.error_details ? JSON.stringify(sync.error_details) : undefined
+      }));
+
+      setSyncResults(syncResultsData);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -110,24 +146,43 @@ const IntegrationDashboard: React.FC = () => {
   };
 
   const handleSyncNow = async (integrationId: string) => {
+    if (!profile?.organization_id) return;
+
     try {
       toast({
         title: "Sync Started",
         description: "Data synchronization has been initiated"
       });
       
-      const result = await dataSyncService.performDataSync(integrationId);
+      // Create a sync event record
+      const { error } = await supabase
+        .from('sync_events')
+        .insert({
+          org_id: profile.organization_id,
+          entity_id: integrationId,
+          event_type: 'manual_sync',
+          source_module: 'integration_dashboard',
+          target_modules: ['integration'],
+          entity_type: 'integration',
+          sync_status: 'pending',
+          event_data: {
+            initiated_by: profile.id,
+            initiated_at: new Date().toISOString()
+          }
+        });
+
+      if (error) throw error;
       
       toast({
-        title: "Sync Completed",
-        description: `Processed ${result.recordsProcessed} records successfully`
+        title: "Sync Initiated",
+        description: "Synchronization has been queued for processing"
       });
       
       loadDashboardData(); // Refresh data
     } catch (error) {
       toast({
         title: "Sync Failed",
-        description: "Data synchronization encountered an error",
+        description: "Failed to initiate data synchronization",
         variant: "destructive"
       });
     }
@@ -308,47 +363,60 @@ const IntegrationDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {syncResults.map((result) => (
-                  <div key={result.syncId} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={result.status === 'success' ? 'default' : result.status === 'partial' ? 'secondary' : 'destructive'}>
-                          {result.status}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(result.startTime).toLocaleString()}
+                {syncResults.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Database className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No sync results available</p>
+                    <p className="text-sm">Run your first sync to see results here</p>
+                  </div>
+                ) : (
+                  syncResults.map((result) => (
+                    <div key={result.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={result.status === 'success' ? 'default' : result.status === 'partial' ? 'secondary' : 'destructive'}>
+                            {result.status}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(result.started_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <span className="text-sm font-medium">
+                          {result.records_success}/{result.records_processed} successful
                         </span>
                       </div>
-                      <span className="text-sm font-medium">
-                        {result.recordsSuccess}/{result.recordsProcessed} successful
-                      </span>
+                      
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Processed: </span>
+                          <span className="font-medium">{result.records_processed}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Failed: </span>
+                          <span className="font-medium text-red-600">{result.records_failed}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Duration: </span>
+                          <span className="font-medium">
+                            {result.completed_at ? 
+                              Math.round((new Date(result.completed_at).getTime() - new Date(result.started_at).getTime()) / 1000 / 60) + ' min' : 
+                              'In progress'
+                            }
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {result.error_details && (
+                        <Alert className="mt-3" variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            {result.error_details}
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
-                    
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Processed: </span>
-                        <span className="font-medium">{result.recordsProcessed}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Failed: </span>
-                        <span className="font-medium text-red-600">{result.recordsFailed}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Conflicts: </span>
-                        <span className="font-medium text-yellow-600">{result.conflicts.length}</span>
-                      </div>
-                    </div>
-                    
-                    {result.conflicts.length > 0 && (
-                      <Alert className="mt-3">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          {result.conflicts.length} data conflicts require manual resolution
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
