@@ -237,14 +237,14 @@ class IntegrationService {
     try {
       // Start anomaly detection
       setInterval(async () => {
-        await advancedAnalyticsService.detectAnomalies('kri_data');
-        await advancedAnalyticsService.detectAnomalies('incident_data');
-        await advancedAnalyticsService.detectAnomalies('vendor_risk_data');
+        await advancedAnalyticsService.detectAnomalies([]);
+        await advancedAnalyticsService.detectAnomalies([]);
+        await advancedAnalyticsService.detectAnomalies([]);
       }, 300000); // Every 5 minutes
 
       // Start correlation analysis
       setInterval(async () => {
-        await advancedAnalyticsService.analyzeRiskCorrelations();
+        await advancedAnalyticsService.analyzeRiskCorrelations('default-org-id');
       }, 3600000); // Every hour
 
       console.log('Advanced analytics initialized');
@@ -293,9 +293,9 @@ class IntegrationService {
   private setupRiskAppetiteScenarioTriggers(): void {
     setInterval(async () => {
       try {
-        const insights = await advancedAnalyticsService.generateInsights();
+        const insights = await advancedAnalyticsService.generateInsights('default-org-id');
         
-        if (insights?.anomaly_insights?.some((insight: string) => insight.includes('high severity'))) {
+        if (insights?.some((insight) => insight.type === 'anomaly' && insight.impact === 'critical')) {
           console.log('High severity anomaly detected - consider running stress scenarios');
         }
       } catch (error) {
@@ -412,12 +412,16 @@ class IntegrationService {
 
   private async getAnalyticsHealth(): Promise<any> {
     try {
-      const insights = await advancedAnalyticsService.generateInsights();
+      const insights = await advancedAnalyticsService.generateInsights('default-org-id');
+      const anomalies = insights?.filter(i => i.type === 'anomaly') || [];
+      const correlations = insights?.filter(i => i.type === 'correlation') || [];
+      const recommendations = insights?.filter(i => i.type === 'recommendation') || [];
+      
       return {
         status: 'healthy',
-        anomalies_detected: insights?.anomaly_insights?.length || 0,
-        correlations_found: insights?.correlation_insights?.length || 0,
-        recommendations_available: insights?.recommendations?.length || 0
+        anomalies_detected: anomalies.length,
+        correlations_found: correlations.length,
+        recommendations_available: recommendations.length
       };
     } catch (error) {
       return { status: 'error', error: error.message };
@@ -479,7 +483,9 @@ class IntegrationService {
     const healthStatus = await this.getSystemHealthStatus();
     const performanceData = await enhancedPerformanceService.getPerformanceDashboardData();
     const vendorDashboard = await enhancedThirdPartyRiskService.getVendorRiskDashboard();
-    const analyticsInsights = await advancedAnalyticsService.generateInsights();
+    const analyticsInsights = await advancedAnalyticsService.generateInsights('default-org-id');
+    const anomalies = analyticsInsights?.filter(i => i.type === 'anomaly') || [];
+    const correlations = analyticsInsights?.filter(i => i.type === 'correlation') || [];
 
     return {
       report_generated_at: new Date().toISOString(),
@@ -489,8 +495,8 @@ class IntegrationService {
       risk_summary: {
         vendor_risk_exposure: vendorDashboard?.supply_chain_exposure,
         high_risk_vendors: vendorDashboard?.high_risk_vendors,
-        anomalies_detected: analyticsInsights?.anomaly_insights?.length,
-        correlations_identified: analyticsInsights?.correlation_insights?.length
+        anomalies_detected: anomalies.length,
+        correlations_identified: correlations.length
       },
       recommendations: {
         immediate_actions: this.getImmediateActions(healthStatus),
