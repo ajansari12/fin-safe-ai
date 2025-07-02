@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,39 +14,48 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import {
+  getOperationalMetrics,
+  getRecentIncidentTrend,
+  getControlEffectiveness,
+  getActiveAlerts,
+  type OperationalMetric,
+  type IncidentTrendData,
+  type ControlEffectivenessData,
+  type ActiveAlert
+} from '@/services/operational-dashboard-service';
 
 const OperationalDashboard: React.FC = () => {
-  // Mock operational data
-  const realtimeMetrics = [
-    { label: 'Active Incidents', value: '7', change: '+2', status: 'warning' },
-    { label: 'KRI Breaches', value: '3', change: '-1', status: 'good' },
-    { label: 'Control Tests Due', value: '12', change: '+4', status: 'attention' },
-    { label: 'Vendor Assessments', value: '5', change: '0', status: 'stable' }
-  ];
+  const [realtimeMetrics, setRealtimeMetrics] = useState<OperationalMetric[]>([]);
+  const [incidentTrend, setIncidentTrend] = useState<IncidentTrendData[]>([]);
+  const [controlEffectiveness, setControlEffectiveness] = useState<ControlEffectivenessData[]>([]);
+  const [alertQueue, setAlertQueue] = useState<ActiveAlert[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const incidentTrend = [
-    { time: '00:00', critical: 1, high: 2, medium: 4, resolved: 8 },
-    { time: '04:00', critical: 1, high: 3, medium: 3, resolved: 10 },
-    { time: '08:00', critical: 2, high: 1, medium: 5, resolved: 12 },
-    { time: '12:00', critical: 1, high: 2, medium: 6, resolved: 15 },
-    { time: '16:00', critical: 0, high: 4, medium: 4, resolved: 18 },
-    { time: '20:00', critical: 1, high: 3, medium: 3, resolved: 20 }
-  ];
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        const [metrics, trends, controls, alerts] = await Promise.all([
+          getOperationalMetrics(),
+          getRecentIncidentTrend(),
+          getControlEffectiveness(),
+          getActiveAlerts()
+        ]);
 
-  const controlEffectiveness = [
-    { control: 'Access Control', effectiveness: 95, trend: 'up' },
-    { control: 'Change Management', effectiveness: 88, trend: 'stable' },
-    { control: 'Data Backup', effectiveness: 92, trend: 'up' },
-    { control: 'Incident Response', effectiveness: 85, trend: 'down' },
-    { control: 'Vendor Oversight', effectiveness: 78, trend: 'up' }
-  ];
+        setRealtimeMetrics(metrics);
+        setIncidentTrend(trends);
+        setControlEffectiveness(controls);
+        setAlertQueue(alerts);
+      } catch (error) {
+        console.error('Error loading operational dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const alertQueue = [
-    { id: 1, type: 'KRI Breach', severity: 'high', description: 'System downtime exceeded threshold', time: '2 min ago' },
-    { id: 2, type: 'Control Gap', severity: 'medium', description: 'Backup validation overdue', time: '15 min ago' },
-    { id: 3, type: 'Vendor Risk', severity: 'low', description: 'Contract renewal due', time: '1 hour ago' },
-    { id: 4, type: 'Compliance', severity: 'medium', description: 'Policy review required', time: '2 hours ago' }
-  ];
+    loadDashboardData();
+  }, []);
 
   const performanceData = [
     { metric: 'Response Time', target: 240, actual: 180, unit: 'minutes' },
