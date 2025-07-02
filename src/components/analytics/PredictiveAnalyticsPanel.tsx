@@ -17,6 +17,8 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { advancedAnalyticsService, type PredictiveMetric, type RealTimeAlert } from '@/services/advanced-analytics-service';
+import { dataAvailabilityService } from '@/services/data-availability-service';
+import PredictiveEmptyState from './PredictiveEmptyState';
 import { toast } from 'sonner';
 
 const PredictiveAnalyticsPanel: React.FC = () => {
@@ -25,28 +27,48 @@ const PredictiveAnalyticsPanel: React.FC = () => {
   const [realTimeAlerts, setRealTimeAlerts] = useState<RealTimeAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [hasData, setHasData] = useState(false);
 
   useEffect(() => {
     if (profile?.organization_id) {
-      loadPredictiveData();
-      
-      // Set up real-time polling
-      const interval = setInterval(loadRealTimeAlerts, 30000); // Every 30 seconds
-      return () => clearInterval(interval);
+      checkDataAvailability();
     }
   }, [profile?.organization_id]);
+
+  const checkDataAvailability = async () => {
+    if (!profile?.organization_id) return;
+
+    setIsLoading(true);
+    try {
+      const dataStatus = await dataAvailabilityService.checkDataAvailability(profile.organization_id);
+      
+      if (dataStatus.readyForPredictive) {
+        setHasData(true);
+        await loadPredictiveData();
+        
+        // Set up real-time polling only if we have data
+        const interval = setInterval(loadRealTimeAlerts, 30000);
+        return () => clearInterval(interval);
+      } else {
+        setHasData(false);
+      }
+    } catch (error) {
+      console.error('Error checking data availability:', error);
+      setHasData(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const loadPredictiveData = async () => {
     if (!profile?.organization_id) return;
 
-    setIsLoading(true);
     try {
       const [metrics, alerts] = await Promise.all([
         advancedAnalyticsService.getPredictiveMetrics(profile.organization_id),
         advancedAnalyticsService.getRealTimeAlerts(profile.organization_id)
       ]);
       
-      // Add console logging for debugging
       console.log('Predictive metrics loaded:', metrics);
       console.log('Real-time alerts loaded:', alerts);
       
@@ -56,11 +78,8 @@ const PredictiveAnalyticsPanel: React.FC = () => {
     } catch (error) {
       console.error('Error loading predictive data:', error);
       toast.error('Failed to load predictive analytics');
-      // Set empty arrays on error to prevent UI issues
       setPredictiveMetrics([]);
       setRealTimeAlerts([]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -151,6 +170,11 @@ const PredictiveAnalyticsPanel: React.FC = () => {
     );
   }
 
+  // Show empty state if no data is available
+  if (!hasData) {
+    return <PredictiveEmptyState />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -161,7 +185,10 @@ const PredictiveAnalyticsPanel: React.FC = () => {
           </p>
         </div>
         <Button 
-          onClick={loadPredictiveData} 
+          onClick={() => {
+            setIsLoading(true);
+            checkDataAvailability();
+          }} 
           variant="outline" 
           size="sm"
           className="flex items-center gap-2"
