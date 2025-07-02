@@ -1,7 +1,8 @@
+
 import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, Settings, Users, Target, Zap, Activity, TestTube, Heart } from "lucide-react";
+import { Brain, TrendingUp, Settings, Users, Target, Zap, Activity, TestTube, BarChart3, FileText } from "lucide-react";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 // Import existing components
@@ -15,10 +16,14 @@ import RiskFrameworkGenerator from "@/components/organizational-intelligence/Ris
 import WorkflowOrchestrationPanel from "@/components/organizational-intelligence/WorkflowOrchestrationPanel";
 import RealTimeIntelligenceHub from "@/components/organizational-intelligence/RealTimeIntelligenceHub";
 
-// Import Phase 4 components (placeholders for now)
+// Import Phase 4 components
 import PerformanceMonitor from "@/components/organizational-intelligence/PerformanceMonitor";
 import TestingDashboard from "@/components/organizational-intelligence/TestingDashboard";
 import SystemHealth from "@/components/organizational-intelligence/SystemHealth";
+
+// Import Phase 5 components
+import AdvancedAnalyticsHub from "@/components/organizational-intelligence/AdvancedAnalyticsHub";
+import ExecutiveReporting from "@/components/organizational-intelligence/ExecutiveReporting";
 
 const OrganizationalIntelligencePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
@@ -42,7 +47,7 @@ const OrganizationalIntelligencePage = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-11">
             <TabsTrigger value="dashboard" className="flex items-center gap-1">
               <Brain className="h-4 w-4" />
               Dashboard
@@ -78,6 +83,14 @@ const OrganizationalIntelligencePage = () => {
             <TabsTrigger value="testing" className="flex items-center gap-1">
               <TestTube className="h-4 w-4" />
               Testing
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-1">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="reporting" className="flex items-center gap-1">
+              <FileText className="h-4 w-4" />
+              Reporting
             </TabsTrigger>
           </TabsList>
 
@@ -115,6 +128,14 @@ const OrganizationalIntelligencePage = () => {
 
           <TabsContent value="testing" className="space-y-6">
             <TestingDashboard orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <AdvancedAnalyticsHub orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="reporting" className="space-y-6">
+            <ExecutiveReporting orgId={orgId} />
           </TabsContent>
         </Tabs>
       </div>
