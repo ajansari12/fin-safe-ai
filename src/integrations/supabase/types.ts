@@ -201,6 +201,69 @@ export type Database = {
         }
         Relationships: []
       }
+      api_integrations: {
+        Row: {
+          api_endpoint: string
+          authentication_config: Json
+          authentication_method: string
+          created_at: string
+          created_by: string | null
+          data_mapping: Json | null
+          data_quality_score: number | null
+          error_details: Json | null
+          id: string
+          integration_name: string
+          integration_type: string
+          last_sync_at: string | null
+          org_id: string
+          provider_name: string
+          rate_limits: Json | null
+          sync_frequency_hours: number | null
+          sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_endpoint: string
+          authentication_config?: Json
+          authentication_method: string
+          created_at?: string
+          created_by?: string | null
+          data_mapping?: Json | null
+          data_quality_score?: number | null
+          error_details?: Json | null
+          id?: string
+          integration_name: string
+          integration_type: string
+          last_sync_at?: string | null
+          org_id: string
+          provider_name: string
+          rate_limits?: Json | null
+          sync_frequency_hours?: number | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_endpoint?: string
+          authentication_config?: Json
+          authentication_method?: string
+          created_at?: string
+          created_by?: string | null
+          data_mapping?: Json | null
+          data_quality_score?: number | null
+          error_details?: Json | null
+          id?: string
+          integration_name?: string
+          integration_type?: string
+          last_sync_at?: string | null
+          org_id?: string
+          provider_name?: string
+          rate_limits?: Json | null
+          sync_frequency_hours?: number | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -1108,6 +1171,72 @@ export type Database = {
           },
         ]
       }
+      business_continuity_scenarios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          impact_assessment: Json
+          last_tested_date: string | null
+          lessons_learned: string | null
+          next_test_date: string | null
+          org_id: string
+          recovery_objectives: Json
+          response_procedures: Json
+          scenario_description: string
+          scenario_name: string
+          scenario_status: string | null
+          scenario_type: string
+          severity_level: string
+          test_results: Json | null
+          testing_frequency_days: number | null
+          trigger_conditions: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          impact_assessment?: Json
+          last_tested_date?: string | null
+          lessons_learned?: string | null
+          next_test_date?: string | null
+          org_id: string
+          recovery_objectives?: Json
+          response_procedures?: Json
+          scenario_description: string
+          scenario_name: string
+          scenario_status?: string | null
+          scenario_type: string
+          severity_level: string
+          test_results?: Json | null
+          testing_frequency_days?: number | null
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          impact_assessment?: Json
+          last_tested_date?: string | null
+          lessons_learned?: string | null
+          next_test_date?: string | null
+          org_id?: string
+          recovery_objectives?: Json
+          response_procedures?: Json
+          scenario_description?: string
+          scenario_name?: string
+          scenario_status?: string | null
+          scenario_type?: string
+          severity_level?: string
+          test_results?: Json | null
+          testing_frequency_days?: number | null
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       business_functions: {
         Row: {
           category: string | null
@@ -1417,6 +1546,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      compliance_automation_rules: {
+        Row: {
+          alert_configuration: Json | null
+          automation_actions: Json
+          created_at: string
+          created_by: string | null
+          execution_frequency: string
+          execution_results: Json | null
+          id: string
+          is_active: boolean | null
+          last_executed_at: string | null
+          org_id: string
+          regulation_reference: string
+          rule_conditions: Json
+          rule_name: string
+          rule_type: string
+          updated_at: string
+        }
+        Insert: {
+          alert_configuration?: Json | null
+          automation_actions?: Json
+          created_at?: string
+          created_by?: string | null
+          execution_frequency: string
+          execution_results?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          org_id: string
+          regulation_reference: string
+          rule_conditions?: Json
+          rule_name: string
+          rule_type: string
+          updated_at?: string
+        }
+        Update: {
+          alert_configuration?: Json | null
+          automation_actions?: Json
+          created_at?: string
+          created_by?: string | null
+          execution_frequency?: string
+          execution_results?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_executed_at?: string | null
+          org_id?: string
+          regulation_reference?: string
+          rule_conditions?: Json
+          rule_name?: string
+          rule_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       compliance_checks: {
         Row: {
@@ -6836,6 +7019,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      regulatory_reports: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string
+          id: string
+          org_id: string
+          report_data: Json
+          report_status: string
+          report_type: string
+          reporting_period: string
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          submission_date: string | null
+          submission_reference: string | null
+          updated_at: string
+          validation_results: Json | null
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date: string
+          id?: string
+          org_id: string
+          report_data?: Json
+          report_status?: string
+          report_type: string
+          reporting_period: string
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          submission_date?: string | null
+          submission_reference?: string | null
+          updated_at?: string
+          validation_results?: Json | null
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string
+          id?: string
+          org_id?: string
+          report_data?: Json
+          report_status?: string
+          report_type?: string
+          reporting_period?: string
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          submission_date?: string | null
+          submission_reference?: string | null
+          updated_at?: string
+          validation_results?: Json | null
+        }
+        Relationships: []
       }
       regulatory_template_mappings: {
         Row: {
