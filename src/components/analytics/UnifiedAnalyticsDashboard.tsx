@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification';
 
 interface AnalyticsInsight {
   id: string;
@@ -241,6 +242,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="predictive" className="space-y-6">
+          <AIStatusVerification />
           <Suspense fallback={<DashboardSkeleton />}>
             <PredictiveAnalyticsPanel />
           </Suspense>

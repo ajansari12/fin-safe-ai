@@ -46,12 +46,19 @@ const PredictiveAnalyticsPanel: React.FC = () => {
         advancedAnalyticsService.getRealTimeAlerts(profile.organization_id)
       ]);
       
-      setPredictiveMetrics(metrics);
-      setRealTimeAlerts(alerts);
+      // Add console logging for debugging
+      console.log('Predictive metrics loaded:', metrics);
+      console.log('Real-time alerts loaded:', alerts);
+      
+      setPredictiveMetrics(metrics || []);
+      setRealTimeAlerts(alerts || []);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error loading predictive data:', error);
       toast.error('Failed to load predictive analytics');
+      // Set empty arrays on error to prevent UI issues
+      setPredictiveMetrics([]);
+      setRealTimeAlerts([]);
     } finally {
       setIsLoading(false);
     }
