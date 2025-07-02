@@ -26,53 +26,76 @@ interface NavigationItem {
 
 export const navItems: NavigationItem[] = [
   {
-    title: "Home",
-    url: "/app",
-    icon: Home,
-  },
-  {
     title: "Dashboard",
     url: "/app/dashboard",
     icon: LayoutDashboard,
   },
   {
-    title: "Risk Appetite",
+    title: "Risk Management",
     url: "/app/risk-appetite",
     icon: Scale,
+    items: [
+      {
+        title: "Risk Appetite",
+        url: "/app/risk-appetite",
+      },
+      {
+        title: "Controls & KRIs",
+        url: "/app/controls-and-kri",
+      },
+      {
+        title: "Impact Tolerances", 
+        url: "/app/impact-tolerances",
+      },
+    ],
   },
   {
-    title: "Controls",
-    url: "/app/controls",
-    icon: ListChecks,
+    title: "Governance",
+    url: "/app/governance",
+    icon: Building2,
+    items: [
+      {
+        title: "Framework",
+        url: "/app/governance",
+      },
+      {
+        title: "Business Functions",
+        url: "/app/business-functions",
+      },
+      {
+        title: "Dependencies",
+        url: "/app/dependencies",
+      },
+    ],
   },
   {
     title: "Third Party Risk",
     url: "/app/third-party-risk",
     icon: Network,
+  },
+  {
+    title: "Incident Management",
+    url: "/app/incident-log",
+    icon: AlertTriangle,
+  },
+  {
+    title: "Business Continuity",
+    url: "/app/business-continuity",
+    icon: ShieldAlert,
     items: [
       {
-        title: "Vendor Profiles",
-        url: "/app/third-party-risk",
+        title: "Continuity Plans",
+        url: "/app/business-continuity",
       },
       {
-        title: "Risk Assessments",
-        url: "/app/third-party-risk/assessments",
+        title: "Scenario Testing",
+        url: "/app/scenario-testing",
       },
       {
-        title: "Supply Chain",
-        url: "/app/third-party-risk/supply-chain",
+        title: "Dependency Mapping",
+        url: "/app/dependency-mapping",
       },
     ],
-  },
-  {
-    title: "Scenario Testing",
-    url: "/app/scenario-testing",
-    icon: FileSliders,
-  },
-  {
-    title: "Integrations",
-    url: "/app/integrations",
-    icon: Zap,
   },
   {
     title: "Analytics",
@@ -90,37 +113,25 @@ export const navItems: NavigationItem[] = [
     ],
   },
   {
-    title: "Knowledge Base",
-    url: "/app/knowledge-base",
-    icon: HelpCircle,
-  },
-  {
-    title: "Incident Management",
-    url: "/app/incident-management",
-    icon: AlertTriangle,
+    title: "Enterprise",
+    url: "/app/integrations",
+    icon: Zap,
     items: [
       {
-        title: "Incident Logs",
-        url: "/app/incident-management",
+        title: "Integrations",
+        url: "/app/integrations",
       },
       {
-        title: "Playbooks",
-        url: "/app/incident-management/playbooks",
-      },
-    ],
-  },
-  {
-    title: "Policy Management",
-    url: "/app/policy-management",
-    icon: KanbanSquare,
-    items: [
-      {
-        title: "Policies",
-        url: "/app/policy-management",
+        title: "Document Management",
+        url: "/app/document-management",
       },
       {
-        title: "Exceptions",
-        url: "/app/policy-management/exceptions",
+        title: "Audit & Compliance",
+        url: "/app/audit-and-compliance",
+      },
+      {
+        title: "Reporting",
+        url: "/app/reporting",
       },
     ],
   },

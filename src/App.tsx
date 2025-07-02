@@ -208,6 +208,33 @@ function App() {
                 </ProtectedRoute>
               } />
               
+              {/* Phase 4 Enterprise Routes */}
+              <Route path="/app/enterprise-security" element={
+                <ProtectedRoute>
+                  <Navigate to="/app/settings" />
+                </ProtectedRoute>
+              } />
+              <Route path="/app/regulatory-reporting" element={
+                <ProtectedRoute>
+                  <Navigate to="/app/reporting" />
+                </ProtectedRoute>
+              } />
+              <Route path="/app/integration-hub" element={
+                <ProtectedRoute>
+                  <IntegrationsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/app/performance" element={
+                <ProtectedRoute>
+                  <AnalyticsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/app/mobile" element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              } />
+              
               {/* Legacy routes - redirect to new structure */}
               <Route path="/dashboard" element={<Navigate to="/app/dashboard" />} />
               <Route path="/settings" element={<Navigate to="/app/settings" />} />

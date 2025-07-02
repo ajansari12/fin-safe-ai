@@ -519,12 +519,25 @@ class EnhancedMobilePWAService {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const db = request.result;
-        const transaction = db.transaction([storeName], 'readwrite');
-        const store = transaction.objectStore(storeName);
-        const putRequest = store.put({ ...data, id: data.id || Date.now().toString() });
         
-        putRequest.onsuccess = () => resolve();
-        putRequest.onerror = () => reject(putRequest.error);
+        // Check if the object store exists before accessing
+        if (!db.objectStoreNames.contains(storeName)) {
+          console.warn(`Object store '${storeName}' does not exist. Skipping operation.`);
+          resolve();
+          return;
+        }
+        
+        try {
+          const transaction = db.transaction([storeName], 'readwrite');
+          const store = transaction.objectStore(storeName);
+          const putRequest = store.put({ ...data, id: data.id || Date.now().toString() });
+          
+          putRequest.onsuccess = () => resolve();
+          putRequest.onerror = () => reject(putRequest.error);
+        } catch (error) {
+          console.error('IndexedDB transaction error:', error);
+          reject(error);
+        }
       };
       
       request.onupgradeneeded = () => {
@@ -543,12 +556,25 @@ class EnhancedMobilePWAService {
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         const db = request.result;
-        const transaction = db.transaction([storeName], 'readonly');
-        const store = transaction.objectStore(storeName);
-        const getAllRequest = store.getAll();
         
-        getAllRequest.onsuccess = () => resolve(getAllRequest.result || []);
-        getAllRequest.onerror = () => reject(getAllRequest.error);
+        // Check if the object store exists before accessing
+        if (!db.objectStoreNames.contains(storeName)) {
+          console.warn(`Object store '${storeName}' does not exist. Returning empty array.`);
+          resolve([]);
+          return;
+        }
+        
+        try {
+          const transaction = db.transaction([storeName], 'readonly');
+          const store = transaction.objectStore(storeName);
+          const getAllRequest = store.getAll();
+          
+          getAllRequest.onsuccess = () => resolve(getAllRequest.result || []);
+          getAllRequest.onerror = () => reject(getAllRequest.error);
+        } catch (error) {
+          console.error('IndexedDB read error:', error);
+          resolve([]);
+        }
       };
     });
   }
