@@ -5874,6 +5874,51 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          channels: string[]
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          org_id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string | null
+          title: string
+          urgency: string
+        }
+        Insert: {
+          channels?: string[]
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          org_id: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id?: string | null
+          title: string
+          urgency?: string
+        }
+        Update: {
+          channels?: string[]
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          org_id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string | null
+          title?: string
+          urgency?: string
+        }
+        Relationships: []
+      }
       offline_sync_queue: {
         Row: {
           action_data: Json

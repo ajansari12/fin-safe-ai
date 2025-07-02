@@ -55,49 +55,17 @@ const CommunicationCenter: React.FC = () => {
     if (!profile?.organization_id) return;
 
     try {
-      // Mock data for demonstration - would be replaced with actual Supabase queries
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          org_id: profile.organization_id,
-          recipient_id: profile.id,
-          sender_id: 'sender1',
-          notification_type: 'workflow',
-          title: 'Risk Assessment Deadline Approaching',
-          message: 'The Q4 risk assessment is due in 2 days. Please complete your review.',
-          urgency: 'high',
-          channels: ['email', 'in_app'],
-          metadata: { workflow_id: 'wf1', due_date: '2024-01-15' },
-          created_at: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: '2',
-          org_id: profile.organization_id,
-          recipient_id: profile.id,
-          notification_type: 'mention',
-          title: 'You were mentioned in a comment',
-          message: 'Sarah Johnson mentioned you in the vendor assessment document.',
-          urgency: 'medium',
-          channels: ['in_app', 'email'],
-          metadata: { document_id: 'doc1' },
-          created_at: new Date(Date.now() - 7200000).toISOString()
-        },
-        {
-          id: '3',
-          org_id: profile.organization_id,
-          recipient_id: profile.id,
-          notification_type: 'escalation',
-          title: 'Critical Incident Escalated',
-          message: 'Incident INC-2024-001 has been escalated to your attention.',
-          urgency: 'critical',
-          channels: ['email', 'in_app', 'sms'],
-          metadata: { incident_id: 'inc1' },
-          read_at: new Date(Date.now() - 1800000).toISOString(),
-          created_at: new Date(Date.now() - 14400000).toISOString()
-        }
-      ];
+      const { data: notifications, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .eq('recipient_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      setNotifications(mockNotifications);
+      if (error) throw error;
+
+      setNotifications(notifications || []);
     } catch (error) {
       console.error('Error loading notifications:', error);
       toast.error('Failed to load notifications');
@@ -144,7 +112,13 @@ const CommunicationCenter: React.FC = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      // Would update in database
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', notificationId);
+
+      if (error) throw error;
+
       setNotifications(prev => 
         prev.map(n => 
           n.id === notificationId 
