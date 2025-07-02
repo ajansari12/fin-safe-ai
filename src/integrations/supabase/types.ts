@@ -1019,6 +1019,95 @@ export type Database = {
           },
         ]
       }
+      best_practice_guides: {
+        Row: {
+          case_studies: Json | null
+          common_challenges: Json | null
+          content_sections: Json
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          difficulty_level: string | null
+          estimated_completion_time: number | null
+          guide_title: string
+          guide_type: string
+          id: string
+          is_published: boolean | null
+          prerequisites: string[] | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewed_by_name: string | null
+          step_by_step_instructions: Json | null
+          success_factors: Json | null
+          target_audience: string[] | null
+          template_id: string | null
+          tools_required: string[] | null
+          troubleshooting_tips: Json | null
+          updated_at: string
+        }
+        Insert: {
+          case_studies?: Json | null
+          common_challenges?: Json | null
+          content_sections?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          difficulty_level?: string | null
+          estimated_completion_time?: number | null
+          guide_title: string
+          guide_type?: string
+          id?: string
+          is_published?: boolean | null
+          prerequisites?: string[] | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          step_by_step_instructions?: Json | null
+          success_factors?: Json | null
+          target_audience?: string[] | null
+          template_id?: string | null
+          tools_required?: string[] | null
+          troubleshooting_tips?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          case_studies?: Json | null
+          common_challenges?: Json | null
+          content_sections?: Json
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          difficulty_level?: string | null
+          estimated_completion_time?: number | null
+          guide_title?: string
+          guide_type?: string
+          id?: string
+          is_published?: boolean | null
+          prerequisites?: string[] | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          step_by_step_instructions?: Json | null
+          success_factors?: Json | null
+          target_audience?: string[] | null
+          template_id?: string | null
+          tools_required?: string[] | null
+          troubleshooting_tips?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "best_practice_guides_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "industry_template_libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_functions: {
         Row: {
           category: string | null
@@ -4926,6 +5015,81 @@ export type Database = {
         }
         Relationships: []
       }
+      industry_template_libraries: {
+        Row: {
+          complexity_level: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          customization_rules: Json | null
+          effectiveness_score: number | null
+          id: string
+          implementation_steps: Json | null
+          industry_sector: string
+          is_active: boolean
+          is_featured: boolean | null
+          last_updated_date: string | null
+          org_id: string
+          regulatory_basis: string[] | null
+          sub_sector: string | null
+          success_metrics: Json | null
+          template_data: Json
+          template_description: string | null
+          template_name: string
+          template_type: string
+          updated_at: string
+          usage_count: number | null
+        }
+        Insert: {
+          complexity_level?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          customization_rules?: Json | null
+          effectiveness_score?: number | null
+          id?: string
+          implementation_steps?: Json | null
+          industry_sector: string
+          is_active?: boolean
+          is_featured?: boolean | null
+          last_updated_date?: string | null
+          org_id: string
+          regulatory_basis?: string[] | null
+          sub_sector?: string | null
+          success_metrics?: Json | null
+          template_data?: Json
+          template_description?: string | null
+          template_name: string
+          template_type?: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Update: {
+          complexity_level?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          customization_rules?: Json | null
+          effectiveness_score?: number | null
+          id?: string
+          implementation_steps?: Json | null
+          industry_sector?: string
+          is_active?: boolean
+          is_featured?: boolean | null
+          last_updated_date?: string | null
+          org_id?: string
+          regulatory_basis?: string[] | null
+          sub_sector?: string | null
+          success_metrics?: Json | null
+          template_data?: Json
+          template_description?: string | null
+          template_name?: string
+          template_type?: string
+          updated_at?: string
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       integration_logs: {
         Row: {
           created_at: string
@@ -5066,6 +5230,96 @@ export type Database = {
           title?: string
           updated_at?: string
           views?: number | null
+        }
+        Relationships: []
+      }
+      knowledge_base_articles: {
+        Row: {
+          article_title: string
+          article_type: string
+          attachments: Json | null
+          content_body: string
+          content_format: string | null
+          content_freshness_score: number | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          external_references: Json | null
+          helpful_votes: number | null
+          id: string
+          industry_relevance: string[] | null
+          keywords: string[] | null
+          last_reviewed_date: string | null
+          publication_status: string | null
+          published_at: string | null
+          related_regulations: string[] | null
+          related_templates: string[] | null
+          reviewed_by: string | null
+          reviewed_by_name: string | null
+          search_vector: unknown | null
+          summary: string | null
+          target_roles: string[] | null
+          unhelpful_votes: number | null
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          article_title: string
+          article_type?: string
+          attachments?: Json | null
+          content_body: string
+          content_format?: string | null
+          content_freshness_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          external_references?: Json | null
+          helpful_votes?: number | null
+          id?: string
+          industry_relevance?: string[] | null
+          keywords?: string[] | null
+          last_reviewed_date?: string | null
+          publication_status?: string | null
+          published_at?: string | null
+          related_regulations?: string[] | null
+          related_templates?: string[] | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          search_vector?: unknown | null
+          summary?: string | null
+          target_roles?: string[] | null
+          unhelpful_votes?: number | null
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          article_title?: string
+          article_type?: string
+          attachments?: Json | null
+          content_body?: string
+          content_format?: string | null
+          content_freshness_score?: number | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          external_references?: Json | null
+          helpful_votes?: number | null
+          id?: string
+          industry_relevance?: string[] | null
+          keywords?: string[] | null
+          last_reviewed_date?: string | null
+          publication_status?: string | null
+          published_at?: string | null
+          related_regulations?: string[] | null
+          related_templates?: string[] | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          search_vector?: unknown | null
+          summary?: string | null
+          target_roles?: string[] | null
+          unhelpful_votes?: number | null
+          updated_at?: string
+          view_count?: number | null
         }
         Relationships: []
       }
@@ -6504,6 +6758,62 @@ export type Database = {
             columns: ["audit_upload_id"]
             isOneToOne: false
             referencedRelation: "audit_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_template_mappings: {
+        Row: {
+          compliance_level: string
+          created_at: string
+          id: string
+          implementation_guidance: string | null
+          is_current: boolean
+          jurisdiction: string
+          last_reviewed_date: string | null
+          mapping_confidence: number | null
+          regulation_name: string
+          regulatory_section: string | null
+          template_id: string
+          updated_at: string
+          validation_criteria: Json | null
+        }
+        Insert: {
+          compliance_level?: string
+          created_at?: string
+          id?: string
+          implementation_guidance?: string | null
+          is_current?: boolean
+          jurisdiction: string
+          last_reviewed_date?: string | null
+          mapping_confidence?: number | null
+          regulation_name: string
+          regulatory_section?: string | null
+          template_id: string
+          updated_at?: string
+          validation_criteria?: Json | null
+        }
+        Update: {
+          compliance_level?: string
+          created_at?: string
+          id?: string
+          implementation_guidance?: string | null
+          is_current?: boolean
+          jurisdiction?: string
+          last_reviewed_date?: string | null
+          mapping_confidence?: number | null
+          regulation_name?: string
+          regulatory_section?: string | null
+          template_id?: string
+          updated_at?: string
+          validation_criteria?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_template_mappings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "industry_template_libraries"
             referencedColumns: ["id"]
           },
         ]
@@ -8029,6 +8339,296 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      template_categories: {
+        Row: {
+          category_description: string | null
+          category_name: string
+          created_at: string
+          id: string
+          industry_focus: string[] | null
+          is_active: boolean
+          parent_category_id: string | null
+          regulatory_frameworks: string[] | null
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          category_description?: string | null
+          category_name: string
+          created_at?: string
+          id?: string
+          industry_focus?: string[] | null
+          is_active?: boolean
+          parent_category_id?: string | null
+          regulatory_frameworks?: string[] | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category_description?: string | null
+          category_name?: string
+          created_at?: string
+          id?: string
+          industry_focus?: string[] | null
+          is_active?: boolean
+          parent_category_id?: string | null
+          regulatory_frameworks?: string[] | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_categories_parent_category_id_fkey"
+            columns: ["parent_category_id"]
+            isOneToOne: false
+            referencedRelation: "template_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_customization_rules: {
+        Row: {
+          created_at: string
+          customization_actions: Json
+          id: string
+          is_active: boolean
+          parameter_adjustments: Json | null
+          priority: number | null
+          rule_name: string
+          rule_type: string
+          template_id: string
+          trigger_conditions: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customization_actions?: Json
+          id?: string
+          is_active?: boolean
+          parameter_adjustments?: Json | null
+          priority?: number | null
+          rule_name: string
+          rule_type?: string
+          template_id: string
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customization_actions?: Json
+          id?: string
+          is_active?: boolean
+          parameter_adjustments?: Json | null
+          priority?: number | null
+          rule_name?: string
+          rule_type?: string
+          template_id?: string
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_customization_rules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "industry_template_libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_dependencies: {
+        Row: {
+          created_at: string
+          dependency_strength: string
+          dependency_type: string
+          dependent_template_id: string
+          id: string
+          implementation_order: number | null
+          integration_notes: string | null
+          is_active: boolean
+          source_template_id: string
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          dependency_strength?: string
+          dependency_type?: string
+          dependent_template_id: string
+          id?: string
+          implementation_order?: number | null
+          integration_notes?: string | null
+          is_active?: boolean
+          source_template_id: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          dependency_strength?: string
+          dependency_type?: string
+          dependent_template_id?: string
+          id?: string
+          implementation_order?: number | null
+          integration_notes?: string | null
+          is_active?: boolean
+          source_template_id?: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_dependencies_dependent_template_id_fkey"
+            columns: ["dependent_template_id"]
+            isOneToOne: false
+            referencedRelation: "industry_template_libraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_dependencies_source_template_id_fkey"
+            columns: ["source_template_id"]
+            isOneToOne: false
+            referencedRelation: "industry_template_libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_effectiveness_tracking: {
+        Row: {
+          actual_vs_planned_timeline: number | null
+          compliance_improvement_score: number | null
+          cost_benefit_ratio: number | null
+          created_at: string
+          id: string
+          implementation_completion_date: string | null
+          implementation_notes: string | null
+          implementation_start_date: string
+          implementation_success_rate: number | null
+          issues_encountered: Json | null
+          lessons_learned: Json | null
+          operational_efficiency_gain: number | null
+          org_id: string
+          recommendations_for_improvement: Json | null
+          reported_by: string | null
+          reported_by_name: string | null
+          template_id: string
+          updated_at: string
+          user_satisfaction_score: number | null
+          would_recommend: boolean | null
+        }
+        Insert: {
+          actual_vs_planned_timeline?: number | null
+          compliance_improvement_score?: number | null
+          cost_benefit_ratio?: number | null
+          created_at?: string
+          id?: string
+          implementation_completion_date?: string | null
+          implementation_notes?: string | null
+          implementation_start_date: string
+          implementation_success_rate?: number | null
+          issues_encountered?: Json | null
+          lessons_learned?: Json | null
+          operational_efficiency_gain?: number | null
+          org_id: string
+          recommendations_for_improvement?: Json | null
+          reported_by?: string | null
+          reported_by_name?: string | null
+          template_id: string
+          updated_at?: string
+          user_satisfaction_score?: number | null
+          would_recommend?: boolean | null
+        }
+        Update: {
+          actual_vs_planned_timeline?: number | null
+          compliance_improvement_score?: number | null
+          cost_benefit_ratio?: number | null
+          created_at?: string
+          id?: string
+          implementation_completion_date?: string | null
+          implementation_notes?: string | null
+          implementation_start_date?: string
+          implementation_success_rate?: number | null
+          issues_encountered?: Json | null
+          lessons_learned?: Json | null
+          operational_efficiency_gain?: number | null
+          org_id?: string
+          recommendations_for_improvement?: Json | null
+          reported_by?: string | null
+          reported_by_name?: string | null
+          template_id?: string
+          updated_at?: string
+          user_satisfaction_score?: number | null
+          would_recommend?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_effectiveness_tracking_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "industry_template_libraries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_usage_analytics: {
+        Row: {
+          access_method: string | null
+          customization_applied: boolean | null
+          customization_details: Json | null
+          device_type: string | null
+          feedback_provided: boolean | null
+          id: string
+          org_id: string
+          session_duration: number | null
+          success_outcome: boolean | null
+          template_id: string
+          timestamp: string
+          usage_context: string | null
+          usage_type: string
+          user_id: string | null
+        }
+        Insert: {
+          access_method?: string | null
+          customization_applied?: boolean | null
+          customization_details?: Json | null
+          device_type?: string | null
+          feedback_provided?: boolean | null
+          id?: string
+          org_id: string
+          session_duration?: number | null
+          success_outcome?: boolean | null
+          template_id: string
+          timestamp?: string
+          usage_context?: string | null
+          usage_type?: string
+          user_id?: string | null
+        }
+        Update: {
+          access_method?: string | null
+          customization_applied?: boolean | null
+          customization_details?: Json | null
+          device_type?: string | null
+          feedback_provided?: boolean | null
+          id?: string
+          org_id?: string
+          session_duration?: number | null
+          success_outcome?: boolean | null
+          template_id?: string
+          timestamp?: string
+          usage_context?: string | null
+          usage_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_usage_analytics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "industry_template_libraries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       third_party_profiles: {
         Row: {

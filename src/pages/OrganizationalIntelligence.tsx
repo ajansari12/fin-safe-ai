@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, Settings, Users, Target, Zap, Activity, TestTube, BarChart3, FileText, Shield, Network } from "lucide-react";
+import { Brain, TrendingUp, Settings, Users, Target, Zap, Activity, TestTube, BarChart3, FileText, Shield, Network, BookOpen, Layers } from "lucide-react";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 // Import existing components
@@ -30,6 +30,11 @@ import ComplianceMonitoringDashboard from "@/components/organizational-intellige
 import IndustryScenarioGenerator from "@/components/organizational-intelligence/IndustryScenarioGenerator";
 import UnifiedFrameworkDashboard from "@/components/organizational-intelligence/UnifiedFrameworkDashboard";
 
+// Import Template Library components
+import TemplateLibraryDashboard from "@/components/organizational-intelligence/TemplateLibraryDashboard";
+import KnowledgeBaseHub from "@/components/organizational-intelligence/KnowledgeBaseHub";
+import TemplateCustomizationEngine from "@/components/organizational-intelligence/TemplateCustomizationEngine";
+
 const OrganizationalIntelligencePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
   
@@ -47,12 +52,12 @@ const OrganizationalIntelligencePage = () => {
         <div className="mb-6">
           <h1 className="text-3xl font-bold tracking-tight">Organizational Intelligence</h1>
           <p className="text-muted-foreground mt-2">
-            Advanced AI-powered organizational analysis, insights, and automation platform
+            Advanced AI-powered organizational analysis, insights, automation, and template library
           </p>
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-14">
+          <TabsList className="grid w-full grid-cols-16">
             <TabsTrigger value="dashboard" className="flex items-center gap-1">
               <Brain className="h-4 w-4" />
               Dashboard
@@ -108,6 +113,14 @@ const OrganizationalIntelligencePage = () => {
             <TabsTrigger value="unified" className="flex items-center gap-1">
               <Network className="h-4 w-4" />
               Unified
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center gap-1">
+              <Layers className="h-4 w-4" />
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="knowledge" className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              Knowledge
             </TabsTrigger>
           </TabsList>
 
@@ -165,6 +178,14 @@ const OrganizationalIntelligencePage = () => {
 
           <TabsContent value="unified" className="space-y-6">
             <UnifiedFrameworkDashboard orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="templates" className="space-y-6">
+            <TemplateLibraryDashboard orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="knowledge" className="space-y-6">
+            <KnowledgeBaseHub orgId={orgId} />
           </TabsContent>
         </Tabs>
       </div>
