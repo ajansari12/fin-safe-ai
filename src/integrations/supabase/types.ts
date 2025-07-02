@@ -10372,9 +10372,26 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       detect_data_patterns: {
         Args: { data_content: string; org_id: string }
         Returns: Json
+      }
+      get_org_dashboard_metrics: {
+        Args: { target_org_id?: string }
+        Returns: {
+          total_incidents: number
+          high_severity_incidents: number
+          total_controls: number
+          active_controls: number
+          total_kris: number
+          total_vendors: number
+          high_risk_vendors: number
+          last_incident_date: string
+        }[]
       }
       get_user_org_id: {
         Args: Record<PropertyKey, never>
@@ -10416,6 +10433,10 @@ export type Database = {
       }
       user_has_org_access: {
         Args: { target_org_id: string; user_id?: string }
+        Returns: boolean
+      }
+      validate_org_access: {
+        Args: { table_org_id: string }
         Returns: boolean
       }
       validate_password_strength: {
