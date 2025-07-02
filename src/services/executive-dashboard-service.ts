@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { cachedFetch } from "@/lib/performance-utils";
 
 export interface ExecutiveKPI {
   title: string;
@@ -30,88 +31,90 @@ export interface BusinessImpact {
 }
 
 export async function getExecutiveKPIs(): Promise<ExecutiveKPI[]> {
-  try {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', (await supabase.auth.getUser()).data.user?.id)
-      .single();
+  return cachedFetch('executive_kpis', async () => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
 
-    if (!profile?.organization_id) {
+      if (!profile?.organization_id) {
+        return getDefaultKPIs();
+      }
+
+      // Get incident data
+      const { data: incidents } = await supabase
+        .from('incident_logs')
+        .select('*')
+        .eq('org_id', profile.organization_id);
+
+      // Get control data
+      const { data: controls } = await supabase
+        .from('controls')
+        .select('*')
+        .eq('org_id', profile.organization_id);
+
+      // Get vendor data
+      const { data: vendors } = await supabase
+        .from('third_party_profiles')
+        .select('*')
+        .eq('org_id', profile.organization_id);
+
+      // Calculate metrics
+      const criticalIncidents = incidents?.filter(i => 
+        i.severity === 'critical' && i.status !== 'resolved'
+      ).length || 0;
+
+      const activeControls = controls?.filter(c => c.status === 'active').length || 0;
+      const totalControls = controls?.length || 1;
+      const controlEffectiveness = Math.round((activeControls / totalControls) * 100);
+
+      const highRiskVendors = vendors?.filter(v => v.risk_rating === 'high').length || 0;
+      const vendorRiskExposure = highRiskVendors * 0.8; // Simplified calculation
+
+      // Calculate overall risk score based on incidents, controls, and vendors
+      const riskScore = calculateOverallRiskScore(criticalIncidents, controlEffectiveness, highRiskVendors);
+
+      return [
+        {
+          title: 'Overall Risk Score',
+          value: riskScore.toFixed(1),
+          change: riskScore < 7.5 ? '-0.3' : '+0.2',
+          trend: riskScore < 7.5 ? 'down' : 'up',
+          status: riskScore < 6 ? 'good' : riskScore < 8 ? 'improving' : 'attention',
+          iconName: 'Shield'
+        },
+        {
+          title: 'Operational Resilience',
+          value: `${controlEffectiveness}%`,
+          change: controlEffectiveness > 85 ? '+2%' : '-1%',
+          trend: controlEffectiveness > 85 ? 'up' : 'down',
+          status: controlEffectiveness > 90 ? 'good' : controlEffectiveness > 80 ? 'improving' : 'attention',
+          iconName: 'Activity'
+        },
+        {
+          title: 'Critical Incidents',
+          value: criticalIncidents.toString(),
+          change: criticalIncidents < 3 ? '-2' : '+1',
+          trend: criticalIncidents < 3 ? 'down' : 'up',
+          status: criticalIncidents < 3 ? 'improving' : 'attention',
+          iconName: 'AlertTriangle'
+        },
+        {
+          title: 'Vendor Risk Exposure',
+          value: `$${vendorRiskExposure.toFixed(1)}M`,
+          change: vendorRiskExposure < 2 ? '-$0.1M' : '+$0.1M',
+          trend: vendorRiskExposure < 2 ? 'down' : 'up',
+          status: vendorRiskExposure < 2 ? 'good' : vendorRiskExposure < 3 ? 'attention' : 'critical',
+          iconName: 'DollarSign'
+        }
+      ];
+    } catch (error) {
+      console.error('Error fetching executive KPIs:', error);
       return getDefaultKPIs();
     }
-
-    // Get incident data
-    const { data: incidents } = await supabase
-      .from('incident_logs')
-      .select('*')
-      .eq('org_id', profile.organization_id);
-
-    // Get control data
-    const { data: controls } = await supabase
-      .from('controls')
-      .select('*')
-      .eq('org_id', profile.organization_id);
-
-    // Get vendor data
-    const { data: vendors } = await supabase
-      .from('third_party_profiles')
-      .select('*')
-      .eq('org_id', profile.organization_id);
-
-    // Calculate metrics
-    const criticalIncidents = incidents?.filter(i => 
-      i.severity === 'critical' && i.status !== 'resolved'
-    ).length || 0;
-
-    const activeControls = controls?.filter(c => c.status === 'active').length || 0;
-    const totalControls = controls?.length || 1;
-    const controlEffectiveness = Math.round((activeControls / totalControls) * 100);
-
-    const highRiskVendors = vendors?.filter(v => v.risk_rating === 'high').length || 0;
-    const vendorRiskExposure = highRiskVendors * 0.8; // Simplified calculation
-
-    // Calculate overall risk score based on incidents, controls, and vendors
-    const riskScore = calculateOverallRiskScore(criticalIncidents, controlEffectiveness, highRiskVendors);
-
-    return [
-      {
-        title: 'Overall Risk Score',
-        value: riskScore.toFixed(1),
-        change: riskScore < 7.5 ? '-0.3' : '+0.2',
-        trend: riskScore < 7.5 ? 'down' : 'up',
-        status: riskScore < 6 ? 'good' : riskScore < 8 ? 'improving' : 'attention',
-        iconName: 'Shield'
-      },
-      {
-        title: 'Operational Resilience',
-        value: `${controlEffectiveness}%`,
-        change: controlEffectiveness > 85 ? '+2%' : '-1%',
-        trend: controlEffectiveness > 85 ? 'up' : 'down',
-        status: controlEffectiveness > 90 ? 'good' : controlEffectiveness > 80 ? 'improving' : 'attention',
-        iconName: 'Activity'
-      },
-      {
-        title: 'Critical Incidents',
-        value: criticalIncidents.toString(),
-        change: criticalIncidents < 3 ? '-2' : '+1',
-        trend: criticalIncidents < 3 ? 'down' : 'up',
-        status: criticalIncidents < 3 ? 'improving' : 'attention',
-        iconName: 'AlertTriangle'
-      },
-      {
-        title: 'Vendor Risk Exposure',
-        value: `$${vendorRiskExposure.toFixed(1)}M`,
-        change: vendorRiskExposure < 2 ? '-$0.1M' : '+$0.1M',
-        trend: vendorRiskExposure < 2 ? 'down' : 'up',
-        status: vendorRiskExposure < 2 ? 'good' : vendorRiskExposure < 3 ? 'attention' : 'critical',
-        iconName: 'DollarSign'
-      }
-    ];
-  } catch (error) {
-    console.error('Error fetching executive KPIs:', error);
-    return getDefaultKPIs();
-  }
+  }, 2 * 60 * 1000); // Cache for 2 minutes
 }
 
 export async function getRiskTrendData(): Promise<RiskTrendData[]> {

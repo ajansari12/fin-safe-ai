@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -17,11 +17,39 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { advancedAnalyticsService, type AnalyticsInsight } from '@/services/advanced-analytics-service';
-import ExecutiveDashboard from './ExecutiveDashboard';
-import OperationalDashboard from './OperationalDashboard';
-import CustomDashboardBuilder from './CustomDashboardBuilder';
-import PredictiveAnalyticsChart from './PredictiveAnalyticsChart';
 import { toast } from 'sonner';
+
+// Lazy load heavy dashboard components
+const ExecutiveDashboard = lazy(() => import('./ExecutiveDashboard'));
+const OperationalDashboard = lazy(() => import('./OperationalDashboard'));
+const CustomDashboardBuilder = lazy(() => import('./CustomDashboardBuilder'));
+const PredictiveAnalyticsChart = lazy(() => import('./PredictiveAnalyticsChart'));
+
+// Loading skeleton component
+const DashboardSkeleton = () => (
+  <div className="space-y-6">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {[...Array(4)].map((_, i) => (
+        <Card key={i}>
+          <CardContent className="p-6">
+            <div className="animate-pulse space-y-3">
+              <div className="h-4 bg-muted rounded w-3/4"></div>
+              <div className="h-8 bg-muted rounded w-1/2"></div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+    <Card>
+      <CardContent className="p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-muted rounded w-1/4 mb-6"></div>
+          <div className="h-80 bg-muted rounded"></div>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);
 
 const UnifiedAnalyticsDashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -175,11 +203,15 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
-          <ExecutiveDashboard />
+          <Suspense fallback={<DashboardSkeleton />}>
+            <ExecutiveDashboard />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="operational" className="space-y-6">
-          <OperationalDashboard />
+          <Suspense fallback={<DashboardSkeleton />}>
+            <OperationalDashboard />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="predictive" className="space-y-6">
@@ -192,7 +224,9 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <PredictiveAnalyticsChart />
+                <Suspense fallback={<div className="h-64 bg-muted rounded animate-pulse"></div>}>
+                  <PredictiveAnalyticsChart />
+                </Suspense>
               </CardContent>
             </Card>
 
@@ -235,7 +269,9 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="custom" className="space-y-6">
-          <CustomDashboardBuilder />
+          <Suspense fallback={<DashboardSkeleton />}>
+            <CustomDashboardBuilder />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>
