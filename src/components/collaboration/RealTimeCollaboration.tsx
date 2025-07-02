@@ -45,51 +45,45 @@ const RealTimeCollaboration: React.FC = () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [profile?.organization_id]);
+
+  // Load comments when current session changes
+  useEffect(() => {
+    if (currentSession?.document_id) {
+      loadComments();
+    }
+  }, [currentSession?.document_id]);
 
   const loadActiveSessions = async () => {
-    try {
-      // This would be implemented with proper Supabase queries
-      // For now, showing mock data structure
-      const mockSessions: CollaborationSession[] = [
-        {
-          id: '1',
-          org_id: profile?.organization_id || '',
-          document_id: 'doc1',
-          session_type: 'document_editing',
-          participants: [
-            {
-              user_id: profile?.id || '',
-              user_name: profile?.full_name || 'You',
-              role: profile?.role || 'user',
-              joined_at: new Date().toISOString(),
-              last_activity: new Date().toISOString(),
-              status: 'online'
-            },
-            {
-              user_id: 'user2',
-              user_name: 'Sarah Johnson',
-              role: 'manager',
-              joined_at: new Date(Date.now() - 300000).toISOString(),
-              last_activity: new Date(Date.now() - 60000).toISOString(),
-              status: 'online'
-            }
-          ],
-          session_data: {
-            document_title: 'Risk Assessment Q4 2024',
-            last_edit: new Date().toISOString()
-          },
-          is_active: true,
-          created_by: profile?.id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
+    if (!profile?.organization_id) return;
 
-      setActiveSessions(mockSessions);
-      if (mockSessions.length > 0) {
-        setCurrentSession(mockSessions[0]);
-        setParticipants(mockSessions[0].participants);
+    try {
+      const { data: sessions, error } = await supabase
+        .from('collaboration_sessions')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const sessionsWithParticipants: CollaborationSession[] = (sessions || []).map(session => ({
+        id: session.id,
+        org_id: session.org_id,
+        document_id: session.document_id,
+        session_type: session.session_type as CollaborationSession['session_type'],
+        participants: (session.participants || []) as Participant[],
+        session_data: session.session_data || {},
+        is_active: session.is_active,
+        created_by: session.created_by,
+        created_at: session.created_at,
+        updated_at: session.updated_at
+      }));
+
+      setActiveSessions(sessionsWithParticipants);
+      if (sessionsWithParticipants.length > 0) {
+        setCurrentSession(sessionsWithParticipants[0]);
+        setParticipants(sessionsWithParticipants[0].participants);
       }
     } catch (error) {
       console.error('Error loading sessions:', error);
@@ -164,19 +158,45 @@ const RealTimeCollaboration: React.FC = () => {
   };
 
   const addComment = async () => {
-    if (!newComment.trim() || !currentSession?.document_id) return;
+    if (!newComment.trim() || !currentSession?.document_id || !profile?.organization_id) return;
 
     try {
-      await collaborationService.addComment(
-        currentSession.document_id,
-        newComment
-      );
+      const { error } = await supabase
+        .from('document_comments')
+        .insert({
+          org_id: profile.organization_id,
+          document_id: currentSession.document_id,
+          author_id: profile.id,
+          author_name: profile.full_name || 'Unknown User',
+          content: newComment
+        });
+
+      if (error) throw error;
+
       setNewComment('');
       toast.success('Comment added');
-      // Reload comments would be implemented here
+      // Reload comments
+      loadComments();
     } catch (error) {
       console.error('Error adding comment:', error);
       toast.error('Failed to add comment');
+    }
+  };
+
+  const loadComments = async () => {
+    if (!currentSession?.document_id) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('document_comments')
+        .select('*')
+        .eq('document_id', currentSession.document_id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setComments(data || []);
+    } catch (error) {
+      console.error('Error loading comments:', error);
     }
   };
 
@@ -320,7 +340,7 @@ const RealTimeCollaboration: React.FC = () => {
                     </div>
                   ) : (
                     comments.map((comment, index) => (
-                      <div key={index} className="flex gap-3">
+                      <div key={comment.id || index} className="flex gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback>
                             {comment.author_name?.split(' ').map((n: string) => n[0]).join('')}
@@ -329,7 +349,10 @@ const RealTimeCollaboration: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-sm font-medium">{comment.author_name}</span>
-                            <span className="text-xs text-muted-foreground">{comment.timestamp}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(comment.created_at).toLocaleDateString()} at{' '}
+                              {new Date(comment.created_at).toLocaleTimeString()}
+                            </span>
                           </div>
                           <p className="text-sm">{comment.content}</p>
                         </div>
