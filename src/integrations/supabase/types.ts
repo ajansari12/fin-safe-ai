@@ -3149,6 +3149,33 @@ export type Database = {
           },
         ]
       }
+      document_analysis_logs: {
+        Row: {
+          analysis_content: string
+          analysis_type: string
+          created_at: string
+          framework: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          analysis_content: string
+          analysis_type: string
+          created_at?: string
+          framework?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          analysis_content?: string
+          analysis_type?: string
+          created_at?: string
+          framework?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_approvals: {
         Row: {
           approval_date: string | null
@@ -5592,6 +5619,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_logs: {
+        Row: {
+          created_at: string
+          id: string
+          recipient: string
+          sent_at: string
+          status: string
+          subject: string
+          type: string
+          urgency: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipient: string
+          sent_at?: string
+          status?: string
+          subject: string
+          type: string
+          urgency: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipient?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+          type?: string
+          urgency?: string
+        }
+        Relationships: []
+      }
       offline_sync_queue: {
         Row: {
           action_data: Json
@@ -7282,6 +7342,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      risk_intelligence_feeds: {
+        Row: {
+          created_at: string
+          description: string
+          feed_type: string
+          id: string
+          published_at: string
+          region: string
+          risk_category: string
+          sector: string
+          severity: string
+          source: string
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          feed_type: string
+          id?: string
+          published_at: string
+          region?: string
+          risk_category: string
+          sector?: string
+          severity: string
+          source: string
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          feed_type?: string
+          id?: string
+          published_at?: string
+          region?: string
+          risk_category?: string
+          sector?: string
+          severity?: string
+          source?: string
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
       }
       risk_thresholds: {
         Row: {
