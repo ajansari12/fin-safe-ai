@@ -9888,6 +9888,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      increment_template_usage: {
+        Args: { template_id: string }
+        Returns: undefined
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
