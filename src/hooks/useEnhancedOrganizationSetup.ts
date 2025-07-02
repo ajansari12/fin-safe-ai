@@ -1,0 +1,497 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useOnboarding } from "@/contexts/OnboardingContext";
+import { organizationalIntelligenceService } from "@/services/organizational-intelligence-service";
+import { templateLibraryService } from "@/services/template-library-service";
+import { 
+  createOrganization, 
+  updateUserProfile, 
+  createUserRole, 
+  uploadPolicyFile 
+} from "@/services/organization-service";
+
+interface EnhancedOrganizationData {
+  // Basic organization data
+  name: string;
+  sector: string;
+  size: string;
+  userRole: 'admin' | 'analyst' | 'reviewer';
+  regulatoryFrameworks: string[];
+  policyFiles: File[];
+  
+  // Enhanced profiling data
+  employeeCount?: number;
+  assetSize?: number;
+  geographicScope?: string;
+  subSector?: string;
+  businessLines?: string[];
+  riskMaturity?: 'basic' | 'developing' | 'advanced' | 'sophisticated';
+  complianceMaturity?: 'basic' | 'developing' | 'advanced' | 'sophisticated';
+  technologyMaturity?: 'basic' | 'developing' | 'advanced' | 'sophisticated';
+  digitalTransformation?: 'basic' | 'developing' | 'advanced' | 'sophisticated';
+  riskCulture?: string;
+  regulatoryHistory?: string;
+  primaryRegulators?: string[];
+  applicableFrameworks?: string[];
+  growthStrategy?: string;
+  marketPosition?: string;
+  
+  // Framework generation preferences
+  frameworkGenerationMode?: 'automatic' | 'guided' | 'manual';
+  customizationPreferences?: Record<string, any>;
+}
+
+interface FrameworkGenerationProgress {
+  status: 'not_started' | 'analyzing' | 'generating' | 'customizing' | 'completed' | 'error';
+  progress: number;
+  currentStep: string;
+  generatedFrameworks: any[];
+  selectedFramework?: any;
+  customizations?: Record<string, any>;
+  errorMessage?: string;
+}
+
+export function useEnhancedOrganizationSetup() {
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [completionEstimate, setCompletionEstimate] = useState(15); // minutes
+  const [saveInProgress, setSaveInProgress] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const { completeStep } = useOnboarding();
+  
+  // Framework generation state
+  const [frameworkProgress, setFrameworkProgress] = useState<FrameworkGenerationProgress>({
+    status: 'not_started',
+    progress: 0,
+    currentStep: 'Initializing',
+    generatedFrameworks: []
+  });
+  
+  const [orgData, setOrgData] = useState<EnhancedOrganizationData>({
+    name: "",
+    sector: "",
+    size: "",
+    userRole: "admin",
+    regulatoryFrameworks: ["E-21"],
+    policyFiles: [],
+    frameworkGenerationMode: 'automatic'
+  });
+
+  // Auto-save functionality
+  useEffect(() => {
+    const saveInterval = setInterval(autoSave, 30000); // Auto-save every 30 seconds
+    return () => clearInterval(saveInterval);
+  }, [orgData]);
+
+  // Load saved progress on component mount
+  useEffect(() => {
+    loadSavedProgress();
+  }, []);
+
+  const autoSave = async () => {
+    if (step > 1 && orgData.name) {
+      setSaveInProgress(true);
+      try {
+        await saveTempProgress();
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+      } finally {
+        setSaveInProgress(false);
+      }
+    }
+  };
+
+  const saveTempProgress = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('temp_organization_setup')
+      .upsert({
+        user_id: user.id,
+        setup_data: orgData,
+        current_step: step,
+        completion_estimate: completionEstimate,
+        framework_progress: frameworkProgress
+      });
+  };
+
+  const loadSavedProgress = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('temp_organization_setup')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (data) {
+      setOrgData(data.setup_data);
+      setStep(data.current_step);
+      setCompletionEstimate(data.completion_estimate || 15);
+      setFrameworkProgress(data.framework_progress || frameworkProgress);
+    }
+  };
+
+  const clearSavedProgress = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase
+      .from('temp_organization_setup')
+      .delete()
+      .eq('user_id', user.id);
+  };
+
+  const validateCurrentStep = (): boolean => {
+    switch (step) {
+      case 1:
+        if (!orgData.name) {
+          toast({
+            title: "Organization name required",
+            description: "Please enter your organization name to continue.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        break;
+      case 2:
+        if (!orgData.sector || !orgData.size) {
+          toast({
+            title: "Required fields missing",
+            description: "Please select both sector and organization size.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        break;
+      case 3:
+        // Enhanced profiling - validate key fields
+        if (!orgData.riskMaturity || !orgData.complianceMaturity) {
+          toast({
+            title: "Assessment incomplete",
+            description: "Please complete the risk and compliance maturity assessment.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        break;
+    }
+    return true;
+  };
+
+  const updateCompletionEstimate = (stepData: Partial<EnhancedOrganizationData>) => {
+    // Calculate completion estimate based on data complexity
+    let estimate = 10; // Base estimate
+    
+    if (stepData.frameworkGenerationMode === 'guided') estimate += 5;
+    if (stepData.frameworkGenerationMode === 'manual') estimate += 10;
+    if (stepData.policyFiles && stepData.policyFiles.length > 0) estimate += 3;
+    if (stepData.applicableFrameworks && stepData.applicableFrameworks.length > 3) estimate += 2;
+    
+    setCompletionEstimate(estimate);
+  };
+
+  const handleNext = async () => {
+    if (!validateCurrentStep()) return;
+    
+    try {
+      await saveTempProgress();
+      
+      // Complete onboarding step if in onboarding context
+      if (step === 1) {
+        await completeStep('organization-basic', 'Organization Basic Information', {
+          name: orgData.name,
+          sector: orgData.sector,
+          size: orgData.size
+        });
+      } else if (step === 3) {
+        await completeStep('organization-profile', 'Organization Profile Assessment', {
+          profileData: orgData
+        });
+      }
+      
+      setStep(step + 1);
+      updateCompletionEstimate(orgData);
+    } catch (error) {
+      console.error('Error progressing to next step:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save progress. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBack = () => {
+    setStep(step - 1);
+  };
+
+  const generateFramework = async () => {
+    setFrameworkProgress({
+      status: 'analyzing',
+      progress: 10,
+      currentStep: 'Analyzing organizational profile',
+      generatedFrameworks: []
+    });
+
+    try {
+      // Step 1: Create organizational profile
+      setFrameworkProgress(prev => ({
+        ...prev,
+        progress: 25,
+        currentStep: 'Creating organizational profile'
+      }));
+
+      const profileData = {
+        sub_sector: orgData.subSector,
+        employee_count: orgData.employeeCount,
+        asset_size: orgData.assetSize,
+        geographic_scope: orgData.geographicScope,
+        risk_maturity: orgData.riskMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        compliance_maturity: orgData.complianceMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        technology_maturity: orgData.technologyMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        digital_transformation: orgData.digitalTransformation as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        risk_culture: orgData.riskCulture,
+        regulatory_history: orgData.regulatoryHistory,
+        business_lines: orgData.businessLines,
+        primary_regulators: orgData.primaryRegulators,
+        applicable_frameworks: orgData.applicableFrameworks,
+        growth_strategy: orgData.growthStrategy,
+        market_position: orgData.marketPosition
+      };
+
+      const profile = await organizationalIntelligenceService.createOrUpdateProfile(profileData);
+
+      // Step 2: Generate framework templates
+      setFrameworkProgress(prev => ({
+        ...prev,
+        status: 'generating',
+        progress: 50,
+        currentStep: 'Generating framework templates'
+      }));
+
+      const frameworks = await templateLibraryService.generateIndustrySpecificTemplates(
+        orgData.sector,
+        profile
+      );
+
+      // Step 3: Customize frameworks
+      setFrameworkProgress(prev => ({
+        ...prev,
+        status: 'customizing',
+        progress: 75,
+        currentStep: 'Customizing frameworks for your organization'
+      }));
+
+      const customizedFrameworks = [];
+      for (const framework of frameworks) {
+        const customized = await templateLibraryService.getCustomizedTemplate({
+          orgId: profile?.organization_id || '',
+          templateId: framework.id,
+          organizationalProfile: profile,
+          customizationPreferences: orgData.customizationPreferences
+        });
+        customizedFrameworks.push(customized);
+      }
+
+      // Step 4: Complete
+      setFrameworkProgress({
+        status: 'completed',
+        progress: 100,
+        currentStep: 'Framework generation completed',
+        generatedFrameworks: customizedFrameworks
+      });
+
+      toast({
+        title: "Framework Generation Complete",
+        description: `Generated ${customizedFrameworks.length} customized frameworks for your organization.`,
+      });
+
+    } catch (error) {
+      console.error('Framework generation failed:', error);
+      setFrameworkProgress({
+        status: 'error',
+        progress: 0,
+        currentStep: 'Framework generation failed',
+        generatedFrameworks: [],
+        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred'
+      });
+
+      toast({
+        title: "Framework Generation Failed",
+        description: "There was an error generating your frameworks. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const selectFramework = (framework: any) => {
+    setFrameworkProgress(prev => ({
+      ...prev,
+      selectedFramework: framework
+    }));
+  };
+
+  const customizeFramework = (customizations: Record<string, any>) => {
+    setFrameworkProgress(prev => ({
+      ...prev,
+      customizations
+    }));
+  };
+
+  const handleComplete = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Create organization
+      const organization = await createOrganization({
+        name: orgData.name,
+        sector: orgData.sector,
+        size: orgData.size,
+        regulatory_guidelines: orgData.regulatoryFrameworks,
+      });
+
+      // Update user profile with organization ID
+      await updateUserProfile(organization.id);
+
+      // Create user role
+      await createUserRole(organization.id, orgData.userRole);
+
+      // Create organizational profile with enhanced data
+      await organizationalIntelligenceService.createOrUpdateProfile({
+        organization_id: organization.id,
+        sub_sector: orgData.subSector,
+        employee_count: orgData.employeeCount,
+        asset_size: orgData.assetSize,
+        geographic_scope: orgData.geographicScope,
+        risk_maturity: orgData.riskMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        compliance_maturity: orgData.complianceMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        technology_maturity: orgData.technologyMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        digital_transformation: orgData.digitalTransformation as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
+        risk_culture: orgData.riskCulture,
+        regulatory_history: orgData.regulatoryHistory,
+        business_lines: orgData.businessLines,
+        primary_regulators: orgData.primaryRegulators,
+        applicable_frameworks: orgData.applicableFrameworks,
+        growth_strategy: orgData.growthStrategy,
+        market_position: orgData.marketPosition
+      });
+
+      // Upload policy files if any
+      if (orgData.policyFiles.length > 0) {
+        await Promise.all(
+          orgData.policyFiles.map(file => uploadPolicyFile(file, organization.id))
+        );
+      }
+
+      // Save selected framework if any
+      if (frameworkProgress.selectedFramework) {
+        await supabase
+          .from('generated_frameworks')
+          .insert({
+            organization_id: organization.id,
+            profile_id: '', // Would be populated with actual profile ID
+            template_id: frameworkProgress.selectedFramework.id,
+            framework_data: frameworkProgress.selectedFramework.template_data,
+            customizations: frameworkProgress.customizations || {},
+            implementation_status: 'pending_deployment'
+          });
+      }
+
+      // Complete onboarding step
+      await completeStep('organization-setup-complete', 'Organization Setup Complete', {
+        organizationId: organization.id,
+        frameworkGenerated: !!frameworkProgress.selectedFramework
+      });
+
+      // Clear saved progress
+      await clearSavedProgress();
+
+      // Send welcome email
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            userId: (await supabase.auth.getUser()).data.user?.id,
+            organizationId: organization.id
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail the setup if email fails
+      }
+
+      toast({
+        title: "Setup Complete",
+        description: "Your organization has been set up successfully with intelligent frameworks.",
+      });
+      
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Organization setup error:", error);
+      toast({
+        title: "Setup Failed",
+        description: "There was an error setting up your organization. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (field: keyof EnhancedOrganizationData, value: any) => {
+    setOrgData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+    
+    updateCompletionEstimate({ ...orgData, [field]: value });
+  };
+
+  const resumeFromSaved = () => {
+    loadSavedProgress();
+  };
+
+  const startFresh = async () => {
+    await clearSavedProgress();
+    setStep(1);
+    setOrgData({
+      name: "",
+      sector: "",
+      size: "",
+      userRole: "admin",
+      regulatoryFrameworks: ["E-21"],
+      policyFiles: [],
+      frameworkGenerationMode: 'automatic'
+    });
+    setFrameworkProgress({
+      status: 'not_started',
+      progress: 0,
+      currentStep: 'Initializing',
+      generatedFrameworks: []
+    });
+  };
+
+  return {
+    step,
+    orgData,
+    isSubmitting,
+    completionEstimate,
+    saveInProgress,
+    frameworkProgress,
+    handleNext,
+    handleBack,
+    handleComplete,
+    handleChange,
+    generateFramework,
+    selectFramework,
+    customizeFramework,
+    resumeFromSaved,
+    startFresh,
+    validateCurrentStep
+  };
+}
