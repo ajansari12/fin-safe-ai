@@ -1,37 +1,44 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Control, getControls } from "@/services/controls";
 import { KRIDefinition, getKRIDefinitions } from "@/services/kri-definitions";
 import { getKRIBreachesData } from "@/services/kri-analytics-service";
+import { useErrorHandler } from "./useErrorHandler";
 
 export const useControlsDashboardData = () => {
   const [controls, setControls] = useState<Control[]>([]);
   const [kris, setKris] = useState<KRIDefinition[]>([]);
   const [breachesData, setBreachesData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  
+  const { handleError } = useErrorHandler();
+
+  const loadDashboardData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const [controlsData, krisData, breaches] = await Promise.all([
+        getControls(),
+        getKRIDefinitions(),
+        getKRIBreachesData()
+      ]);
+      
+      setControls(controlsData);
+      setKris(krisData);
+      setBreachesData(breaches);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to load dashboard data');
+      setError(error);
+      handleError(error, 'Loading dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [handleError]);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setIsLoading(true);
-        const [controlsData, krisData, breaches] = await Promise.all([
-          getControls(),
-          getKRIDefinitions(),
-          getKRIBreachesData()
-        ]);
-        
-        setControls(controlsData);
-        setKris(krisData);
-        setBreachesData(breaches);
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadDashboardData();
-  }, []);
+  }, [loadDashboardData]);
 
   const controlsByStatus = controls.reduce((acc, control) => {
     acc[control.status] = (acc[control.status] || 0) + 1;
@@ -52,10 +59,12 @@ export const useControlsDashboardData = () => {
     kris,
     breachesData,
     isLoading,
+    error,
     controlsByStatus,
     controlsByFrequency,
     activeControls,
     activeKris,
-    controlCoverage
+    controlCoverage,
+    refetch: loadDashboardData
   };
 };

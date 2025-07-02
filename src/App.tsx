@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginPage from './pages/auth/Login';
 import IndexPage from './pages/Index';
@@ -48,12 +49,13 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Toaster />
-      <BrowserRouter>
-        <AuthProvider>
-          <OnboardingProvider>
-            <EnhancedAIAssistantProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <BrowserRouter>
+          <AuthProvider>
+            <OnboardingProvider>
+              <EnhancedAIAssistantProvider>
             <Routes>
               {/* Public website homepage */}
               <Route path="/" element={<IndexPage />} />
@@ -223,6 +225,7 @@ function App() {
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

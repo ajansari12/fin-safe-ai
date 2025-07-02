@@ -10,14 +10,18 @@ import { format, formatDistanceToNow, isAfter, addHours } from "date-fns";
 import { generateIncidentReportPDF } from "@/services/incident-pdf-service";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AsyncWrapper, TableLoading } from "@/components/common";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface IncidentsListProps {
   incidents: Incident[];
   onViewIncident: (incident: Incident) => void;
   isLoading?: boolean;
+  error?: Error | null;
 }
 
-const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident, isLoading }) => {
+const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident, isLoading, error }) => {
+  const { handleError } = useErrorHandler();
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {
       case 'critical': return 'destructive';
@@ -116,171 +120,173 @@ const IncidentsList: React.FC<IncidentsListProps> = ({ incidents, onViewIncident
     }
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">Loading incidents...</div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (incidents.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Incidents</CardTitle>
-          <CardDescription>
-            No incidents have been logged yet.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+    <AsyncWrapper
+      loading={isLoading}
+      error={error}
+      loadingComponent={
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Incidents</CardTitle>
+            <CardDescription>Loading incident data...</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TableLoading />
+          </CardContent>
+        </Card>
+      }
+    >
+      {incidents.length === 0 ? (
+        <Card>
+          <CardHeader>
             <CardTitle>Recent Incidents</CardTitle>
             <CardDescription>
-              Track and manage operational incidents and disruptions.
+              No incidents have been logged yet.
             </CardDescription>
-          </div>
-          {incidents.length > 0 && (
-            <Button variant="outline" onClick={handleExportAll} className="flex items-center gap-2">
-              <FileDown className="h-4 w-4" />
-              Export All
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Severity</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>SLA</TableHead>
-              <TableHead>Reported</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {incidents.map((incident) => {
-              const slaStatus = getSLAStatus(incident);
-              
-              return (
-                <TableRow key={incident.id}>
-                  <TableCell className="font-medium">
-                    <div className="max-w-xs truncate flex items-center gap-1">
-                      {incident.title}
-                      {incident.escalation_level > 0 && (
+          </CardHeader>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Recent Incidents</CardTitle>
+                <CardDescription>
+                  Track and manage operational incidents and disruptions.
+                </CardDescription>
+              </div>
+              <Button variant="outline" onClick={handleExportAll} className="flex items-center gap-2">
+                <FileDown className="h-4 w-4" />
+                Export All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>SLA</TableHead>
+                  <TableHead>Reported</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {incidents.map((incident) => {
+                  const slaStatus = getSLAStatus(incident);
+                  
+                  return (
+                    <TableRow key={incident.id}>
+                      <TableCell className="font-medium">
+                        <div className="max-w-xs truncate flex items-center gap-1">
+                          {incident.title}
+                          {incident.escalation_level > 0 && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <ArrowUpRight className="h-4 w-4 text-red-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Escalated to Level {incident.escalation_level}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {formatCategory(incident.category)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getSeverityColor(incident.severity)}>
+                          {incident.severity.charAt(0).toUpperCase() + incident.severity.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(incident.status)}
+                          <Badge variant={getStatusColor(incident.status)}>
+                            {incident.status.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          switch(slaStatus.status) {
+                            case 'breached':
+                              return (
+                                <Badge variant="destructive" className="flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {slaStatus.label}
+                                </Badge>
+                              );
+                            case 'warning':
+                              return (
+                                <Badge variant="outline" className="bg-amber-50 text-amber-800 flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {slaStatus.label}
+                                </Badge>
+                              );
+                            case 'completed':
+                              return (
+                                <Badge variant="outline" className="bg-green-50 text-green-800 flex items-center gap-1">
+                                  <CheckCircle className="h-3 w-3" />
+                                  {slaStatus.label}
+                                </Badge>
+                              );
+                            default:
+                              return (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-800">
+                                  {slaStatus.label}
+                                </Badge>
+                              );
+                          }
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger>
-                              <ArrowUpRight className="h-4 w-4 text-red-500" />
+                              {formatDistanceToNow(new Date(incident.reported_at), { addSuffix: true })}
                             </TooltipTrigger>
                             <TooltipContent>
-                              Escalated to Level {incident.escalation_level}
+                              {format(new Date(incident.reported_at), 'MMM dd, yyyy HH:mm')}
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {formatCategory(incident.category)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getSeverityColor(incident.severity)}>
-                      {incident.severity.charAt(0).toUpperCase() + incident.severity.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(incident.status)}
-                      <Badge variant={getStatusColor(incident.status)}>
-                        {incident.status.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {(() => {
-                      switch(slaStatus.status) {
-                        case 'breached':
-                          return (
-                            <Badge variant="destructive" className="flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              {slaStatus.label}
-                            </Badge>
-                          );
-                        case 'warning':
-                          return (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-800 flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {slaStatus.label}
-                            </Badge>
-                          );
-                        case 'completed':
-                          return (
-                            <Badge variant="outline" className="bg-green-50 text-green-800 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              {slaStatus.label}
-                            </Badge>
-                          );
-                        default:
-                          return (
-                            <Badge variant="outline" className="bg-blue-50 text-blue-800">
-                              {slaStatus.label}
-                            </Badge>
-                          );
-                      }
-                    })()}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          {formatDistanceToNow(new Date(incident.reported_at), { addSuffix: true })}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {format(new Date(incident.reported_at), 'MMM dd, yyyy HH:mm')}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewIncident(incident)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleExportIncident(incident)}
-                      >
-                        <FileDown className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onViewIncident(incident)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleExportIncident(incident)}
+                          >
+                            <FileDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </AsyncWrapper>
   );
 };
 

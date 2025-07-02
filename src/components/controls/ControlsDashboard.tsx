@@ -1,6 +1,9 @@
 
 import React from "react";
 import { useControlsDashboardData } from "@/hooks/useControlsDashboardData";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { AsyncWrapper } from "@/components/common";
 import DashboardMetrics from "./DashboardMetrics";
 import ControlsCharts from "./ControlsCharts";
 import KRIBreachesTrendChart from "./KRIBreachesTrendChart";
@@ -14,56 +17,77 @@ const ControlsDashboard: React.FC = () => {
     kris,
     breachesData,
     isLoading,
+    error,
     controlsByStatus,
     controlsByFrequency,
     activeControls,
     activeKris,
-    controlCoverage
+    controlCoverage,
+    refetch
   } = useControlsDashboardData();
 
-  if (isLoading) {
-    return <DashboardLoadingSkeleton />;
-  }
+  const { handleError } = useErrorHandler();
 
-  const statusData = Object.entries(controlsByStatus).map(([status, count]) => ({
-    name: status.replace('_', ' '),
-    value: count
-  }));
+  // Enable realtime updates for critical data
+  useRealtimeSubscription({
+    table: 'controls',
+    onUpdate: () => refetch?.(),
+    onInsert: () => refetch?.(),
+    enabled: !isLoading
+  });
 
-  const frequencyData = Object.entries(controlsByFrequency).map(([frequency, count]) => ({
-    name: frequency,
-    count
-  }));
+  useRealtimeSubscription({
+    table: 'kri_logs',
+    onInsert: () => refetch?.(),
+    enabled: !isLoading
+  });
 
-  const recentBreachesTotal = breachesData.reduce((sum, day) => sum + day.total, 0);
+  useRealtimeSubscription({
+    table: 'appetite_breach_logs',
+    onInsert: () => refetch?.(),
+    enabled: !isLoading
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Key Metrics */}
-      <DashboardMetrics
-        controlsCount={controls.length}
-        activeControls={activeControls}
-        activeKris={activeKris}
-        totalKris={kris.length}
-        controlCoverage={controlCoverage}
-        recentBreaches={recentBreachesTotal}
-      />
+    <AsyncWrapper 
+      loading={isLoading} 
+      error={error}
+      loadingComponent={<DashboardLoadingSkeleton />}
+      retryAction={refetch}
+    >
+      <div className="space-y-6">
+        {/* Key Metrics */}
+        <DashboardMetrics
+          controlsCount={controls.length}
+          activeControls={activeControls}
+          activeKris={activeKris}
+          totalKris={kris.length}
+          controlCoverage={controlCoverage}
+          recentBreaches={breachesData.reduce((sum, day) => sum + day.total, 0)}
+        />
 
-      {/* Variance analysis section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <KRIVarianceChart />
-        <KRIAppetiteBreaches />
+        {/* Variance analysis section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <KRIVarianceChart />
+          <KRIAppetiteBreaches />
+        </div>
+
+        {/* Controls Charts */}
+        <ControlsCharts
+          statusData={Object.entries(controlsByStatus).map(([status, count]) => ({
+            name: status.replace('_', ' '),
+            value: count
+          }))}
+          frequencyData={Object.entries(controlsByFrequency).map(([frequency, count]) => ({
+            name: frequency,
+            count
+          }))}
+        />
+
+        {/* KRI Breaches Trend */}
+        <KRIBreachesTrendChart breachesData={breachesData} />
       </div>
-
-      {/* Controls Charts */}
-      <ControlsCharts
-        statusData={statusData}
-        frequencyData={frequencyData}
-      />
-
-      {/* KRI Breaches Trend */}
-      <KRIBreachesTrendChart breachesData={breachesData} />
-    </div>
+    </AsyncWrapper>
   );
 };
 
