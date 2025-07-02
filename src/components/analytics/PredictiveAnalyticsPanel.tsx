@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
-import { advancedAnalyticsService, type PredictiveMetric, type RealTimeAlert } from '@/services/advanced-analytics-service';
+import { advancedAnalyticsService, type PredictiveMetric, type RealTimeAlert } from '@/services/enhanced-analytics-service';
 import { dataAvailabilityService } from '@/services/data-availability-service';
 import PredictiveEmptyState from './PredictiveEmptyState';
 import { toast } from 'sonner';
