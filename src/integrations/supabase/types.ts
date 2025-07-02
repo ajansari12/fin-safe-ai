@@ -4202,6 +4202,45 @@ export type Database = {
           },
         ]
       }
+      framework_components: {
+        Row: {
+          component_data: Json
+          component_description: string | null
+          component_name: string
+          component_type: string
+          created_at: string
+          dependencies: string[] | null
+          estimated_effort_hours: number | null
+          framework_id: string
+          id: string
+          implementation_priority: number | null
+        }
+        Insert: {
+          component_data?: Json
+          component_description?: string | null
+          component_name: string
+          component_type: string
+          created_at?: string
+          dependencies?: string[] | null
+          estimated_effort_hours?: number | null
+          framework_id: string
+          id?: string
+          implementation_priority?: number | null
+        }
+        Update: {
+          component_data?: Json
+          component_description?: string | null
+          component_name?: string
+          component_type?: string
+          created_at?: string
+          dependencies?: string[] | null
+          estimated_effort_hours?: number | null
+          framework_id?: string
+          id?: string
+          implementation_priority?: number | null
+        }
+        Relationships: []
+      }
       framework_dependencies: {
         Row: {
           created_at: string
@@ -5972,6 +6011,7 @@ export type Database = {
         Row: {
           applicable_frameworks: string[] | null
           asset_size: number | null
+          auto_generate_frameworks: boolean | null
           banking_license_type: string | null
           banking_schedule: string | null
           business_lines: string[] | null
@@ -5985,16 +6025,19 @@ export type Database = {
           digital_strategy: string | null
           digital_transformation: string | null
           employee_count: number | null
+          framework_preferences: Json | null
           geographic_locations: number | null
           geographic_scope: string | null
           growth_strategy: string | null
           id: string
+          implementation_readiness: string | null
           international_exposure: boolean | null
           last_assessment_date: string | null
           market_position: string | null
           next_assessment_date: string | null
           organization_id: string
           osfi_rating: string | null
+          preferred_framework_types: string[] | null
           previous_incidents: number | null
           primary_regulators: string[] | null
           profile_score: number | null
@@ -6010,6 +6053,7 @@ export type Database = {
         Insert: {
           applicable_frameworks?: string[] | null
           asset_size?: number | null
+          auto_generate_frameworks?: boolean | null
           banking_license_type?: string | null
           banking_schedule?: string | null
           business_lines?: string[] | null
@@ -6023,16 +6067,19 @@ export type Database = {
           digital_strategy?: string | null
           digital_transformation?: string | null
           employee_count?: number | null
+          framework_preferences?: Json | null
           geographic_locations?: number | null
           geographic_scope?: string | null
           growth_strategy?: string | null
           id?: string
+          implementation_readiness?: string | null
           international_exposure?: boolean | null
           last_assessment_date?: string | null
           market_position?: string | null
           next_assessment_date?: string | null
           organization_id: string
           osfi_rating?: string | null
+          preferred_framework_types?: string[] | null
           previous_incidents?: number | null
           primary_regulators?: string[] | null
           profile_score?: number | null
@@ -6048,6 +6095,7 @@ export type Database = {
         Update: {
           applicable_frameworks?: string[] | null
           asset_size?: number | null
+          auto_generate_frameworks?: boolean | null
           banking_license_type?: string | null
           banking_schedule?: string | null
           business_lines?: string[] | null
@@ -6061,16 +6109,19 @@ export type Database = {
           digital_strategy?: string | null
           digital_transformation?: string | null
           employee_count?: number | null
+          framework_preferences?: Json | null
           geographic_locations?: number | null
           geographic_scope?: string | null
           growth_strategy?: string | null
           id?: string
+          implementation_readiness?: string | null
           international_exposure?: boolean | null
           last_assessment_date?: string | null
           market_position?: string | null
           next_assessment_date?: string | null
           organization_id?: string
           osfi_rating?: string | null
+          preferred_framework_types?: string[] | null
           previous_incidents?: number | null
           primary_regulators?: string[] | null
           profile_score?: number | null

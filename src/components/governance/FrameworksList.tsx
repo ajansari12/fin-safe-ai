@@ -24,9 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import { GovernanceFramework } from "@/pages/governance/types";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Brain } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import BulkGovernanceOperations from "./BulkGovernanceOperations";
 import ComplianceReportGenerator from "./ComplianceReportGenerator";
+import GeneratedFrameworksDisplay from "./GeneratedFrameworksDisplay";
 
 export default function FrameworksList() {
   const [frameworks, setFrameworks] = useState<GovernanceFramework[]>([]);
@@ -108,83 +110,99 @@ export default function FrameworksList() {
         <ComplianceReportGenerator />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Governance Frameworks</CardTitle>
-          <CardDescription>
-            A list of all governance frameworks in your organization.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {frameworks.map((framework) => (
-                <TableRow key={framework.id}>
-                  <TableCell>{framework.title}</TableCell>
-                  <TableCell>{framework.status}</TableCell>
-                  <TableCell className="text-right font-medium">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        className="mr-2"
-                      >
-                        <Link to={`/governance-framework/${framework.id}`}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Manage
-                        </Link>
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="sm">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+      <Tabs defaultValue="manual" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="manual">Manual Frameworks</TabsTrigger>
+          <TabsTrigger value="generated" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            AI Generated
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="manual" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Governance Frameworks</CardTitle>
+              <CardDescription>
+                Manually created governance frameworks in your organization.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {frameworks.map((framework) => (
+                    <TableRow key={framework.id}>
+                      <TableCell>{framework.title}</TableCell>
+                      <TableCell>{framework.status}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="mr-2"
+                          >
+                            <Link to={`/governance-framework/${framework.id}`}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Manage
+                            </Link>
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Are you absolutely sure?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently
-                              delete your framework and remove your data from our
-                              servers.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDelete(framework.id)}
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>
+                                  Are you absolutely sure?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This action cannot be undone. This will permanently
+                                  delete your framework and remove your data from our
+                                  servers.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(framework.id)}
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
-      <Button asChild>
-        <Link to="/governance-framework/new">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Framework
-        </Link>
-      </Button>
+          <Button asChild>
+            <Link to="/governance-framework/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Framework
+            </Link>
+          </Button>
+        </TabsContent>
+        
+        <TabsContent value="generated">
+          <GeneratedFrameworksDisplay />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

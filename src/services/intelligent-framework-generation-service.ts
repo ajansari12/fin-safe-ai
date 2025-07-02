@@ -560,7 +560,7 @@ class IntelligentFrameworkGenerationService {
     const { data: savedFramework, error } = await supabase
       .from('generated_frameworks')
       .insert({
-        org_id: profile.org_id,
+        organization_id: profile.organization_id,
         profile_id: profile.id,
         framework_type: frameworkType,
         framework_name: frameworkData.name,

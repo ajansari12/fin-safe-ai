@@ -20,6 +20,7 @@ import { WelcomeStep } from "./steps/WelcomeStep";
 import { ProfileStep } from "./steps/ProfileStep";
 import { FeaturesStep } from "./steps/FeaturesStep";
 import { PersonalizationStep } from "./steps/PersonalizationStep";
+import { FrameworkGenerationStep } from "./steps/FrameworkGenerationStep";
 import { GoalsStep } from "./steps/GoalsStep";
 
 const stepIcons = {
@@ -27,7 +28,8 @@ const stepIcons = {
   profile: User,
   features: Lightbulb,
   personalization: Settings,
-  goals: Target
+  frameworks: Target,
+  goals: CheckCircle
 };
 
 export const OnboardingWizard: React.FC = () => {
@@ -82,6 +84,8 @@ export const OnboardingWizard: React.FC = () => {
         return <FeaturesStep onNext={handleNext} onPrevious={handlePrevious} />;
       case 'personalization':
         return <PersonalizationStep onNext={handleNext} onPrevious={handlePrevious} />;
+      case 'frameworks':
+        return <FrameworkGenerationStep onNext={handleNext} onPrevious={handlePrevious} />;
       case 'goals':
         return <GoalsStep onNext={handleNext} onPrevious={handlePrevious} />;
       default:

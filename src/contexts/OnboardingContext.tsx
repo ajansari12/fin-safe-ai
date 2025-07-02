@@ -40,6 +40,7 @@ const ONBOARDING_STEPS = [
   { id: 'profile', name: 'Complete Profile' },
   { id: 'features', name: 'Feature Discovery' },
   { id: 'personalization', name: 'Personalization' },
+  { id: 'frameworks', name: 'AI Framework Generation' },
   { id: 'goals', name: 'Goal Setting' }
 ];
 
