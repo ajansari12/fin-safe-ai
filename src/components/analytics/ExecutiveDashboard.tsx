@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -13,68 +13,48 @@ import {
   Target
 } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { 
+  getExecutiveKPIs, 
+  getRiskTrendData, 
+  getRiskDistribution, 
+  getBusinessImpact,
+  type ExecutiveKPI,
+  type RiskTrendData,
+  type RiskDistribution,
+  type BusinessImpact
+} from '@/services/executive-dashboard-service';
 
 const ExecutiveDashboard: React.FC = () => {
-  // Mock data for executive KPIs
-  const kpiData = [
-    {
-      title: 'Overall Risk Score',
-      value: '7.2',
-      change: '-0.3',
-      trend: 'down',
-      status: 'improving',
-      icon: Shield
-    },
-    {
-      title: 'Operational Resilience',
-      value: '92%',
-      change: '+2%',
-      trend: 'up',
-      status: 'good',
-      icon: Activity
-    },
-    {
-      title: 'Critical Incidents',
-      value: '3',
-      change: '-2',
-      trend: 'down',
-      status: 'improving',
-      icon: AlertTriangle
-    },
-    {
-      title: 'Vendor Risk Exposure',
-      value: '$2.4M',
-      change: '+$0.1M',
-      trend: 'up',
-      status: 'attention',
-      icon: DollarSign
-    }
-  ];
+  const [kpiData, setKpiData] = useState<ExecutiveKPI[]>([]);
+  const [riskTrendData, setRiskTrendData] = useState<RiskTrendData[]>([]);
+  const [riskDistribution, setRiskDistribution] = useState<RiskDistribution[]>([]);
+  const [businessImpact, setBusinessImpact] = useState<BusinessImpact[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const riskTrendData = [
-    { month: 'Jan', score: 8.1, incidents: 5, controls: 85 },
-    { month: 'Feb', score: 7.8, incidents: 4, controls: 87 },
-    { month: 'Mar', score: 7.5, incidents: 6, controls: 89 },
-    { month: 'Apr', score: 7.3, incidents: 3, controls: 91 },
-    { month: 'May', score: 7.0, incidents: 4, controls: 93 },
-    { month: 'Jun', score: 7.2, incidents: 3, controls: 92 }
-  ];
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        const [kpis, trendData, distribution, impact] = await Promise.all([
+          getExecutiveKPIs(),
+          getRiskTrendData(),
+          getRiskDistribution(),
+          getBusinessImpact()
+        ]);
 
-  const riskDistribution = [
-    { name: 'Operational', value: 35, color: '#8884d8' },
-    { name: 'Cyber', value: 25, color: '#82ca9d' },
-    { name: 'Third Party', value: 20, color: '#ffc658' },
-    { name: 'Compliance', value: 15, color: '#ff7300' },
-    { name: 'Strategic', value: 5, color: '#00ff88' }
-  ];
+        setKpiData(kpis);
+        setRiskTrendData(trendData);
+        setRiskDistribution(distribution);
+        setBusinessImpact(impact);
+      } catch (error) {
+        console.error('Error loading executive dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const businessImpact = [
-    { department: 'Trading', high: 2, medium: 5, low: 8 },
-    { department: 'Lending', high: 1, medium: 3, low: 12 },
-    { department: 'Operations', high: 3, medium: 7, low: 6 },
-    { department: 'Technology', high: 4, medium: 8, low: 4 },
-    { department: 'Compliance', high: 1, medium: 2, low: 9 }
-  ];
+    loadDashboardData();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -90,12 +70,51 @@ const ExecutiveDashboard: React.FC = () => {
     return trend === 'up' ? TrendingUp : TrendingDown;
   };
 
+  const getIconComponent = (iconName: string) => {
+    switch (iconName) {
+      case 'Shield': return Shield;
+      case 'Activity': return Activity;
+      case 'AlertTriangle': return AlertTriangle;
+      case 'DollarSign': return DollarSign;
+      case 'Users': return Users;
+      case 'Target': return Target;
+      default: return Shield;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-8 bg-muted rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="animate-pulse">
+              <div className="h-4 bg-muted rounded w-1/4 mb-6"></div>
+              <div className="h-80 bg-muted rounded"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Executive KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {kpiData.map((kpi, index) => {
-          const Icon = kpi.icon;
+          const Icon = getIconComponent(kpi.iconName);
           const TrendIcon = getTrendIcon(kpi.trend);
           
           return (
