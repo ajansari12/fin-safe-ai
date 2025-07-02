@@ -354,10 +354,7 @@ export class TemplateLibraryService {
       }]);
 
     // Update template usage count
-    await supabase
-      .from('industry_template_libraries')
-      .update({ usage_count: supabase.sql`usage_count + 1` })
-      .eq('id', templateId);
+    await supabase.rpc('increment_template_usage', { template_id: templateId });
   }
 
   // Template Effectiveness Tracking
@@ -436,7 +433,7 @@ export class TemplateLibraryService {
 
     if (error) throw error;
 
-    return mappings?.map(mapping => mapping.industry_template_libraries).filter(Boolean) || [];
+    return mappings?.map((mapping: any) => mapping.industry_template_libraries).filter(Boolean) || [];
   }
 
   // Template Dependencies
@@ -453,7 +450,7 @@ export class TemplateLibraryService {
 
     if (error) throw error;
 
-    return dependencies?.map(dep => dep.industry_template_libraries).filter(Boolean) || [];
+    return dependencies?.map((dep: any) => dep.industry_template_libraries).filter(Boolean) || [];
   }
 }
 
