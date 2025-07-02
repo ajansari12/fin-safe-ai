@@ -4,6 +4,7 @@ import { aiAssistantService, WorkflowAnalysis, RiskSummary, SectorThreshold } fr
 import { enhancedAIAssistantService } from "@/services/enhanced-ai-assistant-service";
 import { aiOrganizationalIntelligenceIntegration } from "@/services/ai-organizational-intelligence-integration";
 import { getUserOrganization } from "@/lib/supabase-utils";
+import { supabase } from "@/integrations/supabase/client";
 
 // Keep existing types from original context
 interface AIMessage {
@@ -100,7 +101,7 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     }
   ]);
 
-  // Load user context data
+  // Load user context data and knowledge base
   useEffect(() => {
     const loadUserContext = async () => {
       if (profile) {
@@ -111,11 +112,41 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
           setOrgSector(org.sector as OrgSector || "banking");
           setOrgSize(org.size as OrgSize || "medium");
         }
+        
+        // Load knowledge base
+        await loadKnowledgeBase();
       }
     };
     
     loadUserContext();
   }, [profile]);
+  
+  // Load knowledge base from Supabase
+  const loadKnowledgeBase = async () => {
+    try {
+      const { data: knowledgeData, error } = await supabase
+        .from('knowledge_base')
+        .select('*')
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      const transformedSources: KnowledgeSource[] = (knowledgeData || []).map(kb => ({
+        id: kb.id,
+        title: kb.title,
+        domain: kb.source_type as KnowledgeDomain || 'general',
+        sections: Array.isArray(kb.sections) ? kb.sections.map((section: any) => ({
+          title: section.title || 'Untitled Section',
+          content: section.content || ''
+        })) : []
+      }));
+      
+      setKnowledgeSources(transformedSources);
+    } catch (error) {
+      console.error('Error loading knowledge base:', error);
+      setKnowledgeSources([]);
+    }
+  };
 
   // New organizational intelligence method
   const generateOrganizationalAnalysis = async () => {
