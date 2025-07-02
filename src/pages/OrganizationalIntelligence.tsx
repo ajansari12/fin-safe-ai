@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, Settings, Users, Target, Zap, Activity, TestTube, BarChart3, FileText } from "lucide-react";
+import { Brain, TrendingUp, Settings, Users, Target, Zap, Activity, TestTube, BarChart3, FileText, Shield, Network } from "lucide-react";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 // Import existing components
@@ -24,6 +24,11 @@ import SystemHealth from "@/components/organizational-intelligence/SystemHealth"
 // Import Phase 5 components
 import AdvancedAnalyticsHub from "@/components/organizational-intelligence/AdvancedAnalyticsHub";
 import ExecutiveReporting from "@/components/organizational-intelligence/ExecutiveReporting";
+
+// Import Phase 6, 7, 8 components
+import ComplianceMonitoringDashboard from "@/components/organizational-intelligence/ComplianceMonitoringDashboard";
+import IndustryScenarioGenerator from "@/components/organizational-intelligence/IndustryScenarioGenerator";
+import UnifiedFrameworkDashboard from "@/components/organizational-intelligence/UnifiedFrameworkDashboard";
 
 const OrganizationalIntelligencePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
@@ -47,7 +52,7 @@ const OrganizationalIntelligencePage = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-11">
+          <TabsList className="grid w-full grid-cols-14">
             <TabsTrigger value="dashboard" className="flex items-center gap-1">
               <Brain className="h-4 w-4" />
               Dashboard
@@ -91,6 +96,18 @@ const OrganizationalIntelligencePage = () => {
             <TabsTrigger value="reporting" className="flex items-center gap-1">
               <FileText className="h-4 w-4" />
               Reporting
+            </TabsTrigger>
+            <TabsTrigger value="compliance" className="flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              Compliance
+            </TabsTrigger>
+            <TabsTrigger value="scenarios" className="flex items-center gap-1">
+              <TestTube className="h-4 w-4" />
+              Scenarios
+            </TabsTrigger>
+            <TabsTrigger value="unified" className="flex items-center gap-1">
+              <Network className="h-4 w-4" />
+              Unified
             </TabsTrigger>
           </TabsList>
 
@@ -136,6 +153,18 @@ const OrganizationalIntelligencePage = () => {
 
           <TabsContent value="reporting" className="space-y-6">
             <ExecutiveReporting orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="compliance" className="space-y-6">
+            <ComplianceMonitoringDashboard orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="scenarios" className="space-y-6">
+            <IndustryScenarioGenerator orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="unified" className="space-y-6">
+            <UnifiedFrameworkDashboard orgId={orgId} />
           </TabsContent>
         </Tabs>
       </div>

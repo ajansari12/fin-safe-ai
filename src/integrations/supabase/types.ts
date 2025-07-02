@@ -1492,6 +1492,68 @@ export type Database = {
         }
         Relationships: []
       }
+      compliance_monitoring_rules: {
+        Row: {
+          breach_thresholds: Json | null
+          created_at: string
+          execution_status: string | null
+          id: string
+          is_active: boolean
+          last_executed_at: string | null
+          monitoring_frequency: string
+          notification_settings: Json | null
+          org_id: string
+          regulatory_intelligence_id: string | null
+          rule_logic: Json
+          rule_name: string
+          rule_type: string
+          updated_at: string
+          validation_criteria: Json
+        }
+        Insert: {
+          breach_thresholds?: Json | null
+          created_at?: string
+          execution_status?: string | null
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          monitoring_frequency?: string
+          notification_settings?: Json | null
+          org_id: string
+          regulatory_intelligence_id?: string | null
+          rule_logic?: Json
+          rule_name: string
+          rule_type?: string
+          updated_at?: string
+          validation_criteria?: Json
+        }
+        Update: {
+          breach_thresholds?: Json | null
+          created_at?: string
+          execution_status?: string | null
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          monitoring_frequency?: string
+          notification_settings?: Json | null
+          org_id?: string
+          regulatory_intelligence_id?: string | null
+          rule_logic?: Json
+          rule_name?: string
+          rule_type?: string
+          updated_at?: string
+          validation_criteria?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_monitoring_rules_regulatory_intelligence_id_fkey"
+            columns: ["regulatory_intelligence_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_intelligence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_policies: {
         Row: {
           auto_remediation: boolean
@@ -1596,6 +1658,87 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      compliance_violations: {
+        Row: {
+          affected_systems: Json | null
+          assigned_to: string | null
+          assigned_to_name: string | null
+          business_impact: string | null
+          created_at: string
+          detected_at: string
+          id: string
+          monitoring_rule_id: string | null
+          org_id: string
+          regulatory_intelligence_id: string | null
+          remediation_deadline: string | null
+          remediation_plan: string | null
+          remediation_status: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          severity: string
+          updated_at: string
+          violation_description: string
+          violation_type: string
+        }
+        Insert: {
+          affected_systems?: Json | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          business_impact?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          monitoring_rule_id?: string | null
+          org_id: string
+          regulatory_intelligence_id?: string | null
+          remediation_deadline?: string | null
+          remediation_plan?: string | null
+          remediation_status?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          updated_at?: string
+          violation_description: string
+          violation_type: string
+        }
+        Update: {
+          affected_systems?: Json | null
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          business_impact?: string | null
+          created_at?: string
+          detected_at?: string
+          id?: string
+          monitoring_rule_id?: string | null
+          org_id?: string
+          regulatory_intelligence_id?: string | null
+          remediation_deadline?: string | null
+          remediation_plan?: string | null
+          remediation_status?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          updated_at?: string
+          violation_description?: string
+          violation_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_violations_monitoring_rule_id_fkey"
+            columns: ["monitoring_rule_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_monitoring_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_violations_regulatory_intelligence_id_fkey"
+            columns: ["regulatory_intelligence_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_intelligence"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       continuity_plans: {
         Row: {
@@ -3326,6 +3469,69 @@ export type Database = {
           },
         ]
       }
+      emerging_risk_scenarios: {
+        Row: {
+          ai_generated: boolean
+          confidence_score: number | null
+          created_at: string
+          emergence_indicators: Json
+          id: string
+          last_reviewed_at: string | null
+          monitoring_metrics: Json | null
+          org_id: string
+          potential_impact_assessment: Json | null
+          recommended_responses: Json | null
+          review_frequency: string
+          risk_category: string
+          scenario_description: string
+          scenario_name: string
+          scenario_parameters: Json
+          status: string
+          trigger_conditions: Json | null
+          updated_at: string
+        }
+        Insert: {
+          ai_generated?: boolean
+          confidence_score?: number | null
+          created_at?: string
+          emergence_indicators?: Json
+          id?: string
+          last_reviewed_at?: string | null
+          monitoring_metrics?: Json | null
+          org_id: string
+          potential_impact_assessment?: Json | null
+          recommended_responses?: Json | null
+          review_frequency?: string
+          risk_category: string
+          scenario_description: string
+          scenario_name: string
+          scenario_parameters?: Json
+          status?: string
+          trigger_conditions?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          ai_generated?: boolean
+          confidence_score?: number | null
+          created_at?: string
+          emergence_indicators?: Json
+          id?: string
+          last_reviewed_at?: string | null
+          monitoring_metrics?: Json | null
+          org_id?: string
+          potential_impact_assessment?: Json | null
+          recommended_responses?: Json | null
+          review_frequency?: string
+          risk_category?: string
+          scenario_description?: string
+          scenario_name?: string
+          scenario_parameters?: Json
+          status?: string
+          trigger_conditions?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       encrypted_data_fields: {
         Row: {
           created_at: string
@@ -3696,6 +3902,183 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      framework_dependencies: {
+        Row: {
+          created_at: string
+          dependency_description: string | null
+          dependency_strength: string
+          dependency_type: string
+          dependent_framework_id: string
+          dependent_framework_type: string
+          id: string
+          impact_analysis: Json | null
+          is_active: boolean
+          org_id: string
+          source_framework_id: string
+          source_framework_type: string
+          updated_at: string
+          validation_rules: Json | null
+        }
+        Insert: {
+          created_at?: string
+          dependency_description?: string | null
+          dependency_strength?: string
+          dependency_type?: string
+          dependent_framework_id: string
+          dependent_framework_type: string
+          id?: string
+          impact_analysis?: Json | null
+          is_active?: boolean
+          org_id: string
+          source_framework_id: string
+          source_framework_type: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Update: {
+          created_at?: string
+          dependency_description?: string | null
+          dependency_strength?: string
+          dependency_type?: string
+          dependent_framework_id?: string
+          dependent_framework_type?: string
+          id?: string
+          impact_analysis?: Json | null
+          is_active?: boolean
+          org_id?: string
+          source_framework_id?: string
+          source_framework_type?: string
+          updated_at?: string
+          validation_rules?: Json | null
+        }
+        Relationships: []
+      }
+      framework_effectiveness_metrics: {
+        Row: {
+          created_at: string
+          data_sources: Json | null
+          framework_id: string
+          framework_type: string
+          id: string
+          measurement_date: string
+          measurement_method: string | null
+          metric_category: string
+          metric_name: string
+          metric_value: number
+          notes: string | null
+          org_id: string
+          quality_score: number | null
+          target_value: number | null
+          trend_direction: string | null
+          variance_percentage: number | null
+        }
+        Insert: {
+          created_at?: string
+          data_sources?: Json | null
+          framework_id: string
+          framework_type: string
+          id?: string
+          measurement_date?: string
+          measurement_method?: string | null
+          metric_category: string
+          metric_name: string
+          metric_value: number
+          notes?: string | null
+          org_id: string
+          quality_score?: number | null
+          target_value?: number | null
+          trend_direction?: string | null
+          variance_percentage?: number | null
+        }
+        Update: {
+          created_at?: string
+          data_sources?: Json | null
+          framework_id?: string
+          framework_type?: string
+          id?: string
+          measurement_date?: string
+          measurement_method?: string | null
+          metric_category?: string
+          metric_name?: string
+          metric_value?: number
+          notes?: string | null
+          org_id?: string
+          quality_score?: number | null
+          target_value?: number | null
+          trend_direction?: string | null
+          variance_percentage?: number | null
+        }
+        Relationships: []
+      }
+      framework_versions: {
+        Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          change_summary: Json | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          deployed_at: string | null
+          deployment_status: string
+          framework_data: Json
+          framework_id: string
+          framework_type: string
+          id: string
+          is_current_version: boolean
+          org_id: string
+          rollback_data: Json | null
+          updated_at: string
+          version_description: string | null
+          version_number: string
+        }
+        Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          change_summary?: Json | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deployed_at?: string | null
+          deployment_status?: string
+          framework_data?: Json
+          framework_id: string
+          framework_type: string
+          id?: string
+          is_current_version?: boolean
+          org_id: string
+          rollback_data?: Json | null
+          updated_at?: string
+          version_description?: string | null
+          version_number: string
+        }
+        Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          change_summary?: Json | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          deployed_at?: string | null
+          deployment_status?: string
+          framework_data?: Json
+          framework_id?: string
+          framework_type?: string
+          id?: string
+          is_current_version?: boolean
+          org_id?: string
+          rollback_data?: Json | null
+          updated_at?: string
+          version_description?: string | null
+          version_number?: string
+        }
+        Relationships: []
       }
       generated_frameworks: {
         Row: {
@@ -4174,6 +4557,78 @@ export type Database = {
           },
         ]
       }
+      implementation_feedback: {
+        Row: {
+          created_at: string
+          feedback_category: string
+          feedback_content: string
+          feedback_rating: number | null
+          feedback_type: string
+          follow_up_notes: string | null
+          follow_up_required: boolean
+          framework_id: string
+          framework_type: string
+          id: string
+          implementation_date: string | null
+          implementation_phase: string | null
+          improvement_suggestions: Json | null
+          lessons_learned: Json | null
+          org_id: string
+          status: string
+          submitted_by: string | null
+          submitted_by_name: string | null
+          updated_at: string
+          user_role: string | null
+          would_recommend: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          feedback_category?: string
+          feedback_content: string
+          feedback_rating?: number | null
+          feedback_type: string
+          follow_up_notes?: string | null
+          follow_up_required?: boolean
+          framework_id: string
+          framework_type: string
+          id?: string
+          implementation_date?: string | null
+          implementation_phase?: string | null
+          improvement_suggestions?: Json | null
+          lessons_learned?: Json | null
+          org_id: string
+          status?: string
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          updated_at?: string
+          user_role?: string | null
+          would_recommend?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          feedback_category?: string
+          feedback_content?: string
+          feedback_rating?: number | null
+          feedback_type?: string
+          follow_up_notes?: string | null
+          follow_up_required?: boolean
+          framework_id?: string
+          framework_type?: string
+          id?: string
+          implementation_date?: string | null
+          implementation_phase?: string | null
+          improvement_suggestions?: Json | null
+          lessons_learned?: Json | null
+          org_id?: string
+          status?: string
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          updated_at?: string
+          user_role?: string | null
+          would_recommend?: boolean | null
+        }
+        Relationships: []
+      }
       incident_escalations: {
         Row: {
           acknowledged_at: string | null
@@ -4407,6 +4862,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      industry_scenarios: {
+        Row: {
+          created_at: string
+          expected_outcomes: Json | null
+          frequency: string
+          id: string
+          is_active: boolean
+          last_executed_at: string | null
+          next_execution_date: string | null
+          org_id: string
+          regulatory_basis: string | null
+          scenario_description: string
+          scenario_name: string
+          scenario_parameters: Json
+          scenario_type: string
+          sector: string
+          severity_level: string
+          success_criteria: Json | null
+          testing_procedures: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expected_outcomes?: Json | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          next_execution_date?: string | null
+          org_id: string
+          regulatory_basis?: string | null
+          scenario_description: string
+          scenario_name: string
+          scenario_parameters?: Json
+          scenario_type?: string
+          sector: string
+          severity_level?: string
+          success_criteria?: Json | null
+          testing_procedures?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expected_outcomes?: Json | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_executed_at?: string | null
+          next_execution_date?: string | null
+          org_id?: string
+          regulatory_basis?: string | null
+          scenario_description?: string
+          scenario_name?: string
+          scenario_parameters?: Json
+          scenario_type?: string
+          sector?: string
+          severity_level?: string
+          success_criteria?: Json | null
+          testing_procedures?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       integration_logs: {
         Row: {
@@ -5093,6 +5611,72 @@ export type Database = {
         }
         Relationships: []
       }
+      osfi_e21_scenarios: {
+        Row: {
+          action_items: Json | null
+          compliance_level: string
+          compliance_status: string
+          created_at: string
+          execution_frequency: string
+          execution_results: Json | null
+          id: string
+          is_active: boolean
+          last_execution_date: string | null
+          next_due_date: string | null
+          org_id: string
+          osfi_category: string
+          regulatory_feedback: string | null
+          reporting_requirements: Json | null
+          scenario_code: string
+          scenario_description: string
+          scenario_name: string
+          testing_requirements: Json
+          updated_at: string
+        }
+        Insert: {
+          action_items?: Json | null
+          compliance_level?: string
+          compliance_status?: string
+          created_at?: string
+          execution_frequency?: string
+          execution_results?: Json | null
+          id?: string
+          is_active?: boolean
+          last_execution_date?: string | null
+          next_due_date?: string | null
+          org_id: string
+          osfi_category: string
+          regulatory_feedback?: string | null
+          reporting_requirements?: Json | null
+          scenario_code: string
+          scenario_description: string
+          scenario_name: string
+          testing_requirements?: Json
+          updated_at?: string
+        }
+        Update: {
+          action_items?: Json | null
+          compliance_level?: string
+          compliance_status?: string
+          created_at?: string
+          execution_frequency?: string
+          execution_results?: Json | null
+          id?: string
+          is_active?: boolean
+          last_execution_date?: string | null
+          next_due_date?: string | null
+          org_id?: string
+          osfi_category?: string
+          regulatory_feedback?: string | null
+          reporting_requirements?: Json | null
+          scenario_code?: string
+          scenario_description?: string
+          scenario_name?: string
+          testing_requirements?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       password_history: {
         Row: {
           created_at: string
@@ -5708,6 +6292,131 @@ export type Database = {
         }
         Relationships: []
       }
+      regulatory_changes: {
+        Row: {
+          action_required: boolean
+          assigned_to: string | null
+          assigned_to_name: string | null
+          change_description: string
+          change_type: string
+          created_at: string
+          detected_at: string
+          effective_date: string | null
+          id: string
+          impact_assessment: string | null
+          implementation_deadline: string | null
+          notes: string | null
+          org_id: string
+          regulatory_intelligence_id: string | null
+          review_status: string
+          updated_at: string
+        }
+        Insert: {
+          action_required?: boolean
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          change_description: string
+          change_type: string
+          created_at?: string
+          detected_at?: string
+          effective_date?: string | null
+          id?: string
+          impact_assessment?: string | null
+          implementation_deadline?: string | null
+          notes?: string | null
+          org_id: string
+          regulatory_intelligence_id?: string | null
+          review_status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_required?: boolean
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          change_description?: string
+          change_type?: string
+          created_at?: string
+          detected_at?: string
+          effective_date?: string | null
+          id?: string
+          impact_assessment?: string | null
+          implementation_deadline?: string | null
+          notes?: string | null
+          org_id?: string
+          regulatory_intelligence_id?: string | null
+          review_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_changes_regulatory_intelligence_id_fkey"
+            columns: ["regulatory_intelligence_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_intelligence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_intelligence: {
+        Row: {
+          applicable_sectors: string[]
+          auto_identified: boolean
+          confidence_score: number | null
+          created_at: string
+          description: string | null
+          effective_date: string | null
+          id: string
+          is_active: boolean
+          jurisdiction: string
+          key_requirements: Json | null
+          last_updated: string
+          monitoring_rules: Json | null
+          org_id: string
+          regulation_name: string
+          regulation_type: string
+          regulatory_body: string | null
+          updated_at: string
+        }
+        Insert: {
+          applicable_sectors?: string[]
+          auto_identified?: boolean
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          effective_date?: string | null
+          id?: string
+          is_active?: boolean
+          jurisdiction: string
+          key_requirements?: Json | null
+          last_updated?: string
+          monitoring_rules?: Json | null
+          org_id: string
+          regulation_name: string
+          regulation_type?: string
+          regulatory_body?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applicable_sectors?: string[]
+          auto_identified?: boolean
+          confidence_score?: number | null
+          created_at?: string
+          description?: string | null
+          effective_date?: string | null
+          id?: string
+          is_active?: boolean
+          jurisdiction?: string
+          key_requirements?: Json | null
+          last_updated?: string
+          monitoring_rules?: Json | null
+          org_id?: string
+          regulation_name?: string
+          regulation_type?: string
+          regulatory_body?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       regulatory_mapping: {
         Row: {
           audit_upload_id: string | null
@@ -6296,6 +7005,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      scenario_execution_schedules: {
+        Row: {
+          assigned_team: Json | null
+          auto_execute: boolean
+          created_at: string
+          execution_frequency: string
+          execution_parameters: Json | null
+          execution_time: string | null
+          id: string
+          is_active: boolean
+          next_execution_date: string
+          notification_settings: Json | null
+          org_id: string
+          preparation_checklist: Json | null
+          scenario_id: string | null
+          scenario_type: string
+          schedule_name: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_team?: Json | null
+          auto_execute?: boolean
+          created_at?: string
+          execution_frequency?: string
+          execution_parameters?: Json | null
+          execution_time?: string | null
+          id?: string
+          is_active?: boolean
+          next_execution_date: string
+          notification_settings?: Json | null
+          org_id: string
+          preparation_checklist?: Json | null
+          scenario_id?: string | null
+          scenario_type: string
+          schedule_name: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_team?: Json | null
+          auto_execute?: boolean
+          created_at?: string
+          execution_frequency?: string
+          execution_parameters?: Json | null
+          execution_time?: string | null
+          id?: string
+          is_active?: boolean
+          next_execution_date?: string
+          notification_settings?: Json | null
+          org_id?: string
+          preparation_checklist?: Json | null
+          scenario_id?: string | null
+          scenario_type?: string
+          schedule_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       scenario_execution_steps: {
         Row: {
