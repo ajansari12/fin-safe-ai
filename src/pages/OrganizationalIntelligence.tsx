@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +34,9 @@ import TemplateLibraryDashboard from "@/components/organizational-intelligence/T
 import KnowledgeBaseHub from "@/components/organizational-intelligence/KnowledgeBaseHub";
 import TemplateCustomizationEngine from "@/components/organizational-intelligence/TemplateCustomizationEngine";
 
+import RegulatoryComplianceIntegrationDashboard from "@/components/organizational-intelligence/RegulatoryComplianceIntegrationDashboard";
+import ImplementationGuideSystem from "@/components/organizational-intelligence/ImplementationGuideSystem";
+
 const OrganizationalIntelligencePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
   
@@ -57,7 +59,7 @@ const OrganizationalIntelligencePage = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-16">
+          <TabsList className="grid w-full grid-cols-19">
             <TabsTrigger value="dashboard" className="flex items-center gap-1">
               <Brain className="h-4 w-4" />
               Dashboard
@@ -121,6 +123,18 @@ const OrganizationalIntelligencePage = () => {
             <TabsTrigger value="knowledge" className="flex items-center gap-1">
               <BookOpen className="h-4 w-4" />
               Knowledge
+            </TabsTrigger>
+            <TabsTrigger value="customization" className="flex items-center gap-1">
+              <Settings className="h-4 w-4" />
+              Customization
+            </TabsTrigger>
+            <TabsTrigger value="regulatory" className="flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              Regulatory
+            </TabsTrigger>
+            <TabsTrigger value="implementation" className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              Guides
             </TabsTrigger>
           </TabsList>
 
@@ -186,6 +200,18 @@ const OrganizationalIntelligencePage = () => {
 
           <TabsContent value="knowledge" className="space-y-6">
             <KnowledgeBaseHub orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="customization" className="space-y-6">
+            <TemplateCustomizationEngine orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="regulatory" className="space-y-6">
+            <RegulatoryComplianceIntegrationDashboard orgId={orgId} />
+          </TabsContent>
+
+          <TabsContent value="implementation" className="space-y-6">
+            <ImplementationGuideSystem orgId={orgId} />
           </TabsContent>
         </Tabs>
       </div>

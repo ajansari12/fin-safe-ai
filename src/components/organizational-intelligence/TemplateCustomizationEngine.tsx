@@ -263,9 +263,9 @@ const TemplateCustomizationEngine: React.FC<TemplateCustomizationEngineProps> = 
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="small">Small (< 100 employees)</SelectItem>
+                    <SelectItem value="small">Small (&lt; 100 employees)</SelectItem>
                     <SelectItem value="medium">Medium (100-1000)</SelectItem>
-                    <SelectItem value="large">Large (> 1000)</SelectItem>
+                    <SelectItem value="large">Large (&gt; 1000)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
