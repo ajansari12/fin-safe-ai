@@ -24,6 +24,7 @@ const ExecutiveDashboard = lazy(() => import('./ExecutiveDashboard'));
 const OperationalDashboard = lazy(() => import('./OperationalDashboard'));
 const CustomDashboardBuilder = lazy(() => import('./CustomDashboardBuilder'));
 const PredictiveAnalyticsChart = lazy(() => import('./PredictiveAnalyticsChart'));
+const PredictiveAnalyticsPanel = lazy(() => import('./PredictiveAnalyticsPanel'));
 
 // Loading skeleton component
 const DashboardSkeleton = () => (
@@ -215,57 +216,9 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="predictive" className="space-y-6">
-          <div className="grid gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5" />
-                  Predictive Analytics & Machine Learning
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<div className="h-64 bg-muted rounded animate-pulse"></div>}>
-                  <PredictiveAnalyticsChart />
-                </Suspense>
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Anomaly Detection</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No anomalies detected in the last 30 days</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Correlation Analysis</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm">Risk Score vs Incidents</span>
-                      <Badge variant="outline">+0.73</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm">KRI Breaches vs Vendor Risk</span>
-                      <Badge variant="outline">+0.45</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm">Control Effectiveness vs Incidents</span>
-                      <Badge variant="outline">-0.62</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <Suspense fallback={<DashboardSkeleton />}>
+            <PredictiveAnalyticsPanel />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="custom" className="space-y-6">

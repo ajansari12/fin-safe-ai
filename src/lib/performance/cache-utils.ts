@@ -1,4 +1,3 @@
-
 // Cache utilities for performance optimization
 export class CacheManager {
   private static cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
