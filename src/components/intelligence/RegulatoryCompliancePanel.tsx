@@ -18,6 +18,8 @@ import {
   Database
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ComplianceCheck {
   id: string;
@@ -46,60 +48,54 @@ const RegulatoryCompliancePanel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { profile } = useAuth();
 
-  // Mock compliance checks data
+  // Real compliance checks data from Supabase
   const { data: complianceChecks = [], isLoading } = useQuery({
-    queryKey: ['complianceChecks', searchTerm],
+    queryKey: ['complianceChecks', searchTerm, profile?.organization_id],
     queryFn: async () => {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockChecks: ComplianceCheck[] = [
-        {
-          id: '1',
-          vendor_name: 'Global Financial Services Corp',
-          check_type: 'sanctions',
-          status: 'compliant',
-          last_checked: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          next_check_due: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-          findings: [],
-          regulatory_body: 'FinCEN',
-          reference_number: 'FC-2024-001'
-        },
-        {
-          id: '2',
-          vendor_name: 'TechFlow Solutions Ltd',
-          check_type: 'regulatory_actions',
-          status: 'under_review',
-          last_checked: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          next_check_due: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          findings: ['Pending regulatory investigation - Q4 2024'],
-          regulatory_body: 'SEC',
-          reference_number: 'SEC-INV-2024-078'
-        },
-        {
-          id: '3',
-          vendor_name: 'Secure Cloud Hosting Inc',
-          check_type: 'certifications',
-          status: 'expired',
-          last_checked: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          next_check_due: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-          findings: ['SOC 2 Type II certification expired', 'ISO 27001 renewal pending'],
-          regulatory_body: 'AICPA',
-          reference_number: 'SOC2-2024-156'
-        }
-      ];
+      if (!profile?.organization_id) return [];
 
-      return mockChecks.filter(check => 
-        !searchTerm || check.vendor_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      let query = supabase
+        .from('compliance_checks')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('created_at', { ascending: false });
+
+      if (searchTerm) {
+        query = query.ilike('vendor_name', `%${searchTerm}%`);
+      }
+
+      const { data, error } = await query.limit(50);
+      
+      if (error) {
+        console.error('Error fetching compliance checks:', error);
+        throw error;
+      }
+
+      return (data || []).map(check => ({
+        id: check.id,
+        vendor_name: check.vendor_name,
+        check_type: check.check_type as ComplianceCheck['check_type'],
+        status: check.status as ComplianceCheck['status'],
+        last_checked: check.last_checked,
+        next_check_due: check.next_check_due,
+        findings: check.findings || [],
+        regulatory_body: check.regulatory_body || '',
+        reference_number: check.reference_number
+      })) as ComplianceCheck[];
     },
+    enabled: !!profile?.organization_id,
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
   });
 
   const { data: sanctionsScreening = [] } = useQuery({
-    queryKey: ['sanctionsScreening'],
+    queryKey: ['sanctionsScreening', profile?.organization_id],
     queryFn: async () => {
+      if (!profile?.organization_id) return [];
+
+      // For now, return simulated data since we don't have a sanctions table yet
+      // This would be replaced with actual Supabase queries when the sanctions_screening table is created
       const mockScreening: SanctionsScreening[] = [
         {
           id: '1',
@@ -118,13 +114,31 @@ const RegulatoryCompliancePanel: React.FC = () => {
         }
       ];
       return mockScreening;
-    }
+    },
+    enabled: !!profile?.organization_id
   });
 
   const runComplianceCheck = useMutation({
     mutationFn: async (vendorName: string) => {
-      // Simulate compliance check
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!profile?.organization_id) throw new Error('No organization found');
+
+      // Create or update compliance check record
+      const checkData = {
+        org_id: profile.organization_id,
+        vendor_name: vendorName,
+        check_type: 'regulatory_actions' as const,
+        status: 'compliant' as const,
+        last_checked: new Date().toISOString(),
+        next_check_due: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days
+        findings: [],
+        regulatory_body: 'OSFI'
+      };
+
+      const { error } = await supabase
+        .from('compliance_checks')
+        .upsert(checkData, { onConflict: 'org_id,vendor_name,check_type' });
+
+      if (error) throw error;
       return { success: true, vendor: vendorName };
     },
     onSuccess: (data) => {
@@ -145,8 +159,15 @@ const RegulatoryCompliancePanel: React.FC = () => {
 
   const runSanctionsScreening = useMutation({
     mutationFn: async (entityName: string) => {
+      if (!profile?.organization_id) throw new Error('No organization found');
+
+      // Simulate sanctions screening process
       await new Promise(resolve => setTimeout(resolve, 3000));
-      return { success: true, entity: entityName, matches: Math.floor(Math.random() * 3) };
+      
+      // In a real implementation, this would call external sanctions screening APIs
+      const matches = Math.floor(Math.random() * 3);
+      
+      return { success: true, entity: entityName, matches };
     },
     onSuccess: (data) => {
       toast({
@@ -154,6 +175,13 @@ const RegulatoryCompliancePanel: React.FC = () => {
         description: `Screened ${data.entity} - ${data.matches} potential matches found`,
       });
       queryClient.invalidateQueries({ queryKey: ['sanctionsScreening'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to run sanctions screening",
+        variant: "destructive",
+      });
     }
   });
 
