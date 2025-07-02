@@ -170,14 +170,17 @@ const EnhancedOrganizationSetup = () => {
                       <SelectTrigger id="sector">
                         <SelectValue placeholder="Select sector" />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="banking">Banking</SelectItem>
-                        <SelectItem value="insurance">Insurance</SelectItem>
-                        <SelectItem value="asset-management">Asset Management</SelectItem>
-                        <SelectItem value="credit-union">Credit Union</SelectItem>
-                        <SelectItem value="fintech">FinTech</SelectItem>
-                        <SelectItem value="other">Other Financial Institution</SelectItem>
-                      </SelectContent>
+                       <SelectContent>
+                         <SelectItem value="banking">Banking</SelectItem>
+                         <SelectItem value="banking-schedule-i">Banking - Schedule I (Canadian Bank)</SelectItem>
+                         <SelectItem value="banking-schedule-ii">Banking - Schedule II (Foreign Bank Subsidiary)</SelectItem>
+                         <SelectItem value="banking-schedule-iii">Banking - Schedule III (Foreign Bank Branch)</SelectItem>
+                         <SelectItem value="insurance">Insurance</SelectItem>
+                         <SelectItem value="asset-management">Asset Management</SelectItem>
+                         <SelectItem value="credit-union">Credit Union</SelectItem>
+                         <SelectItem value="fintech">FinTech</SelectItem>
+                         <SelectItem value="other">Other Financial Institution</SelectItem>
+                       </SelectContent>
                     </Select>
                   </div>
                   
@@ -229,15 +232,17 @@ const EnhancedOrganizationSetup = () => {
                       <SelectTrigger id="sub-sector">
                         <SelectValue placeholder="Select sub-sector" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {orgData.sector === 'banking' && (
-                          <>
-                            <SelectItem value="retail-banking">Retail Banking</SelectItem>
-                            <SelectItem value="commercial-banking">Commercial Banking</SelectItem>
-                            <SelectItem value="investment-banking">Investment Banking</SelectItem>
-                            <SelectItem value="digital-banking">Digital Banking</SelectItem>
-                          </>
-                        )}
+                       <SelectContent>
+                         {(orgData.sector === 'banking' || orgData.sector?.startsWith('banking-schedule')) && (
+                           <>
+                             <SelectItem value="retail-banking">Retail Banking</SelectItem>
+                             <SelectItem value="commercial-banking">Commercial Banking</SelectItem>
+                             <SelectItem value="investment-banking">Investment Banking</SelectItem>
+                             <SelectItem value="digital-banking">Digital Banking</SelectItem>
+                             <SelectItem value="mortgage-lending">Mortgage Lending</SelectItem>
+                             <SelectItem value="wealth-management">Wealth Management</SelectItem>
+                           </>
+                         )}
                         {orgData.sector === 'insurance' && (
                           <>
                             <SelectItem value="life-insurance">Life Insurance</SelectItem>
@@ -305,26 +310,70 @@ const EnhancedOrganizationSetup = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
+                 </div>
 
-                <div className="space-y-2">
-                  <label htmlFor="user-role" className="text-sm font-medium">
-                    Your Role in the Organization
-                  </label>
-                  <Select
-                    value={orgData.userRole}
-                    onValueChange={(value: 'admin' | 'analyst' | 'reviewer') => handleChange("userRole", value)}
-                  >
-                    <SelectTrigger id="user-role">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrator</SelectItem>
-                      <SelectItem value="analyst">Risk Analyst</SelectItem>
-                      <SelectItem value="reviewer">Reviewer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                 {/* Canadian Banking Specific Fields */}
+                 {(orgData.sector === 'banking' || orgData.sector?.startsWith('banking-schedule')) && (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                       <label htmlFor="banking-license" className="text-sm font-medium">
+                         Banking License Type
+                       </label>
+                       <Select
+                         value={orgData.bankingLicenseType || ""}
+                         onValueChange={(value) => handleChange("bankingLicenseType", value)}
+                       >
+                         <SelectTrigger id="banking-license">
+                           <SelectValue placeholder="Select license type" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="federal">Federal Charter</SelectItem>
+                           <SelectItem value="provincial">Provincial Charter</SelectItem>
+                           <SelectItem value="foreign-subsidiary">Foreign Bank Subsidiary</SelectItem>
+                           <SelectItem value="foreign-branch">Foreign Bank Branch</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                     
+                     <div className="space-y-2">
+                       <label htmlFor="capital-tier" className="text-sm font-medium">
+                         Capital Tier Classification
+                       </label>
+                       <Select
+                         value={orgData.capitalTier || ""}
+                         onValueChange={(value) => handleChange("capitalTier", value)}
+                       >
+                         <SelectTrigger id="capital-tier">
+                           <SelectValue placeholder="Select capital tier" />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="tier-1">Tier 1 (Core Capital)</SelectItem>
+                           <SelectItem value="tier-2">Tier 2 (Supplementary Capital)</SelectItem>
+                           <SelectItem value="tier-3">Tier 3 (Market Risk)</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
+                   </div>
+                 )}
+
+                 <div className="space-y-2">
+                   <label htmlFor="user-role" className="text-sm font-medium">
+                     Your Role in the Organization
+                   </label>
+                   <Select
+                     value={orgData.userRole}
+                     onValueChange={(value: 'admin' | 'analyst' | 'reviewer') => handleChange("userRole", value)}
+                   >
+                     <SelectTrigger id="user-role">
+                       <SelectValue placeholder="Select your role" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="admin">Administrator</SelectItem>
+                       <SelectItem value="analyst">Risk Analyst</SelectItem>
+                       <SelectItem value="reviewer">Reviewer</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" onClick={handleBack}>Back</Button>
@@ -493,16 +542,65 @@ const EnhancedOrganizationSetup = () => {
                     </label>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id="nist" 
-                      checked={orgData.regulatoryFrameworks.includes("NIST-CSF")}
-                      onCheckedChange={(checked) => handleFrameworkChange("NIST-CSF", !!checked)}
-                    />
-                    <label htmlFor="nist" className="text-sm font-medium">
-                      NIST Cybersecurity Framework
-                    </label>
-                  </div>
+                   <div className="flex items-center space-x-2">
+                     <Checkbox 
+                       id="nist" 
+                       checked={orgData.regulatoryFrameworks.includes("NIST-CSF")}
+                       onCheckedChange={(checked) => handleFrameworkChange("NIST-CSF", !!checked)}
+                     />
+                     <label htmlFor="nist" className="text-sm font-medium">
+                       NIST Cybersecurity Framework
+                     </label>
+                   </div>
+
+                   {/* Canadian Banking Specific Frameworks */}
+                   {(orgData.sector === 'banking' || orgData.sector?.startsWith('banking-schedule')) && (
+                     <>
+                       <div className="flex items-center space-x-2">
+                         <Checkbox 
+                           id="bank-act" 
+                           checked={orgData.regulatoryFrameworks.includes("Bank-Act")}
+                           onCheckedChange={(checked) => handleFrameworkChange("Bank-Act", !!checked)}
+                         />
+                         <label htmlFor="bank-act" className="text-sm font-medium">
+                           Bank Act (Canada)
+                         </label>
+                       </div>
+
+                       <div className="flex items-center space-x-2">
+                         <Checkbox 
+                           id="cdic" 
+                           checked={orgData.regulatoryFrameworks.includes("CDIC")}
+                           onCheckedChange={(checked) => handleFrameworkChange("CDIC", !!checked)}
+                         />
+                         <label htmlFor="cdic" className="text-sm font-medium">
+                           CDIC Guidelines (Deposit Insurance)
+                         </label>
+                       </div>
+
+                       <div className="flex items-center space-x-2">
+                         <Checkbox 
+                           id="car" 
+                           checked={orgData.regulatoryFrameworks.includes("CAR")}
+                           onCheckedChange={(checked) => handleFrameworkChange("CAR", !!checked)}
+                         />
+                         <label htmlFor="car" className="text-sm font-medium">
+                           Capital Adequacy Requirements (OSFI)
+                         </label>
+                       </div>
+
+                       <div className="flex items-center space-x-2">
+                         <Checkbox 
+                           id="lcr" 
+                           checked={orgData.regulatoryFrameworks.includes("LCR")}
+                           onCheckedChange={(checked) => handleFrameworkChange("LCR", !!checked)}
+                         />
+                         <label htmlFor="lcr" className="text-sm font-medium">
+                           Liquidity Coverage Ratio (OSFI)
+                         </label>
+                       </div>
+                     </>
+                   )}
                 </div>
 
                 <div className="space-y-2">

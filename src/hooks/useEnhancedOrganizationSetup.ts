@@ -38,6 +38,12 @@ interface EnhancedOrganizationData {
   growthStrategy?: string;
   marketPosition?: string;
   
+  // Canadian Banking specific fields
+  bankingLicenseType?: string;
+  capitalTier?: string;
+  osfiRating?: string;
+  depositInsurance?: boolean;
+  
   // Framework generation preferences
   frameworkGenerationMode?: 'automatic' | 'guided' | 'manual';
   customizationPreferences?: Record<string, any>;
@@ -363,7 +369,7 @@ export function useEnhancedOrganizationSetup() {
       await createUserRole(organization.id, orgData.userRole);
 
       // Create organizational profile with enhanced data
-      await organizationalIntelligenceService.createOrUpdateProfile({
+      const profileData = {
         organization_id: organization.id,
         sub_sector: orgData.subSector,
         employee_count: orgData.employeeCount,
@@ -380,7 +386,23 @@ export function useEnhancedOrganizationSetup() {
         applicable_frameworks: orgData.applicableFrameworks,
         growth_strategy: orgData.growthStrategy,
         market_position: orgData.marketPosition
-      });
+      };
+
+      const profile = await organizationalIntelligenceService.createOrUpdateProfile(profileData);
+
+      // Store Canadian banking specific data in organizational_profiles table
+      if (orgData.sector?.startsWith('banking-schedule') || orgData.bankingLicenseType) {
+        await supabase
+          .from('organizational_profiles')
+          .update({
+            banking_schedule: orgData.sector?.startsWith('banking-schedule') ? orgData.sector.replace('banking-schedule-', 'schedule-') : null,
+            banking_license_type: orgData.bankingLicenseType,
+            capital_tier: orgData.capitalTier,
+            osfi_rating: orgData.osfiRating,
+            deposit_insurance_coverage: orgData.depositInsurance || false
+          })
+          .eq('organization_id', organization.id);
+      }
 
       // Upload policy files if any
       if (orgData.policyFiles.length > 0) {
@@ -430,7 +452,7 @@ export function useEnhancedOrganizationSetup() {
         description: "Your organization has been set up successfully with intelligent frameworks.",
       });
       
-      navigate("/dashboard");
+      navigate("/app/dashboard");
     } catch (error) {
       console.error("Organization setup error:", error);
       toast({

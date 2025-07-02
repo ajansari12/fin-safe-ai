@@ -5729,12 +5729,16 @@ export type Database = {
         Row: {
           applicable_frameworks: string[] | null
           asset_size: number | null
+          banking_license_type: string | null
+          banking_schedule: string | null
           business_lines: string[] | null
+          capital_tier: string | null
           competitive_strategy: string | null
           completeness_percentage: number | null
           compliance_maturity: string | null
           created_at: string
           customer_base: string | null
+          deposit_insurance_coverage: boolean | null
           digital_strategy: string | null
           digital_transformation: string | null
           employee_count: number | null
@@ -5747,6 +5751,7 @@ export type Database = {
           market_position: string | null
           next_assessment_date: string | null
           organization_id: string
+          osfi_rating: string | null
           previous_incidents: number | null
           primary_regulators: string[] | null
           profile_score: number | null
@@ -5762,12 +5767,16 @@ export type Database = {
         Insert: {
           applicable_frameworks?: string[] | null
           asset_size?: number | null
+          banking_license_type?: string | null
+          banking_schedule?: string | null
           business_lines?: string[] | null
+          capital_tier?: string | null
           competitive_strategy?: string | null
           completeness_percentage?: number | null
           compliance_maturity?: string | null
           created_at?: string
           customer_base?: string | null
+          deposit_insurance_coverage?: boolean | null
           digital_strategy?: string | null
           digital_transformation?: string | null
           employee_count?: number | null
@@ -5780,6 +5789,7 @@ export type Database = {
           market_position?: string | null
           next_assessment_date?: string | null
           organization_id: string
+          osfi_rating?: string | null
           previous_incidents?: number | null
           primary_regulators?: string[] | null
           profile_score?: number | null
@@ -5795,12 +5805,16 @@ export type Database = {
         Update: {
           applicable_frameworks?: string[] | null
           asset_size?: number | null
+          banking_license_type?: string | null
+          banking_schedule?: string | null
           business_lines?: string[] | null
+          capital_tier?: string | null
           competitive_strategy?: string | null
           completeness_percentage?: number | null
           compliance_maturity?: string | null
           created_at?: string
           customer_base?: string | null
+          deposit_insurance_coverage?: boolean | null
           digital_strategy?: string | null
           digital_transformation?: string | null
           employee_count?: number | null
@@ -5813,6 +5827,7 @@ export type Database = {
           market_position?: string | null
           next_assessment_date?: string | null
           organization_id?: string
+          osfi_rating?: string | null
           previous_incidents?: number | null
           primary_regulators?: string[] | null
           profile_score?: number | null
