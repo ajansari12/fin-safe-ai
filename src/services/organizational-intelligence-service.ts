@@ -22,7 +22,7 @@ class OrganizationalIntelligenceService {
     const { data, error } = await supabase
       .from('organizational_profiles')
       .select('*')
-      .eq('org_id', organizationId)
+      .eq('organization_id', organizationId)
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -40,7 +40,6 @@ class OrganizationalIntelligenceService {
     const existingProfile = await this.getOrganizationalProfile();
     
     const dataToSave = {
-      org_id: profile.organization_id,
       organization_id: profile.organization_id,
       ...profileData
     };

@@ -448,16 +448,17 @@ export function useEnhancedOrganizationSetup() {
       }
 
       toast({
-        title: "Setup Complete",
+        title: "Setup Complete", 
         description: "Your organization has been set up successfully with intelligent frameworks.",
       });
-      
+
       navigate("/app/dashboard");
     } catch (error) {
       console.error("Organization setup error:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Setup Failed",
-        description: "There was an error setting up your organization. Please try again.",
+        description: `Error: ${errorMessage}. Please check your information and try again.`,
         variant: "destructive",
       });
     } finally {
