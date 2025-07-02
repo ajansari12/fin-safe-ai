@@ -2240,6 +2240,45 @@ export type Database = {
           },
         ]
       }
+      control_libraries: {
+        Row: {
+          control_description: string
+          control_name: string
+          control_type: string
+          created_at: string
+          effectiveness_rating: number | null
+          id: string
+          implementation_guidance: string | null
+          regulatory_references: string[] | null
+          risk_categories: string[]
+          updated_at: string
+        }
+        Insert: {
+          control_description: string
+          control_name: string
+          control_type: string
+          created_at?: string
+          effectiveness_rating?: number | null
+          id?: string
+          implementation_guidance?: string | null
+          regulatory_references?: string[] | null
+          risk_categories?: string[]
+          updated_at?: string
+        }
+        Update: {
+          control_description?: string
+          control_name?: string
+          control_type?: string
+          created_at?: string
+          effectiveness_rating?: number | null
+          id?: string
+          implementation_guidance?: string | null
+          regulatory_references?: string[] | null
+          risk_categories?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       control_tests: {
         Row: {
           control_id: string
@@ -4346,6 +4385,42 @@ export type Database = {
           target_value?: number | null
           trend_direction?: string | null
           variance_percentage?: number | null
+        }
+        Relationships: []
+      }
+      framework_generation_rules: {
+        Row: {
+          created_at: string
+          framework_type: string
+          id: string
+          is_active: boolean | null
+          org_criteria: Json
+          priority: number | null
+          rule_definition: Json
+          rule_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          framework_type: string
+          id?: string
+          is_active?: boolean | null
+          org_criteria?: Json
+          priority?: number | null
+          rule_definition?: Json
+          rule_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          framework_type?: string
+          id?: string
+          is_active?: boolean | null
+          org_criteria?: Json
+          priority?: number | null
+          rule_definition?: Json
+          rule_name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -8244,6 +8319,42 @@ export type Database = {
           severity_level?: string
           status?: string
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sector_thresholds: {
+        Row: {
+          created_at: string
+          id: string
+          metric: string
+          rationale: string
+          recommended_value: string
+          regulatory_basis: string | null
+          sector: string
+          sub_sector: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric: string
+          rationale: string
+          recommended_value: string
+          regulatory_basis?: string | null
+          sector: string
+          sub_sector?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric?: string
+          rationale?: string
+          recommended_value?: string
+          regulatory_basis?: string | null
+          sector?: string
+          sub_sector?: string | null
           updated_at?: string
         }
         Relationships: []
