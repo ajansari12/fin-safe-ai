@@ -9446,6 +9446,7 @@ export type Database = {
           id: string
           organization_id: string
           role: string
+          role_type: Database["public"]["Enums"]["app_role"] | null
           user_id: string
         }
         Insert: {
@@ -9453,6 +9454,7 @@ export type Database = {
           id?: string
           organization_id: string
           role: string
+          role_type?: Database["public"]["Enums"]["app_role"] | null
           user_id: string
         }
         Update: {
@@ -9460,6 +9462,7 @@ export type Database = {
           id?: string
           organization_id?: string
           role?: string
+          role_type?: Database["public"]["Enums"]["app_role"] | null
           user_id?: string
         }
         Relationships: [
@@ -10377,9 +10380,21 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_org_safe: {
+        Args: { user_id?: string }
+        Returns: string
+      }
+      get_user_role_safe: {
+        Args: { user_id?: string }
+        Returns: string
+      }
       increment_template_usage: {
         Args: { template_id: string }
         Returns: undefined
+      }
+      is_admin_role: {
+        Args: { user_id?: string }
+        Returns: boolean
       }
       is_admin_user: {
         Args: Record<PropertyKey, never>
@@ -10399,13 +10414,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      user_has_org_access: {
+        Args: { target_org_id: string; user_id?: string }
+        Returns: boolean
+      }
       validate_password_strength: {
         Args: { password: string; org_id: string }
         Returns: Json
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "manager"
+        | "analyst"
+        | "user"
+        | "auditor"
+        | "executive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -10520,6 +10546,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "super_admin",
+        "admin",
+        "manager",
+        "analyst",
+        "user",
+        "auditor",
+        "executive",
+      ],
+    },
   },
 } as const
