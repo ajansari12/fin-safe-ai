@@ -13,12 +13,14 @@ import {
   Zap,
   Target,
   Activity
-} from 'lucide-react';
+ } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { advancedAnalyticsService } from '@/services/advanced-analytics-service';
 import { toast } from 'sonner';
 import PredictiveAnalyticsPanel from './PredictiveAnalyticsPanel';
 
 const EnhancedAnalyticsHub: React.FC = () => {
+  const { profile } = useAuth();
   const [naturalLanguageQuery, setNaturalLanguageQuery] = useState('');
   const [queryResults, setQueryResults] = useState<any>(null);
   const [insights, setInsights] = useState<any[]>([]);
@@ -26,12 +28,14 @@ const EnhancedAnalyticsHub: React.FC = () => {
   const [activeTab, setActiveTab] = useState('query');
 
   useEffect(() => {
-    loadInsights();
+    if (profile?.organization_id) {
+      loadInsights();
+    }
   }, []);
 
   const loadInsights = async () => {
     try {
-      const automatedInsights = await advancedAnalyticsService.generateAutomatedInsights();
+      const automatedInsights = await advancedAnalyticsService.generateAutomatedInsights(profile?.organization_id || '');
       setInsights(automatedInsights);
     } catch (error) {
       console.error('Error loading insights:', error);
@@ -44,7 +48,7 @@ const EnhancedAnalyticsHub: React.FC = () => {
 
     setLoading(true);
     try {
-      const results = await advancedAnalyticsService.processNaturalLanguageQuery(naturalLanguageQuery);
+      const results = await advancedAnalyticsService.processNaturalLanguageQuery(naturalLanguageQuery, profile?.organization_id || '');
       setQueryResults(results);
       toast.success('Query processed successfully');
     } catch (error) {
