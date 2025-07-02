@@ -8340,6 +8340,39 @@ export type Database = {
         }
         Relationships: []
       }
+      temp_organization_setup: {
+        Row: {
+          completion_estimate: number
+          created_at: string
+          current_step: number
+          framework_progress: Json
+          id: string
+          setup_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completion_estimate?: number
+          created_at?: string
+          current_step?: number
+          framework_progress?: Json
+          id?: string
+          setup_data?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completion_estimate?: number
+          created_at?: string
+          current_step?: number
+          framework_progress?: Json
+          id?: string
+          setup_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       template_categories: {
         Row: {
           category_description: string | null
