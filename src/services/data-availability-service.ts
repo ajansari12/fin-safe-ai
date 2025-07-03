@@ -42,14 +42,44 @@ export interface DataRequirement {
 
 class DataAvailabilityService {
   async checkDataAvailability(orgId: string): Promise<DataAvailabilityStatus> {
+    console.log('DataAvailabilityService: Starting check for org', orgId);
     try {
+      // First get KRI definitions
+      const krisResult = await supabase
+        .from('kri_definitions')
+        .select('id')
+        .eq('org_id', orgId);
+
+      // Get KRI logs only if we have KRI definitions
+      const kriIds = krisResult.data?.map(k => k.id) || [];
+      let kriLogsResult = { data: [] };
+      if (kriIds.length > 0) {
+        kriLogsResult = await supabase
+          .from('kri_logs')
+          .select('kri_id')
+          .in('kri_id', kriIds);
+      }
+
+      // Get controls first
+      const controlsResult = await supabase
+        .from('controls')
+        .select('id')
+        .eq('org_id', orgId);
+
+      // Get control tests only if we have controls
+      const controlIds = controlsResult.data?.map(c => c.id) || [];
+      let controlTestsResult = { data: [] };
+      if (controlIds.length > 0) {
+        controlTestsResult = await supabase
+          .from('control_tests')
+          .select('control_id')
+          .in('control_id', controlIds);
+      }
+
+      // Get other data in parallel
       const [
         incidentsResult,
-        krisResult,
-        kriLogsResult,
         vendorsResult,
-        controlsResult,
-        controlTestsResult,
         businessFunctionsResult
       ] = await Promise.all([
         supabase
@@ -57,30 +87,24 @@ class DataAvailabilityService {
           .select('id, created_at')
           .eq('org_id', orgId),
         supabase
-          .from('kri_definitions')
-          .select('id')
-          .eq('org_id', orgId),
-        supabase
-          .from('kri_logs')
-          .select('kri_id')
-          .in('kri_id', (await supabase.from('kri_definitions').select('id').eq('org_id', orgId)).data?.map(k => k.id) || []),
-        supabase
           .from('third_party_profiles')
           .select('id, risk_rating')
           .eq('org_id', orgId),
-        supabase
-          .from('controls')
-          .select('id')
-          .eq('org_id', orgId),
-        supabase
-          .from('control_tests')
-          .select('control_id')
-          .in('control_id', (await supabase.from('controls').select('id').eq('org_id', orgId)).data?.map(c => c.id) || []),
         supabase
           .from('business_functions')
           .select('id')
           .eq('org_id', orgId)
       ]);
+
+      console.log('DataAvailabilityService: Got results', {
+        incidents: incidentsResult.data?.length || 0,
+        kris: krisResult.data?.length || 0,
+        kriLogs: kriLogsResult.data?.length || 0,
+        vendors: vendorsResult.data?.length || 0,
+        controls: controlsResult.data?.length || 0,
+        controlTests: controlTestsResult.data?.length || 0,
+        businessFunctions: businessFunctionsResult.data?.length || 0
+      });
 
       const incidents = {
         count: incidentsResult.data?.length || 0,

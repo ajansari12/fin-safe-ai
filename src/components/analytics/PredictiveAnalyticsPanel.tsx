@@ -38,11 +38,14 @@ const PredictiveAnalyticsPanel: React.FC = () => {
   const checkDataAvailability = async () => {
     if (!profile?.organization_id) return;
 
+    console.log('Starting data availability check for org:', profile.organization_id);
     setIsLoading(true);
     try {
       const dataStatus = await dataAvailabilityService.checkDataAvailability(profile.organization_id);
+      console.log('Data availability result:', dataStatus);
       
       if (dataStatus.readyForPredictive) {
+        console.log('Data ready for predictive analytics');
         setHasData(true);
         await loadPredictiveData();
         
@@ -50,12 +53,14 @@ const PredictiveAnalyticsPanel: React.FC = () => {
         const interval = setInterval(loadRealTimeAlerts, 30000);
         return () => clearInterval(interval);
       } else {
+        console.log('Data not ready for predictive analytics, showing empty state');
         setHasData(false);
       }
     } catch (error) {
       console.error('Error checking data availability:', error);
       setHasData(false);
     } finally {
+      console.log('Data availability check complete, setting loading to false');
       setIsLoading(false);
     }
   };
