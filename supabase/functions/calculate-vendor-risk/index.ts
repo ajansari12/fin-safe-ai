@@ -8,14 +8,8 @@ const corsHeaders = {
 };
 
 interface VendorRiskRequest {
-  vendor_profile_id: string;
+  vendor_id: string;
   org_id: string;
-  assessment_data?: {
-    financial_score?: number;
-    operational_score?: number;
-    security_score?: number;
-    compliance_score?: number;
-  };
 }
 
 serve(async (req) => {
@@ -25,11 +19,11 @@ serve(async (req) => {
   }
 
   try {
-    const { vendor_profile_id, org_id, assessment_data }: VendorRiskRequest = await req.json();
+    const { vendor_id, org_id }: VendorRiskRequest = await req.json();
 
-    if (!vendor_profile_id || !org_id) {
+    if (!vendor_id || !org_id) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: vendor_profile_id and org_id' }),
+        JSON.stringify({ error: 'Missing required fields: vendor_id and org_id' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -39,83 +33,95 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    console.log('Calculating risk for vendor:', vendor_id, 'in org:', org_id);
+
     // Get vendor profile data
     const { data: vendor, error: vendorError } = await supabase
       .from('third_party_profiles')
       .select('*')
-      .eq('id', vendor_profile_id)
+      .eq('id', vendor_id)
       .eq('org_id', org_id)
       .single();
 
     if (vendorError || !vendor) {
+      console.error('Vendor fetch error:', vendorError);
       return new Response(
         JSON.stringify({ error: 'Vendor not found or access denied' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
       );
     }
 
-    // Calculate risk scores if not provided
-    const scores = assessment_data || await calculateAutoRiskScores(vendor);
-    
-    // Calculate overall weighted risk score
-    const overallRiskScore = calculateOverallRiskScore(scores, vendor.criticality);
-
-    // Get risk factors and recommendations
-    const riskFactors = await identifyRiskFactors(vendor);
-    const mitigationRecommendations = generateMitigationRecommendations(vendor, overallRiskScore);
-
-    // Prepare assessment data
-    const assessmentData = {
-      vendor_profile_id,
-      org_id,
-      assessment_type: 'automated',
-      assessment_date: new Date().toISOString().split('T')[0],
-      financial_score: scores.financial_score,
-      operational_score: scores.operational_score,
-      security_score: scores.security_score,
-      compliance_score: scores.compliance_score,
-      overall_risk_score: overallRiskScore,
-      assessment_methodology: {
-        scoring_framework: 'AUTOMATED_RISK_CALCULATOR',
-        weighting_factors: {
-          financial: 0.25,
-          operational: 0.30,
-          security: 0.30,
-          compliance: 0.15
-        },
-        criticality_multiplier: getCriticalityMultiplier(vendor.criticality),
-        assessment_version: '1.0'
-      },
-      risk_factors: riskFactors,
-      mitigation_recommendations: mitigationRecommendations,
-      status: 'completed'
-    };
-
-    // Save to database
-    const { data: savedAssessment, error: saveError } = await supabase
+    // Get latest vendor assessment data
+    const { data: assessments } = await supabase
       .from('vendor_assessments')
-      .insert([assessmentData])
-      .select()
-      .single();
+      .select('*')
+      .eq('vendor_profile_id', vendor_id)
+      .order('assessment_date', { ascending: false })
+      .limit(1);
 
-    if (saveError) {
-      console.error('Error saving assessment:', saveError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to save assessment', details: saveError.message }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
+    // Get SLA breach history from incident logs
+    const { data: incidents } = await supabase
+      .from('incident_logs')
+      .select('severity, status, created_at')
+      .ilike('description', `%${vendor.vendor_name}%`)
+      .eq('org_id', org_id);
+
+    // Get contract data
+    const { data: contracts } = await supabase
+      .from('vendor_contracts')
+      .select('*')
+      .eq('vendor_profile_id', vendor_id);
+
+    // Calculate risk score
+    const riskScore = calculateVendorRiskScore(vendor, assessments?.[0], incidents || [], contracts || []);
+    const riskRating = getRiskRating(riskScore);
+
+    console.log('Calculated risk score:', riskScore, 'rating:', riskRating);
+
+    // Update vendor assessments with new risk rating
+    if (assessments?.[0]) {
+      const { error: updateError } = await supabase
+        .from('vendor_assessments')
+        .update({ 
+          risk_rating: riskRating,
+          overall_risk_score: riskScore,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', assessments[0].id);
+
+      if (updateError) {
+        console.error('Error updating assessment:', updateError);
+      }
+    } else {
+      // Create new assessment if none exists
+      const { error: insertError } = await supabase
+        .from('vendor_assessments')
+        .insert({
+          vendor_profile_id: vendor_id,
+          org_id,
+          assessment_type: 'automated',
+          assessment_date: new Date().toISOString().split('T')[0],
+          risk_rating: riskRating,
+          overall_risk_score: riskScore,
+          status: 'completed'
+        });
+
+      if (insertError) {
+        console.error('Error creating assessment:', insertError);
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        assessment: savedAssessment,
-        risk_summary: {
-          overall_risk_score: overallRiskScore,
-          risk_level: getRiskLevel(overallRiskScore),
-          scores: scores,
-          key_risks: riskFactors,
-          recommendations: mitigationRecommendations
+        vendor_id,
+        risk_score: riskScore,
+        risk_rating: riskRating,
+        factors_analyzed: {
+          vendor_criticality: vendor.criticality,
+          incident_count: incidents?.length || 0,
+          contract_count: contracts?.length || 0,
+          has_assessment: !!assessments?.[0]
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -131,212 +137,62 @@ serve(async (req) => {
 });
 
 // Helper functions
-async function calculateAutoRiskScores(vendor: any) {
-  return {
-    financial_score: calculateFinancialScore(vendor),
-    operational_score: calculateOperationalScore(vendor),
-    security_score: calculateSecurityScore(vendor),
-    compliance_score: calculateComplianceScore(vendor)
+function calculateVendorRiskScore(vendor: any, assessment: any, incidents: any[], contracts: any[]): number {
+  let totalScore = 0;
+  
+  // Base score from vendor criticality (30 points)
+  const criticalityScores = {
+    'critical': 30,
+    'high': 20,
+    'medium': 10,
+    'low': 5
   };
-}
+  totalScore += criticalityScores[vendor.criticality] || 10;
 
-function calculateFinancialScore(vendor: any): number {
-  let score = 75; // Base score
+  // Risk exposure from assessment data (30 points)
+  if (assessment) {
+    // Check for high-risk tags/responses
+    const riskTags = assessment.risk_exposure_tags || [];
+    if (riskTags.includes('cloud')) totalScore += 5;
+    if (riskTags.includes('pii')) totalScore += 8;
+    if (riskTags.includes('financial_integration')) totalScore += 10;
+    if (riskTags.includes('critical_infrastructure')) totalScore += 7;
+    
+    // Assessment scores (if available)
+    if (assessment.security_score && assessment.security_score < 70) totalScore += 10;
+    if (assessment.compliance_score && assessment.compliance_score < 70) totalScore += 8;
+  }
 
-  // Industry risk adjustment
-  const industryRisks: { [key: string]: number } = {
-    'technology': -5,
-    'financial': -15,
-    'healthcare': -10,
-    'energy': -20,
-    'manufacturing': -8,
-    'retail': -3,
-    'telecommunications': -7
-  };
+  // SLA breach history (40 points)
+  const criticalIncidents = incidents.filter(i => i.severity === 'critical').length;
+  const highIncidents = incidents.filter(i => i.severity === 'high').length;
   
-  const industryAdjustment = industryRisks[vendor.industry?.toLowerCase()] || -5;
-  score += industryAdjustment;
-
-  // Size/stability adjustment based on vendor details
-  if (vendor.vendor_size === 'large') score += 10;
-  if (vendor.vendor_size === 'small') score -= 15;
-
-  // Random factor for demonstration (in production, integrate with real financial APIs)
-  const randomFactor = (Math.random() - 0.5) * 20;
-  score += randomFactor;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function calculateOperationalScore(vendor: any): number {
-  let score = 70; // Base score
-
-  // Criticality affects operational requirements
-  const criticalityBonus = {
-    'critical': -20,
-    'high': -10,
-    'medium': 0,
-    'low': 10
-  };
+  totalScore += criticalIncidents * 15; // 15 points per critical incident
+  totalScore += highIncidents * 8; // 8 points per high incident
   
-  score += criticalityBonus[vendor.criticality] || 0;
+  // Recent incidents (last 6 months) get higher weight
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const recentIncidents = incidents.filter(i => new Date(i.created_at) > sixMonthsAgo);
+  totalScore += recentIncidents.length * 5;
 
-  // Geographic risk
-  const locationRisk = calculateGeographicRisk(vendor.location);
-  score -= locationRisk;
-
-  // Random operational factor
-  const randomFactor = (Math.random() - 0.5) * 25;
-  score += randomFactor;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function calculateSecurityScore(vendor: any): number {
-  let score = 65; // Base score
-
-  // Industry security requirements
-  const highSecurityIndustries = ['financial', 'healthcare', 'government'];
-  if (highSecurityIndustries.includes(vendor.industry?.toLowerCase())) {
-    score += 15;
+  // Contract risk factors
+  if (contracts.length > 0) {
+    const contract = contracts[0];
+    // Check contract expiry
+    if (contract.end_date) {
+      const daysToExpiry = Math.ceil((new Date(contract.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      if (daysToExpiry <= 30) totalScore += 10; // Contract expiring soon
+      else if (daysToExpiry <= 90) totalScore += 5;
+    }
   }
 
-  // Criticality security requirements
-  if (vendor.criticality === 'critical') score += 10;
-  if (vendor.criticality === 'high') score += 5;
-
-  // Random security factor
-  const randomFactor = (Math.random() - 0.5) * 30;
-  score += randomFactor;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
+  // Cap the score at 100
+  return Math.min(totalScore, 100);
 }
 
-function calculateComplianceScore(vendor: any): number {
-  let score = 80; // Base score
-
-  // Regulated industries have higher compliance standards
-  const regulatedIndustries = ['financial', 'healthcare', 'energy'];
-  if (regulatedIndustries.includes(vendor.industry?.toLowerCase())) {
-    score += 10;
-  }
-
-  // Random compliance factor
-  const randomFactor = (Math.random() - 0.5) * 20;
-  score += randomFactor;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function calculateOverallRiskScore(scores: any, criticality: string): number {
-  const weights = {
-    financial: 0.25,
-    operational: 0.30,
-    security: 0.30,
-    compliance: 0.15
-  };
-
-  const weightedScore = (
-    scores.financial_score * weights.financial +
-    scores.operational_score * weights.operational +
-    scores.security_score * weights.security +
-    scores.compliance_score * weights.compliance
-  );
-
-  // Apply criticality multiplier - convert quality score to risk score
-  const criticalityMultiplier = getCriticalityMultiplier(criticality);
-  const riskScore = (100 - weightedScore) * criticalityMultiplier;
-  
-  return Math.max(1, Math.min(100, Math.round(riskScore)));
-}
-
-function getCriticalityMultiplier(criticality: string): number {
-  switch (criticality) {
-    case 'critical': return 1.5;
-    case 'high': return 1.25;
-    case 'medium': return 1.0;
-    case 'low': return 0.8;
-    default: return 1.0;
-  }
-}
-
-function calculateGeographicRisk(location: string): number {
-  const highRiskCountries = ['CN', 'RU', 'IR', 'KP'];
-  const mediumRiskCountries = ['IN', 'BR', 'MX', 'ZA'];
-  
-  if (highRiskCountries.includes(location)) return 25;
-  if (mediumRiskCountries.includes(location)) return 15;
-  return 5;
-}
-
-function getRiskLevel(score: number): string {
-  if (score >= 80) return 'critical';
-  if (score >= 60) return 'high';
-  if (score >= 40) return 'medium';
-  return 'low';
-}
-
-async function identifyRiskFactors(vendor: any) {
-  const factors = [];
-  
-  if (vendor.criticality === 'critical') {
-    factors.push({
-      category: 'operational',
-      factor: 'Critical Dependency',
-      severity: 'high',
-      description: 'Vendor is classified as critical to operations'
-    });
-  }
-
-  if (['CN', 'RU', 'IR'].includes(vendor.location)) {
-    factors.push({
-      category: 'geopolitical',
-      factor: 'Geographic Risk',
-      severity: 'high',
-      description: 'Vendor located in high-risk jurisdiction'
-    });
-  }
-
-  factors.push({
-    category: 'data',
-    factor: 'Data Access',
-    severity: 'medium',
-    description: 'Vendor has access to organizational data'
-  });
-
-  return factors;
-}
-
-function generateMitigationRecommendations(vendor: any, riskScore: number) {
-  const recommendations = [];
-
-  if (riskScore > 70) {
-    recommendations.push({
-      priority: 'high',
-      category: 'risk_reduction',
-      recommendation: 'Consider vendor diversification or enhanced monitoring',
-      timeline: '30 days',
-      impact: 'Reduces single point of failure risk'
-    });
-  }
-
-  if (riskScore > 50) {
-    recommendations.push({
-      priority: 'medium',
-      category: 'monitoring',
-      recommendation: 'Implement continuous monitoring for this vendor',
-      timeline: '60 days',
-      impact: 'Early detection of emerging risks'
-    });
-  }
-
-  recommendations.push({
-    priority: 'low',
-    category: 'documentation',
-    recommendation: 'Update vendor contracts with enhanced SLA requirements',
-    timeline: '90 days',
-    impact: 'Improved service level guarantees'
-  });
-
-  return recommendations;
+function getRiskRating(score: number): string {
+  if (score >= 70) return 'High';
+  if (score >= 40) return 'Medium';
+  return 'Low';
 }
