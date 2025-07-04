@@ -17,6 +17,15 @@ interface RequestData {
     orgSize?: string | null;
   };
   userId?: string;
+  orgId?: string;
+}
+
+interface KnowledgeResult {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  similarity?: number;
 }
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -37,46 +46,106 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Search knowledge base for relevant information using vector search
+    // Enhanced knowledge base semantic search
     let knowledgeBaseInfo = null;
-    let searchResults = [];
+    let searchResults: KnowledgeResult[] = [];
+    let searchUsed = false;
     
     if (message) {
+      const orgId = requestData.orgId || (userId ? await getUserOrgId(userId) : null);
+      
       try {
-        // First try vector search
-        const { data: vectorResults, error: vectorError } = await supabase.functions.invoke('match-knowledge-base', {
-          body: {
-            query_embedding: await generateQueryEmbedding(message),
-            match_threshold: 0.7,
-            match_count: 3,
-            org_filter: userId ? await getUserOrgId(userId) : null
-          }
-        });
+        // Primary: Vector similarity search with embeddings
+        const queryEmbedding = await generateQueryEmbedding(message);
+        
+        if (queryEmbedding && orgId) {
+          const { data: vectorResults, error: vectorError } = await supabase.functions.invoke('match-knowledge-base', {
+            body: {
+              query_embedding: queryEmbedding,
+              match_threshold: 0.75,
+              match_count: 5,
+              org_filter: orgId
+            }
+          });
 
-        if (!vectorError && vectorResults && vectorResults.length > 0) {
-          searchResults = vectorResults;
-        } else {
-          // Fallback to text search
+          if (!vectorError && vectorResults?.length > 0) {
+            searchResults = vectorResults.map((result: any) => ({
+              id: result.id,
+              title: result.title,
+              content: result.content,
+              category: result.category,
+              similarity: result.similarity
+            }));
+            searchUsed = true;
+          }
+        }
+
+        // Fallback 1: Text search with tsvector
+        if (searchResults.length === 0 && orgId) {
           const { data: textResults, error: textError } = await supabase
             .from('knowledge_base')
-            .select('*')
-            .textSearch('search_vector', message)
+            .select('id, title, content, category, tags')
+            .eq('org_id', orgId)
+            .textSearch('search_vector', message, { 
+              type: 'websearch', 
+              config: 'english' 
+            })
             .limit(3);
 
-          if (!textError && textResults) {
+          if (!textError && textResults?.length > 0) {
             searchResults = textResults;
+            searchUsed = true;
           }
         }
 
-        // Format search results
-        if (searchResults.length > 0) {
-          knowledgeBaseInfo = searchResults.map(result => 
-            `${result.content}\n\nSource: ${result.title} (${result.category})`
-          ).join('\n\n---\n\n');
+        // Fallback 2: Keyword matching on title/content
+        if (searchResults.length === 0 && orgId) {
+          const keywords = message.toLowerCase().split(' ').filter(word => word.length > 3);
+          
+          let query = supabase
+            .from('knowledge_base')
+            .select('id, title, content, category, tags')
+            .eq('org_id', orgId);
+
+          // Add keyword filters
+          keywords.forEach(keyword => {
+            query = query.or(`title.ilike.%${keyword}%,content.ilike.%${keyword}%,tags.cs.{${keyword}}`);
+          });
+
+          const { data: keywordResults, error: keywordError } = await query.limit(3);
+
+          if (!keywordError && keywordResults?.length > 0) {
+            searchResults = keywordResults;
+            searchUsed = true;
+          }
         }
+
+        // Final fallback: General knowledge base entries for org
+        if (searchResults.length === 0 && orgId) {
+          const { data: generalResults, error: generalError } = await supabase
+            .from('knowledge_base')
+            .select('id, title, content, category, tags')
+            .eq('org_id', orgId)
+            .eq('visibility', 'internal')
+            .order('created_at', { ascending: false })
+            .limit(2);
+
+          if (!generalError && generalResults?.length > 0) {
+            searchResults = generalResults;
+          }
+        }
+
+        // Format search results for context
+        if (searchResults.length > 0) {
+          knowledgeBaseInfo = searchResults.map(result => {
+            const similarityText = result.similarity ? ` (${Math.round(result.similarity * 100)}% match)` : '';
+            return `${result.content}\n\nSource: ${result.title} (${result.category})${similarityText}`;
+          }).join('\n\n---\n\n');
+        }
+
       } catch (searchError) {
         console.error("Knowledge base search error:", searchError);
-        // Continue without knowledge base info
+        // Continue without knowledge base info - graceful degradation
       }
     }
 
@@ -128,18 +197,8 @@ serve(async (req) => {
     if (!OPENAI_API_KEY) {
       response = "I'm your ResilientFI assistant. I can help you understand operational resilience requirements and provide guidance based on regulatory standards. However, OpenAI integration is not configured.";
     } else {
-      // Build context for OpenAI
-      let systemPrompt = `You are ResilientFI Assistant, an expert in operational resilience, risk management, and regulatory compliance. 
-      
-      You specialize in:
-      - OSFI guidelines (especially E-21 on operational resilience)
-      - ISO 22301 Business Continuity Management
-      - Operational risk management frameworks
-      - Third-party risk management
-      - Business impact analysis and continuity planning
-      - Key Risk Indicators (KRIs) and controls
-      
-      Provide practical, actionable guidance tailored to financial institutions and regulated entities.`;
+      // Build role-specific system prompt
+      let systemPrompt = buildRoleSpecificPrompt(context?.userRole);
       
       if (context?.module) {
         systemPrompt += `\n\nUser is currently in the ${context.module} module. Focus your response on this area.`;
@@ -152,6 +211,70 @@ serve(async (req) => {
       if (knowledgeBaseInfo) {
         systemPrompt += `\n\nRelevant knowledge base information: ${knowledgeBaseInfo}`;
       }
+
+    // Role-specific prompt builder
+    function buildRoleSpecificPrompt(userRole?: string | null): string {
+      const basePrompt = `You are ResilientFI Assistant, an expert in operational resilience, risk management, and regulatory compliance.`;
+      
+      switch (userRole?.toLowerCase()) {
+        case 'compliance':
+        case 'compliance_officer':
+          return `${basePrompt}
+          
+          As a Compliance-focused assistant, you specialize in:
+          - Regulatory compliance frameworks (OSFI E-21, Basel III, COSO)
+          - Policy development and review processes
+          - Regulatory reporting requirements
+          - Audit preparation and findings management
+          - Compliance gap analysis and remediation
+          - Documentation standards and evidence collection
+          
+          Provide detailed compliance guidance with specific regulatory references and implementation steps.`;
+          
+        case 'analyst':
+        case 'risk_analyst':
+          return `${basePrompt}
+          
+          As an Analyst-focused assistant, you specialize in:
+          - Data analysis and trend identification
+          - Risk assessment methodologies
+          - KRI development and monitoring
+          - Quantitative risk modeling
+          - Scenario analysis and stress testing
+          - Operational metrics and reporting
+          
+          Provide analytical insights with specific methodologies, calculations, and data interpretation guidance.`;
+          
+        case 'executive':
+        case 'cro':
+        case 'ceo':
+        case 'cfo':
+          return `${basePrompt}
+          
+          As an Executive-focused assistant, you specialize in:
+          - Strategic risk oversight and governance
+          - Board reporting and risk communication
+          - Regulatory relationship management
+          - Enterprise risk appetite setting
+          - Crisis management and business continuity
+          - Risk culture and organizational change
+          
+          Provide executive-level insights with strategic context, business impact focus, and stakeholder considerations.`;
+          
+        default:
+          return `${basePrompt}
+          
+          You specialize in:
+          - OSFI guidelines (especially E-21 on operational resilience)
+          - ISO 22301 Business Continuity Management
+          - Operational risk management frameworks
+          - Third-party risk management
+          - Business impact analysis and continuity planning
+          - Key Risk Indicators (KRIs) and controls
+          
+          Provide practical, actionable guidance tailored to financial institutions and regulated entities.`;
+      }
+    }
 
       try {
         const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
