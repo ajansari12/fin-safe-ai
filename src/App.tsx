@@ -1,19 +1,16 @@
 
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AuthPage from './pages/auth/AuthPage';
 import IndexPage from './pages/Index';
 import DashboardPage from './pages/Dashboard';
-import SettingsPage from './pages/Settings';
 import ThirdPartyRiskPage from './pages/ThirdPartyRisk';
 import ScenarioTestingPage from './pages/ScenarioTesting';
 import IntegrationsPage from './pages/Integrations';
-import AnalyticsPage from './pages/Analytics';
-import OrganizationalIntelligencePage from './pages/OrganizationalIntelligence';
 import GovernanceFrameworkPage from './pages/GovernanceFramework';
 import RiskAppetitePage from './pages/RiskAppetite';
 import ImpactTolerancesPage from './pages/ImpactTolerances';
@@ -25,15 +22,23 @@ import IncidentLogPage from './pages/IncidentLog';
 import BusinessContinuityPage from './pages/BusinessContinuity';
 import AuditAndCompliancePage from './pages/AuditAndCompliance';
 import DocumentManagementPage from './pages/DocumentManagement';
-import AnalyticsHubPage from './pages/AnalyticsHub';
 import WorkflowCenterPage from './pages/WorkflowCenter';
 import DependencyMappingPage from './pages/DependencyMapping';
-import DeploymentCenterPage from './pages/DeploymentCenter';
-import ReportingPage from './pages/Reporting';
-import BillingPage from './pages/Billing';
 import SupportPage from './pages/Support';
-import EnhancedOrganizationSetup from './pages/setup/EnhancedOrganizationSetup';
-import EnhancedOnboardingDashboard from './components/onboarding/EnhancedOnboardingDashboard';
+import { DashboardSkeleton } from './components/common/SkeletonLoaders';
+
+// Lazy load Chart.js-heavy pages
+const AnalyticsPage = lazy(() => import('./pages/Analytics'));
+const AnalyticsHubPage = lazy(() => import('./pages/AnalyticsHub'));
+const OrganizationalIntelligencePage = lazy(() => import('./pages/OrganizationalIntelligence'));
+
+// Lazy load admin/low-priority routes
+const SettingsPage = lazy(() => import('./pages/Settings'));
+const DeploymentCenterPage = lazy(() => import('./pages/DeploymentCenter'));
+const ReportingPage = lazy(() => import('./pages/Reporting'));
+const BillingPage = lazy(() => import('./pages/Billing'));
+const EnhancedOrganizationSetup = lazy(() => import('./pages/setup/EnhancedOrganizationSetup'));
+const EnhancedOnboardingDashboard = lazy(() => import('./components/onboarding/EnhancedOnboardingDashboard'));
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedAIAssistantContext';
@@ -69,7 +74,11 @@ function App() {
               <Route path="/auth/update-password" element={<AuthPage />} />
               
               {/* Organization Setup Routes */}
-              <Route path="/setup/enhanced" element={<EnhancedOrganizationSetup />} />
+              <Route path="/setup/enhanced" element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <EnhancedOrganizationSetup />
+                </Suspense>
+              } />
               
               {/* Protected application routes */}
               <Route path="/app" element={
@@ -79,12 +88,16 @@ function App() {
               } />
               <Route path="/app/onboarding" element={
                 <ProtectedRoute>
-                  <EnhancedOnboardingDashboard />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <EnhancedOnboardingDashboard />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/onboarding/dashboard" element={
                 <ProtectedRoute>
-                  <EnhancedOnboardingDashboard />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <EnhancedOnboardingDashboard />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/dashboard" element={
@@ -94,7 +107,9 @@ function App() {
               } />
               <Route path="/app/settings" element={
                 <ProtectedRoute>
-                  <SettingsPage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <SettingsPage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/governance" element={
@@ -169,7 +184,9 @@ function App() {
               } />
               <Route path="/app/analytics-hub" element={
                 <ProtectedRoute>
-                  <AnalyticsHubPage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <AnalyticsHubPage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/workflow-center" element={
@@ -184,17 +201,23 @@ function App() {
               } />
               <Route path="/app/deployment-center" element={
                 <ProtectedRoute>
-                  <DeploymentCenterPage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <DeploymentCenterPage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/reporting" element={
                 <ProtectedRoute>
-                  <ReportingPage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <ReportingPage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/billing" element={
                 <ProtectedRoute>
-                  <BillingPage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <BillingPage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/support" element={
@@ -204,12 +227,16 @@ function App() {
               } />
               <Route path="/app/analytics" element={
                 <ProtectedRoute>
-                  <AnalyticsPage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <AnalyticsPage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/organizational-intelligence" element={
                 <ProtectedRoute>
-                  <OrganizationalIntelligencePage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <OrganizationalIntelligencePage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               
@@ -231,7 +258,9 @@ function App() {
               } />
               <Route path="/app/performance" element={
                 <ProtectedRoute>
-                  <AnalyticsPage />
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <AnalyticsPage />
+                  </Suspense>
                 </ProtectedRoute>
               } />
               <Route path="/app/mobile" element={

@@ -30,11 +30,18 @@ interface AnalyticsInsight {
 }
 
 // Lazy load heavy dashboard components
-const ExecutiveDashboard = lazy(() => import('./ExecutiveDashboard'));
-const OperationalDashboard = lazy(() => import('./OperationalDashboard'));
-const CustomDashboardBuilder = lazy(() => import('./CustomDashboardBuilder'));
-const PredictiveAnalyticsChart = lazy(() => import('./PredictiveAnalyticsChart'));
-const PredictiveAnalyticsPanel = lazy(() => import('./PredictiveAnalyticsPanel'));
+const ExecutiveDashboard = lazy(() => 
+  import('./ExecutiveDashboard').then(module => ({ default: module.default }))
+);
+const OperationalDashboard = lazy(() => 
+  import('./OperationalDashboard').then(module => ({ default: module.default }))
+);
+const CustomDashboardBuilder = lazy(() => 
+  import('./CustomDashboardBuilder').then(module => ({ default: module.default }))
+);
+const PredictiveAnalyticsPanel = lazy(() => 
+  import('./PredictiveAnalyticsPanel').then(module => ({ default: module.default }))
+);
 
 // Loading skeleton component
 const DashboardSkeleton = () => (
