@@ -35,6 +35,31 @@ class SampleDataService {
     }
   }
 
+  // Generate extended sample data with custom parameters
+  async generateExtendedSampleData(params: {
+    kriLogsMonths?: number;
+    vendorCount?: number;
+    incidentCount?: number;
+    governanceCount?: number;
+    includeFailedSLA?: boolean;
+    mixedSeverity?: boolean;
+  }): Promise<SampleDataResults> {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-sample-data', {
+        body: params
+      });
+
+      if (error) {
+        throw new Error(`Failed to generate extended sample data: ${error.message}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Extended sample data generation error:', error);
+      throw error;
+    }
+  }
+
   // Clear all sample data (useful for testing)
   async clearSampleData(): Promise<void> {
     try {

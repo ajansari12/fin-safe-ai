@@ -18,6 +18,18 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Parse request parameters
+    const body = await req.json().catch(() => ({}));
+    const params = {
+      kriLogsMonths: body.kriLogsMonths || 6,
+      vendorCount: body.vendorCount || 25,
+      incidentCount: body.incidentCount || 15,
+      governanceCount: body.governanceCount || 50,
+      includeFailedSLA: body.includeFailedSLA !== false,
+      mixedSeverity: body.mixedSeverity !== false
+    };
+    
     const results = {
       organizations: 0,
       profiles: 0,
@@ -26,6 +38,8 @@ serve(async (req) => {
       vendor_contracts: 0,
       continuity_plans: 0,
       governance_policies: 0,
+      kri_logs: 0,
+      kri_definitions: 0,
       errors: []
     };
 
@@ -130,14 +144,28 @@ serve(async (req) => {
       }
     }
 
-    // 3. Create Incident Logs
+    // 3. Create Incident Logs with extended parameters
     for (const org of organizations) {
       const orgProfiles = profiles.filter(p => p.organization_id === org.id);
+      const incidentsPerOrg = Math.ceil(params.incidentCount / organizations.length);
       
-      for (let i = 0; i < faker.number.int({ min: 5, max: 15 }); i++) {
-        const severity = faker.helpers.arrayElement(['low', 'medium', 'high', 'critical']);
+      for (let i = 0; i < incidentsPerOrg; i++) {
+        const severity = params.mixedSeverity 
+          ? faker.helpers.arrayElement(['low', 'medium', 'high', 'critical'])
+          : faker.helpers.weightedArrayElement([
+              { weight: 0.4, value: 'medium' },
+              { weight: 0.3, value: 'high' },
+              { weight: 0.2, value: 'low' },
+              { weight: 0.1, value: 'critical' }
+            ]);
+        
         const status = faker.helpers.arrayElement(['open', 'in_progress', 'resolved', 'closed']);
         const reportedDate = faker.date.past({ years: 1 });
+        
+        // Add SLA breach scenarios
+        const hasSLABreach = params.includeFailedSLA && faker.datatype.boolean(0.3);
+        const maxResponseHours = severity === 'critical' ? 1 : severity === 'high' ? 4 : 24;
+        const maxResolutionHours = severity === 'critical' ? 4 : severity === 'high' ? 24 : 72;
         
         const incident = {
           org_id: org.id,
@@ -158,8 +186,18 @@ serve(async (req) => {
           reported_by: faker.helpers.arrayElement(orgProfiles)?.id,
           assigned_to: faker.helpers.arrayElement(orgProfiles)?.id,
           reported_at: reportedDate.toISOString(),
-          first_response_at: status !== 'open' ? faker.date.between({ from: reportedDate, to: new Date() }).toISOString() : null,
-          resolved_at: status === 'resolved' || status === 'closed' ? faker.date.recent().toISOString() : null,
+          first_response_at: status !== 'open' ? 
+            (hasSLABreach ? 
+              faker.date.between({ from: reportedDate, to: new Date(reportedDate.getTime() + (maxResponseHours * 2) * 60 * 60 * 1000) }) 
+              : faker.date.between({ from: reportedDate, to: new Date(reportedDate.getTime() + maxResponseHours * 60 * 60 * 1000) })
+            ).toISOString() : null,
+          resolved_at: status === 'resolved' || status === 'closed' ? 
+            (hasSLABreach ?
+              faker.date.between({ from: reportedDate, to: new Date(reportedDate.getTime() + (maxResolutionHours * 2) * 60 * 60 * 1000) })
+              : faker.date.recent()
+            ).toISOString() : null,
+          max_response_time_hours: maxResponseHours,
+          max_resolution_time_hours: maxResolutionHours,
           impact_assessment: faker.lorem.sentence(),
           root_cause: status === 'resolved' || status === 'closed' ? faker.lorem.sentence() : null,
           lessons_learned: status === 'closed' ? faker.lorem.paragraph() : null,
@@ -226,15 +264,26 @@ serve(async (req) => {
 
     // 5. Create Vendor Contracts (Third Party Profiles first, then contracts)
     for (const org of organizations) {
-      for (let i = 0; i < faker.number.int({ min: 3, max: 8 }); i++) {
+      const vendorsPerOrg = Math.ceil(params.vendorCount / organizations.length);
+      for (let i = 0; i < vendorsPerOrg; i++) {
         // Create vendor profile first
         const vendor = {
           org_id: org.id,
           vendor_name: faker.company.name(),
           vendor_type: faker.helpers.arrayElement(['technology', 'financial', 'operational', 'consulting']),
           service_category: faker.helpers.arrayElement(['cloud_services', 'payment_processing', 'data_analytics', 'cybersecurity', 'compliance']),
-          risk_rating: faker.helpers.arrayElement(['low', 'medium', 'high', 'critical']),
-          criticality: faker.helpers.arrayElement(['low', 'medium', 'high', 'critical']),
+          risk_rating: faker.helpers.weightedArrayElement([
+            { weight: 0.3, value: 'low' },
+            { weight: 0.4, value: 'medium' },
+            { weight: 0.25, value: 'high' },
+            { weight: 0.05, value: 'critical' }
+          ]),
+          criticality: faker.helpers.weightedArrayElement([
+            { weight: 0.3, value: 'low' },
+            { weight: 0.4, value: 'medium' },
+            { weight: 0.25, value: 'high' },
+            { weight: 0.05, value: 'critical' }
+          ]),
           contact_name: faker.person.fullName(),
           contact_email: faker.internet.email(),
           contact_phone: faker.phone.number(),
@@ -373,18 +422,34 @@ serve(async (req) => {
         continue;
       }
 
-      // Create policies for this framework
-      const policyTypes = [
+      // Create policies for this framework - extended count
+      const basePolicyTypes = [
         'Risk Management Policy',
         'Information Security Policy',
         'Business Continuity Policy',
         'Vendor Management Policy',
         'Incident Management Policy',
         'Data Governance Policy',
-        'Compliance Monitoring Policy'
+        'Compliance Monitoring Policy',
+        'Data Privacy Policy',
+        'Anti-Money Laundering Policy',
+        'Credit Risk Policy',
+        'Market Risk Policy',
+        'Operational Risk Policy',
+        'Liquidity Risk Policy',
+        'Model Risk Management Policy',
+        'Third Party Risk Policy',
+        'Business Continuity Policy',
+        'Crisis Management Policy',
+        'Change Management Policy',
+        'Access Control Policy',
+        'Data Retention Policy'
       ];
+      
+      const policiesPerOrg = Math.ceil(params.governanceCount / (organizations.length * 2)); // Half policies, half frameworks
+      const selectedPolicies = faker.helpers.arrayElements(basePolicyTypes, policiesPerOrg);
 
-      for (const policyType of policyTypes) {
+      for (const policyType of selectedPolicies) {
         const policy = {
           framework_id: frameworkData.id,
           policy_name: policyType,
@@ -416,6 +481,98 @@ serve(async (req) => {
           results.errors.push(`Policy error: ${policyError.message}`);
         } else {
           results.governance_policies++;
+        }
+      }
+    }
+
+    // 8. Create KRI Definitions and Logs for 6 months
+    for (const org of organizations) {
+      const orgProfiles = profiles.filter(p => p.organization_id === org.id);
+      
+      const kriTypes = [
+        { name: 'System Availability', unit: 'percentage', threshold_warning: 99.5, threshold_critical: 99.0 },
+        { name: 'Transaction Failure Rate', unit: 'percentage', threshold_warning: 0.5, threshold_critical: 1.0 },
+        { name: 'Customer Complaints', unit: 'count', threshold_warning: 50, threshold_critical: 100 },
+        { name: 'Security Incidents', unit: 'count', threshold_warning: 5, threshold_critical: 10 },
+        { name: 'Data Quality Score', unit: 'percentage', threshold_warning: 95, threshold_critical: 90 },
+        { name: 'Vendor SLA Breaches', unit: 'count', threshold_warning: 3, threshold_critical: 5 },
+        { name: 'Regulatory Findings', unit: 'count', threshold_warning: 2, threshold_critical: 5 },
+        { name: 'Operational Loss', unit: 'currency', threshold_warning: 100000, threshold_critical: 500000 }
+      ];
+
+      for (const kriType of kriTypes) {
+        // Create KRI Definition
+        const kriDefinition = {
+          org_id: org.id,
+          kri_name: kriType.name,
+          kri_description: `Monitoring ${kriType.name.toLowerCase()} for risk management`,
+          measurement_unit: kriType.unit,
+          calculation_method: faker.lorem.sentence(),
+          data_source: faker.helpers.arrayElement(['automated_system', 'manual_entry', 'third_party_api']),
+          collection_frequency: faker.helpers.arrayElement(['daily', 'weekly', 'monthly']),
+          warning_threshold: kriType.threshold_warning,
+          critical_threshold: kriType.threshold_critical,
+          target_value: kriType.threshold_warning * 0.8,
+          owner_id: faker.helpers.arrayElement(orgProfiles)?.id,
+          status: 'active',
+          risk_category: faker.helpers.arrayElement(['operational', 'credit', 'market', 'liquidity', 'cyber']),
+          business_function: faker.helpers.arrayElement(['payments', 'trading', 'lending', 'operations'])
+        };
+
+        const { data: kriData, error: kriError } = await supabase
+          .from('kri_definitions')
+          .insert([kriDefinition])
+          .select()
+          .single();
+
+        if (kriError) {
+          results.errors.push(`KRI Definition error: ${kriError.message}`);
+          continue;
+        } else {
+          results.kri_definitions++;
+        }
+
+        // Create 6 months of KRI logs
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - params.kriLogsMonths);
+        
+        for (let month = 0; month < params.kriLogsMonths; month++) {
+          const measurementDate = new Date(startDate);
+          measurementDate.setMonth(measurementDate.getMonth() + month);
+          
+          // Generate realistic values with some variation
+          const baseValue = kriType.threshold_warning * (0.7 + Math.random() * 0.4);
+          const actualValue = baseValue + (Math.random() - 0.5) * baseValue * 0.3;
+          
+          // Determine threshold breach
+          let thresholdBreached = 'none';
+          if (actualValue >= kriType.threshold_critical) {
+            thresholdBreached = 'critical';
+          } else if (actualValue >= kriType.threshold_warning) {
+            thresholdBreached = 'warning';
+          }
+
+          const kriLog = {
+            kri_id: kriData.id,
+            measurement_date: measurementDate.toISOString().split('T')[0],
+            actual_value: Math.round(actualValue * 100) / 100,
+            target_value: kriDefinition.target_value,
+            threshold_breached: thresholdBreached,
+            notes: thresholdBreached !== 'none' ? 
+              `${thresholdBreached.toUpperCase()} threshold breached - requires attention` : 
+              'Normal operational levels maintained',
+            measured_by: faker.helpers.arrayElement(orgProfiles)?.id
+          };
+
+          const { error: logError } = await supabase
+            .from('kri_logs')
+            .insert([kriLog]);
+
+          if (logError) {
+            results.errors.push(`KRI Log error: ${logError.message}`);
+          } else {
+            results.kri_logs++;
+          }
         }
       }
     }

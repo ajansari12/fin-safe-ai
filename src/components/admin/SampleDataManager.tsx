@@ -40,7 +40,15 @@ const SampleDataManager: React.FC = () => {
   const handleGenerateData = async () => {
     try {
       setIsGenerating(true);
-      const result = await sampleDataService.generateSampleData();
+      // Use extended parameters for comprehensive sample data
+      const result = await sampleDataService.generateExtendedSampleData({
+        kriLogsMonths: 6,
+        vendorCount: 30,
+        incidentCount: 20,
+        governanceCount: 60,
+        includeFailedSLA: true,
+        mixedSeverity: true
+      });
       setLastResult(result);
       
       if (result.success) {
