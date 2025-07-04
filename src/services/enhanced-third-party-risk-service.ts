@@ -574,11 +574,28 @@ class EnhancedThirdPartyRiskService {
   }
 
   private calculateRiskMetrics(assessments: any[]) {
-    const riskDistribution = {
-      low: assessments.filter(a => a.overall_risk_score <= 30).length,
-      medium: assessments.filter(a => a.overall_risk_score > 30 && a.overall_risk_score <= 70).length,
-      high: assessments.filter(a => a.overall_risk_score > 70).length
-    };
+    const lowCount = assessments.filter(a => a.overall_risk_score <= 30).length;
+    const mediumCount = assessments.filter(a => a.overall_risk_score > 30 && a.overall_risk_score <= 70).length;
+    const highCount = assessments.filter(a => a.overall_risk_score > 70).length;
+    const total = assessments.length;
+
+    const riskDistribution = [
+      { 
+        level: 'low', 
+        count: lowCount, 
+        percentage: total > 0 ? (lowCount / total) * 100 : 0 
+      },
+      { 
+        level: 'medium', 
+        count: mediumCount, 
+        percentage: total > 0 ? (mediumCount / total) * 100 : 0 
+      },
+      { 
+        level: 'high', 
+        count: highCount, 
+        percentage: total > 0 ? (highCount / total) * 100 : 0 
+      }
+    ];
 
     const trendingRisks = [
       { risk_type: 'Financial', trend: 'increasing', impact: 'medium' },
