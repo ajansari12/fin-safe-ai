@@ -67,6 +67,33 @@ serve(async (req) => {
 
     // For update mode, verify user has access to the organization
     if (!isSetupMode && org_id) {
+      // Get the authenticated user
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+      
+      if (userError || !user) {
+        console.error('Failed to get authenticated user:', userError)
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Check if user has access to this organization through their profile
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profileData || profileData.organization_id !== org_id) {
+        console.error('Organization access validation failed:', profileError || 'User not linked to organization')
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Cannot access this organization' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Verify the organization exists
       const { data: orgData, error: orgError } = await supabaseClient
         .from('organizations')
         .select('id, name')
@@ -74,10 +101,10 @@ serve(async (req) => {
         .single()
 
       if (orgError || !orgData) {
-        console.error('Organization access validation failed:', orgError)
+        console.error('Organization not found:', orgError)
         return new Response(
-          JSON.stringify({ error: 'Unauthorized: Cannot access this organization' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Organization not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
     }
