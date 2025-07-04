@@ -217,6 +217,9 @@ export function useEnhancedOrganizationSetup() {
           sector: orgData.sector,
           size: orgData.size
         });
+      } else if (step === 2) {
+        // Create organization record after collecting basic details (before framework generation)
+        await createOrganizationRecord();
       } else if (step === 3) {
         await completeStep('organization-profile', 'Organization Profile Assessment', {
           profileData: orgData
@@ -592,27 +595,81 @@ export function useEnhancedOrganizationSetup() {
     return 'large';
   };
 
+  // Create organization record early in the setup flow
+  const createOrganizationRecord = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Check if organization already exists
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.organization_id) {
+      console.log('Organization already exists, skipping creation');
+      return;
+    }
+
+    // Create organization
+    const organization = await createOrganization({
+      name: orgData.name,
+      sector: orgData.sector,
+      size: orgData.size,
+      regulatory_guidelines: orgData.regulatoryFrameworks,
+    });
+
+    // Update user profile with organization ID
+    await updateUserProfile(organization.id);
+
+    // Create user role
+    await createUserRole(organization.id, orgData.userRole);
+
+    console.log('Organization created successfully:', organization.id);
+    
+    toast({
+      title: "Organization Created",
+      description: "Your organization has been set up and is ready for framework generation.",
+    });
+  };
+
   const handleComplete = async () => {
     setIsSubmitting(true);
     
     try {
-      // Create organization
-      const organization = await createOrganization({
-        name: orgData.name,
-        sector: orgData.sector,
-        size: orgData.size,
-        regulatory_guidelines: orgData.regulatoryFrameworks,
-      });
+      // Get current user and organization
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
-      // Update user profile with organization ID
-      await updateUserProfile(organization.id);
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
 
-      // Create user role
-      await createUserRole(organization.id, orgData.userRole);
+      if (!userProfile?.organization_id) {
+        throw new Error('Organization not found. Please restart the setup process.');
+      }
 
-      // Create organizational profile with enhanced data
+      const organizationId = userProfile.organization_id;
+
+      // Update organization with any additional enhanced data
+      await supabase
+        .from('organizations')
+        .update({
+          sub_sector: orgData.subSector,
+          org_type: orgData.orgType,
+          geographic_scope: orgData.geographicScope,
+          asset_size: orgData.assetSize,
+          capital_tier: orgData.capitalTier,
+          regulatory_classification: orgData.primaryRegulators
+        })
+        .eq('id', organizationId);
+
+      // Create or update organizational profile with enhanced data
       const profileData = {
-        organization_id: organization.id,
+        organization_id: organizationId,
         sub_sector: orgData.subSector,
         employee_count: orgData.employeeCount,
         asset_size: orgData.assetSize,
@@ -630,7 +687,7 @@ export function useEnhancedOrganizationSetup() {
         market_position: orgData.marketPosition
       };
 
-      const profile = await organizationalIntelligenceService.createOrUpdateProfile(profileData);
+      const orgProfile = await organizationalIntelligenceService.createOrUpdateProfile(profileData);
 
       // Store Canadian banking specific data in organizational_profiles table
       if (orgData.sector?.startsWith('banking-schedule') || orgData.bankingLicenseType) {
@@ -643,13 +700,13 @@ export function useEnhancedOrganizationSetup() {
             osfi_rating: orgData.osfiRating,
             deposit_insurance_coverage: orgData.depositInsurance || false
           })
-          .eq('organization_id', organization.id);
+          .eq('organization_id', organizationId);
       }
 
       // Upload policy files if any
       if (orgData.policyFiles.length > 0) {
         await Promise.all(
-          orgData.policyFiles.map(file => uploadPolicyFile(file, organization.id))
+          orgData.policyFiles.map(file => uploadPolicyFile(file, organizationId))
         );
       }
 
@@ -658,8 +715,8 @@ export function useEnhancedOrganizationSetup() {
         await supabase
           .from('generated_frameworks')
           .insert({
-            organization_id: organization.id,
-            profile_id: '', // Would be populated with actual profile ID
+            organization_id: organizationId,
+            profile_id: orgProfile?.id || '', 
             template_id: frameworkProgress.selectedFramework.id,
             framework_data: frameworkProgress.selectedFramework.template_data,
             customizations: frameworkProgress.customizations || {},
@@ -669,7 +726,7 @@ export function useEnhancedOrganizationSetup() {
 
       // Complete onboarding step
       await completeStep('organization-setup-complete', 'Organization Setup Complete', {
-        organizationId: organization.id,
+        organizationId: organizationId,
         frameworkGenerated: !!frameworkProgress.selectedFramework
       });
 
@@ -680,8 +737,8 @@ export function useEnhancedOrganizationSetup() {
       try {
         await supabase.functions.invoke('send-welcome-email', {
           body: {
-            userId: (await supabase.auth.getUser()).data.user?.id,
-            organizationId: organization.id
+            userId: user.id,
+            organizationId: organizationId
           }
         });
       } catch (emailError) {
@@ -759,6 +816,7 @@ export function useEnhancedOrganizationSetup() {
     customizeFramework,
     resumeFromSaved,
     startFresh,
-    validateCurrentStep
+    validateCurrentStep,
+    createOrganizationRecord
   };
 }

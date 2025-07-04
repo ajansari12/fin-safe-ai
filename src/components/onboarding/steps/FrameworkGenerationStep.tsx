@@ -92,8 +92,7 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
       let orgProfile = await createOrUpdateOrganizationalProfile();
       
       if (!orgProfile) {
-        toast.error('Failed to create organizational profile');
-        return;
+        throw new Error('Failed to create organizational profile');
       }
 
       // Generate frameworks
@@ -132,12 +131,17 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
 
   const createOrUpdateOrganizationalProfile = async () => {
     try {
-      // Check if profile exists
+      // Verify organization exists first
+      if (!profile?.organization_id) {
+        throw new Error('Organization not found. Please ensure organization setup is complete.');
+      }
+
+      // Check if organizational profile already exists
       const { data: existingProfile } = await supabase
         .from('organizational_profiles')
         .select('*')
-        .eq('organization_id', profile?.organization_id)
-        .single();
+        .eq('organization_id', profile.organization_id)
+        .maybeSingle();
 
       if (existingProfile) {
         // Update with framework preferences
@@ -161,7 +165,7 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
         const { data: newProfile } = await supabase
           .from('organizational_profiles')
           .insert({
-            organization_id: profile?.organization_id,
+            organization_id: profile.organization_id,
             preferred_framework_types: selectedFrameworks,
             auto_generate_frameworks: true,
             framework_preferences: {
@@ -179,7 +183,7 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
       }
     } catch (error) {
       console.error('Error creating/updating organizational profile:', error);
-      return null;
+      throw error; // Re-throw to be handled by the caller
     }
   };
 
