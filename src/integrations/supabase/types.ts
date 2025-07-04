@@ -639,6 +639,54 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          module: string
+          org_id: string
+          resource_id: string | null
+          resource_type: string | null
+          success: boolean | null
+          user_agent: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          module: string
+          org_id: string
+          resource_id?: string | null
+          resource_type?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          module?: string
+          org_id?: string
+          resource_id?: string | null
+          resource_type?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       audit_schedules: {
         Row: {
           actual_hours: number | null
@@ -10660,6 +10708,22 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      log_audit_action: {
+        Args: {
+          p_user_id: string
+          p_org_id: string
+          p_action_type: string
+          p_module: string
+          p_resource_id?: string
+          p_resource_type?: string
+          p_action_details?: Json
+          p_ip_address?: string
+          p_user_agent?: string
+          p_user_name?: string
+          p_success?: boolean
+        }
         Returns: string
       }
       match_knowledge_base: {
