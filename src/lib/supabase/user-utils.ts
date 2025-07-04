@@ -48,7 +48,8 @@ export async function getUserOrganization() {
     const profile = await getCurrentUserProfile();
     
     if (!profile?.organization_id) {
-      return null;
+      console.warn('AI Assistant fallback: No organization_id found in profile');
+      return { org_id: null, name: 'Unknown Organization' };
     }
 
     const { data: organization, error } = await supabase
@@ -58,9 +59,11 @@ export async function getUserOrganization() {
       .single();
 
     if (error) {
-      console.warn('Organizations table not available:', error);
-      // Return a mock organization
+      console.warn('Organizations table not available, using fallback:', error);
+      console.info('AI Assistant fallback: Using default organization context');
+      // Return a mock organization with org_id for AI assistant
       return {
+        org_id: profile.organization_id,
         id: profile.organization_id,
         name: 'Default Organization',
         sector: 'Financial Services',
@@ -72,12 +75,22 @@ export async function getUserOrganization() {
 
     // Validate organization data
     if (!isValidOrganization(organization)) {
-      throw new Error('Invalid organization data structure');
+      console.warn('Invalid organization data structure, using fallback');
+      return {
+        org_id: profile.organization_id,
+        name: 'Default Organization'
+      };
     }
 
-    return organization;
+    // Ensure org_id is set for AI assistant compatibility
+    return {
+      ...organization,
+      org_id: organization.id
+    };
   } catch (error) {
     console.error('Error fetching user organization:', error);
-    return null;
+    console.info('AI Assistant fallback: Using null organization context');
+    // Always return a fallback object instead of null
+    return { org_id: null, name: 'Unknown Organization' };
   }
 }
