@@ -366,12 +366,25 @@ export function useEnhancedOrganizationSetup() {
     console.log(`Starting organization enrichment for: "${orgData.name}"`);
 
     try {
+      // Detect whether user has an existing organization (Update mode) or not (Setup mode)
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user?.id || '')
+        .single();
+
+      const existingOrgId = profile?.organization_id;
+      const isSetupMode = !existingOrgId;
+      
+      console.log(`Operating in ${isSetupMode ? 'Setup' : 'Update'} mode${existingOrgId ? ` (org_id: ${existingOrgId})` : ''}`);
+
       const { data, error } = await supabase.functions.invoke('enrich-organization-data', {
         body: {
-          org_id: null,
+          org_id: existingOrgId || null,
           company_name: orgData.name.trim(),
           domain: domain?.trim() || undefined,
-          mode: 'setup'
+          mode: isSetupMode ? 'setup' : 'update'
         }
       });
 
@@ -387,6 +400,8 @@ export function useEnhancedOrganizationSetup() {
           errorVariant = "default";
         } else if (error.message?.includes('timeout') || error.message?.includes('network')) {
           errorMessage = 'Request timed out. Please check your connection and try again.';
+        } else if (error.message?.includes('Unauthorized')) {
+          errorMessage = 'Access denied. Please ensure you have permission to update this organization.';
         }
         
         toast({
@@ -397,93 +412,113 @@ export function useEnhancedOrganizationSetup() {
         return;
       }
 
-      if (data?.success && data?.enriched_data) {
-        const enrichedData = data.enriched_data;
-        console.log('Received enriched data:', enrichedData);
-        
-        // Track which fields were updated
-        let fieldsUpdated = 0;
-        const updatedFields: string[] = [];
-        
-        // Create mapping for enriched data to our org data structure
-        const mappedSector = mapOrgTypeToSector(enrichedData.org_type, enrichedData.sector);
-        const mappedSize = mapEmployeeCountToSize(enrichedData.employee_count);
-        
-        // Update organization data with enriched fields
-        setOrgData(prev => {
-          const updates: Partial<EnhancedOrganizationData> = {};
+      if (data?.success) {
+        if (data.mode === 'setup' && data.enriched_data) {
+          // Setup mode: Update local state with enriched data
+          const enrichedData = data.enriched_data;
+          console.log('Received enriched data for setup:', enrichedData);
           
-          if (mappedSector && mappedSector !== prev.sector) {
-            updates.sector = mappedSector;
-            updatedFields.push('sector');
-            fieldsUpdated++;
-          }
+          // Track which fields were updated
+          let fieldsUpdated = 0;
+          const updatedFields: string[] = [];
           
-          if (enrichedData.org_type && enrichedData.org_type !== prev.orgType) {
-            updates.orgType = enrichedData.org_type;
-            updatedFields.push('organization type');
-            fieldsUpdated++;
-          }
+          // Create mapping for enriched data to our org data structure
+          const mappedSector = mapOrgTypeToSector(enrichedData.org_type, enrichedData.sector);
+          const mappedSize = mapEmployeeCountToSize(enrichedData.employee_count);
           
-          if (enrichedData.sub_sector && enrichedData.sub_sector !== prev.subSector) {
-            updates.subSector = enrichedData.sub_sector;
-            updatedFields.push('sub-sector');
-            fieldsUpdated++;
-          }
-          
-          if (enrichedData.geographic_scope && enrichedData.geographic_scope !== prev.geographicScope) {
-            updates.geographicScope = enrichedData.geographic_scope;
-            updatedFields.push('geographic scope');
-            fieldsUpdated++;
-          }
-          
-          if (enrichedData.employee_count && enrichedData.employee_count !== prev.employeeCount) {
-            updates.employeeCount = enrichedData.employee_count;
-            updatedFields.push('employee count');
-            fieldsUpdated++;
-          }
-          
-          if (enrichedData.asset_size && enrichedData.asset_size !== prev.assetSize) {
-            updates.assetSize = enrichedData.asset_size;
-            updatedFields.push('asset size');
-            fieldsUpdated++;
-          }
-          
-          if (enrichedData.capital_tier && enrichedData.capital_tier !== prev.capitalTier) {
-            updates.capitalTier = enrichedData.capital_tier;
-            updatedFields.push('capital tier');
-            fieldsUpdated++;
-          }
-          
-          if (enrichedData.regulatory_classification && 
-              JSON.stringify(enrichedData.regulatory_classification) !== JSON.stringify(prev.primaryRegulators)) {
-            updates.primaryRegulators = enrichedData.regulatory_classification;
-            updatedFields.push('regulatory frameworks');
-            fieldsUpdated++;
-          }
-          
-          if (mappedSize && mappedSize !== prev.size) {
-            updates.size = mappedSize;
-            updatedFields.push('organization size');
-            fieldsUpdated++;
-          }
-          
-          return { ...prev, ...updates };
-        });
-
-        if (fieldsUpdated > 0) {
-          console.log(`Successfully enriched ${fieldsUpdated} fields:`, updatedFields);
-          toast({
-            title: "Organization Data Auto-Populated",
-            description: `Successfully populated ${fieldsUpdated} field${fieldsUpdated > 1 ? 's' : ''}: ${updatedFields.join(', ')}.`,
+          // Update organization data with enriched fields
+          setOrgData(prev => {
+            const updates: Partial<EnhancedOrganizationData> = {};
+            
+            if (mappedSector && mappedSector !== prev.sector) {
+              updates.sector = mappedSector;
+              updatedFields.push('sector');
+              fieldsUpdated++;
+            }
+            
+            if (enrichedData.org_type && enrichedData.org_type !== prev.orgType) {
+              updates.orgType = enrichedData.org_type;
+              updatedFields.push('organization type');
+              fieldsUpdated++;
+            }
+            
+            if (enrichedData.sub_sector && enrichedData.sub_sector !== prev.subSector) {
+              updates.subSector = enrichedData.sub_sector;
+              updatedFields.push('sub-sector');
+              fieldsUpdated++;
+            }
+            
+            if (enrichedData.geographic_scope && enrichedData.geographic_scope !== prev.geographicScope) {
+              updates.geographicScope = enrichedData.geographic_scope;
+              updatedFields.push('geographic scope');
+              fieldsUpdated++;
+            }
+            
+            if (enrichedData.employee_count && enrichedData.employee_count !== prev.employeeCount) {
+              updates.employeeCount = enrichedData.employee_count;
+              updatedFields.push('employee count');
+              fieldsUpdated++;
+            }
+            
+            if (enrichedData.asset_size && enrichedData.asset_size !== prev.assetSize) {
+              updates.assetSize = enrichedData.asset_size;
+              updatedFields.push('asset size');
+              fieldsUpdated++;
+            }
+            
+            if (enrichedData.capital_tier && enrichedData.capital_tier !== prev.capitalTier) {
+              updates.capitalTier = enrichedData.capital_tier;
+              updatedFields.push('capital tier');
+              fieldsUpdated++;
+            }
+            
+            if (enrichedData.regulatory_classification && 
+                JSON.stringify(enrichedData.regulatory_classification) !== JSON.stringify(prev.primaryRegulators)) {
+              updates.primaryRegulators = enrichedData.regulatory_classification;
+              updatedFields.push('regulatory frameworks');
+              fieldsUpdated++;
+            }
+            
+            if (mappedSize && mappedSize !== prev.size) {
+              updates.size = mappedSize;
+              updatedFields.push('organization size');
+              fieldsUpdated++;
+            }
+            
+            return { ...prev, ...updates };
           });
-        } else {
+
+          if (fieldsUpdated > 0) {
+            console.log(`Successfully enriched ${fieldsUpdated} fields in setup mode:`, updatedFields);
+            toast({
+              title: "Organization Data Auto-Populated",
+              description: `Successfully populated ${fieldsUpdated} field${fieldsUpdated > 1 ? 's' : ''}: ${updatedFields.join(', ')}.`,
+            });
+          } else {
+            toast({
+              title: "No New Information Found",
+              description: "No additional information could be found to populate the form.",
+              variant: "default",
+            });
+          }
+
+        } else if (data.mode === 'update') {
+          // Update mode: Data was persisted to database, show success message
+          console.log('Organization updated successfully in database');
           toast({
-            title: "No New Information Found",
-            description: "No additional information could be found to populate the form.",
-            variant: "default",
+            title: "Organization Updated",
+            description: "Your organization information has been updated with enriched data.",
+          });
+
+        } else {
+          console.error('Unexpected response mode:', data.mode);
+          toast({
+            title: "Auto-Populate Failed",
+            description: "Received unexpected response from enrichment service.",
+            variant: "destructive",
           });
         }
+
       } else if (data?.fallback) {
         console.log('Fallback mode triggered:', data.message);
         
