@@ -62,6 +62,11 @@ function App() {
               
               {/* Authentication */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/auth/login" element={<LoginPage />} />
+              <Route path="/auth/register" element={<LoginPage />} />
+              <Route path="/auth/forgot-password" element={<LoginPage />} />
+              <Route path="/auth/verify" element={<LoginPage />} />
+              <Route path="/auth/update-password" element={<LoginPage />} />
               
               {/* Organization Setup Routes */}
               <Route path="/setup/enhanced" element={<EnhancedOrganizationSetup />} />
