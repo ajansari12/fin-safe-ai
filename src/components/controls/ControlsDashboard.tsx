@@ -4,12 +4,12 @@ import { useControlsDashboardData } from "@/hooks/useControlsDashboardData";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { AsyncWrapper } from "@/components/common";
+import { DashboardSkeleton } from "@/components/common/SkeletonLoaders";
 import DashboardMetrics from "./DashboardMetrics";
 import ControlsCharts from "./ControlsCharts";
 import KRIBreachesTrendChart from "./KRIBreachesTrendChart";
 import KRIVarianceChart from "./KRIVarianceChart";
 import KRIAppetiteBreaches from "./KRIAppetiteBreaches";
-import DashboardLoadingSkeleton from "./DashboardLoadingSkeleton";
 
 const ControlsDashboard: React.FC = () => {
   const {
@@ -52,7 +52,7 @@ const ControlsDashboard: React.FC = () => {
     <AsyncWrapper 
       loading={isLoading} 
       error={error}
-      loadingComponent={<DashboardLoadingSkeleton />}
+      loadingComponent={<DashboardSkeleton />}
       retryAction={refetch}
     >
       <div className="space-y-6">

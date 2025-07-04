@@ -1,7 +1,15 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Prevent layout shifts during font loading */
+@font-face {
+  font-family: 'Inter';
+  font-display: swap;
+  src: local('Inter');
+}
 
 @layer base {
   :root {
@@ -106,5 +114,61 @@
 
   .card-hover-effect {
     @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+}
+
+/* CLS Prevention Utilities */
+@layer utilities {
+  /* Fixed container heights to prevent layout shifts */
+  .dashboard-container {
+    @apply min-h-screen;
+  }
+  
+  .stats-grid {
+    @apply min-h-[140px];
+  }
+  
+  .chart-container {
+    @apply min-h-[400px];
+  }
+  
+  .table-container {
+    @apply min-h-[300px];
+  }
+  
+  /* Skeleton animation improvements */
+  .skeleton-pulse {
+    animation: skeleton-loading 1.2s ease-in-out infinite;
+  }
+  
+  @keyframes skeleton-loading {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  /* Prevent font loading flashes */
+  .font-loading-stable {
+    font-display: swap;
+    visibility: hidden;
+  }
+  
+  .font-loaded .font-loading-stable {
+    visibility: visible;
+  }
+  
+  /* Chart container reservations */
+  .chart-loading {
+    @apply bg-muted animate-pulse rounded;
+    aspect-ratio: 16/9;
+  }
+  
+  /* Image loading optimizations */
+  .img-loading {
+    @apply bg-muted;
+    min-height: 200px;
   }
 }
