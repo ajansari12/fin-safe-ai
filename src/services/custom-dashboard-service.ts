@@ -1,176 +1,171 @@
-
 import { supabase } from "@/integrations/supabase/client";
-
-export interface DashboardWidget {
-  id: string;
-  type: 'chart' | 'metric' | 'table' | 'heatmap' | 'scorecard';
-  title: string;
-  dataSource: string;
-  config: Record<string, any>;
-  position: { x: number; y: number; w: number; h: number };
-  roleVisibility: string[];
-}
+import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
 export interface CustomDashboard {
   id: string;
+  org_id: string;
+  created_by: string;
+  created_by_name?: string;
   name: string;
-  type: 'standard' | 'executive' | 'operational';
-  widgets: DashboardWidget[];
-  layoutConfig: Record<string, any>;
-  isShared: boolean;
-  sharedWith: string[];
-  createdBy?: string;
-  createdAt: string;
-  updatedAt: string;
+  description?: string;
+  layout_config: any;
+  is_default: boolean;
+  is_shared: boolean;
+  shared_with: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DashboardWidget {
+  id: string;
+  dashboard_id: string;
+  widget_type: string;
+  widget_config: any;
+  position_config: any;
+  filters: any;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 class CustomDashboardService {
-  async createDashboard(dashboard: Partial<CustomDashboard>): Promise<CustomDashboard> {
-    // Simulate dashboard creation
-    const newDashboard: CustomDashboard = {
-      id: `dashboard-${Date.now()}`,
-      name: dashboard.name || 'New Dashboard',
-      type: dashboard.type || 'standard',
-      widgets: dashboard.widgets || [],
-      layoutConfig: dashboard.layoutConfig || {},
-      isShared: dashboard.isShared || false,
-      sharedWith: dashboard.sharedWith || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+  async getDashboards(): Promise<CustomDashboard[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
 
-    // In a real implementation, this would save to the database
-    return newDashboard;
+    const { data, error } = await supabase
+      .from('custom_dashboards')
+      .select('*')
+      .eq('org_id', profile.organization_id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 
-  async getUserDashboards(userRole: string): Promise<CustomDashboard[]> {
-    // Simulate retrieving user dashboards
-    const mockDashboards: CustomDashboard[] = [
-      {
-        id: 'dashboard-1',
-        name: 'Executive Overview',
-        type: 'executive',
-        widgets: this.getDefaultWidgetsByRole('executive'),
-        layoutConfig: {},
-        isShared: false,
-        sharedWith: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: 'dashboard-2',
-        name: 'Risk Monitoring',
-        type: 'operational',
-        widgets: this.getDefaultWidgetsByRole('manager'),
-        layoutConfig: {},
-        isShared: true,
-        sharedWith: ['team'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
+  async getDashboard(dashboardId: string): Promise<CustomDashboard | null> {
+    const { data, error } = await supabase
+      .from('custom_dashboards')
+      .select('*')
+      .eq('id', dashboardId)
+      .single();
 
-    return mockDashboards.filter(dashboard => 
-      this.isDashboardAccessible(dashboard, userRole)
+    if (error) return null;
+    return data;
+  }
+
+  async createDashboard(dashboardData: Omit<CustomDashboard, 'id' | 'created_at' | 'updated_at' | 'org_id' | 'created_by' | 'created_by_name'>): Promise<CustomDashboard> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    const { data, error } = await supabase
+      .from('custom_dashboards')
+      .insert({
+        ...dashboardData,
+        org_id: profile.organization_id,
+        created_by: profile.id,
+        created_by_name: profile.full_name
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateDashboard(dashboardId: string, updates: Partial<CustomDashboard>): Promise<CustomDashboard> {
+    const { data, error } = await supabase
+      .from('custom_dashboards')
+      .update(updates)
+      .eq('id', dashboardId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteDashboard(dashboardId: string): Promise<void> {
+    const { error } = await supabase
+      .from('custom_dashboards')
+      .delete()
+      .eq('id', dashboardId);
+
+    if (error) throw error;
+  }
+
+  async setDefaultDashboard(dashboardId: string): Promise<void> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) throw new Error('No organization found');
+
+    // Remove default from all user's dashboards
+    await supabase
+      .from('custom_dashboards')
+      .update({ is_default: false })
+      .eq('created_by', profile.id);
+
+    // Set new default
+    const { error } = await supabase
+      .from('custom_dashboards')
+      .update({ is_default: true })
+      .eq('id', dashboardId);
+
+    if (error) throw error;
+  }
+
+  async getDashboardWidgets(dashboardId: string): Promise<DashboardWidget[]> {
+    const { data, error } = await supabase
+      .from('dashboard_widgets')
+      .select('*')
+      .eq('dashboard_id', dashboardId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async addWidget(widgetData: Omit<DashboardWidget, 'id' | 'created_at' | 'updated_at'>): Promise<DashboardWidget> {
+    const { data, error } = await supabase
+      .from('dashboard_widgets')
+      .insert(widgetData)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateWidget(widgetId: string, updates: Partial<DashboardWidget>): Promise<DashboardWidget> {
+    const { data, error } = await supabase
+      .from('dashboard_widgets')
+      .update(updates)
+      .eq('id', widgetId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteWidget(widgetId: string): Promise<void> {
+    const { error } = await supabase
+      .from('dashboard_widgets')
+      .delete()
+      .eq('id', widgetId);
+
+    if (error) throw error;
+  }
+
+  async updateWidgetPositions(widgets: Array<{ id: string; position_config: any }>): Promise<void> {
+    const updates = widgets.map(widget => 
+      supabase
+        .from('dashboard_widgets')
+        .update({ position_config: widget.position_config })
+        .eq('id', widget.id)
     );
-  }
 
-  async updateDashboard(id: string, updates: Partial<CustomDashboard>): Promise<void> {
-    // Simulate dashboard update
-    console.log('Updating dashboard:', id, updates);
-  }
-
-  async deleteDashboard(id: string): Promise<void> {
-    // Simulate dashboard deletion
-    console.log('Deleting dashboard:', id);
-  }
-
-  async cloneDashboard(id: string, newName: string): Promise<CustomDashboard> {
-    // Simulate dashboard cloning
-    return {
-      id: `dashboard-${Date.now()}`,
-      name: newName,
-      type: 'standard',
-      widgets: this.getDefaultWidgetsByRole('analyst'),
-      layoutConfig: {},
-      isShared: false,
-      sharedWith: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-  }
-
-  getDefaultWidgetsByRole(role: string): DashboardWidget[] {
-    const baseWidgets: DashboardWidget[] = [
-      {
-        id: 'widget-incidents',
-        type: 'metric',
-        title: 'Active Incidents',
-        dataSource: 'incident_logs',
-        config: { metric: 'count', status: 'open' },
-        position: { x: 0, y: 0, w: 3, h: 2 },
-        roleVisibility: ['admin', 'manager', 'analyst']
-      },
-      {
-        id: 'widget-kri-status',
-        type: 'chart',
-        title: 'KRI Status',
-        dataSource: 'kri_logs',
-        config: { chartType: 'line', timeRange: '30d' },
-        position: { x: 3, y: 0, w: 6, h: 4 },
-        roleVisibility: ['admin', 'manager', 'analyst']
-      }
-    ];
-
-    switch (role) {
-      case 'executive':
-      case 'admin':
-        return [
-          ...baseWidgets,
-          {
-            id: 'widget-risk-overview',
-            type: 'scorecard',
-            title: 'Risk Overview',
-            dataSource: 'risk_scorecard',
-            config: { showTrends: true },
-            position: { x: 9, y: 0, w: 3, h: 4 },
-            roleVisibility: ['admin', 'executive']
-          }
-        ];
-      
-      case 'manager':
-        return [
-          ...baseWidgets,
-          {
-            id: 'widget-control-effectiveness',
-            type: 'chart',
-            title: 'Control Effectiveness',
-            dataSource: 'controls',
-            config: { chartType: 'bar' },
-            position: { x: 0, y: 4, w: 6, h: 3 },
-            roleVisibility: ['admin', 'manager']
-          }
-        ];
-      
-      default:
-        return baseWidgets;
-    }
-  }
-
-  private isDashboardAccessible(dashboard: CustomDashboard, userRole: string): boolean {
-    // Simple role-based access control
-    const roleHierarchy = {
-      'admin': 4,
-      'executive': 3,
-      'manager': 2,
-      'analyst': 1
-    };
-
-    const userLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0;
-    const dashboardLevel = dashboard.type === 'executive' ? 3 : 
-                          dashboard.type === 'operational' ? 2 : 1;
-
-    return userLevel >= dashboardLevel || dashboard.isShared;
+    await Promise.all(updates);
   }
 }
 

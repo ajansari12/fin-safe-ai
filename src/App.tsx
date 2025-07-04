@@ -30,6 +30,7 @@ import { DashboardSkeleton } from './components/common/SkeletonLoaders';
 // Lazy load Chart.js-heavy pages
 const AnalyticsPage = lazy(() => import('./pages/Analytics'));
 const AnalyticsHubPage = lazy(() => import('./pages/AnalyticsHub'));
+const CustomDashboardPage = lazy(() => import('./pages/analytics/CustomDashboard'));
 const OrganizationalIntelligencePage = lazy(() => import('./pages/OrganizationalIntelligence'));
 
 // Lazy load admin/low-priority routes
@@ -229,6 +230,13 @@ function App() {
                 <ProtectedRoute>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <AnalyticsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/app/analytics/custom" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <CustomDashboardPage />
                   </Suspense>
                 </ProtectedRoute>
               } />

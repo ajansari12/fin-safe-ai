@@ -2512,6 +2512,50 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_widgets: {
+        Row: {
+          created_at: string
+          dashboard_id: string
+          filters: Json | null
+          id: string
+          is_active: boolean | null
+          position_config: Json
+          updated_at: string
+          widget_config: Json
+          widget_type: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard_id: string
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          position_config?: Json
+          updated_at?: string
+          widget_config?: Json
+          widget_type: string
+        }
+        Update: {
+          created_at?: string
+          dashboard_id?: string
+          filters?: Json | null
+          id?: string
+          is_active?: boolean | null
+          position_config?: Json
+          updated_at?: string
+          widget_config?: Json
+          widget_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_widgets_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "custom_dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       data_access_logs: {
         Row: {
           access_granted: boolean
