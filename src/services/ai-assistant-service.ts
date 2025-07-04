@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile, getUserOrganization } from "@/lib/supabase-utils";
+import { knowledgeBaseService, type VectorSearchResult } from "@/services/knowledge-base-service";
 
 export interface WorkflowAnalysis {
   module: string;
@@ -255,6 +256,74 @@ class AIAssistantService {
     };
 
     return sectorThresholds[sector] || [];
+  }
+
+  // Enhanced chat with knowledge base search
+  async logChatMessageWithKnowledgeSearch(
+    messageType: 'user' | 'assistant',
+    content: string,
+    moduleContext?: string,
+    responseTimeMs?: number
+  ): Promise<string> {
+    try {
+      let knowledgeSources: string[] = [];
+      let enhancedContent = content;
+
+      // For user messages, search knowledge base and enhance AI response
+      if (messageType === 'user') {
+        const searchResults = await knowledgeBaseService.search(content, 3);
+        
+        if (searchResults.length > 0) {
+          knowledgeSources = searchResults.map(result => result.id);
+          
+          // Generate enhanced AI response using knowledge base context
+          const contextualResponse = await this.generateContextualResponse(content, searchResults);
+          if (contextualResponse) {
+            enhancedContent = contextualResponse;
+            messageType = 'assistant'; // Convert to assistant response
+          }
+        }
+      }
+
+      return await this.logChatMessage(messageType, enhancedContent, moduleContext, knowledgeSources, responseTimeMs);
+    } catch (error) {
+      console.error('Error in enhanced chat logging:', error);
+      // Fallback to regular logging
+      return await this.logChatMessage(messageType, content, moduleContext, [], responseTimeMs);
+    }
+  }
+
+  // Generate contextual response using AI assistant
+  private async generateContextualResponse(userQuery: string, knowledgeResults: VectorSearchResult[]): Promise<string | null> {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          message: userQuery,
+          context: {
+            module: null,
+            userRole: null,
+            orgSector: null,
+            orgSize: null
+          },
+          knowledgeBase: knowledgeResults.map(result => ({
+            title: result.title,
+            content: result.content,
+            category: result.category,
+            similarity: result.similarity
+          }))
+        }
+      });
+
+      if (error) {
+        console.error('AI assistant error:', error);
+        return null;
+      }
+
+      return data?.response || null;
+    } catch (error) {
+      console.error('Error generating contextual response:', error);
+      return null;
+    }
   }
 
   // Chat history logging

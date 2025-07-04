@@ -10662,6 +10662,26 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: string
       }
+      match_knowledge_base: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+          org_filter: string
+        }
+        Returns: {
+          id: string
+          org_id: string
+          title: string
+          category: string
+          content: string
+          tags: string[]
+          visibility: string
+          created_at: string
+          updated_at: string
+          similarity: number
+        }[]
+      }
       refresh_performance_dashboard: {
         Args: Record<PropertyKey, never>
         Returns: undefined
