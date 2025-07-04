@@ -26,6 +26,7 @@ interface EnhancedOrganizationData {
   assetSize?: number;
   geographicScope?: string;
   subSector?: string;
+  orgType?: string;
   businessLines?: string[];
   riskMaturity?: 'basic' | 'developing' | 'advanced' | 'sophisticated';
   complianceMaturity?: 'basic' | 'developing' | 'advanced' | 'sophisticated';
@@ -64,6 +65,7 @@ export function useEnhancedOrganizationSetup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completionEstimate, setCompletionEstimate] = useState(15); // minutes
   const [saveInProgress, setSaveInProgress] = useState(false);
+  const [isEnrichingOrganization, setIsEnrichingOrganization] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { completeStep } = useOnboarding();
@@ -350,6 +352,72 @@ export function useEnhancedOrganizationSetup() {
     }));
   };
 
+  const handleEnrichOrganization = async (domain?: string) => {
+    if (!orgData.name.trim()) {
+      toast({
+        title: "Organization name required",
+        description: "Please enter your organization name to enable auto-populate.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsEnrichingOrganization(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('enrich-organization-data', {
+        body: {
+          org_id: null, // Will be set by the edge function
+          company_name: orgData.name,
+          domain: domain || undefined
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data?.success && data?.enriched_data) {
+        const enrichedData = data.enriched_data;
+        
+        // Update organization data with enriched fields
+        setOrgData(prev => ({
+          ...prev,
+          orgType: enrichedData.org_type || prev.orgType,
+          subSector: enrichedData.sub_sector || prev.subSector,
+          geographicScope: enrichedData.geographic_scope || prev.geographicScope,
+          employeeCount: enrichedData.employee_count || prev.employeeCount,
+          assetSize: enrichedData.asset_size || prev.assetSize,
+          capitalTier: enrichedData.capital_tier || prev.capitalTier,
+          primaryRegulators: enrichedData.regulatory_classification || prev.primaryRegulators,
+          // Map org_type to sector if available
+          sector: enrichedData.org_type || prev.sector
+        }));
+
+        toast({
+          title: "Organization Enriched Successfully",
+          description: `Auto-populated organization details based on "${orgData.name}".`,
+        });
+      } else if (data?.fallback) {
+        // Handle fallback case when enrichment fails
+        toast({
+          title: "Auto-populate unavailable",
+          description: "Please fill in the organization details manually. Some fields may be pre-filled from public data.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error('Organization enrichment failed:', error);
+      toast({
+        title: "Auto-populate Failed", 
+        description: "Unable to auto-populate organization details. Please fill in manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEnrichingOrganization(false);
+    }
+  };
+
   const handleComplete = async () => {
     setIsSubmitting(true);
     
@@ -505,11 +573,13 @@ export function useEnhancedOrganizationSetup() {
     isSubmitting,
     completionEstimate,
     saveInProgress,
+    isEnrichingOrganization,
     frameworkProgress,
     handleNext,
     handleBack,
     handleComplete,
     handleChange,
+    handleEnrichOrganization,
     generateFramework,
     selectFramework,
     customizeFramework,
