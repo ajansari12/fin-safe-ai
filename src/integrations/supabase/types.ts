@@ -3735,6 +3735,74 @@ export type Database = {
           },
         ]
       }
+      document_versions: {
+        Row: {
+          ai_analysis_status: string | null
+          ai_summary: string | null
+          checksum: string | null
+          created_at: string
+          description: string | null
+          document_id: string
+          file_path: string | null
+          file_size: number | null
+          id: string
+          is_current_version: boolean
+          mime_type: string | null
+          org_id: string
+          status: string | null
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version_number: number
+        }
+        Insert: {
+          ai_analysis_status?: string | null
+          ai_summary?: string | null
+          checksum?: string | null
+          created_at?: string
+          description?: string | null
+          document_id: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_current_version?: boolean
+          mime_type?: string | null
+          org_id: string
+          status?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version_number?: number
+        }
+        Update: {
+          ai_analysis_status?: string | null
+          ai_summary?: string | null
+          checksum?: string | null
+          created_at?: string
+          description?: string | null
+          document_id?: string
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          is_current_version?: boolean
+          mime_type?: string | null
+          org_id?: string
+          status?: string | null
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           access_count: number | null

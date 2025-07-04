@@ -7,16 +7,28 @@ import { useQuery } from "@tanstack/react-query";
 import { documentManagementService } from "@/services/document-management-service";
 import { History, Download, Eye, FileText, User, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 interface DocumentVersionHistoryProps {
   documentId: string;
 }
 
 const DocumentVersionHistory: React.FC<DocumentVersionHistoryProps> = ({ documentId }) => {
-  const { data: versions = [] } = useQuery({
+  const { data: versions = [], refetch } = useQuery({
     queryKey: ['document-versions', documentId],
     queryFn: () => documentManagementService.getDocumentVersions(documentId)
   });
+
+  const handleRevertToVersion = async (versionId: string) => {
+    try {
+      await documentManagementService.revertToVersion(documentId, versionId);
+      refetch();
+      toast.success('Successfully reverted to previous version');
+    } catch (error) {
+      console.error('Error reverting to version:', error);
+      toast.error('Failed to revert to version. Please try again.');
+    }
+  };
 
   if (versions.length === 0) {
     return (
@@ -100,7 +112,11 @@ const DocumentVersionHistory: React.FC<DocumentVersionHistoryProps> = ({ documen
                     Download
                   </Button>
                   {!version.is_current_version && (
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleRevertToVersion(version.id)}
+                    >
                       Restore
                     </Button>
                   )}

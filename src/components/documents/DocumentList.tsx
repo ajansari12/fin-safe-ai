@@ -17,9 +17,14 @@ import {
   AlertTriangle,
   Shield,
   Clock,
-  User
+  User,
+  History,
+  Upload
 } from 'lucide-react';
 import { documentManagementService } from '@/services/document-management-service';
+import DocumentVersionHistory from './DocumentVersionHistory';
+import DocumentVersionUploader from './DocumentVersionUploader';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
 interface DocumentListProps {
@@ -36,6 +41,8 @@ const DocumentList: React.FC<DocumentListProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [selectedDocumentForVersion, setSelectedDocumentForVersion] = useState<any>(null);
+  const [showVersionHistory, setShowVersionHistory] = useState<string | null>(null);
 
   const filteredDocuments = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -250,6 +257,43 @@ const DocumentList: React.FC<DocumentListProps> = ({
                     >
                       <Download className="h-4 w-4" />
                     </Button>
+                    
+                    {/* Version History Dialog */}
+                    <Dialog open={showVersionHistory === document.id} onOpenChange={(open) => setShowVersionHistory(open ? document.id : null)}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+                        <DialogHeader>
+                          <DialogTitle>Version History - {document.title}</DialogTitle>
+                        </DialogHeader>
+                        <DocumentVersionHistory documentId={document.id} />
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Upload New Version Dialog */}
+                    <Dialog open={selectedDocumentForVersion?.id === document.id} onOpenChange={(open) => setSelectedDocumentForVersion(open ? document : null)}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Upload className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Upload New Version - {document.title}</DialogTitle>
+                        </DialogHeader>
+                        <DocumentVersionUploader 
+                          documentId={document.id}
+                          onUploadComplete={() => {
+                            setSelectedDocumentForVersion(null);
+                            onDocumentUpdate();
+                          }}
+                        />
+                      </DialogContent>
+                    </Dialog>
+
                     <Button
                       variant="outline"
                       size="sm"

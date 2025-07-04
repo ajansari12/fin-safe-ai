@@ -22,9 +22,15 @@ import { toast } from 'sonner';
 
 interface DocumentUploaderProps {
   onUploadComplete: () => void;
+  existingDocumentId?: string;
+  isNewVersion?: boolean;
 }
 
-const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete }) => {
+const DocumentUploader: React.FC<DocumentUploaderProps> = ({ 
+  onUploadComplete, 
+  existingDocumentId, 
+  isNewVersion = false 
+}) => {
   const { profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -38,7 +44,9 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
     repository_id: '',
     status: 'draft',
     tags: [] as string[],
-    enable_ai_analysis: true
+    enable_ai_analysis: true,
+    is_new_version: false,
+    parent_document_id: ''
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -98,7 +106,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
       return;
     }
 
-    if (!documentData.title.trim()) {
+    if (!isNewVersion && !documentData.title.trim()) {
       toast.error('Please enter a document title');
       return;
     }
@@ -115,23 +123,45 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
           setUploadProgress(prev => Math.min(prev + 10, 90));
         }, 200);
 
-        // Create document record
-        const document = await documentManagementService.uploadDocument({
-          ...documentData,
-          title: uploadFiles.length > 1 ? `${documentData.title} (${i + 1})` : documentData.title,
-          file_path: `documents/${file.name}`,
-          file_size: file.size,
-          mime_type: file.type,
-          checksum: await calculateChecksum(file),
-          org_id: profile?.organization_id!,
-          extraction_status: 'pending',
-          ai_analysis_status: documentData.enable_ai_analysis ? 'pending' : 'pending'
-        });
+        if (isNewVersion && existingDocumentId) {
+          // Create new version
+          const versionData = {
+            file_path: `documents/${file.name}`,
+            file_size: file.size,
+            mime_type: file.type,
+            checksum: await calculateChecksum(file),
+            description: documentData.description || `New version uploaded`
+          };
 
-        clearInterval(progressInterval);
-        setUploadProgress(100);
+          const version = await documentManagementService.createNewVersion(
+            existingDocumentId,
+            versionData,
+            file
+          );
 
-        toast.success(`Document "${document.title}" uploaded successfully`);
+          clearInterval(progressInterval);
+          setUploadProgress(100);
+
+          toast.success(`New version created successfully`);
+        } else {
+          // Create document record
+          const document = await documentManagementService.uploadDocument({
+            ...documentData,
+            title: uploadFiles.length > 1 ? `${documentData.title} (${i + 1})` : documentData.title,
+            file_path: `documents/${file.name}`,
+            file_size: file.size,
+            mime_type: file.type,
+            checksum: await calculateChecksum(file),
+            org_id: profile?.organization_id!,
+            extraction_status: 'pending',
+            ai_analysis_status: documentData.enable_ai_analysis ? 'pending' : 'pending'
+          });
+
+          clearInterval(progressInterval);
+          setUploadProgress(100);
+
+          toast.success(`Document "${document.title}" uploaded successfully`);
+        }
       }
 
       // Reset form
@@ -141,7 +171,9 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
         repository_id: '',
         status: 'draft',
         tags: [],
-        enable_ai_analysis: true
+        enable_ai_analysis: true,
+        is_new_version: false,
+        parent_document_id: ''
       });
       setUploadFiles([]);
       setUploadProgress(0);
@@ -174,14 +206,14 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
       <DialogTrigger asChild>
         <Button>
           <Upload className="h-4 w-4 mr-2" />
-          Upload Documents
+          {isNewVersion ? 'Upload New Version' : 'Upload Documents'}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Upload Documents
+            {isNewVersion ? 'Upload New Version' : 'Upload Documents'}
           </DialogTitle>
         </DialogHeader>
 
@@ -401,7 +433,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
           <Button variant="outline" onClick={() => setIsOpen(false)} disabled={uploading}>
             Cancel
           </Button>
-          <Button onClick={handleUpload} disabled={uploading || uploadFiles.length === 0}>
+          <Button onClick={handleUpload} disabled={uploading || uploadFiles.length === 0 || (!isNewVersion && !documentData.title.trim())}>
             {uploading ? (
               <>
                 <Upload className="h-4 w-4 mr-2 animate-pulse" />
@@ -410,7 +442,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ onUploadComplete })
             ) : (
               <>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload {uploadFiles.length} Document{uploadFiles.length !== 1 ? 's' : ''}
+                {isNewVersion ? 'Upload New Version' : `Upload ${uploadFiles.length} Document${uploadFiles.length !== 1 ? 's' : ''}`}
               </>
             )}
           </Button>

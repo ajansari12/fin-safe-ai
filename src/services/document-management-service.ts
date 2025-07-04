@@ -211,13 +211,115 @@ class DocumentManagementService {
 
   async getDocumentVersions(documentId: string): Promise<any[]> {
     const { data, error } = await supabase
-      .from('documents')
+      .from('document_versions')
       .select('*')
-      .or(`id.eq.${documentId},parent_document_id.eq.${documentId}`)
+      .eq('document_id', documentId)
       .order('version_number', { ascending: false });
 
     if (error) return [];
     return data || [];
+  }
+
+  async createNewVersion(documentId: string, versionData: any, file?: File): Promise<any> {
+    const profile = await getCurrentUserProfile();
+    if (!profile) throw new Error('No user profile found');
+
+    // Get the current highest version number
+    const { data: versions } = await supabase
+      .from('document_versions')
+      .select('version_number')
+      .eq('document_id', documentId)
+      .order('version_number', { ascending: false })
+      .limit(1);
+
+    const nextVersionNumber = (versions?.[0]?.version_number || 0) + 1;
+
+    // Mark all previous versions as not current
+    await supabase
+      .from('document_versions')
+      .update({ is_current_version: false })
+      .eq('document_id', documentId);
+
+    // Create new version
+    const newVersion = {
+      document_id: documentId,
+      version_number: nextVersionNumber,
+      is_current_version: true,
+      file_path: versionData.file_path,
+      file_size: versionData.file_size,
+      mime_type: versionData.mime_type,
+      checksum: versionData.checksum,
+      description: versionData.description || `Version ${nextVersionNumber}`,
+      uploaded_by: profile.id,
+      uploaded_by_name: profile.full_name,
+      org_id: profile.organization_id,
+      status: 'active'
+    };
+
+    const { data, error } = await supabase
+      .from('document_versions')
+      .insert(newVersion)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update the main document record
+    await supabase
+      .from('documents')
+      .update({
+        version_number: nextVersionNumber,
+        file_path: versionData.file_path,
+        file_size: versionData.file_size,
+        mime_type: versionData.mime_type,
+        checksum: versionData.checksum,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', documentId);
+
+    return data;
+  }
+
+  async revertToVersion(documentId: string, versionId: string): Promise<any> {
+    const profile = await getCurrentUserProfile();
+    if (!profile) throw new Error('No user profile found');
+
+    // Get the version to revert to
+    const { data: targetVersion, error: versionError } = await supabase
+      .from('document_versions')
+      .select('*')
+      .eq('id', versionId)
+      .eq('document_id', documentId)
+      .single();
+
+    if (versionError || !targetVersion) throw new Error('Version not found');
+
+    // Mark all versions as not current
+    await supabase
+      .from('document_versions')
+      .update({ is_current_version: false })
+      .eq('document_id', documentId);
+
+    // Mark target version as current
+    await supabase
+      .from('document_versions')
+      .update({ is_current_version: true })
+      .eq('id', versionId);
+
+    // Update main document
+    await supabase
+      .from('documents')
+      .update({
+        version_number: targetVersion.version_number,
+        file_path: targetVersion.file_path,
+        file_size: targetVersion.file_size,
+        mime_type: targetVersion.mime_type,
+        checksum: targetVersion.checksum,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', documentId);
+
+    return targetVersion;
   }
 
   async getDocumentRelationships(documentId: string): Promise<any[]> {
