@@ -10,6 +10,15 @@ export interface OrganizationRow extends DatabaseRow {
   name: string;
   sector?: string;
   size?: string;
+  org_type?: string;
+  sub_sector?: string;
+  employee_count?: number;
+  asset_size?: number;
+  capital_tier?: string;
+  onboarding_status?: string;
+  onboarding_completed_at?: string;
+  geographic_scope?: string;
+  regulatory_classification?: string[];
 }
 
 export interface ProfileRow extends DatabaseRow {

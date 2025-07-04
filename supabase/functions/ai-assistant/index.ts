@@ -15,6 +15,10 @@ interface RequestData {
     userRole?: string | null;
     orgSector?: string | null;
     orgSize?: string | null;
+    orgType?: string | null;
+    capitalTier?: string | null;
+    regulatoryClassification?: string[] | null;
+    geographicScope?: string | null;
   };
   userId?: string;
   orgId?: string;
@@ -204,8 +208,94 @@ serve(async (req) => {
         systemPrompt += `\n\nUser is currently in the ${context.module} module. Focus your response on this area.`;
       }
       
-      if (context?.orgSector) {
-        systemPrompt += `\n\nUser's organization is in the ${context.orgSector} sector.`;
+      // Enhanced organization context
+      if (context?.orgType || context?.orgSector || context?.capitalTier || context?.regulatoryClassification) {
+        systemPrompt += '\n\nORGANIZATION CONTEXT:';
+        
+        if (context.orgType) {
+          systemPrompt += `\n- Organization Type: ${context.orgType}`;
+          
+          // Schedule II Bank specific context
+          if (context.orgType === 'banking-schedule-ii') {
+            systemPrompt += `
+            \nSCHEDULE II BANK CONTEXT:
+            You are assisting a Schedule II bank (foreign bank subsidiary operating in Canada). Focus on:
+            - OSFI E-21 operational resilience requirements for foreign bank subsidiaries
+            - Basel III capital and liquidity requirements as applied in Canada
+            - Cross-border risk management considerations
+            - Parent bank oversight and governance requirements
+            - Simplified regulatory framework compared to domestic systemically important banks
+            - Enhanced focus on liquidity management and funding arrangements
+            - Specific attention to outsourcing arrangements with parent entities`;
+          }
+          
+          // Credit Union specific context
+          if (context.orgType === 'credit-union') {
+            systemPrompt += `
+            \nCREDIT UNION CONTEXT:
+            You are assisting a credit union. Focus on:
+            - Provincial regulatory requirements and oversight
+            - Member-focused governance and cooperative principles
+            - Community lending and member services priorities
+            - Simplified operational risk framework appropriate for smaller institutions
+            - Credit risk management for member lending
+            - Deposit insurance and member protection considerations`;
+          }
+          
+          // Schedule I Bank specific context  
+          if (context.orgType === 'banking-schedule-i') {
+            systemPrompt += `
+            \nSCHEDULE I BANK CONTEXT:
+            You are assisting a Schedule I bank (Canadian domestic bank). Focus on:
+            - Comprehensive OSFI supervision and regulatory requirements
+            - Full Basel III implementation including D-SIB requirements if applicable
+            - Broad range of banking services and complex operational structures
+            - Enhanced governance and risk management expectations
+            - Detailed stress testing and capital planning requirements
+            - Extensive third-party risk management for complex vendor relationships`;
+          }
+        }
+        
+        if (context.orgSector) {
+          systemPrompt += `\n- Business Sector: ${context.orgSector}`;
+        }
+        
+        if (context.capitalTier) {
+          systemPrompt += `\n- Capital Tier: ${context.capitalTier}`;
+          
+          if (context.capitalTier === 'Tier 1') {
+            systemPrompt += ' (Higher capital requirements and enhanced supervisory expectations)';
+          }
+        }
+        
+        if (context.regulatoryClassification && context.regulatoryClassification.length > 0) {
+          systemPrompt += `\n- Regulatory Frameworks: ${context.regulatoryClassification.join(', ')}`;
+          
+          if (context.regulatoryClassification.includes('OSFI E-21')) {
+            systemPrompt += `
+            \nOSFI E-21 COMPLIANCE FOCUS:
+            - Operational resilience framework implementation
+            - Critical business service identification and impact tolerance setting
+            - Comprehensive testing of business continuity arrangements
+            - Enhanced third-party risk management
+            - Incident management and lessons learned processes
+            - Board and senior management oversight requirements`;
+          }
+          
+          if (context.regulatoryClassification.includes('Basel III')) {
+            systemPrompt += `
+            \nBASEL III CONSIDERATIONS:
+            - Capital adequacy and liquidity requirements
+            - Operational risk capital calculations
+            - Risk governance and three lines of defense
+            - Stress testing and scenario analysis
+            - Risk appetite framework alignment with capital planning`;
+          }
+        }
+        
+        if (context.geographicScope) {
+          systemPrompt += `\n- Geographic Scope: ${context.geographicScope}`;
+        }
       }
       
       if (knowledgeBaseInfo) {
@@ -325,8 +415,22 @@ serve(async (req) => {
         response += "\n\nAs a Risk Officer, you should ensure this is properly documented in your risk register and that appropriate controls are implemented.";
       }
       
-      if (context.orgSector === 'banking') {
-        response += "\n\nFor banking institutions, this should align with prudential regulatory requirements, particularly OSFI guidelines on operational resilience.";
+      // Organization type specific guidance
+      if (context.orgType === 'banking-schedule-ii') {
+        response += "\n\n**Schedule II Bank Considerations:** Ensure alignment with OSFI E-21 requirements for foreign bank subsidiaries, including enhanced focus on cross-border risk management and parent bank oversight arrangements.";
+      } else if (context.orgType === 'credit-union') {
+        response += "\n\n**Credit Union Considerations:** Focus on member-centric governance and ensure compliance with provincial regulatory requirements while maintaining the cooperative principles.";
+      } else if (context.orgType === 'banking-schedule-i') {
+        response += "\n\n**Schedule I Bank Considerations:** Apply comprehensive OSFI supervisory expectations and full Basel III implementation requirements.";
+      }
+      
+      // Regulatory classification specific guidance
+      if (context.regulatoryClassification?.includes('OSFI E-21')) {
+        response += "\n\n**OSFI E-21 Compliance:** Remember to document this within your operational resilience framework and ensure appropriate testing and validation procedures are in place.";
+      }
+      
+      if (context.capitalTier === 'Tier 1') {
+        response += "\n\n**Tier 1 Institution:** Apply enhanced risk management standards and consider higher regulatory expectations for governance and controls.";
       }
     }
 

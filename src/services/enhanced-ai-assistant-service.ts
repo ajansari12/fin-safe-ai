@@ -36,6 +36,10 @@ interface ProcessingContext {
   orgId: string;
   orgSector?: string;
   userRole?: string;
+  orgType?: string;
+  capitalTier?: string;
+  regulatoryClassification?: string[];
+  geographicScope?: string;
 }
 
 class EnhancedAIAssistantService {

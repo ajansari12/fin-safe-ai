@@ -296,14 +296,22 @@ class AIAssistantService {
   // Generate contextual response using AI assistant
   private async generateContextualResponse(userQuery: string, knowledgeResults: VectorSearchResult[]): Promise<string | null> {
     try {
+      // Get organization context
+      const profile = await getCurrentUserProfile();
+      const org = await getUserOrganization();
+      
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           message: userQuery,
           context: {
             module: null,
-            userRole: null,
-            orgSector: null,
-            orgSize: null
+            userRole: profile?.role || null,
+            orgSector: (org as any)?.sub_sector || null,
+            orgSize: (org as any)?.employee_count || null,
+            orgType: (org as any)?.org_type || null,
+            capitalTier: (org as any)?.capital_tier || null,
+            regulatoryClassification: (org as any)?.regulatory_classification || [],
+            geographicScope: (org as any)?.geographic_scope || null
           },
           knowledgeBase: knowledgeResults.map(result => ({
             title: result.title,
@@ -357,11 +365,16 @@ class AIAssistantService {
           session_id: sessionId,
           message_type: messageType,
           message_content: content,
-          user_context: {
-            role: profile.role,
-            module: moduleContext,
-            timestamp: new Date().toISOString()
-          },
+        user_context: {
+          role: profile.role,
+          module: moduleContext,
+          timestamp: new Date().toISOString(),
+          orgType: (org as any)?.org_type,
+          orgSector: (org as any)?.sub_sector,
+          capitalTier: (org as any)?.capital_tier,
+          regulatoryClassification: (org as any)?.regulatory_classification,
+          geographicScope: (org as any)?.geographic_scope
+        },
           module_context: moduleContext,
           knowledge_sources_used: knowledgeSources,
           response_time_ms: responseTimeMs
