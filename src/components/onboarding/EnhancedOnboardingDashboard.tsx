@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   TrendingUp, 
   Users, 
@@ -22,7 +24,10 @@ import {
   Settings,
   Zap,
   RefreshCw,
-  Database
+  Database,
+  Building,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
@@ -31,6 +36,7 @@ import { templateLibraryService } from "@/services/template-library-service";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useEnhancedOrganizationSetup } from "@/hooks/useEnhancedOrganizationSetup";
 
 interface FrameworkGenerationStatus {
   status: 'not_started' | 'in_progress' | 'completed' | 'error';
@@ -53,6 +59,12 @@ const EnhancedOnboardingDashboard = () => {
   const { generateOrganizationalAnalysis, isAnalyzing } = useEnhancedAIAssistant();
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { 
+    orgData, 
+    handleChange, 
+    handleEnrichOrganization, 
+    isEnrichingOrganization 
+  } = useEnhancedOrganizationSetup();
 
   const [frameworkStatus, setFrameworkStatus] = useState<FrameworkGenerationStatus>({
     status: 'not_started',
@@ -404,12 +416,191 @@ const EnhancedOnboardingDashboard = () => {
       )}
 
       <Tabs defaultValue="progress" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="progress">Progress</TabsTrigger>
           <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
           <TabsTrigger value="insights">AI Insights</TabsTrigger>
           <TabsTrigger value="optimization">Optimization</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="organization" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                Organization Setup
+              </CardTitle>
+              <CardDescription>
+                Configure your organization details with AI-powered auto-population
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Organization Name Section */}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="orgName">Organization Name</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="orgName"
+                        value={orgData.name}
+                        onChange={(e) => handleChange('name', e.target.value)}
+                        placeholder="Enter your organization name"
+                        disabled={isEnrichingOrganization}
+                      />
+                      <Button
+                        onClick={() => handleEnrichOrganization()}
+                        disabled={!orgData.name.trim() || isEnrichingOrganization}
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0"
+                      >
+                        {isEnrichingOrganization ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Enriching...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Auto-Populate
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Click "Auto-Populate" to automatically fill organization details using AI
+                    </p>
+                  </div>
+
+                  {isEnrichingOrganization && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                        <div className="font-medium text-blue-800">Enrichment in progress...</div>
+                      </div>
+                      <div className="text-sm text-blue-700">
+                        Searching for public information about "{orgData.name}"...
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Enriched Organization Details */}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="orgType">Organization Type</Label>
+                      <Select
+                        value={orgData.orgType || ""}
+                        onValueChange={(value) => handleChange('orgType', value)}
+                        disabled={isEnrichingOrganization}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="banking-schedule-i">Schedule I Bank</SelectItem>
+                          <SelectItem value="banking-schedule-ii">Schedule II Bank</SelectItem>
+                          <SelectItem value="banking-schedule-iii">Schedule III Bank</SelectItem>
+                          <SelectItem value="credit-union">Credit Union</SelectItem>
+                          <SelectItem value="fintech">FinTech</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="subSector">Sub-Sector</Label>
+                      <Input
+                        id="subSector"
+                        value={orgData.subSector || ""}
+                        onChange={(e) => handleChange('subSector', e.target.value)}
+                        placeholder="e.g., Retail Banking"
+                        disabled={isEnrichingOrganization}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="geographicScope">Geographic Scope</Label>
+                      <Select
+                        value={orgData.geographicScope || ""}
+                        onValueChange={(value) => handleChange('geographicScope', value)}
+                        disabled={isEnrichingOrganization}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select scope" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="local">Local</SelectItem>
+                          <SelectItem value="regional">Regional</SelectItem>
+                          <SelectItem value="national">National</SelectItem>
+                          <SelectItem value="international">International</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="capitalTier">Capital Tier</Label>
+                      <Select
+                        value={orgData.capitalTier || ""}
+                        onValueChange={(value) => handleChange('capitalTier', value)}
+                        disabled={isEnrichingOrganization}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Tier 1">Tier 1</SelectItem>
+                          <SelectItem value="Tier 2">Tier 2</SelectItem>
+                          <SelectItem value="Tier 3">Tier 3</SelectItem>
+                          <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="employeeCount">Employee Count</Label>
+                      <Input
+                        id="employeeCount"
+                        type="number"
+                        value={orgData.employeeCount || ""}
+                        onChange={(e) => handleChange('employeeCount', parseInt(e.target.value) || null)}
+                        placeholder="Number of employees"
+                        disabled={isEnrichingOrganization}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="assetSize">Asset Size (CAD Millions)</Label>
+                      <Input
+                        id="assetSize"
+                        type="number"
+                        value={orgData.assetSize || ""}
+                        onChange={(e) => handleChange('assetSize', parseInt(e.target.value) || null)}
+                        placeholder="Total assets in millions"
+                        disabled={isEnrichingOrganization}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Enhancement Info */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  <div className="font-medium text-purple-800">AI-Powered Organization Enrichment</div>
+                </div>
+                <div className="text-sm text-purple-700">
+                  Our AI assistant can automatically populate organization details by analyzing publicly available information.
+                  Simply enter your organization name and click "Auto-Populate" to get started.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="progress" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
