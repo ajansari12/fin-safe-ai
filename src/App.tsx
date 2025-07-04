@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import LoginPage from './pages/auth/Login';
+import AuthPage from './pages/auth/AuthPage';
 import IndexPage from './pages/Index';
 import DashboardPage from './pages/Dashboard';
 import SettingsPage from './pages/Settings';
@@ -61,12 +61,12 @@ function App() {
               <Route path="/" element={<IndexPage />} />
               
               {/* Authentication */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/auth/login" element={<LoginPage />} />
-              <Route path="/auth/register" element={<LoginPage />} />
-              <Route path="/auth/forgot-password" element={<LoginPage />} />
-              <Route path="/auth/verify" element={<LoginPage />} />
-              <Route path="/auth/update-password" element={<LoginPage />} />
+              <Route path="/login" element={<AuthPage />} />
+              <Route path="/auth/login" element={<AuthPage />} />
+              <Route path="/auth/register" element={<AuthPage />} />
+              <Route path="/auth/forgot-password" element={<AuthPage />} />
+              <Route path="/auth/verify" element={<AuthPage />} />
+              <Route path="/auth/update-password" element={<AuthPage />} />
               
               {/* Organization Setup Routes */}
               <Route path="/setup/enhanced" element={<EnhancedOrganizationSetup />} />
