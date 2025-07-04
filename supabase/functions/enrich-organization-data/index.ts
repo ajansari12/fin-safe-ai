@@ -82,7 +82,7 @@ serve(async (req) => {
       }
     }
 
-    // Call Gemini API
+    // Call Gemini API with enhanced error handling
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiApiKey) {
       console.error('GEMINI_API_KEY not configured')
@@ -90,13 +90,26 @@ serve(async (req) => {
         JSON.stringify({ 
           fallback: true, 
           error: 'API configuration missing',
-          message: 'Gemini API key not configured'
+          message: 'Gemini API key not configured. Please add your Gemini API key to Edge Function Secrets.'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    const prompt = `Find real public details about "${company_name}"${domain ? ` (domain: ${domain})` : ''}. 
+    // Sanitize company name
+    const sanitizedCompanyName = company_name.trim().replace(/[^\w\s&.-]/g, '')
+    if (!sanitizedCompanyName) {
+      return new Response(
+        JSON.stringify({ 
+          fallback: true, 
+          error: 'Invalid input',
+          message: 'Company name contains invalid characters'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const prompt = `Find real public details about "${sanitizedCompanyName}"${domain ? ` (domain: ${domain})` : ''}. 
 
 Provide the response as a JSON object with these exact fields:
 {
@@ -112,34 +125,81 @@ Provide the response as a JSON object with these exact fields:
 
 Only return the JSON object. If you cannot find specific information, use null for that field.`
 
-    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      })
-    })
+    console.log(`Making Gemini API request for: ${sanitizedCompanyName}`)
+    
+    // Implement retry logic for Gemini API
+    let geminiResponse: Response | null = null
+    let lastError: string = ''
+    
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`Gemini API attempt ${attempt}/3`)
+        
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+        
+        geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.1,
+              topK: 1,
+              topP: 1,
+              maxOutputTokens: 2048,
+            }
+          }),
+          signal: controller.signal
+        })
+        
+        clearTimeout(timeoutId)
+        
+        if (geminiResponse.ok) {
+          console.log(`Gemini API success on attempt ${attempt}`)
+          break
+        } else {
+          const errorText = await geminiResponse.text()
+          lastError = `HTTP ${geminiResponse.status}: ${errorText}`
+          console.error(`Gemini API error on attempt ${attempt}:`, lastError)
+          
+          // Don't retry on certain error codes
+          if (geminiResponse.status === 401 || geminiResponse.status === 403) {
+            break
+          }
+        }
+      } catch (error) {
+        lastError = error.message
+        console.error(`Gemini API attempt ${attempt} failed:`, error)
+        
+        if (attempt < 3) {
+          // Exponential backoff: wait 1s, then 2s, then 4s
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000))
+        }
+      }
+    }
 
-    if (!geminiResponse.ok) {
-      console.error('Gemini API error:', geminiResponse.status, await geminiResponse.text())
+    if (!geminiResponse || !geminiResponse.ok) {
+      console.error('All Gemini API attempts failed:', lastError)
       return new Response(
         JSON.stringify({ 
           fallback: true, 
           error: 'External API error',
-          message: 'Failed to enrich organization data'
+          message: `Gemini API failed: ${lastError}`,
+          details: 'Please check your API key and try again'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const geminiData = await geminiResponse.json()
-    console.log('Gemini API response:', JSON.stringify(geminiData, null, 2))
+    console.log('Gemini API response structure:', JSON.stringify(geminiData, null, 2))
 
     let enrichmentData: EnrichmentData = {}
 

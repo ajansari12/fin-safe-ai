@@ -363,69 +363,170 @@ export function useEnhancedOrganizationSetup() {
     }
 
     setIsEnrichingOrganization(true);
+    console.log(`Starting organization enrichment for: "${orgData.name}"`);
 
     try {
-      // Determine if we're in setup mode (no existing organization)
-      const isSetupMode = true; // During onboarding, we're always in setup mode
-      
       const { data, error } = await supabase.functions.invoke('enrich-organization-data', {
         body: {
           org_id: null,
-          company_name: orgData.name,
-          domain: domain || undefined,
+          company_name: orgData.name.trim(),
+          domain: domain?.trim() || undefined,
           mode: 'setup'
         }
       });
 
       if (error) {
-        throw error;
+        console.error('Supabase function invocation error:', error);
+        
+        // Parse error details for better user feedback
+        let errorMessage = 'Unable to auto-populate organization details.';
+        let errorVariant: "destructive" | "default" = "destructive";
+        
+        if (error.message?.includes('configuration missing') || error.message?.includes('API key')) {
+          errorMessage = 'Auto-populate service is currently unavailable. Please fill in details manually.';
+          errorVariant = "default";
+        } else if (error.message?.includes('timeout') || error.message?.includes('network')) {
+          errorMessage = 'Request timed out. Please check your connection and try again.';
+        }
+        
+        toast({
+          title: "Auto-Populate Failed",
+          description: errorMessage,
+          variant: errorVariant,
+        });
+        return;
       }
 
       if (data?.success && data?.enriched_data) {
         const enrichedData = data.enriched_data;
+        console.log('Received enriched data:', enrichedData);
+        
+        // Track which fields were updated
+        let fieldsUpdated = 0;
+        const updatedFields: string[] = [];
         
         // Create mapping for enriched data to our org data structure
         const mappedSector = mapOrgTypeToSector(enrichedData.org_type, enrichedData.sector);
+        const mappedSize = mapEmployeeCountToSize(enrichedData.employee_count);
         
         // Update organization data with enriched fields
-        setOrgData(prev => ({
-          ...prev,
-          // Core fields
-          sector: mappedSector || prev.sector,
-          orgType: enrichedData.org_type || prev.orgType,
-          subSector: enrichedData.sub_sector || prev.subSector,
-          geographicScope: enrichedData.geographic_scope || prev.geographicScope,
-          employeeCount: enrichedData.employee_count || prev.employeeCount,
-          assetSize: enrichedData.asset_size || prev.assetSize,
-          capitalTier: enrichedData.capital_tier || prev.capitalTier,
-          primaryRegulators: enrichedData.regulatory_classification || prev.primaryRegulators,
-          // Set size based on employee count if available
-          size: mapEmployeeCountToSize(enrichedData.employee_count) || prev.size
-        }));
+        setOrgData(prev => {
+          const updates: Partial<EnhancedOrganizationData> = {};
+          
+          if (mappedSector && mappedSector !== prev.sector) {
+            updates.sector = mappedSector;
+            updatedFields.push('sector');
+            fieldsUpdated++;
+          }
+          
+          if (enrichedData.org_type && enrichedData.org_type !== prev.orgType) {
+            updates.orgType = enrichedData.org_type;
+            updatedFields.push('organization type');
+            fieldsUpdated++;
+          }
+          
+          if (enrichedData.sub_sector && enrichedData.sub_sector !== prev.subSector) {
+            updates.subSector = enrichedData.sub_sector;
+            updatedFields.push('sub-sector');
+            fieldsUpdated++;
+          }
+          
+          if (enrichedData.geographic_scope && enrichedData.geographic_scope !== prev.geographicScope) {
+            updates.geographicScope = enrichedData.geographic_scope;
+            updatedFields.push('geographic scope');
+            fieldsUpdated++;
+          }
+          
+          if (enrichedData.employee_count && enrichedData.employee_count !== prev.employeeCount) {
+            updates.employeeCount = enrichedData.employee_count;
+            updatedFields.push('employee count');
+            fieldsUpdated++;
+          }
+          
+          if (enrichedData.asset_size && enrichedData.asset_size !== prev.assetSize) {
+            updates.assetSize = enrichedData.asset_size;
+            updatedFields.push('asset size');
+            fieldsUpdated++;
+          }
+          
+          if (enrichedData.capital_tier && enrichedData.capital_tier !== prev.capitalTier) {
+            updates.capitalTier = enrichedData.capital_tier;
+            updatedFields.push('capital tier');
+            fieldsUpdated++;
+          }
+          
+          if (enrichedData.regulatory_classification && 
+              JSON.stringify(enrichedData.regulatory_classification) !== JSON.stringify(prev.primaryRegulators)) {
+            updates.primaryRegulators = enrichedData.regulatory_classification;
+            updatedFields.push('regulatory frameworks');
+            fieldsUpdated++;
+          }
+          
+          if (mappedSize && mappedSize !== prev.size) {
+            updates.size = mappedSize;
+            updatedFields.push('organization size');
+            fieldsUpdated++;
+          }
+          
+          return { ...prev, ...updates };
+        });
 
-        const enrichedFields = Object.keys(enrichedData).filter(key => enrichedData[key] !== null);
+        if (fieldsUpdated > 0) {
+          console.log(`Successfully enriched ${fieldsUpdated} fields:`, updatedFields);
+          toast({
+            title: "Organization Data Auto-Populated",
+            description: `Successfully populated ${fieldsUpdated} field${fieldsUpdated > 1 ? 's' : ''}: ${updatedFields.join(', ')}.`,
+          });
+        } else {
+          toast({
+            title: "No New Information Found",
+            description: "No additional information could be found to populate the form.",
+            variant: "default",
+          });
+        }
+      } else if (data?.fallback) {
+        console.log('Fallback mode triggered:', data.message);
+        
+        let fallbackMessage = "Unable to find detailed information for this organization.";
+        if (data.error === 'API configuration missing') {
+          fallbackMessage = "Auto-populate service is currently unavailable.";
+        } else if (data.error === 'External API error') {
+          fallbackMessage = "External service is temporarily unavailable.";
+        }
         
         toast({
-          title: "Organization Enriched Successfully",
-          description: `Auto-populated ${enrichedFields.length} fields based on "${orgData.name}".`,
-        });
-      } else if (data?.fallback) {
-        // Handle fallback case when enrichment fails
-        toast({
-          title: "Auto-populate unavailable",
-          description: "Unable to find public information for this organization. Please fill in details manually.",
+          title: "Auto-Populate Unavailable",
+          description: `${fallbackMessage} Please fill in details manually.`,
           variant: "default",
+        });
+      } else {
+        console.error('Unexpected response format:', data);
+        toast({
+          title: "Auto-Populate Failed",
+          description: "Received unexpected response from enrichment service.",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Organization enrichment failed:', error);
+      console.error('Organization enrichment failed with exception:', error);
+      
+      let errorMessage = "An unexpected error occurred during auto-populate.";
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error occurred. Please check your connection and try again.";
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "Request timed out. Please try again later.";
+        }
+      }
+      
       toast({
-        title: "Auto-populate Failed", 
-        description: "Unable to auto-populate organization details. Please fill in manually.",
+        title: "Auto-Populate Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsEnrichingOrganization(false);
+      console.log('Organization enrichment process completed');
     }
   };
 
