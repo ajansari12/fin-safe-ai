@@ -109,21 +109,25 @@ serve(async (req) => {
       )
     }
 
-    const prompt = `Find real public details about "${sanitizedCompanyName}"${domain ? ` (domain: ${domain})` : ''}. 
+    const prompt = `Analyze "${sanitizedCompanyName}"${domain ? ` (domain: ${domain})` : ''} and provide organization details.
 
-Provide the response as a JSON object with these exact fields:
+Return ONLY a valid JSON object with these exact fields (no additional text):
 {
   "sector": "banking|insurance|fintech|other",
-  "sub_sector": "retail|commercial|investment|other",
+  "sub_sector": "retail|commercial|investment|other", 
   "org_type": "banking-schedule-i|banking-schedule-ii|banking-schedule-iii|credit-union|trust-company|insurance|fintech|other",
   "employee_count": number or null,
-  "asset_size": number in millions or null,
+  "asset_size": number or null,
   "capital_tier": "Tier 1|Tier 2|Tier 3|Not Applicable",
   "geographic_scope": "Local|Regional|National|International",
-  "regulatory_classification": ["OSFI", "Basel III", "other relevant frameworks"]
+  "regulatory_classification": ["OSFI", "Basel III", "CDIC", "PIPEDA", "other frameworks"]
 }
 
-Only return the JSON object. If you cannot find specific information, use null for that field.`
+Guidelines:
+- For Canadian financial institutions, include OSFI and relevant frameworks
+- Use null for unknown values
+- Ensure regulatory_classification is always an array
+- asset_size should be in millions CAD if applicable`
 
     console.log(`Making Gemini API request for: ${sanitizedCompanyName}`)
     
@@ -228,19 +232,33 @@ Only return the JSON object. If you cannot find specific information, use null f
       )
     }
 
+    // Validate and normalize enrichment data
+    const normalizedData: EnrichmentData = {
+      sector: enrichmentData.sector || null,
+      sub_sector: enrichmentData.sub_sector || null,
+      org_type: enrichmentData.org_type || null,
+      employee_count: typeof enrichmentData.employee_count === 'number' ? enrichmentData.employee_count : null,
+      asset_size: typeof enrichmentData.asset_size === 'number' ? enrichmentData.asset_size : null,
+      capital_tier: enrichmentData.capital_tier || null,
+      geographic_scope: enrichmentData.geographic_scope || null,
+      regulatory_classification: Array.isArray(enrichmentData.regulatory_classification) 
+        ? enrichmentData.regulatory_classification 
+        : []
+    }
+
     // Handle data storage based on mode
-    if (!isSetupMode && org_id && Object.keys(enrichmentData).length > 0) {
+    if (!isSetupMode && org_id && Object.keys(normalizedData).some(key => normalizedData[key] !== null && normalizedData[key] !== undefined)) {
       // Update mode: Save to database
       const updateData: any = {}
       
-      if (enrichmentData.sector) updateData.sector = enrichmentData.sector
-      if (enrichmentData.sub_sector) updateData.sub_sector = enrichmentData.sub_sector
-      if (enrichmentData.org_type) updateData.org_type = enrichmentData.org_type
-      if (enrichmentData.employee_count) updateData.employee_count = enrichmentData.employee_count
-      if (enrichmentData.asset_size) updateData.asset_size = enrichmentData.asset_size
-      if (enrichmentData.capital_tier) updateData.capital_tier = enrichmentData.capital_tier
-      if (enrichmentData.geographic_scope) updateData.geographic_scope = enrichmentData.geographic_scope
-      if (enrichmentData.regulatory_classification) updateData.regulatory_classification = enrichmentData.regulatory_classification
+      if (normalizedData.sector) updateData.sector = normalizedData.sector
+      if (normalizedData.sub_sector) updateData.sub_sector = normalizedData.sub_sector
+      if (normalizedData.org_type) updateData.org_type = normalizedData.org_type
+      if (normalizedData.employee_count) updateData.employee_count = normalizedData.employee_count
+      if (normalizedData.asset_size) updateData.asset_size = normalizedData.asset_size
+      if (normalizedData.capital_tier) updateData.capital_tier = normalizedData.capital_tier
+      if (normalizedData.geographic_scope) updateData.geographic_scope = normalizedData.geographic_scope
+      if (normalizedData.regulatory_classification?.length > 0) updateData.regulatory_classification = normalizedData.regulatory_classification
 
       const { error: updateError } = await supabaseClient
         .from('organizations')
@@ -260,19 +278,28 @@ Only return the JSON object. If you cannot find specific information, use null f
       }
 
       console.log(`Successfully updated organization ${org_id} with enriched data`)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          mode: 'update',
+          message: 'Organization updated'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     } else {
       console.log(`Setup mode: Returning enriched data for client-side handling`)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          mode: 'setup',
+          enriched_data: normalizedData,
+          message: 'Enrichment data ready for organization creation'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        mode: isSetupMode ? 'setup' : 'update',
-        enriched_data: enrichmentData,
-        updated_fields: isSetupMode ? [] : Object.keys(enrichmentData).filter(key => enrichmentData[key] !== null)
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error) {
     console.error('Unexpected error in enrich-organization-data:', error)
