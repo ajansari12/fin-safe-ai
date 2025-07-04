@@ -10686,6 +10686,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      send_weekly_executive_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown
