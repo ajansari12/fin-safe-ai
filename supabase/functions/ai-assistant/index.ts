@@ -37,35 +37,88 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Search knowledge base for relevant information
+    // Search knowledge base for relevant information using vector search
     let knowledgeBaseInfo = null;
+    let searchResults = [];
+    
     if (message) {
-      const normalizedQuery = message.toLowerCase();
-      
-      // Query the knowledge_base table
-      const { data: knowledgeBase, error } = await supabase
-        .from('knowledge_base')
-        .select('*');
-        
-      if (error) {
-        console.error("Error querying knowledge base:", error);
-      }
-      
-      if (knowledgeBase && knowledgeBase.length > 0) {
-        // Search through the knowledge base sections
-        for (const source of knowledgeBase) {
-          const sections = source.sections || [];
-          for (const section of sections) {
-            if (
-              section.title.toLowerCase().includes(normalizedQuery) ||
-              section.content.toLowerCase().includes(normalizedQuery)
-            ) {
-              knowledgeBaseInfo = `${section.content}\n\nSource: ${source.title}, ${section.title}`;
-              break;
-            }
+      try {
+        // First try vector search
+        const { data: vectorResults, error: vectorError } = await supabase.functions.invoke('match-knowledge-base', {
+          body: {
+            query_embedding: await generateQueryEmbedding(message),
+            match_threshold: 0.7,
+            match_count: 3,
+            org_filter: userId ? await getUserOrgId(userId) : null
           }
-          if (knowledgeBaseInfo) break;
+        });
+
+        if (!vectorError && vectorResults && vectorResults.length > 0) {
+          searchResults = vectorResults;
+        } else {
+          // Fallback to text search
+          const { data: textResults, error: textError } = await supabase
+            .from('knowledge_base')
+            .select('*')
+            .textSearch('search_vector', message)
+            .limit(3);
+
+          if (!textError && textResults) {
+            searchResults = textResults;
+          }
         }
+
+        // Format search results
+        if (searchResults.length > 0) {
+          knowledgeBaseInfo = searchResults.map(result => 
+            `${result.content}\n\nSource: ${result.title} (${result.category})`
+          ).join('\n\n---\n\n');
+        }
+      } catch (searchError) {
+        console.error("Knowledge base search error:", searchError);
+        // Continue without knowledge base info
+      }
+    }
+
+    // Helper function to generate query embedding
+    async function generateQueryEmbedding(query) {
+      if (!OPENAI_API_KEY) return null;
+      
+      try {
+        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: query,
+          }),
+        });
+
+        if (!embeddingResponse.ok) return null;
+        
+        const embeddingData = await embeddingResponse.json();
+        return embeddingData.data[0].embedding;
+      } catch (error) {
+        console.error('Error generating query embedding:', error);
+        return null;
+      }
+    }
+
+    // Helper function to get user's org ID
+    async function getUserOrgId(userId) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', userId)
+          .single();
+        
+        return error ? null : data?.organization_id;
+      } catch (error) {
+        return null;
       }
     }
     

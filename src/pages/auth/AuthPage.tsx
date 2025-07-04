@@ -218,7 +218,7 @@ const AuthPage = () => {
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    required={mode !== 'update-password'}
+                    required
                   />
                 </div>
               )}
@@ -237,7 +237,7 @@ const AuthPage = () => {
                 </div>
               )}
               
-              {mode !== 'forgot-password' && mode !== 'verify' && (
+              {(mode === 'login' || mode === 'register' || mode === 'update-password') && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">
