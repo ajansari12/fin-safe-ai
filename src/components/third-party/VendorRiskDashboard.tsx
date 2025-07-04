@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { enhancedThirdPartyRiskService } from '@/services/enhanced-third-party-risk-service';
+import VendorAssessmentsList from './VendorAssessmentsList';
+import VendorAssessmentChart from './VendorAssessmentChart';
 import { toast } from 'sonner';
 
 const VendorRiskDashboard: React.FC = () => {
@@ -253,16 +255,10 @@ const VendorRiskDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="assessments" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Vendor Assessments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center py-8 text-muted-foreground">
-                Assessment management component will be implemented here
-              </p>
-            </CardContent>
-          </Card>
+          {dashboardData?.risk_distribution && (
+            <VendorAssessmentChart riskDistribution={dashboardData.risk_distribution} />
+          )}
+          <VendorAssessmentsList />
         </TabsContent>
 
         <TabsContent value="monitoring" className="space-y-6">

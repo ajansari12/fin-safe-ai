@@ -52,6 +52,45 @@ export interface SupplyChainDependency {
 }
 
 class EnhancedThirdPartyRiskService {
+  // Get vendor assessments for the current organization
+  async getVendorAssessments(): Promise<any[]> {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
+
+    const { data, error } = await supabase
+      .from('vendor_assessments')
+      .select(`
+        id,
+        vendor_profile_id,
+        assessment_type,
+        assessment_date,
+        overall_risk_score,
+        status,
+        financial_score,
+        operational_score,
+        security_score,
+        compliance_score,
+        assessor_id,
+        updated_at,
+        third_party_profiles!inner(vendor_name),
+        assessor:profiles(full_name)
+      `)
+      .eq('org_id', profile.organization_id)
+      .order('assessment_date', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching vendor assessments:', error);
+      throw error;
+    }
+
+    return data?.map((assessment: any) => ({
+      ...assessment,
+      vendor_name: assessment.third_party_profiles?.vendor_name || 'Unknown Vendor',
+      assessor_name: assessment.assessor?.full_name || 'Unknown',
+      last_updated: assessment.updated_at
+    })) || [];
+  }
+
   // Create vendor assessment method for the form
   async createVendorAssessment(assessmentData: any): Promise<VendorAssessment> {
     const { data, error } = await supabase
