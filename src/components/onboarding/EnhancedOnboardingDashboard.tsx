@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   TrendingUp, 
   Users, 
@@ -19,13 +20,17 @@ import {
   Lightbulb,
   BarChart3,
   Settings,
-  Zap
+  Zap,
+  RefreshCw,
+  Database
 } from "lucide-react";
 import { useOnboarding } from "@/contexts/OnboardingContext";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 import { organizationalIntelligenceService } from "@/services/organizational-intelligence-service";
 import { templateLibraryService } from "@/services/template-library-service";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FrameworkGenerationStatus {
   status: 'not_started' | 'in_progress' | 'completed' | 'error';
@@ -46,6 +51,7 @@ interface OnboardingEffectivenessMetrics {
 const EnhancedOnboardingDashboard = () => {
   const { onboardingStatus, currentSession, steps } = useOnboarding();
   const { generateOrganizationalAnalysis, isAnalyzing } = useEnhancedAIAssistant();
+  const { profile } = useAuth();
   const { toast } = useToast();
 
   const [frameworkStatus, setFrameworkStatus] = useState<FrameworkGenerationStatus>({
@@ -69,10 +75,103 @@ const EnhancedOnboardingDashboard = () => {
     "Enable AI assistant for guided setup experience"
   ]);
 
+  // Developer/Admin simulation states
+  const [selectedOrgType, setSelectedOrgType] = useState<string>('');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [currentOrgData, setCurrentOrgData] = useState<any>(null);
+
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+
   useEffect(() => {
     loadFrameworkStatus();
     loadOptimizationRecommendations();
+    loadCurrentOrgData();
   }, []);
+
+  const loadCurrentOrgData = async () => {
+    if (!profile?.organization_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('org_type, sub_sector, regulatory_classification, capital_tier')
+        .eq('id', profile.organization_id)
+        .single();
+      
+      if (error) throw error;
+      
+      setCurrentOrgData(data);
+      setSelectedOrgType(data?.org_type || '');
+    } catch (error) {
+      console.error('Error loading organization data:', error);
+    }
+  };
+
+  const handleOrgTypeChange = async (newOrgType: string) => {
+    if (!profile?.organization_id || !isAdmin) return;
+    
+    setIsRegenerating(true);
+    try {
+      // First, update the organization type in the database
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({ 
+          org_type: newOrgType,
+          // Set default sub_sector and regulatory_classification based on org_type
+          sub_sector: getDefaultSubSector(newOrgType),
+          regulatory_classification: getDefaultRegulatoryClassification(newOrgType)
+        })
+        .eq('id', profile.organization_id);
+      
+      if (updateError) throw updateError;
+      
+      // Then, regenerate sample data
+      const { data, error: functionError } = await supabase.functions.invoke('generate-sample-data', {
+        body: { regenerate: true }
+      });
+      
+      if (functionError) throw functionError;
+      
+      setSelectedOrgType(newOrgType);
+      await loadCurrentOrgData();
+      
+      toast({
+        title: "Organization Type Updated",
+        description: "Sample data has been regenerated for the new organization type.",
+      });
+    } catch (error) {
+      console.error('Error updating organization type:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update organization type. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const getDefaultSubSector = (orgType: string) => {
+    switch (orgType) {
+      case 'banking-schedule-i': return 'Retail Banking';
+      case 'banking-schedule-ii': return 'Foreign Banking';
+      case 'banking-schedule-iii': return 'Cooperative Banking';
+      case 'credit-union': return 'Community Banking';
+      case 'fintech': return 'Digital Finance';
+      default: return 'General Finance';
+    }
+  };
+
+  const getDefaultRegulatoryClassification = (orgType: string) => {
+    switch (orgType) {
+      case 'banking-schedule-i': return ['OSFI', 'Basel III', 'CDIC'];
+      case 'banking-schedule-ii': return ['OSFI', 'Basel III', 'E-21'];
+      case 'banking-schedule-iii': return ['OSFI', 'CDIC'];
+      case 'credit-union': return ['Provincial Regulator', 'CUDIC'];
+      case 'fintech': return ['FINTRAC', 'Privacy Act'];
+      default: return ['General Compliance'];
+    }
+  };
 
   const loadFrameworkStatus = async () => {
     // Mock implementation - would integrate with actual framework generation service
@@ -226,6 +325,83 @@ const EnhancedOnboardingDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Developer/Admin Organization Type Simulation */}
+      {isAdmin && (
+        <Card className="border-2 border-orange-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-700">
+              <Settings className="h-5 w-5" />
+              Developer/Admin: Organization Type Simulation
+            </CardTitle>
+            <CardDescription>
+              Switch between different organization types to test templates and sample data generation.
+              This will re-seed the organization with appropriate boilerplate data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Organization Type</label>
+                  <Select 
+                    value={selectedOrgType} 
+                    onValueChange={handleOrgTypeChange}
+                    disabled={isRegenerating}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select organization type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="banking-schedule-i">Schedule I Bank</SelectItem>
+                      <SelectItem value="banking-schedule-ii">Schedule II Bank</SelectItem>
+                      <SelectItem value="banking-schedule-iii">Schedule III Bank</SelectItem>
+                      <SelectItem value="credit-union">Credit Union</SelectItem>
+                      <SelectItem value="fintech">FinTech</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {currentOrgData && (
+                  <div className="text-sm space-y-1">
+                    <div><strong>Sub-sector:</strong> {currentOrgData.sub_sector || 'Not specified'}</div>
+                    <div><strong>Regulatory Classification:</strong> {
+                      Array.isArray(currentOrgData.regulatory_classification) 
+                        ? currentOrgData.regulatory_classification.join(', ') 
+                        : 'Not specified'
+                    }</div>
+                    <div><strong>Capital Tier:</strong> {currentOrgData.capital_tier || 'Not specified'}</div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Database className="h-4 w-4 text-blue-600" />
+                    <div className="font-medium text-blue-800">Sample Data Generation</div>
+                  </div>
+                  <div className="text-sm text-blue-700">
+                    Changing organization type will regenerate:
+                    • Business functions and processes
+                    • KRI definitions and sample data
+                    • Governance policy templates
+                    • Third-party vendor profiles
+                    • AI assistant context
+                  </div>
+                </div>
+                
+                {isRegenerating && (
+                  <div className="flex items-center gap-2 text-orange-600">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Regenerating sample data...</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="progress" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
