@@ -6576,30 +6576,57 @@ export type Database = {
       }
       organizations: {
         Row: {
+          asset_size: number | null
+          capital_tier: string | null
           created_at: string | null
+          employee_count: number | null
+          geographic_scope: string | null
           id: string
           name: string
+          onboarding_completed_at: string | null
+          onboarding_status: string | null
+          org_type: string | null
+          regulatory_classification: string[] | null
           regulatory_guidelines: string[] | null
           sector: string | null
           size: string | null
+          sub_sector: string | null
           updated_at: string | null
         }
         Insert: {
+          asset_size?: number | null
+          capital_tier?: string | null
           created_at?: string | null
+          employee_count?: number | null
+          geographic_scope?: string | null
           id?: string
           name: string
+          onboarding_completed_at?: string | null
+          onboarding_status?: string | null
+          org_type?: string | null
+          regulatory_classification?: string[] | null
           regulatory_guidelines?: string[] | null
           sector?: string | null
           size?: string | null
+          sub_sector?: string | null
           updated_at?: string | null
         }
         Update: {
+          asset_size?: number | null
+          capital_tier?: string | null
           created_at?: string | null
+          employee_count?: number | null
+          geographic_scope?: string | null
           id?: string
           name?: string
+          onboarding_completed_at?: string | null
+          onboarding_status?: string | null
+          org_type?: string | null
+          regulatory_classification?: string[] | null
           regulatory_guidelines?: string[] | null
           sector?: string | null
           size?: string | null
+          sub_sector?: string | null
           updated_at?: string | null
         }
         Relationships: []
