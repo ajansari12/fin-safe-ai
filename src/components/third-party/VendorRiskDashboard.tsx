@@ -45,6 +45,8 @@ const VendorRiskDashboard: React.FC = () => {
   };
 
   const getRiskColor = (level: string) => {
+    if (!level) return 'bg-gray-100 text-gray-800 border-gray-200';
+    
     switch (level.toLowerCase()) {
       case 'critical': return 'bg-red-100 text-red-800 border-red-200';
       case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
