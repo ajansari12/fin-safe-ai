@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,90 +15,57 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { useAuth } from '@/contexts/AuthContext';
-import { advancedAnalyticsService, type PredictiveMetric, type RealTimeAlert } from '@/services/enhanced-analytics-service';
-import { dataAvailabilityService } from '@/services/data-availability-service';
+import { useDataAvailability, usePredictiveMetrics, useRealTimeAlerts } from '@/hooks/useAnalyticsQueries';
+import { type PredictiveMetric, type RealTimeAlert } from '@/services/enhanced-analytics-service';
 import PredictiveEmptyState from './PredictiveEmptyState';
+import PredictiveAnalyticsSkeleton from './PredictiveAnalyticsSkeleton';
+import PredictiveAnalyticsErrorBoundary from './PredictiveAnalyticsErrorBoundary';
 import { toast } from 'sonner';
 
 const PredictiveAnalyticsPanel: React.FC = () => {
-  const { profile } = useAuth();
-  const [predictiveMetrics, setPredictiveMetrics] = useState<PredictiveMetric[]>([]);
-  const [realTimeAlerts, setRealTimeAlerts] = useState<RealTimeAlert[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [hasData, setHasData] = useState(false);
+  // Use React Query hooks for data fetching
+  const { 
+    data: dataAvailability, 
+    isLoading: isCheckingData, 
+    error: dataError,
+    refetch: refetchDataAvailability 
+  } = useDataAvailability();
 
-  useEffect(() => {
-    if (profile?.organization_id) {
-      checkDataAvailability();
+  const isReadyForPredictive = dataAvailability?.readyForPredictive ?? false;
+
+  const { 
+    data: predictiveMetrics = [], 
+    isLoading: isLoadingMetrics, 
+    error: metricsError,
+    refetch: refetchMetrics 
+  } = usePredictiveMetrics(isReadyForPredictive);
+
+  const { 
+    data: realTimeAlerts = [], 
+    isLoading: isLoadingAlerts, 
+    error: alertsError,
+    refetch: refetchAlerts 
+  } = useRealTimeAlerts(isReadyForPredictive);
+
+  const isLoading = isCheckingData || (isReadyForPredictive && (isLoadingMetrics || isLoadingAlerts));
+
+  const handleRefresh = () => {
+    refetchDataAvailability();
+    if (isReadyForPredictive) {
+      refetchMetrics();
+      refetchAlerts();
     }
-  }, [profile?.organization_id]);
-
-  const checkDataAvailability = async () => {
-    if (!profile?.organization_id) return;
-
-    console.log('Starting data availability check for org:', profile.organization_id);
-    setIsLoading(true);
-    try {
-      const dataStatus = await dataAvailabilityService.checkDataAvailability(profile.organization_id);
-      console.log('Data availability result:', dataStatus);
-      
-      if (dataStatus.readyForPredictive) {
-        console.log('Data ready for predictive analytics');
-        setHasData(true);
-        await loadPredictiveData();
-        
-        // Set up real-time polling only if we have data
-        const interval = setInterval(loadRealTimeAlerts, 30000);
-        return () => clearInterval(interval);
-      } else {
-        console.log('Data not ready for predictive analytics, showing empty state');
-        setHasData(false);
-      }
-    } catch (error) {
-      console.error('Error checking data availability:', error);
-      setHasData(false);
-    } finally {
-      console.log('Data availability check complete, setting loading to false');
-      setIsLoading(false);
-    }
+    toast.success('Data refreshed');
   };
 
-  const loadPredictiveData = async () => {
-    if (!profile?.organization_id) return;
-
-    try {
-      const [metrics, alerts] = await Promise.all([
-        advancedAnalyticsService.getPredictiveMetrics(profile.organization_id),
-        advancedAnalyticsService.getRealTimeAlerts(profile.organization_id)
-      ]);
-      
-      console.log('Predictive metrics loaded:', metrics);
-      console.log('Real-time alerts loaded:', alerts);
-      
-      setPredictiveMetrics(metrics || []);
-      setRealTimeAlerts(alerts || []);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error loading predictive data:', error);
-      toast.error('Failed to load predictive analytics');
-      setPredictiveMetrics([]);
-      setRealTimeAlerts([]);
-    }
-  };
-
-  const loadRealTimeAlerts = async () => {
-    if (!profile?.organization_id) return;
-
-    try {
-      const alerts = await advancedAnalyticsService.getRealTimeAlerts(profile.organization_id);
-      setRealTimeAlerts(alerts);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Error loading real-time alerts:', error);
-    }
-  };
+  // Show error if there's a critical error
+  if (dataError) {
+    return (
+      <PredictiveAnalyticsErrorBoundary>
+        <div>Error loading data availability</div>
+      </PredictiveAnalyticsErrorBoundary>
+    );
+  }
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -156,52 +123,35 @@ const PredictiveAnalyticsPanel: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="animate-pulse space-y-3">
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-8 bg-muted rounded w-1/2"></div>
-                  <div className="h-3 bg-muted rounded w-2/3"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return <PredictiveAnalyticsSkeleton />;
   }
 
   // Show empty state if no data is available
-  if (!hasData) {
+  if (!isReadyForPredictive) {
     return <PredictiveEmptyState />;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Predictive Analytics & Real-Time Monitoring</h3>
-          <p className="text-sm text-muted-foreground">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-          </p>
+    <PredictiveAnalyticsErrorBoundary>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Predictive Analytics & Real-Time Monitoring</h3>
+            <p className="text-sm text-muted-foreground">
+              Real-time data with automatic refresh
+            </p>
+          </div>
+          <Button 
+            onClick={handleRefresh}
+            variant="outline" 
+            size="sm"
+            className="flex items-center gap-2"
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
-        <Button 
-          onClick={() => {
-            setIsLoading(true);
-            checkDataAvailability();
-          }} 
-          variant="outline" 
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
-      </div>
 
       <Tabs defaultValue="predictions" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
@@ -369,7 +319,8 @@ const PredictiveAnalyticsPanel: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </PredictiveAnalyticsErrorBoundary>
   );
 };
 
