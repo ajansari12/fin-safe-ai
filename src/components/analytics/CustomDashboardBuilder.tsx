@@ -21,6 +21,9 @@ import DashboardList from './DashboardList';
 import DashboardEditor from './DashboardEditor';
 import CreateDashboardDialog from './CreateDashboardDialog';
 import { toast } from 'sonner';
+import { ErrorBoundaryWrapper, NoDataFallback } from './ErrorBoundaryWrapper';
+import { WidgetSkeleton } from './AnalyticsLoadingStates';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 const CustomDashboardBuilder: React.FC = () => {
   const { profile } = useAuth();
@@ -29,6 +32,8 @@ const CustomDashboardBuilder: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { handleAsyncError, parseError } = useErrorHandler();
 
   useEffect(() => {
     if (profile?.organization_id) {
@@ -36,9 +41,11 @@ const CustomDashboardBuilder: React.FC = () => {
     }
   }, [profile?.organization_id]);
 
-  const loadDashboards = async () => {
-    try {
+  const loadDashboards = async (retryCount = 0) => {
+    await handleAsyncError(async () => {
       setIsLoading(true);
+      setError(null);
+      
       const data = await customDashboardService.getDashboards();
       setDashboards(data);
       
@@ -47,53 +54,41 @@ const CustomDashboardBuilder: React.FC = () => {
       if (defaultDashboard) {
         setSelectedDashboard(defaultDashboard);
       }
-    } catch (error) {
-      console.error('Error loading dashboards:', error);
-      toast.error('Failed to load dashboards');
-    } finally {
-      setIsLoading(false);
-    }
+    }, 'loading dashboards');
+    
+    setIsLoading(false);
   };
 
   const handleCreateDashboard = async (dashboardData: any) => {
-    try {
+    await handleAsyncError(async () => {
       const newDashboard = await customDashboardService.createDashboard(dashboardData);
       setDashboards(prev => [newDashboard, ...prev]);
       setSelectedDashboard(newDashboard);
       setEditMode(true);
       setShowCreateDialog(false);
       toast.success('Dashboard created successfully');
-    } catch (error) {
-      console.error('Error creating dashboard:', error);
-      toast.error('Failed to create dashboard');
-    }
+    }, 'creating dashboard');
   };
 
   const handleDeleteDashboard = async (dashboardId: string) => {
-    try {
+    await handleAsyncError(async () => {
       await customDashboardService.deleteDashboard(dashboardId);
       setDashboards(prev => prev.filter(d => d.id !== dashboardId));
       if (selectedDashboard?.id === dashboardId) {
         setSelectedDashboard(dashboards[0] || null);
       }
       toast.success('Dashboard deleted successfully');
-    } catch (error) {
-      console.error('Error deleting dashboard:', error);
-      toast.error('Failed to delete dashboard');
-    }
+    }, 'deleting dashboard');
   };
 
   const handleSetDefault = async (dashboardId: string) => {
-    try {
+    await handleAsyncError(async () => {
       await customDashboardService.setDefaultDashboard(dashboardId);
       setDashboards(prev => 
         prev.map(d => ({ ...d, is_default: d.id === dashboardId }))
       );
       toast.success('Default dashboard updated');
-    } catch (error) {
-      console.error('Error setting default dashboard:', error);
-      toast.error('Failed to set default dashboard');
-    }
+    }, 'setting default dashboard');
   };
 
   const stats = {
@@ -104,9 +99,24 @@ const CustomDashboardBuilder: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <WidgetSkeleton title="Loading Custom Dashboards" showChart={false} />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <WidgetSkeleton key={i} showChart={false} />
+          ))}
+        </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <NoDataFallback 
+        title="Dashboard Error"
+        description="Unable to load custom dashboards. Please try refreshing."
+        retry={() => loadDashboards()}
+      />
     );
   }
 
@@ -194,28 +204,53 @@ const CustomDashboardBuilder: React.FC = () => {
             </Button>
           </div>
 
-          <DashboardList
-            dashboards={dashboards}
-            selectedDashboard={selectedDashboard}
-            onSelectDashboard={setSelectedDashboard}
-            onDeleteDashboard={handleDeleteDashboard}
-            onSetDefault={handleSetDefault}
-            onEditDashboard={(dashboard) => {
-              setSelectedDashboard(dashboard);
-              setEditMode(true);
-            }}
-          />
+          <ErrorBoundaryWrapper 
+            title="Dashboard List Error"
+            description="Unable to load dashboard list"
+          >
+            {dashboards.length > 0 ? (
+              <DashboardList
+                dashboards={dashboards}
+                selectedDashboard={selectedDashboard}
+                onSelectDashboard={setSelectedDashboard}
+                onDeleteDashboard={handleDeleteDashboard}
+                onSetDefault={handleSetDefault}
+                onEditDashboard={(dashboard) => {
+                  setSelectedDashboard(dashboard);
+                  setEditMode(true);
+                }}
+              />
+            ) : (
+              <NoDataFallback 
+                title="No Dashboards Found"
+                description="Create your first custom dashboard to get started with personalized analytics."
+                icon={<LayoutDashboard className="h-12 w-12 mx-auto mb-4 opacity-50" />}
+                retry={() => loadDashboards()}
+              />
+            )}
+          </ErrorBoundaryWrapper>
         </TabsContent>
 
         <TabsContent value="editor" className="space-y-6">
-          {selectedDashboard && (
-            <DashboardEditor
-              dashboard={selectedDashboard}
-              editMode={editMode}
-              onToggleEditMode={() => setEditMode(!editMode)}
-              onDashboardUpdate={loadDashboards}
-            />
-          )}
+          <ErrorBoundaryWrapper 
+            title="Dashboard Editor Error"
+            description="Unable to load dashboard editor"
+          >
+            {selectedDashboard ? (
+              <DashboardEditor
+                dashboard={selectedDashboard}
+                editMode={editMode}
+                onToggleEditMode={() => setEditMode(!editMode)}
+                onDashboardUpdate={loadDashboards}
+              />
+            ) : (
+              <NoDataFallback 
+                title="No Dashboard Selected"
+                description="Select a dashboard from the library to start editing."
+                icon={<Edit className="h-12 w-12 mx-auto mb-4 opacity-50" />}
+              />
+            )}
+          </ErrorBoundaryWrapper>
         </TabsContent>
       </Tabs>
 

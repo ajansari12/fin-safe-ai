@@ -19,6 +19,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification';
+import { ErrorBoundaryWrapper, AnalyticsCardFallback, NoDataFallback } from './ErrorBoundaryWrapper';
+import { DashboardSkeleton } from './AnalyticsLoadingStates';
+import { useErrorHandler } from '@/hooks/useErrorHandler';
 
 interface AnalyticsInsight {
   id: string;
@@ -43,30 +46,9 @@ const PredictiveAnalyticsPanel = lazy(() =>
   import('./PredictiveAnalyticsPanel').then(module => ({ default: module.default }))
 );
 
-// Loading skeleton component
-const DashboardSkeleton = () => (
-  <div className="space-y-6">
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {[...Array(4)].map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-6">
-            <div className="animate-pulse space-y-3">
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-8 bg-muted rounded w-1/2"></div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-    <Card>
-      <CardContent className="p-6">
-        <div className="animate-pulse">
-          <div className="h-4 bg-muted rounded w-1/4 mb-6"></div>
-          <div className="h-80 bg-muted rounded"></div>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+// Enhanced loading skeleton component with better UX
+const EnhancedDashboardSkeleton = () => (
+  <DashboardSkeleton />
 );
 
 const UnifiedAnalyticsDashboard: React.FC = () => {
@@ -74,6 +56,8 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('executive');
   const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
+  const [dataError, setDataError] = useState<Error | null>(null);
+  const { handleError } = useErrorHandler();
 
   useEffect(() => {
     if (profile?.organization_id) {
@@ -81,12 +65,14 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
     }
   }, [profile?.organization_id]);
 
-  const loadAutomatedInsights = async () => {
+  const loadAutomatedInsights = async (retryCount = 0) => {
     if (!profile?.organization_id) return;
 
     setIsGeneratingInsights(true);
+    setDataError(null);
+    
     try {
-      // Load analytics insights from Supabase
+      // Load analytics insights from Supabase with retry logic
       const { data: insightsData, error } = await supabase
         .from('analytics_insights')
         .select('*')
@@ -106,9 +92,25 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       }));
 
       setInsights(transformedInsights);
+      
+      // Reset error state on successful load
+      setDataError(null);
     } catch (error) {
-      console.error('Error loading insights:', error);
-      toast.error('Failed to load automated insights');
+      const appError = handleError(error, 'loading automated insights');
+      setDataError(appError as Error);
+      
+      // Retry logic for network errors
+      if (retryCount < 2 && error instanceof Error && error.message.includes('network')) {
+        setTimeout(() => loadAutomatedInsights(retryCount + 1), 2000 * (retryCount + 1));
+        return;
+      }
+      
+      // Show different messages based on error type
+      if (error instanceof Error && error.message.includes('permission')) {
+        toast.error('Permission denied - please check your access rights');
+      } else {
+        toast.error('Failed to load automated insights');
+      }
     } finally {
       setIsGeneratingInsights(false);
     }
@@ -162,7 +164,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
           </p>
         </div>
         <Button 
-          onClick={loadAutomatedInsights}
+          onClick={() => loadAutomatedInsights()}
           disabled={isGeneratingInsights}
           className="flex items-center gap-2"
         >
@@ -171,50 +173,69 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </Button>
       </div>
 
-      {/* AI-Generated Insights Banner */}
-      {insights.length > 0 && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Brain className="h-4 w-4 text-blue-600" />
-              AI-Generated Insights
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3">
-              {insights.slice(0, 3).map((insight) => (
-                <div key={insight.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getInsightIcon(insight.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-sm">{insight.title}</h4>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${getImpactColor(insight.impact)}`}
-                      >
-                        {insight.impact}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {Math.round(insight.confidence * 100)}% confidence
-                      </Badge>
+      {/* AI-Generated Insights Banner with Error Handling */}
+      <ErrorBoundaryWrapper 
+        title="AI Insights Error"
+        description="Unable to load AI-generated insights"
+        fallback={AnalyticsCardFallback}
+      >
+        {dataError ? (
+          <NoDataFallback 
+            title="Insights Unavailable"
+            description="Unable to load AI-generated insights. Please try refreshing."
+            retry={() => loadAutomatedInsights()}
+          />
+        ) : insights.length > 0 ? (
+          <Card className="border-blue-200 bg-blue-50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Brain className="h-4 w-4 text-blue-600" />
+                AI-Generated Insights
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3">
+                {insights.slice(0, 3).map((insight) => (
+                  <div key={insight.id} className="flex items-start gap-3 p-3 bg-white rounded-lg border">
+                    <div className="flex-shrink-0 mt-0.5">
+                      {getInsightIcon(insight.type)}
                     </div>
-                    <p className="text-sm text-muted-foreground">{insight.description}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium text-sm">{insight.title}</h4>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${getImpactColor(insight.impact)}`}
+                        >
+                          {insight.impact}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {Math.round(insight.confidence * 100)}% confidence
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{insight.description}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            {insights.length > 3 && (
-              <div className="mt-3 text-center">
-                <Button variant="ghost" size="sm">
-                  View all {insights.length} insights
-                </Button>
+                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              {insights.length > 3 && (
+                <div className="mt-3 text-center">
+                  <Button variant="ghost" size="sm">
+                    View all {insights.length} insights
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : !isGeneratingInsights ? (
+          <NoDataFallback 
+            title="No Insights Available"
+            description="AI insights will appear here as your data grows. Continue using the platform to generate meaningful insights."
+            icon={<Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />}
+            retry={() => loadAutomatedInsights()}
+          />
+        ) : null}
+      </ErrorBoundaryWrapper>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4">
@@ -237,28 +258,58 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <ExecutiveDashboard />
-          </Suspense>
+          <ErrorBoundaryWrapper 
+            title="Executive Dashboard Error"
+            description="Unable to load executive dashboard"
+            fallback={AnalyticsCardFallback}
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <ExecutiveDashboard />
+            </Suspense>
+          </ErrorBoundaryWrapper>
         </TabsContent>
 
         <TabsContent value="operational" className="space-y-6">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <OperationalDashboard />
-          </Suspense>
+          <ErrorBoundaryWrapper 
+            title="Operational Dashboard Error"
+            description="Unable to load operational dashboard"
+            fallback={AnalyticsCardFallback}
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <OperationalDashboard />
+            </Suspense>
+          </ErrorBoundaryWrapper>
         </TabsContent>
 
         <TabsContent value="predictive" className="space-y-6">
-          <AIStatusVerification />
-          <Suspense fallback={<DashboardSkeleton />}>
-            <PredictiveAnalyticsPanel />
-          </Suspense>
+          <ErrorBoundaryWrapper 
+            title="AI Status Verification Error"
+            description="Unable to verify AI status"
+            fallback={AnalyticsCardFallback}
+          >
+            <AIStatusVerification />
+          </ErrorBoundaryWrapper>
+          <ErrorBoundaryWrapper 
+            title="Predictive Analytics Error"
+            description="Unable to load predictive analytics"
+            fallback={AnalyticsCardFallback}
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <PredictiveAnalyticsPanel />
+            </Suspense>
+          </ErrorBoundaryWrapper>
         </TabsContent>
 
         <TabsContent value="custom" className="space-y-6">
-          <Suspense fallback={<DashboardSkeleton />}>
-            <CustomDashboardBuilder />
-          </Suspense>
+          <ErrorBoundaryWrapper 
+            title="Custom Dashboard Builder Error"
+            description="Unable to load custom dashboard builder"
+            fallback={AnalyticsCardFallback}
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <CustomDashboardBuilder />
+            </Suspense>
+          </ErrorBoundaryWrapper>
         </TabsContent>
       </Tabs>
     </div>
