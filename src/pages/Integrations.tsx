@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Key, Webhook, Settings, FileText, Zap } from "lucide-react";
+import { Plus, Key, Webhook, Settings, FileText, Zap, Database, Building } from "lucide-react";
 import IntegrationsList from "@/components/integrations/IntegrationsList";
 import ApiKeyManager from "@/components/integrations/ApiKeyManager";
 import EnhancedWebhookManager from "@/components/integrations/EnhancedWebhookManager";
@@ -11,6 +11,8 @@ import ConnectorSettings from "@/components/integrations/ConnectorSettings";
 import IntegrationAuditLogs from "@/components/integrations/IntegrationAuditLogs";
 import IntegrationForm from "@/components/integrations/IntegrationForm";
 import IntegrationDashboard from "@/components/integrations/IntegrationDashboard";
+import CoreBankingConnector from "@/components/integrations/CoreBankingConnector";
+import ERPConnector from "@/components/integrations/ERPConnector";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 
 const Integrations: React.FC = () => {
@@ -67,10 +69,18 @@ const Integrations: React.FC = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="core-banking" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Core Banking
+            </TabsTrigger>
+            <TabsTrigger value="erp" className="flex items-center gap-2">
+              <Building className="h-4 w-4" />
+              ERP
             </TabsTrigger>
             <TabsTrigger value="integrations" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -96,6 +106,14 @@ const Integrations: React.FC = () => {
 
           <TabsContent value="dashboard" className="space-y-6">
             <IntegrationDashboard />
+          </TabsContent>
+
+          <TabsContent value="core-banking" className="space-y-6">
+            <CoreBankingConnector />
+          </TabsContent>
+
+          <TabsContent value="erp" className="space-y-6">
+            <ERPConnector />
           </TabsContent>
 
           <TabsContent value="integrations" className="space-y-6">
