@@ -365,11 +365,15 @@ export function useEnhancedOrganizationSetup() {
     setIsEnrichingOrganization(true);
 
     try {
+      // Determine if we're in setup mode (no existing organization)
+      const isSetupMode = true; // During onboarding, we're always in setup mode
+      
       const { data, error } = await supabase.functions.invoke('enrich-organization-data', {
         body: {
-          org_id: null, // Will be set by the edge function
+          org_id: null,
           company_name: orgData.name,
-          domain: domain || undefined
+          domain: domain || undefined,
+          mode: 'setup'
         }
       });
 
@@ -380,9 +384,14 @@ export function useEnhancedOrganizationSetup() {
       if (data?.success && data?.enriched_data) {
         const enrichedData = data.enriched_data;
         
+        // Create mapping for enriched data to our org data structure
+        const mappedSector = mapOrgTypeToSector(enrichedData.org_type, enrichedData.sector);
+        
         // Update organization data with enriched fields
         setOrgData(prev => ({
           ...prev,
+          // Core fields
+          sector: mappedSector || prev.sector,
           orgType: enrichedData.org_type || prev.orgType,
           subSector: enrichedData.sub_sector || prev.subSector,
           geographicScope: enrichedData.geographic_scope || prev.geographicScope,
@@ -390,19 +399,21 @@ export function useEnhancedOrganizationSetup() {
           assetSize: enrichedData.asset_size || prev.assetSize,
           capitalTier: enrichedData.capital_tier || prev.capitalTier,
           primaryRegulators: enrichedData.regulatory_classification || prev.primaryRegulators,
-          // Map org_type to sector if available
-          sector: enrichedData.org_type || prev.sector
+          // Set size based on employee count if available
+          size: mapEmployeeCountToSize(enrichedData.employee_count) || prev.size
         }));
 
+        const enrichedFields = Object.keys(enrichedData).filter(key => enrichedData[key] !== null);
+        
         toast({
           title: "Organization Enriched Successfully",
-          description: `Auto-populated organization details based on "${orgData.name}".`,
+          description: `Auto-populated ${enrichedFields.length} fields based on "${orgData.name}".`,
         });
       } else if (data?.fallback) {
         // Handle fallback case when enrichment fails
         toast({
           title: "Auto-populate unavailable",
-          description: "Please fill in the organization details manually. Some fields may be pre-filled from public data.",
+          description: "Unable to find public information for this organization. Please fill in details manually.",
           variant: "default",
         });
       }
@@ -416,6 +427,33 @@ export function useEnhancedOrganizationSetup() {
     } finally {
       setIsEnrichingOrganization(false);
     }
+  };
+
+  // Helper function to map org_type to our sector values
+  const mapOrgTypeToSector = (orgType?: string, sector?: string): string | undefined => {
+    if (!orgType) return sector;
+    
+    const orgTypeMapping: Record<string, string> = {
+      'banking-schedule-i': 'banking-schedule-i',
+      'banking-schedule-ii': 'banking-schedule-ii', 
+      'banking-schedule-iii': 'banking-schedule-iii',
+      'credit-union': 'credit-union',
+      'trust-company': 'banking',
+      'insurance': 'insurance',
+      'fintech': 'fintech',
+      'other': 'other'
+    };
+    
+    return orgTypeMapping[orgType] || sector || 'other';
+  };
+
+  // Helper function to map employee count to size
+  const mapEmployeeCountToSize = (employeeCount?: number): string | undefined => {
+    if (!employeeCount) return undefined;
+    
+    if (employeeCount < 100) return 'small';
+    if (employeeCount <= 1000) return 'medium';
+    return 'large';
   };
 
   const handleComplete = async () => {

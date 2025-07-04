@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Save, Clock, Users, Building, Brain, Settings, Target } from "lucide-react";
+import { Shield, Save, Clock, Users, Building, Brain, Settings, Target, Sparkles } from "lucide-react";
 import { PolicyUploader } from "@/components/setup/PolicyUploader";
 import { useEnhancedOrganizationSetup } from "@/hooks/useEnhancedOrganizationSetup";
 import FrameworkGenerationPreview from "./FrameworkGenerationPreview";
@@ -21,10 +21,12 @@ const EnhancedOrganizationSetup = () => {
     completionEstimate,
     saveInProgress,
     frameworkProgress,
+    isEnrichingOrganization,
     handleNext,
     handleBack,
     handleComplete,
     handleChange,
+    handleEnrichOrganization,
     generateFramework,
     selectFramework,
     customizeFramework,
@@ -150,12 +152,30 @@ const EnhancedOrganizationSetup = () => {
                   <label htmlFor="org-name" className="text-sm font-medium">
                     Organization Name *
                   </label>
-                  <Input 
-                    id="org-name"
-                    value={orgData.name}
-                    onChange={(e) => handleChange("name", e.target.value)}
-                    placeholder="Enter your organization name"
-                  />
+                  <div className="flex gap-2">
+                    <Input 
+                      id="org-name"
+                      value={orgData.name}
+                      onChange={(e) => handleChange("name", e.target.value)}
+                      placeholder="Enter your organization name"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleEnrichOrganization()}
+                      disabled={!orgData.name.trim() || isEnrichingOrganization}
+                      className="flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {isEnrichingOrganization ? 'Auto-Populating...' : 'Auto-Populate'}
+                    </Button>
+                  </div>
+                  {isEnrichingOrganization && (
+                    <p className="text-sm text-muted-foreground">
+                      Searching for public information about your organization...
+                    </p>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

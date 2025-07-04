@@ -7,9 +7,10 @@ const corsHeaders = {
 }
 
 interface EnrichmentRequest {
-  org_id: string
+  org_id?: string | null
   company_name: string
   domain?: string
+  mode?: 'setup' | 'update'
 }
 
 interface EnrichmentData {
@@ -50,30 +51,35 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { org_id, company_name, domain }: EnrichmentRequest = await req.json()
+    const { org_id, company_name, domain, mode = 'update' }: EnrichmentRequest = await req.json()
 
-    if (!org_id || !company_name) {
+    if (!company_name) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: org_id and company_name' }),
+        JSON.stringify({ error: 'Missing required field: company_name' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log(`Starting enrichment for: ${company_name} (org_id: ${org_id})`)
+    // Determine operation mode
+    const isSetupMode = !org_id || mode === 'setup'
+    
+    console.log(`Starting enrichment for: ${company_name} (mode: ${isSetupMode ? 'setup' : 'update'}, org_id: ${org_id || 'none'})`)
 
-    // Verify user has access to this organization
-    const { data: orgData, error: orgError } = await supabaseClient
-      .from('organizations')
-      .select('id, name')
-      .eq('id', org_id)
-      .single()
+    // For update mode, verify user has access to the organization
+    if (!isSetupMode && org_id) {
+      const { data: orgData, error: orgError } = await supabaseClient
+        .from('organizations')
+        .select('id, name')
+        .eq('id', org_id)
+        .single()
 
-    if (orgError || !orgData) {
-      console.error('Organization access validation failed:', orgError)
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Cannot access this organization' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      if (orgError || !orgData) {
+        console.error('Organization access validation failed:', orgError)
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: Cannot access this organization' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     // Call Gemini API
@@ -162,20 +168,20 @@ Only return the JSON object. If you cannot find specific information, use null f
       )
     }
 
-    // Update organization with enriched data
-    const updateData: any = {}
-    
-    if (enrichmentData.sector) updateData.sector = enrichmentData.sector
-    if (enrichmentData.sub_sector) updateData.sub_sector = enrichmentData.sub_sector
-    if (enrichmentData.org_type) updateData.org_type = enrichmentData.org_type
-    if (enrichmentData.employee_count) updateData.employee_count = enrichmentData.employee_count
-    if (enrichmentData.asset_size) updateData.asset_size = enrichmentData.asset_size
-    if (enrichmentData.capital_tier) updateData.capital_tier = enrichmentData.capital_tier
-    if (enrichmentData.geographic_scope) updateData.geographic_scope = enrichmentData.geographic_scope
-    if (enrichmentData.regulatory_classification) updateData.regulatory_classification = enrichmentData.regulatory_classification
+    // Handle data storage based on mode
+    if (!isSetupMode && org_id && Object.keys(enrichmentData).length > 0) {
+      // Update mode: Save to database
+      const updateData: any = {}
+      
+      if (enrichmentData.sector) updateData.sector = enrichmentData.sector
+      if (enrichmentData.sub_sector) updateData.sub_sector = enrichmentData.sub_sector
+      if (enrichmentData.org_type) updateData.org_type = enrichmentData.org_type
+      if (enrichmentData.employee_count) updateData.employee_count = enrichmentData.employee_count
+      if (enrichmentData.asset_size) updateData.asset_size = enrichmentData.asset_size
+      if (enrichmentData.capital_tier) updateData.capital_tier = enrichmentData.capital_tier
+      if (enrichmentData.geographic_scope) updateData.geographic_scope = enrichmentData.geographic_scope
+      if (enrichmentData.regulatory_classification) updateData.regulatory_classification = enrichmentData.regulatory_classification
 
-    // Only update if we have data to update
-    if (Object.keys(updateData).length > 0) {
       const { error: updateError } = await supabaseClient
         .from('organizations')
         .update(updateData)
@@ -194,13 +200,16 @@ Only return the JSON object. If you cannot find specific information, use null f
       }
 
       console.log(`Successfully updated organization ${org_id} with enriched data`)
+    } else {
+      console.log(`Setup mode: Returning enriched data for client-side handling`)
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
+        mode: isSetupMode ? 'setup' : 'update',
         enriched_data: enrichmentData,
-        updated_fields: Object.keys(updateData)
+        updated_fields: isSetupMode ? [] : Object.keys(enrichmentData).filter(key => enrichmentData[key] !== null)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
