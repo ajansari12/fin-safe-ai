@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { PLACEHOLDER_UUID } from "@/lib/uuid-validation";
 
 export interface SampleDataResults {
   success: boolean;
@@ -55,7 +56,7 @@ class SampleDataService {
         const { error } = await supabase
           .from(table)
           .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all except system records
+          .neq('id', PLACEHOLDER_UUID); // Delete all except system records
 
         if (error && !error.message.includes('violates row-level security policy')) {
           console.warn(`Warning deleting from ${table}:`, error.message);

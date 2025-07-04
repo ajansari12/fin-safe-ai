@@ -3,6 +3,7 @@ import { enhancedThirdPartyRiskService } from './enhanced-third-party-risk-servi
 import { advancedAnalyticsService } from './advanced-analytics-service';
 import { enhancedMobilePWAService } from './enhanced-mobile-pwa-service';
 import { enhancedPerformanceService } from './enhanced-performance-service';
+import { getCurrentOrgId, requireOrgContext } from '@/lib/organization-context';
 
 export interface ApiKey {
   id: string;
@@ -244,7 +245,12 @@ class IntegrationService {
 
       // Start correlation analysis
       setInterval(async () => {
-        await advancedAnalyticsService.analyzeRiskCorrelations('default-org-id');
+        try {
+          const orgId = await getCurrentOrgId();
+          await advancedAnalyticsService.analyzeRiskCorrelations(orgId);
+        } catch (error) {
+          console.error('Error in correlation analysis:', error);
+        }
       }, 3600000); // Every hour
 
       console.log('Advanced analytics initialized');
@@ -293,7 +299,8 @@ class IntegrationService {
   private setupRiskAppetiteScenarioTriggers(): void {
     setInterval(async () => {
       try {
-        const insights = await advancedAnalyticsService.generateInsights('default-org-id');
+        const orgId = await getCurrentOrgId();
+        const insights = await advancedAnalyticsService.generateInsights(orgId);
         
         if (insights?.some((insight) => insight.type === 'anomaly' && insight.impact === 'critical')) {
           console.log('High severity anomaly detected - consider running stress scenarios');
@@ -412,7 +419,8 @@ class IntegrationService {
 
   private async getAnalyticsHealth(): Promise<any> {
     try {
-      const insights = await advancedAnalyticsService.generateInsights('default-org-id');
+      const orgId = await getCurrentOrgId();
+      const insights = await advancedAnalyticsService.generateInsights(orgId);
       const anomalies = insights?.filter(i => i.type === 'anomaly') || [];
       const correlations = insights?.filter(i => i.type === 'correlation') || [];
       const recommendations = insights?.filter(i => i.type === 'recommendation') || [];
@@ -480,10 +488,11 @@ class IntegrationService {
 
   // Generate comprehensive system report
   async generateSystemReport(): Promise<any> {
+    const context = await requireOrgContext('system report generation');
     const healthStatus = await this.getSystemHealthStatus();
     const performanceData = await enhancedPerformanceService.getPerformanceDashboardData();
     const vendorDashboard = await enhancedThirdPartyRiskService.getVendorRiskDashboard();
-    const analyticsInsights = await advancedAnalyticsService.generateInsights('default-org-id');
+    const analyticsInsights = await advancedAnalyticsService.generateInsights(context.orgId);
     const anomalies = analyticsInsights?.filter(i => i.type === 'anomaly') || [];
     const correlations = analyticsInsights?.filter(i => i.type === 'correlation') || [];
 
