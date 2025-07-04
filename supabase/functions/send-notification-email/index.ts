@@ -1,224 +1,328 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface NotificationEmailRequest {
-  to: string;
-  subject: string;
-  type: 'incident' | 'kri_breach' | 'audit_finding' | 'system_alert';
-  data: Record<string, any>;
-  urgency: 'low' | 'medium' | 'high' | 'critical';
+interface NotificationRequest {
+  type: 'sla_breach' | 'policy_review' | 'executive_summary';
+  recipient_email: string;
+  recipient_name?: string;
+  data: any;
+  org_id: string;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { to, subject, type, data, urgency }: NotificationEmailRequest = await req.json();
+    const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Set up Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { type, recipient_email, recipient_name, data, org_id }: NotificationRequest = await req.json();
 
-    // Generate email content based on type
-    let htmlContent = '';
-    let textContent = '';
+    console.log(`Sending ${type} notification to ${recipient_email}`);
+
+    let emailSubject = '';
+    let emailHtml = '';
+    let fromEmail = 'notifications@yourcompany.com'; // Update with your verified domain
 
     switch (type) {
-      case 'incident':
-        htmlContent = generateIncidentEmail(data);
-        textContent = `Incident Alert: ${data.title}\nSeverity: ${data.severity}\nStatus: ${data.status}\nReported: ${data.reported_at}`;
+      case 'sla_breach':
+        emailSubject = `🚨 SLA Breach Alert - ${data.incident_title}`;
+        emailHtml = generateSLABreachEmail(data, recipient_name);
         break;
-      
-      case 'kri_breach':
-        htmlContent = generateKRIBreachEmail(data);
-        textContent = `KRI Breach Alert: ${data.kri_name}\nCurrent Value: ${data.current_value}\nThreshold: ${data.threshold}\nSeverity: ${data.severity}`;
+
+      case 'policy_review':
+        emailSubject = `📋 Policy Review Required - ${data.policy_name}`;
+        emailHtml = generatePolicyReviewEmail(data, recipient_name);
         break;
-      
-      case 'audit_finding':
-        htmlContent = generateAuditFindingEmail(data);
-        textContent = `Audit Finding: ${data.finding_title}\nSeverity: ${data.severity}\nStatus: ${data.status}`;
+
+      case 'executive_summary':
+        emailSubject = `📊 Weekly Executive Summary - Week of ${data.week_of}`;
+        emailHtml = generateExecutiveSummaryEmail(data, recipient_name);
         break;
-      
-      case 'system_alert':
-        htmlContent = generateSystemAlertEmail(data);
-        textContent = `System Alert: ${data.message}\nComponent: ${data.component}\nTime: ${data.timestamp}`;
-        break;
+
+      default:
+        throw new Error(`Unknown notification type: ${type}`);
     }
 
-    // Log notification (for audit trail)
-    await supabase.from('notification_logs').insert({
-      recipient: to,
-      subject,
-      type,
-      urgency,
-      sent_at: new Date().toISOString(),
-      status: 'sent'
+    const emailResponse = await resend.emails.send({
+      from: fromEmail,
+      to: [recipient_email],
+      subject: emailSubject,
+      html: emailHtml,
     });
 
-    // In a production environment, you would integrate with an email service like SendGrid, AWS SES, etc.
-    // For now, we'll simulate sending the email
-    console.log(`Email notification sent to ${to}:`, { subject, type, urgency });
+    console.log('Email sent successfully:', emailResponse);
+
+    // Log the notification in the database
+    const { error: logError } = await supabase
+      .from('notifications')
+      .insert({
+        org_id,
+        user_id: null, // Will be set by trigger if available
+        notification_type: type,
+        title: emailSubject,
+        message: `Email notification sent to ${recipient_email}`,
+        priority: type === 'sla_breach' ? 'high' : 'medium',
+        metadata: {
+          email_id: emailResponse.data?.id,
+          recipient_email,
+          notification_data: data
+        }
+      });
+
+    if (logError) {
+      console.error('Failed to log notification:', logError);
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Notification sent successfully',
-        recipient: to,
-        type,
-        urgency
+        email_id: emailResponse.data?.id,
+        message: 'Notification sent successfully'
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
-      },
+      }
     );
 
   } catch (error) {
-    console.error('Notification error:', error);
-
+    console.error('Error sending notification:', error);
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to send notification', 
-        details: error.message 
+        error: error.message,
+        details: 'Failed to send notification email'
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      },
+      }
     );
   }
 });
 
-function generateIncidentEmail(data: any): string {
+function generateSLABreachEmail(data: any, recipientName?: string): string {
+  const greeting = recipientName ? `Hi ${recipientName},` : 'Hello,';
+  
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #dc2626; color: white; padding: 20px; text-align: center;">
-        <h1>🚨 Incident Alert</h1>
-      </div>
-      <div style="padding: 20px; background: #f9fafb;">
-        <h2>${data.title}</h2>
-        <p><strong>Severity:</strong> <span style="color: ${getSeverityColor(data.severity)}">${data.severity.toUpperCase()}</span></p>
-        <p><strong>Status:</strong> ${data.status}</p>
-        <p><strong>Category:</strong> ${data.category || 'Uncategorized'}</p>
-        <p><strong>Reported:</strong> ${new Date(data.reported_at).toLocaleString()}</p>
-        
-        ${data.description ? `<div style="margin: 20px 0; padding: 15px; background: white; border-left: 4px solid #dc2626;">
-          <h3>Description</h3>
-          <p>${data.description}</p>
-        </div>` : ''}
-        
-        <div style="margin-top: 30px; text-align: center;">
-          <a href="${Deno.env.get('SUPABASE_URL')}/app/incident-log" 
-             style="background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-            View Incident Details
-          </a>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>SLA Breach Alert</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #dc2626; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
+        .alert-box { background: #fef2f2; border: 1px solid #fecaca; padding: 16px; border-radius: 6px; margin: 16px 0; }
+        .button { background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+        .details { background: white; padding: 16px; border-radius: 6px; margin: 16px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🚨 SLA Breach Alert</h1>
+        </div>
+        <div class="content">
+          <p>${greeting}</p>
+          
+          <div class="alert-box">
+            <strong>URGENT:</strong> An SLA breach has been detected that requires immediate attention.
+          </div>
+
+          <div class="details">
+            <h3>Incident Details:</h3>
+            <ul>
+              <li><strong>Incident:</strong> ${data.incident_title || 'N/A'}</li>
+              <li><strong>Severity:</strong> ${data.severity || 'N/A'}</li>
+              <li><strong>Breach Type:</strong> ${data.breach_type || 'N/A'}</li>
+              <li><strong>Time Elapsed:</strong> ${data.time_elapsed || 'N/A'}</li>
+              <li><strong>SLA Limit:</strong> ${data.sla_limit || 'N/A'}</li>
+              <li><strong>Escalation Level:</strong> ${data.escalation_level || 'N/A'}</li>
+            </ul>
+          </div>
+
+          <p><strong>Action Required:</strong> ${data.action_required || 'Please review and take immediate action on this incident.'}</p>
+
+          <p>
+            <a href="${data.incident_url || '#'}" class="button">View Incident Details</a>
+          </p>
+
+          <p>This alert was automatically generated by the Risk Management System.</p>
         </div>
       </div>
-    </div>
+    </body>
+    </html>
   `;
 }
 
-function generateKRIBreachEmail(data: any): string {
+function generatePolicyReviewEmail(data: any, recipientName?: string): string {
+  const greeting = recipientName ? `Hi ${recipientName},` : 'Hello,';
+  
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #ea580c; color: white; padding: 20px; text-align: center;">
-        <h1>⚠️ KRI Breach Alert</h1>
-      </div>
-      <div style="padding: 20px; background: #f9fafb;">
-        <h2>${data.kri_name}</h2>
-        <p><strong>Current Value:</strong> ${data.current_value}</p>
-        <p><strong>Threshold Breached:</strong> ${data.threshold}</p>
-        <p><strong>Severity:</strong> <span style="color: ${getSeverityColor(data.severity)}">${data.severity.toUpperCase()}</span></p>
-        <p><strong>Detected:</strong> ${new Date(data.detected_at).toLocaleString()}</p>
-        
-        <div style="margin: 20px 0; padding: 15px; background: white; border-left: 4px solid #ea580c;">
-          <h3>Risk Assessment</h3>
-          <p>This KRI breach indicates potential operational risk exposure that requires immediate attention.</p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Policy Review Required</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
+        .info-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 6px; margin: 16px 0; }
+        .button { background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+        .details { background: white; padding: 16px; border-radius: 6px; margin: 16px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>📋 Policy Review Required</h1>
         </div>
-        
-        <div style="margin-top: 30px; text-align: center;">
-          <a href="${Deno.env.get('SUPABASE_URL')}/app/controls-and-kri" 
-             style="background: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-            Review KRI Dashboard
-          </a>
+        <div class="content">
+          <p>${greeting}</p>
+          
+          <div class="info-box">
+            A policy review is due and requires your attention.
+          </div>
+
+          <div class="details">
+            <h3>Policy Details:</h3>
+            <ul>
+              <li><strong>Policy Name:</strong> ${data.policy_name || 'N/A'}</li>
+              <li><strong>Framework:</strong> ${data.framework_name || 'N/A'}</li>
+              <li><strong>Current Version:</strong> ${data.version || 'N/A'}</li>
+              <li><strong>Last Review:</strong> ${data.last_review_date || 'N/A'}</li>
+              <li><strong>Review Due:</strong> ${data.review_due_date || 'N/A'}</li>
+              <li><strong>Priority:</strong> ${data.priority || 'Medium'}</li>
+            </ul>
+          </div>
+
+          <p><strong>Next Steps:</strong></p>
+          <ul>
+            <li>Review the current policy content</li>
+            <li>Check for regulatory updates or changes</li>
+            <li>Update the policy if necessary</li>
+            <li>Submit for approval workflow</li>
+          </ul>
+
+          <p>
+            <a href="${data.policy_url || '#'}" class="button">Review Policy</a>
+          </p>
+
+          <p>This notification was automatically generated based on your review schedule.</p>
         </div>
       </div>
-    </div>
+    </body>
+    </html>
   `;
 }
 
-function generateAuditFindingEmail(data: any): string {
+function generateExecutiveSummaryEmail(data: any, recipientName?: string): string {
+  const greeting = recipientName ? `Hi ${recipientName},` : 'Hello,';
+  
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #7c3aed; color: white; padding: 20px; text-align: center;">
-        <h1>📋 Audit Finding</h1>
-      </div>
-      <div style="padding: 20px; background: #f9fafb;">
-        <h2>${data.finding_title}</h2>
-        <p><strong>Severity:</strong> <span style="color: ${getSeverityColor(data.severity)}">${data.severity.toUpperCase()}</span></p>
-        <p><strong>Status:</strong> ${data.status}</p>
-        <p><strong>Framework:</strong> ${data.regulatory_framework || 'General'}</p>
-        <p><strong>Identified:</strong> ${new Date(data.identified_date).toLocaleString()}</p>
-        
-        ${data.finding_description ? `<div style="margin: 20px 0; padding: 15px; background: white; border-left: 4px solid #7c3aed;">
-          <h3>Finding Details</h3>
-          <p>${data.finding_description}</p>
-        </div>` : ''}
-        
-        <div style="margin-top: 30px; text-align: center;">
-          <a href="${Deno.env.get('SUPABASE_URL')}/app/audit-and-compliance" 
-             style="background: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-             View Audit Dashboard
-          </a>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Weekly Executive Summary</title>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+        .header { background: #059669; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
+        .metric-card { background: white; padding: 16px; margin: 16px 0; border-radius: 6px; border-left: 4px solid #059669; }
+        .metric-value { font-size: 24px; font-weight: bold; color: #059669; }
+        .button { background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; }
+        .alert { background: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 6px; margin: 8px 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>📊 Weekly Executive Summary</h1>
+          <p>Week of ${data.week_of || new Date().toLocaleDateString()}</p>
         </div>
-      </div>
-    </div>
-  `;
-}
+        <div class="content">
+          <p>${greeting}</p>
+          
+          <p>Here's your weekly risk management summary:</p>
 
-function generateSystemAlertEmail(data: any): string {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background: #059669; color: white; padding: 20px; text-align: center;">
-        <h1>🔔 System Alert</h1>
-      </div>
-      <div style="padding: 20px; background: #f9fafb;">
-        <h2>System Notification</h2>
-        <p><strong>Component:</strong> ${data.component}</p>
-        <p><strong>Message:</strong> ${data.message}</p>
-        <p><strong>Time:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
-        
-        <div style="margin: 20px 0; padding: 15px; background: white; border-left: 4px solid #059669;">
-          <h3>Action Required</h3>
-          <p>${data.action_required || 'Please review the system status and take appropriate action if necessary.'}</p>
-        </div>
-        
-        <div style="margin-top: 30px; text-align: center;">
-          <a href="${Deno.env.get('SUPABASE_URL')}/app/dashboard" 
-             style="background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
-             View Dashboard
-          </a>
-        </div>
-      </div>
-    </div>
-  `;
-}
+          <div class="grid">
+            <div class="metric-card">
+              <h3>Risk Incidents</h3>
+              <div class="metric-value">${data.total_incidents || 0}</div>
+              <p>${data.new_incidents || 0} new this week</p>
+            </div>
+            
+            <div class="metric-card">
+              <h3>KRI Status</h3>
+              <div class="metric-value">${data.kri_breaches || 0}</div>
+              <p>appetite breaches</p>
+            </div>
+            
+            <div class="metric-card">
+              <h3>Control Tests</h3>
+              <div class="metric-value">${data.control_tests || 0}</div>
+              <p>completed this week</p>
+            </div>
+            
+            <div class="metric-card">
+              <h3>Third Parties</h3>
+              <div class="metric-value">${data.vendor_reviews || 0}</div>
+              <p>reviews due soon</p>
+            </div>
+          </div>
 
-function getSeverityColor(severity: string): string {
-  switch (severity?.toLowerCase()) {
-    case 'critical': return '#dc2626';
-    case 'high': return '#ea580c';
-    case 'medium': return '#ca8a04';
-    case 'low': return '#059669';
-    default: return '#6b7280';
-  }
+          ${data.critical_alerts && data.critical_alerts.length > 0 ? `
+            <h3>🚨 Critical Alerts</h3>
+            ${data.critical_alerts.map((alert: any) => `
+              <div class="alert">
+                <strong>${alert.title}</strong><br>
+                ${alert.description}
+              </div>
+            `).join('')}
+          ` : ''}
+
+          <h3>📈 Key Trends</h3>
+          <ul>
+            <li>Incident response time: ${data.avg_response_time || 'N/A'}</li>
+            <li>Control effectiveness: ${data.control_effectiveness || 'N/A'}%</li>
+            <li>Policy compliance: ${data.policy_compliance || 'N/A'}%</li>
+            <li>Risk appetite variance: ${data.risk_variance || 'N/A'}%</li>
+          </ul>
+
+          <h3>🎯 Recommended Actions</h3>
+          <ul>
+            ${data.recommendations?.map((rec: string) => `<li>${rec}</li>`).join('') || '<li>Continue monitoring current risk posture</li>'}
+          </ul>
+
+          <p>
+            <a href="${data.dashboard_url || '#'}" class="button">View Full Dashboard</a>
+          </p>
+
+          <p>This summary was automatically generated from your risk management system data.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
 }
