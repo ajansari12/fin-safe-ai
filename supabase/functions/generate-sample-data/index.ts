@@ -11,6 +11,188 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
+// Dynamic data templates based on organization type
+const getBusinessFunctionsByOrgType = (orgType: string) => {
+  switch (orgType) {
+    case 'banking-schedule-i':
+      return [
+        'Retail Banking', 'Commercial Banking', 'Investment Banking', 'Treasury Management',
+        'Wealth Management', 'Digital Banking', 'Credit Risk Management', 'Market Risk Management',
+        'Operational Risk Management', 'Compliance & Regulatory Affairs', 'Internal Audit',
+        'Technology & Innovation', 'Human Resources', 'Customer Service'
+      ];
+    case 'banking-schedule-ii':
+      return [
+        'Foreign Exchange Operations', 'Corporate Banking', 'Trade Finance', 'Treasury Operations',
+        'Liquidity Management', 'Cybersecurity Operations', 'Outsourcing Risk Management',
+        'Compliance Monitoring', 'Internal Controls', 'Operational Risk'
+      ];
+    case 'credit-union':
+      return [
+        'Member Services', 'Community Lending', 'Deposit Operations', 'Member Relations',
+        'Branch Operations', 'Digital Services', 'Credit Administration', 'Risk Management',
+        'Compliance', 'Community Development'
+      ];
+    case 'fintech':
+      return [
+        'Payment Processing', 'Digital Wallet Services', 'API Management', 'Data Analytics',
+        'Customer Onboarding', 'Fraud Detection', 'Regulatory Technology', 'Platform Operations',
+        'Security Operations', 'Customer Support'
+      ];
+    default:
+      return ['Operations', 'Risk Management', 'Compliance', 'Technology', 'Customer Service'];
+  }
+};
+
+const getKRIsByOrgType = (orgType: string) => {
+  switch (orgType) {
+    case 'banking-schedule-i':
+      return [
+        { name: 'Capital Adequacy Ratio', unit: 'percentage', threshold_warning: 8.0, threshold_critical: 6.0 },
+        { name: 'Liquidity Coverage Ratio', unit: 'percentage', threshold_warning: 100, threshold_critical: 90 },
+        { name: 'Net Stable Funding Ratio', unit: 'percentage', threshold_warning: 100, threshold_critical: 95 },
+        { name: 'Credit Loss Provisions', unit: 'currency', threshold_warning: 10000000, threshold_critical: 20000000 },
+        { name: 'Operational Risk Losses', unit: 'currency', threshold_warning: 1000000, threshold_critical: 5000000 },
+        { name: 'Customer Complaint Rate', unit: 'percentage', threshold_warning: 2.0, threshold_critical: 5.0 },
+        { name: 'System Availability', unit: 'percentage', threshold_warning: 99.5, threshold_critical: 99.0 },
+        { name: 'Cybersecurity Incidents', unit: 'count', threshold_warning: 3, threshold_critical: 7 }
+      ];
+    case 'banking-schedule-ii':
+      return [
+        { name: 'Liquidity Buffer Ratio', unit: 'percentage', threshold_warning: 15, threshold_critical: 10 },
+        { name: 'Outsourcing Risk Score', unit: 'score', threshold_warning: 70, threshold_critical: 85 },
+        { name: 'Cybersecurity Incidents', unit: 'count', threshold_warning: 2, threshold_critical: 5 },
+        { name: 'Cross-Border Transaction Delays', unit: 'percentage', threshold_warning: 5, threshold_critical: 10 },
+        { name: 'Parent Company Dependency Risk', unit: 'score', threshold_warning: 60, threshold_critical: 80 },
+        { name: 'Regulatory Compliance Score', unit: 'percentage', threshold_warning: 95, threshold_critical: 90 }
+      ];
+    case 'credit-union':
+      return [
+        { name: 'Member Satisfaction Score', unit: 'percentage', threshold_warning: 85, threshold_critical: 75 },
+        { name: 'Loan Default Rate', unit: 'percentage', threshold_warning: 2.0, threshold_critical: 4.0 },
+        { name: 'Operational Efficiency Ratio', unit: 'percentage', threshold_warning: 75, threshold_critical: 85 },
+        { name: 'Community Investment Ratio', unit: 'percentage', threshold_warning: 5, threshold_critical: 3 },
+        { name: 'Credit Risk Exposure', unit: 'currency', threshold_warning: 5000000, threshold_critical: 10000000 },
+        { name: 'Branch Service Quality', unit: 'score', threshold_warning: 4.0, threshold_critical: 3.5 }
+      ];
+    case 'fintech':
+      return [
+        { name: 'API Response Time', unit: 'milliseconds', threshold_warning: 500, threshold_critical: 1000 },
+        { name: 'Transaction Success Rate', unit: 'percentage', threshold_warning: 99.5, threshold_critical: 99.0 },
+        { name: 'Platform Uptime', unit: 'percentage', threshold_warning: 99.9, threshold_critical: 99.5 },
+        { name: 'Data Security Incidents', unit: 'count', threshold_warning: 1, threshold_critical: 3 },
+        { name: 'Customer Onboarding Time', unit: 'minutes', threshold_warning: 15, threshold_critical: 30 },
+        { name: 'Fraud Detection Rate', unit: 'percentage', threshold_warning: 95, threshold_critical: 90 }
+      ];
+    default:
+      return [
+        { name: 'System Availability', unit: 'percentage', threshold_warning: 99.5, threshold_critical: 99.0 },
+        { name: 'Risk Score', unit: 'score', threshold_warning: 70, threshold_critical: 85 }
+      ];
+  }
+};
+
+const getPoliciesByOrgType = (orgType: string, regulatoryClassification: string[]) => {
+  const basePolicies = ['Risk Management Policy', 'Information Security Policy', 'Data Governance Policy'];
+  
+  switch (orgType) {
+    case 'banking-schedule-i':
+      return [
+        ...basePolicies,
+        'Basel III Capital Management Policy',
+        'OSFI E-21 Operational Risk Policy',
+        'Liquidity Risk Management Policy',
+        'Credit Risk Policy',
+        'Market Risk Policy',
+        'Model Risk Management Policy',
+        'Anti-Money Laundering Policy',
+        'Business Continuity Policy',
+        'Third Party Risk Policy',
+        'Consumer Protection Policy',
+        'Stress Testing Policy'
+      ];
+    case 'banking-schedule-ii':
+      return [
+        ...basePolicies,
+        'OSFI E-21 Operational Risk Policy',
+        'Basel III Compliance Policy',
+        'Outsourcing Risk Management Policy',
+        'Cross-Border Operations Policy',
+        'Parent Company Governance Policy',
+        'Liquidity Management Policy',
+        'Foreign Exchange Risk Policy',
+        'Cybersecurity Policy'
+      ];
+    case 'credit-union':
+      return [
+        ...basePolicies,
+        'Member Relations Policy',
+        'Community Lending Policy',
+        'Deposit Insurance Policy',
+        'Provincial Regulatory Compliance Policy',
+        'Member Privacy Policy',
+        'Credit Risk Policy',
+        'Operational Risk Policy',
+        'Business Continuity Policy'
+      ];
+    case 'fintech':
+      return [
+        ...basePolicies,
+        'FINTRAC Compliance Policy',
+        'PCI DSS Security Policy',
+        'API Security Policy',
+        'Data Privacy Policy',
+        'Platform Operations Policy',
+        'Customer Onboarding Policy',
+        'Fraud Prevention Policy',
+        'Incident Response Policy'
+      ];
+    default:
+      return basePolicies;
+  }
+};
+
+const getVendorsByOrgType = (orgType: string) => {
+  switch (orgType) {
+    case 'banking-schedule-i':
+      return [
+        { name: 'Core Banking Systems Inc.', type: 'technology', category: 'core_banking', criticality: 'critical' },
+        { name: 'Risk Analytics Solutions', type: 'technology', category: 'risk_management', criticality: 'high' },
+        { name: 'Compliance Monitoring Corp', type: 'operational', category: 'compliance', criticality: 'high' },
+        { name: 'Cybersecurity Services Ltd', type: 'technology', category: 'cybersecurity', criticality: 'critical' },
+        { name: 'Payment Processing Network', type: 'financial', category: 'payment_processing', criticality: 'critical' },
+        { name: 'Data Center Services', type: 'technology', category: 'infrastructure', criticality: 'high' }
+      ];
+    case 'banking-schedule-ii':
+      return [
+        { name: 'Foreign Exchange Platform', type: 'financial', category: 'fx_trading', criticality: 'critical' },
+        { name: 'Trade Finance Systems', type: 'technology', category: 'trade_finance', criticality: 'high' },
+        { name: 'Liquidity Management Solutions', type: 'financial', category: 'liquidity', criticality: 'high' },
+        { name: 'Cybersecurity Monitoring', type: 'technology', category: 'cybersecurity', criticality: 'critical' },
+        { name: 'Outsourced Operations Provider', type: 'operational', category: 'bpo', criticality: 'high' }
+      ];
+    case 'credit-union':
+      return [
+        { name: 'Member Services Platform', type: 'technology', category: 'member_services', criticality: 'high' },
+        { name: 'Community Banking Solutions', type: 'technology', category: 'banking_core', criticality: 'critical' },
+        { name: 'Credit Processing Services', type: 'financial', category: 'credit_processing', criticality: 'medium' },
+        { name: 'Digital Banking Provider', type: 'technology', category: 'digital_banking', criticality: 'high' }
+      ];
+    case 'fintech':
+      return [
+        { name: 'Cloud Infrastructure Provider', type: 'technology', category: 'cloud_services', criticality: 'critical' },
+        { name: 'Payment Gateway Services', type: 'financial', category: 'payment_processing', criticality: 'critical' },
+        { name: 'Data Analytics Platform', type: 'technology', category: 'data_analytics', criticality: 'high' },
+        { name: 'API Security Solutions', type: 'technology', category: 'cybersecurity', criticality: 'high' },
+        { name: 'Fraud Detection Engine', type: 'technology', category: 'fraud_detection', criticality: 'critical' }
+      ];
+    default:
+      return [
+        { name: 'Technology Services Inc.', type: 'technology', category: 'general_it', criticality: 'medium' }
+      ];
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -43,32 +225,60 @@ serve(async (req) => {
       errors: []
     };
 
-    // 1. Create Organizations
+    // 1. Create Organizations with enhanced classification
     const organizations = [];
     const orgData = [
       {
         name: "First National Bank of Canada",
         sector: "banking",
         size: "large",
-        regulatory_guidelines: ["OSFI E-21", "PIPEDA", "BCBS 239"]
+        org_type: "banking-schedule-i",
+        sub_sector: "Commercial",
+        employee_count: 15000,
+        asset_size: 250000000000,
+        capital_tier: "Tier 1",
+        geographic_scope: "National",
+        regulatory_guidelines: ["OSFI E-21", "PIPEDA", "BCBS 239"],
+        regulatory_classification: ["OSFI E-21", "Basel III", "PIPEDA"]
       },
       {
-        name: "Maple Leaf Insurance Corp",
-        sector: "insurance",
+        name: "Deutsche Bank Canada Branch",
+        sector: "banking", 
+        size: "large",
+        org_type: "banking-schedule-ii",
+        sub_sector: "Investment",
+        employee_count: 800,
+        asset_size: 45000000000,
+        capital_tier: "Tier 1",
+        geographic_scope: "National",
+        regulatory_guidelines: ["OSFI E-21", "PIPEDA", "BCBS 239"],
+        regulatory_classification: ["OSFI E-21", "Basel III", "FINTRAC"]
+      },
+      {
+        name: "Coastal Community Credit Union",
+        sector: "credit_union",
         size: "medium",
-        regulatory_guidelines: ["OSFI E-21", "PIPEDA", "IFRS 17"]
-      },
-      {
-        name: "Arctic Investment Management",
-        sector: "investment_management",
-        size: "small",
-        regulatory_guidelines: ["CSA", "IIROC", "OSFI E-21"]
+        org_type: "credit-union", 
+        sub_sector: "Community",
+        employee_count: 450,
+        asset_size: 2800000000,
+        capital_tier: "Not Applicable",
+        geographic_scope: "Regional",
+        regulatory_guidelines: ["OSFI E-21", "CUDIC"],
+        regulatory_classification: ["Provincial Credit Union Act", "OSFI E-21"]
       },
       {
         name: "Northern FinTech Solutions",
         sector: "fintech",
-        size: "medium",
-        regulatory_guidelines: ["FINTRAC", "PIPEDA", "PCI DSS"]
+        size: "medium", 
+        org_type: "fintech",
+        sub_sector: "Payment Processing",
+        employee_count: 250,
+        asset_size: 150000000,
+        capital_tier: "Not Applicable",
+        geographic_scope: "National",
+        regulatory_guidelines: ["FINTRAC", "PIPEDA", "PCI DSS"],
+        regulatory_classification: ["FINTRAC", "PIPEDA", "PCI DSS"]
       }
     ];
 
@@ -262,11 +472,86 @@ serve(async (req) => {
       }
     }
 
-    // 5. Create Vendor Contracts (Third Party Profiles first, then contracts)
+    // 5. Create Vendor Contracts (Third Party Profiles first, then contracts) - Dynamic by org type
     for (const org of organizations) {
-      const vendorsPerOrg = Math.ceil(params.vendorCount / organizations.length);
-      for (let i = 0; i < vendorsPerOrg; i++) {
-        // Create vendor profile first
+      const vendorTemplates = getVendorsByOrgType(org.org_type);
+      const additionalVendorsCount = Math.max(0, Math.ceil(params.vendorCount / organizations.length) - vendorTemplates.length);
+      
+      // Create template-based vendors specific to org type
+      for (const template of vendorTemplates) {
+        const vendor = {
+          org_id: org.id,
+          vendor_name: template.name,
+          vendor_type: template.type,
+          service_category: template.category,
+          risk_rating: faker.helpers.weightedArrayElement([
+            { weight: 0.3, value: 'low' },
+            { weight: 0.4, value: 'medium' },
+            { weight: 0.25, value: 'high' },
+            { weight: 0.05, value: 'critical' }
+          ]),
+          criticality: template.criticality,
+          contact_name: faker.person.fullName(),
+          contact_email: faker.internet.email(),
+          contact_phone: faker.phone.number(),
+          address: faker.location.streetAddress(),
+          city: faker.location.city(),
+          country: 'Canada',
+          website: faker.internet.url(),
+          status: faker.helpers.arrayElement(['active', 'inactive', 'under_review']),
+          onboarding_date: faker.date.past({ years: 2 }),
+          last_assessment_date: faker.date.past({ years: 1 }),
+          next_assessment_date: faker.date.future({ years: 1 }),
+          services_provided: `Specialized ${template.category} services for ${org.org_type} organization`,
+          compliance_certifications: faker.helpers.arrayElements(['SOC 2', 'ISO 27001', 'PCI DSS', 'GDPR'], { min: 1, max: 3 })
+        };
+
+        const { data: vendorData, error: vendorError } = await supabase
+          .from('third_party_profiles')
+          .insert([vendor])
+          .select()
+          .single();
+
+        if (vendorError) {
+          results.errors.push(`Vendor error: ${vendorError.message}`);
+          continue;
+        }
+
+        // Create contract for this vendor
+        const startDate = faker.date.past({ years: 1 });
+        const endDate = faker.date.future({ years: 2 });
+        
+        const contract = {
+          vendor_profile_id: vendorData.id,
+          contract_name: `${vendor.vendor_name} Service Agreement`,
+          contract_type: faker.helpers.arrayElement(['service_agreement', 'software_license', 'consulting', 'maintenance']),
+          start_date: startDate,
+          end_date: endDate,
+          renewal_date: faker.date.between({ from: new Date(), to: endDate }),
+          contract_value: faker.number.float({ min: 10000, max: 500000, fractionDigits: 2 }),
+          currency: 'CAD',
+          status: faker.helpers.arrayElement(['active', 'expired', 'terminated', 'under_negotiation']),
+          auto_renewal: faker.datatype.boolean(),
+          notice_period_days: faker.helpers.arrayElement([30, 60, 90]),
+          payment_terms: faker.helpers.arrayElement(['net_30', 'net_60', 'quarterly', 'annually']),
+          key_terms: faker.lorem.paragraph(),
+          performance_metrics: faker.lorem.sentence(),
+          termination_clauses: faker.lorem.sentence()
+        };
+
+        const { error: contractError } = await supabase
+          .from('vendor_contracts')
+          .insert([contract]);
+
+        if (contractError) {
+          results.errors.push(`Contract error: ${contractError.message}`);
+        } else {
+          results.vendor_contracts++;
+        }
+      }
+      
+      // Create additional random vendors to reach the target count
+      for (let i = 0; i < additionalVendorsCount; i++) {
         const vendor = {
           org_id: org.id,
           vendor_name: faker.company.name(),
@@ -422,32 +707,10 @@ serve(async (req) => {
         continue;
       }
 
-      // Create policies for this framework - extended count
-      const basePolicyTypes = [
-        'Risk Management Policy',
-        'Information Security Policy',
-        'Business Continuity Policy',
-        'Vendor Management Policy',
-        'Incident Management Policy',
-        'Data Governance Policy',
-        'Compliance Monitoring Policy',
-        'Data Privacy Policy',
-        'Anti-Money Laundering Policy',
-        'Credit Risk Policy',
-        'Market Risk Policy',
-        'Operational Risk Policy',
-        'Liquidity Risk Policy',
-        'Model Risk Management Policy',
-        'Third Party Risk Policy',
-        'Business Continuity Policy',
-        'Crisis Management Policy',
-        'Change Management Policy',
-        'Access Control Policy',
-        'Data Retention Policy'
-      ];
-      
+      // Create policies for this framework - dynamic by org type
+      const orgSpecificPolicies = getPoliciesByOrgType(org.org_type, org.regulatory_classification);
       const policiesPerOrg = Math.ceil(params.governanceCount / (organizations.length * 2)); // Half policies, half frameworks
-      const selectedPolicies = faker.helpers.arrayElements(basePolicyTypes, policiesPerOrg);
+      const selectedPolicies = faker.helpers.arrayElements(orgSpecificPolicies, Math.min(policiesPerOrg, orgSpecificPolicies.length));
 
       for (const policyType of selectedPolicies) {
         const policy = {
@@ -485,20 +748,12 @@ serve(async (req) => {
       }
     }
 
-    // 8. Create KRI Definitions and Logs for 6 months
+    // 8. Create KRI Definitions and Logs for 6 months - Dynamic by org type
     for (const org of organizations) {
       const orgProfiles = profiles.filter(p => p.organization_id === org.id);
       
-      const kriTypes = [
-        { name: 'System Availability', unit: 'percentage', threshold_warning: 99.5, threshold_critical: 99.0 },
-        { name: 'Transaction Failure Rate', unit: 'percentage', threshold_warning: 0.5, threshold_critical: 1.0 },
-        { name: 'Customer Complaints', unit: 'count', threshold_warning: 50, threshold_critical: 100 },
-        { name: 'Security Incidents', unit: 'count', threshold_warning: 5, threshold_critical: 10 },
-        { name: 'Data Quality Score', unit: 'percentage', threshold_warning: 95, threshold_critical: 90 },
-        { name: 'Vendor SLA Breaches', unit: 'count', threshold_warning: 3, threshold_critical: 5 },
-        { name: 'Regulatory Findings', unit: 'count', threshold_warning: 2, threshold_critical: 5 },
-        { name: 'Operational Loss', unit: 'currency', threshold_warning: 100000, threshold_critical: 500000 }
-      ];
+      // Get org-specific KRIs based on organization type
+      const kriTypes = getKRIsByOrgType(org.org_type);
 
       for (const kriType of kriTypes) {
         // Create KRI Definition
@@ -574,6 +829,50 @@ serve(async (req) => {
             results.kri_logs++;
           }
         }
+      }
+    }
+
+    // 9. Create Business Functions based on org type
+    for (const org of organizations) {
+      const businessFunctions = getBusinessFunctionsByOrgType(org.org_type);
+      
+      for (const functionName of businessFunctions) {
+        const businessFunction = {
+          org_id: org.id,
+          name: functionName,
+          description: `${functionName} operations for ${org.org_type} organization`,
+          criticality: faker.helpers.weightedArrayElement([
+            { weight: 0.2, value: 'low' },
+            { weight: 0.4, value: 'medium' },
+            { weight: 0.3, value: 'high' },
+            { weight: 0.1, value: 'critical' }
+          ]),
+          category: faker.helpers.arrayElement(['core', 'support', 'regulatory', 'strategic']),
+          owner: faker.helpers.arrayElement(profiles.filter(p => p.organization_id === org.id))?.full_name || 'TBD'
+        };
+
+        const { error } = await supabase
+          .from('business_functions')
+          .insert([businessFunction]);
+
+        if (error) {
+          results.errors.push(`Business Function error: ${error.message}`);
+        }
+      }
+    }
+
+    // Update onboarding status for all organizations to completed
+    for (const org of organizations) {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ 
+          onboarding_status: 'completed',
+          onboarding_completed_at: new Date().toISOString()
+        })
+        .eq('id', org.id);
+
+      if (error) {
+        results.errors.push(`Organization status update error: ${error.message}`);
       }
     }
 
