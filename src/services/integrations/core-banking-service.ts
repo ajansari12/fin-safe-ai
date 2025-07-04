@@ -10,7 +10,7 @@ export interface CoreBankingConfig {
     credentials: Record<string, string>;
   };
   syncSchedule: string;
-  dataMapping: Record<string, string>;
+  dataMapping: Record<string, boolean>;
 }
 
 class CoreBankingService {
@@ -46,6 +46,11 @@ class CoreBankingService {
       platform: 'unknown',
       status: 'inactive'
     };
+  }
+
+  async createCoreBankingIntegration(config: CoreBankingConfig): Promise<void> {
+    this.config = config;
+    toast.success('Core banking integration created successfully');
   }
 }
 

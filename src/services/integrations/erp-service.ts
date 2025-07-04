@@ -57,6 +57,11 @@ class ERPService {
     }
     toast.success(`ERP sync scheduled for ${frequency} updates`);
   }
+
+  async createERPIntegration(config: ERPConfig): Promise<void> {
+    this.config = config;
+    toast.success('ERP integration created successfully');
+  }
 }
 
 export const erpService = new ERPService();

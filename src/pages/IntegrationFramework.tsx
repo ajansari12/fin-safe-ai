@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import IntegrationDashboard from "@/components/integrations/IntegrationDashboard";
-import SystemConnectorSetup from "@/components/integrations/SystemConnectorSetup";
+import CoreBankingConnector from "@/components/integrations/CoreBankingConnector";
 import DataSyncManager from "@/components/integrations/DataSyncManager";
 import IntegrationsList from "@/components/integrations/IntegrationsList";
 import ApiKeyManager from "@/components/integrations/ApiKeyManager";
@@ -140,7 +140,7 @@ const IntegrationFramework: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="connectors">
-            <SystemConnectorSetup />
+            <CoreBankingConnector />
           </TabsContent>
 
           <TabsContent value="sync">

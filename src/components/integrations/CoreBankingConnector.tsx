@@ -302,11 +302,11 @@ const CoreBankingConnector: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Object.entries(config.dataMapping || {}).map(([key, value]) => (
                     <div key={key} className="flex items-center space-x-2">
-                      <Switch
-                        id={key}
-                        checked={value}
-                        onCheckedChange={(checked) => handleDataMappingUpdate(key, checked)}
-                      />
+                       <Switch
+                         id={key}
+                         checked={value}
+                         onCheckedChange={(checked) => handleDataMappingUpdate(key, checked)}
+                       />
                       <Label htmlFor={key} className="capitalize">
                         {key.replace(/([A-Z])/g, ' $1').trim()}
                       </Label>
