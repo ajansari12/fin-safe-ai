@@ -3,7 +3,8 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
-import ErrorBoundary from './components/common/ErrorBoundary';
+import { GlobalErrorBoundary } from './components/error/GlobalErrorBoundary';
+import { RouteErrorBoundary } from './components/error/RouteErrorBoundary';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AuthPage from './pages/auth/AuthPage';
 import IndexPage from './pages/Index';
@@ -43,6 +44,7 @@ const EnhancedOnboardingDashboard = lazy(() => import('./components/onboarding/E
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedAIAssistantContext';
+import ErrorMonitor from './components/error/ErrorMonitor';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,7 +57,8 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
-    <ErrorBoundary>
+    <GlobalErrorBoundary>
+      <ErrorMonitor />
       <QueryClientProvider client={queryClient}>
         <Toaster />
         <BrowserRouter>
@@ -103,7 +106,9 @@ function App() {
               } />
               <Route path="/app/dashboard" element={
                 <ProtectedRoute>
-                  <DashboardPage />
+                  <RouteErrorBoundary routeName="Dashboard" moduleName="Core">
+                    <DashboardPage />
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/settings" element={
@@ -115,12 +120,16 @@ function App() {
               } />
               <Route path="/app/governance" element={
                 <ProtectedRoute>
-                  <GovernanceFrameworkPage />
+                  <RouteErrorBoundary routeName="Governance Framework" moduleName="Governance">
+                    <GovernanceFrameworkPage />
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/risk-appetite" element={
                 <ProtectedRoute>
-                  <RiskAppetitePage />
+                  <RouteErrorBoundary routeName="Risk Appetite" moduleName="Risk Management">
+                    <RiskAppetitePage />
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/impact-tolerances" element={
@@ -145,17 +154,23 @@ function App() {
               } />
               <Route path="/app/controls-and-kri" element={
                 <ProtectedRoute>
-                  <ControlsAndKriPage />
+                  <RouteErrorBoundary routeName="Controls & KRI" moduleName="Risk Management">
+                    <ControlsAndKriPage />
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/third-party-risk" element={
                 <ProtectedRoute>
-                  <ThirdPartyRiskPage />
+                  <RouteErrorBoundary routeName="Third-Party Risk" moduleName="Risk Management">
+                    <ThirdPartyRiskPage />
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/incident-log" element={
                 <ProtectedRoute>
-                  <IncidentLogPage />
+                  <RouteErrorBoundary routeName="Incident Log" moduleName="Risk Management">
+                    <IncidentLogPage />
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/scenario-testing" element={
@@ -175,7 +190,9 @@ function App() {
               } />
               <Route path="/app/document-management" element={
                 <ProtectedRoute>
-                  <DocumentManagementPage />
+                  <RouteErrorBoundary routeName="Document Management" moduleName="Documents">
+                    <DocumentManagementPage />
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/integrations" element={
@@ -185,9 +202,11 @@ function App() {
               } />
               <Route path="/app/analytics-hub" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<DashboardSkeleton />}>
-                    <AnalyticsHubPage />
-                  </Suspense>
+                  <RouteErrorBoundary routeName="Analytics Hub" moduleName="Analytics">
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <AnalyticsHubPage />
+                    </Suspense>
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/workflow-center" element={
@@ -228,23 +247,29 @@ function App() {
               } />
               <Route path="/app/analytics" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<DashboardSkeleton />}>
-                    <AnalyticsPage />
-                  </Suspense>
+                  <RouteErrorBoundary routeName="Analytics" moduleName="Analytics">
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <AnalyticsPage />
+                    </Suspense>
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/analytics/custom" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<DashboardSkeleton />}>
-                    <CustomDashboardPage />
-                  </Suspense>
+                  <RouteErrorBoundary routeName="Custom Analytics" moduleName="Analytics">
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <CustomDashboardPage />
+                    </Suspense>
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/app/organizational-intelligence" element={
                 <ProtectedRoute>
-                  <Suspense fallback={<DashboardSkeleton />}>
-                    <OrganizationalIntelligencePage />
-                  </Suspense>
+                  <RouteErrorBoundary routeName="Organizational Intelligence" moduleName="Analytics">
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <OrganizationalIntelligencePage />
+                    </Suspense>
+                  </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
               
@@ -294,7 +319,7 @@ function App() {
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
-    </ErrorBoundary>
+    </GlobalErrorBoundary>
   );
 }
 

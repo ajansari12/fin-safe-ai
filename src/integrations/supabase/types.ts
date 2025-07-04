@@ -4181,6 +4181,69 @@ export type Database = {
           },
         ]
       }
+      error_logs: {
+        Row: {
+          component_name: string | null
+          created_at: string
+          error_boundary_id: string | null
+          error_message: string
+          error_stack: string | null
+          id: string
+          metadata: Json | null
+          module_name: string | null
+          org_id: string
+          resolved: boolean | null
+          resolved_at: string | null
+          route: string
+          session_id: string | null
+          severity: string
+          timestamp: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_name?: string | null
+          created_at?: string
+          error_boundary_id?: string | null
+          error_message: string
+          error_stack?: string | null
+          id?: string
+          metadata?: Json | null
+          module_name?: string | null
+          org_id: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          route: string
+          session_id?: string | null
+          severity?: string
+          timestamp?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_name?: string | null
+          created_at?: string
+          error_boundary_id?: string | null
+          error_message?: string
+          error_stack?: string | null
+          id?: string
+          metadata?: Json | null
+          module_name?: string | null
+          org_id?: string
+          resolved?: boolean | null
+          resolved_at?: string | null
+          route?: string
+          session_id?: string | null
+          severity?: string
+          timestamp?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       external_data_sources: {
         Row: {
           authentication_config: Json
