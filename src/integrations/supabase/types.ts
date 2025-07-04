@@ -4185,6 +4185,42 @@ export type Database = {
           },
         ]
       }
+      forecasting_inputs: {
+        Row: {
+          accuracy_score: number | null
+          created_at: string | null
+          id: string
+          input_data: Json
+          last_updated_at: string | null
+          metric_name: string
+          model_type: string
+          org_id: string
+          time_period: string
+        }
+        Insert: {
+          accuracy_score?: number | null
+          created_at?: string | null
+          id?: string
+          input_data?: Json
+          last_updated_at?: string | null
+          metric_name: string
+          model_type?: string
+          org_id: string
+          time_period: string
+        }
+        Update: {
+          accuracy_score?: number | null
+          created_at?: string | null
+          id?: string
+          input_data?: Json
+          last_updated_at?: string | null
+          metric_name?: string
+          model_type?: string
+          org_id?: string
+          time_period?: string
+        }
+        Relationships: []
+      }
       forensic_evidence: {
         Row: {
           chain_of_custody: Json
