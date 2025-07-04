@@ -277,6 +277,9 @@ class DocumentManagementService {
       })
       .eq('id', documentId);
 
+    // Trigger AI summary generation asynchronously
+    this.generateVersionSummary(documentId, data.id, profile.organization_id);
+
     return data;
   }
 
@@ -330,6 +333,22 @@ class DocumentManagementService {
 
     if (error) return [];
     return data || [];
+  }
+
+  private async generateVersionSummary(documentId: string, versionId: string, orgId: string): Promise<void> {
+    try {
+      // Call the edge function to generate AI summary asynchronously
+      await supabase.functions.invoke('generate-document-version-summary', {
+        body: {
+          document_id: documentId,
+          new_version_id: versionId,
+          org_id: orgId
+        }
+      });
+    } catch (error) {
+      console.error('Error triggering version summary generation:', error);
+      // Don't throw error to avoid disrupting the main upload flow
+    }
   }
 }
 

@@ -1,11 +1,13 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useQuery } from "@tanstack/react-query";
 import { documentManagementService } from "@/services/document-management-service";
-import { History, Download, Eye, FileText, User, Calendar } from "lucide-react";
+import { History, Download, Eye, FileText, User, Calendar, ChevronDown, ChevronRight, Sparkles, Clock, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -14,10 +16,22 @@ interface DocumentVersionHistoryProps {
 }
 
 const DocumentVersionHistory: React.FC<DocumentVersionHistoryProps> = ({ documentId }) => {
+  const [expandedSummaries, setExpandedSummaries] = useState<Set<string>>(new Set());
+  
   const { data: versions = [], refetch } = useQuery({
     queryKey: ['document-versions', documentId],
     queryFn: () => documentManagementService.getDocumentVersions(documentId)
   });
+
+  const toggleSummaryExpansion = (versionId: string) => {
+    const newExpanded = new Set(expandedSummaries);
+    if (newExpanded.has(versionId)) {
+      newExpanded.delete(versionId);
+    } else {
+      newExpanded.add(versionId);
+    }
+    setExpandedSummaries(newExpanded);
+  };
 
   const handleRevertToVersion = async (versionId: string) => {
     try {
@@ -90,16 +104,71 @@ const DocumentVersionHistory: React.FC<DocumentVersionHistoryProps> = ({ documen
                     <p className="text-sm mt-2 text-gray-700">{version.description}</p>
                   )}
 
-                  {/* Version-specific AI Analysis */}
-                  {version.ai_analysis_status === 'completed' && version.ai_summary && (
-                    <div className="mt-3 p-2 bg-blue-50 rounded">
-                      <h5 className="font-medium text-xs mb-1">AI Analysis Summary</h5>
-                      <p className="text-xs text-gray-700">
-                        {version.ai_summary.slice(0, 150)}
-                        {version.ai_summary.length > 150 && '...'}
-                      </p>
-                    </div>
-                  )}
+                  {/* AI-Generated Version Summary */}
+                  <TooltipProvider>
+                    {version.ai_analysis_status === 'completed' && version.ai_summary ? (
+                      <Collapsible
+                        open={expandedSummaries.has(version.id)}
+                        onOpenChange={() => toggleSummaryExpansion(version.id)}
+                      >
+                        <div className="mt-3 border border-emerald-200 bg-emerald-50 rounded-lg">
+                          <CollapsibleTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full justify-between p-3 h-auto text-left hover:bg-emerald-100"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Sparkles className="h-4 w-4 text-emerald-600" />
+                                <span className="font-medium text-emerald-800 text-sm">
+                                  AI Version Summary
+                                </span>
+                              </div>
+                              {expandedSummaries.has(version.id) ? (
+                                <ChevronDown className="h-4 w-4 text-emerald-600" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-emerald-600" />
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent className="px-3 pb-3">
+                            <div className="text-sm text-emerald-700 leading-relaxed">
+                              {version.ai_summary}
+                            </div>
+                          </CollapsibleContent>
+                          {!expandedSummaries.has(version.id) && (
+                            <div className="px-3 pb-3">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <p className="text-xs text-emerald-600 truncate">
+                                    {version.ai_summary.slice(0, 80)}
+                                    {version.ai_summary.length > 80 && '...'}
+                                  </p>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-xs">
+                                  <p className="text-sm">{version.ai_summary}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          )}
+                        </div>
+                      </Collapsible>
+                    ) : version.ai_analysis_status === 'pending' ? (
+                      <div className="mt-3 flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <Clock className="h-4 w-4 text-yellow-600 animate-spin" />
+                        <span className="text-sm text-yellow-700">
+                          AI summary being generated...
+                        </span>
+                      </div>
+                    ) : version.ai_analysis_status === 'failed' ? (
+                      <div className="mt-3 flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                        <span className="text-sm text-red-700">
+                          Failed to generate AI summary
+                        </span>
+                      </div>
+                    ) : null}
+                  </TooltipProvider>
                 </div>
 
                 <div className="flex items-center gap-2">
