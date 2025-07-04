@@ -34,11 +34,22 @@ export const useRealTimeAlerts = (enabled: boolean = true) => {
 
   return useQuery({
     queryKey: ['realTimeAlerts', profile?.organization_id],
-    queryFn: () => advancedAnalyticsService.getRealTimeAlerts(profile?.organization_id!),
+    queryFn: async () => {
+      try {
+        const result = await advancedAnalyticsService.getRealTimeAlerts(profile?.organization_id!);
+        if (!result) {
+          console.warn('Real-time alerts query returned undefined/null');
+        }
+        return result;
+      } catch (error) {
+        console.error('Error fetching real-time alerts:', error);
+        throw error;
+      }
+    },
     enabled: !!profile?.organization_id && enabled,
-    staleTime: 30 * 1000, // 30 seconds
-    refetchInterval: 30 * 1000, // Refresh every 30 seconds
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes (300000 ms)
+    refetchOnWindowFocus: false,
     retry: 1,
   });
 };
