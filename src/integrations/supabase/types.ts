@@ -2470,10 +2470,12 @@ export type Database = {
           created_by: string | null
           dashboard_name: string
           dashboard_type: string
+          description: string | null
           id: string
           is_default: boolean | null
           is_shared: boolean | null
           layout_config: Json
+          name: string | null
           org_id: string
           shared_with: string[] | null
           updated_at: string
@@ -2485,10 +2487,12 @@ export type Database = {
           created_by?: string | null
           dashboard_name: string
           dashboard_type?: string
+          description?: string | null
           id?: string
           is_default?: boolean | null
           is_shared?: boolean | null
           layout_config?: Json
+          name?: string | null
           org_id: string
           shared_with?: string[] | null
           updated_at?: string
@@ -2500,10 +2504,12 @@ export type Database = {
           created_by?: string | null
           dashboard_name?: string
           dashboard_type?: string
+          description?: string | null
           id?: string
           is_default?: boolean | null
           is_shared?: boolean | null
           layout_config?: Json
+          name?: string | null
           org_id?: string
           shared_with?: string[] | null
           updated_at?: string
@@ -2519,6 +2525,7 @@ export type Database = {
           filters: Json | null
           id: string
           is_active: boolean | null
+          position: number | null
           position_config: Json
           updated_at: string
           widget_config: Json
@@ -2530,6 +2537,7 @@ export type Database = {
           filters?: Json | null
           id?: string
           is_active?: boolean | null
+          position?: number | null
           position_config?: Json
           updated_at?: string
           widget_config?: Json
@@ -2541,6 +2549,7 @@ export type Database = {
           filters?: Json | null
           id?: string
           is_active?: boolean | null
+          position?: number | null
           position_config?: Json
           updated_at?: string
           widget_config?: Json
