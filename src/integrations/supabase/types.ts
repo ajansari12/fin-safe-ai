@@ -10796,6 +10796,18 @@ export type Database = {
         Args: { data_content: string; org_id: string }
         Returns: Json
       }
+      get_analytics_summary: {
+        Args: { org_id_param: string }
+        Returns: Json
+      }
+      get_incidents_summary: {
+        Args: { org_id_param: string }
+        Returns: Json
+      }
+      get_kri_summary: {
+        Args: { start_date_param?: string; end_date_param?: string }
+        Returns: Json
+      }
       get_org_dashboard_metrics: {
         Args: { target_org_id?: string }
         Returns: {
