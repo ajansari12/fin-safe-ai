@@ -499,7 +499,7 @@ export function useEnhancedOrganizationSetup() {
     return 'large';
   };
 
-  // Create organization record early in the setup flow
+  // Create organization record atomically with profile linking
   const createOrganizationRecord = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
@@ -516,35 +516,47 @@ export function useEnhancedOrganizationSetup() {
       return profile.organization_id;
     }
 
-    // Create organization
-    const organization = await createOrganization({
-      name: orgData.name,
-      sector: orgData.sector,
-      size: orgData.size,
-      regulatory_guidelines: orgData.regulatoryFrameworks,
+    // Use atomic database function to create organization and link profile
+    const { data, error } = await supabase.rpc('create_organization_with_profile', {
+      p_org_name: orgData.name,
+      p_sector: orgData.sector,
+      p_size: orgData.size,
+      p_regulatory_guidelines: orgData.regulatoryFrameworks,
+      p_user_id: user.id
     });
 
-    // Update user profile with organization ID
-    await updateUserProfile(organization.id);
+    if (error) {
+      console.error('Failed to create organization:', error);
+      throw new Error(`Organization creation failed: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      throw new Error('Organization creation returned no data');
+    }
+
+    const result = data[0];
+    if (!result.profile_updated) {
+      console.warn('Profile was not updated during organization creation');
+    }
 
     // Create user role
-    await createUserRole(organization.id, orgData.userRole);
+    await createUserRole(result.organization_id, orgData.userRole);
 
-    // Force refresh of the user profile in auth context by refetching
+    // Force refresh of the user profile in auth context
     try {
       await supabase.auth.refreshSession();
     } catch (error) {
       console.warn('Failed to refresh session:', error);
     }
 
-    console.log('Organization created successfully:', organization.id);
+    console.log('Organization created successfully:', result.organization_id);
     
     toast({
       title: "Organization Created",
       description: "Your organization has been set up and is ready for framework generation.",
     });
 
-    return organization.id;
+    return result.organization_id;
   };
 
   const handleComplete = async () => {

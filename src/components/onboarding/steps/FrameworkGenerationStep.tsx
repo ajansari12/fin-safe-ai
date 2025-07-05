@@ -165,69 +165,41 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
 
   const createOrUpdateOrganizationalProfile = async (organizationId: string) => {
     try {
-      // Check if organizational profile already exists
-      const { data: existingProfile, error: fetchError } = await supabase
+      console.log('Creating/updating organizational profile using safe database function');
+      
+      // Use the safe database function to create/update organizational profile
+      const { data: profileId, error } = await supabase.rpc('create_organizational_profile_safe', {
+        p_organization_id: organizationId,
+        p_preferred_framework_types: selectedFrameworks,
+        p_auto_generate_frameworks: true
+      });
+
+      if (error) {
+        console.error('Error from create_organizational_profile_safe:', error);
+        throw new Error(`Database function failed: ${error.message}`);
+      }
+
+      if (!profileId) {
+        throw new Error('Database function returned null profile ID');
+      }
+
+      // Fetch the created/updated profile to return full object
+      const { data: profile, error: fetchError } = await supabase
         .from('organizational_profiles')
         .select('*')
-        .eq('organization_id', organizationId)
-        .maybeSingle();
+        .eq('id', profileId)
+        .single();
 
       if (fetchError) {
-        console.error('Error fetching organizational profile:', fetchError);
-        throw new Error(`Failed to fetch organizational profile: ${fetchError.message}`);
+        console.error('Error fetching created organizational profile:', fetchError);
+        throw new Error(`Failed to fetch created profile: ${fetchError.message}`);
       }
 
-      if (existingProfile) {
-        // Update with framework preferences
-        const { data: updatedProfile, error: updateError } = await supabase
-          .from('organizational_profiles')
-          .update({
-            preferred_framework_types: selectedFrameworks,
-            auto_generate_frameworks: true,
-            framework_preferences: {
-              onboarding_generated: true,
-              selected_types: selectedFrameworks
-            }
-          })
-          .eq('id', existingProfile.id)
-          .select()
-          .single();
-        
-        if (updateError) {
-          console.error('Error updating organizational profile:', updateError);
-          throw new Error(`Failed to update organizational profile: ${updateError.message}`);
-        }
-        
-        return updatedProfile;
-      } else {
-        // Create new profile
-        const { data: newProfile, error: insertError } = await supabase
-          .from('organizational_profiles')
-          .insert({
-            organization_id: organizationId,
-            preferred_framework_types: selectedFrameworks,
-            auto_generate_frameworks: true,
-            framework_preferences: {
-              onboarding_generated: true,
-              selected_types: selectedFrameworks
-            },
-            employee_count: 100, // Default values - can be updated later
-            risk_maturity: 'developing',
-            sub_sector: 'financial_services'
-          })
-          .select()
-          .single();
-        
-        if (insertError) {
-          console.error('Error creating organizational profile:', insertError);
-          throw new Error(`Failed to create organizational profile: ${insertError.message}`);
-        }
-        
-        return newProfile;
-      }
+      console.log('Organizational profile created/updated successfully:', profile.id);
+      return profile;
     } catch (error) {
-      console.error('Error creating/updating organizational profile:', error);
-      throw error; // Re-throw to be handled by the caller
+      console.error('Error in createOrUpdateOrganizationalProfile:', error);
+      throw error;
     }
   };
 

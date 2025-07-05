@@ -6566,6 +6566,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_organizational_profiles_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "organizational_profiles_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -6965,7 +6972,15 @@ export type Database = {
           role?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_profiles_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       propagation_chains: {
         Row: {
@@ -10827,6 +10842,27 @@ export type Database = {
       cleanup_old_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_organization_with_profile: {
+        Args: {
+          p_org_name: string
+          p_sector: string
+          p_size: string
+          p_regulatory_guidelines?: string[]
+          p_user_id?: string
+        }
+        Returns: {
+          organization_id: string
+          profile_updated: boolean
+        }[]
+      }
+      create_organizational_profile_safe: {
+        Args: {
+          p_organization_id: string
+          p_preferred_framework_types?: string[]
+          p_auto_generate_frameworks?: boolean
+        }
+        Returns: string
       }
       detect_data_patterns: {
         Args: { data_content: string; org_id: string }
