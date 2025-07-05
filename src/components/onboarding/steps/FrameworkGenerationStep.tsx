@@ -62,10 +62,11 @@ const frameworkOptions = [
 
 export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = ({ onNext, onPrevious }) => {
   const { completeStep } = useOnboarding();
-  const { profile } = useAuth();
+  const { profile, updateProfile } = useAuth();
   const [selectedFrameworks, setSelectedFrameworks] = useState<string[]>(['governance', 'risk_appetite']);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationResults, setGenerationResults] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const toggleFramework = (frameworkId: string) => {
     setSelectedFrameworks(prev => 
@@ -76,24 +77,50 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
   };
 
   const handleGenerateFrameworks = async () => {
-    if (!profile?.organization_id) {
-      toast.error('Organization profile not found');
+    setError(null);
+    
+    // Get fresh user profile to ensure we have the latest organization_id
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError('User not authenticated. Please log in again.');
+      return;
+    }
+
+    // Fetch the latest profile from database
+    const { data: freshProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      setError('Unable to fetch user profile. Please try again.');
+      return;
+    }
+
+    if (!freshProfile?.organization_id) {
+      setError('Organization not found. Please complete organization setup first.');
       return;
     }
 
     if (selectedFrameworks.length === 0) {
-      toast.error('Please select at least one framework to generate');
+      setError('Please select at least one framework to generate.');
       return;
     }
 
     setIsGenerating(true);
     try {
+      console.log('Starting framework generation for organization:', freshProfile.organization_id);
+      
       // First, ensure we have an organizational profile
-      let orgProfile = await createOrUpdateOrganizationalProfile();
+      let orgProfile = await createOrUpdateOrganizationalProfile(freshProfile.organization_id);
       
       if (!orgProfile) {
         throw new Error('Failed to create organizational profile');
       }
+
+      console.log('Organizational profile ready:', orgProfile.id);
 
       // Generate frameworks
       const results = await intelligentFrameworkGenerationService.generateFrameworks({
@@ -123,29 +150,36 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
       onNext();
     } catch (error) {
       console.error('Error generating frameworks:', error);
-      toast.error('Failed to generate frameworks. Please try again.');
+      let errorMessage = 'Failed to generate frameworks. Please try again.';
+      
+      if (error instanceof Error) {
+        errorMessage = `Framework generation failed: ${error.message}`;
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const createOrUpdateOrganizationalProfile = async () => {
+  const createOrUpdateOrganizationalProfile = async (organizationId: string) => {
     try {
-      // Verify organization exists first
-      if (!profile?.organization_id) {
-        throw new Error('Organization not found. Please ensure organization setup is complete.');
-      }
-
       // Check if organizational profile already exists
-      const { data: existingProfile } = await supabase
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('organizational_profiles')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', organizationId)
         .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching organizational profile:', fetchError);
+        throw new Error(`Failed to fetch organizational profile: ${fetchError.message}`);
+      }
 
       if (existingProfile) {
         // Update with framework preferences
-        const { data: updatedProfile } = await supabase
+        const { data: updatedProfile, error: updateError } = await supabase
           .from('organizational_profiles')
           .update({
             preferred_framework_types: selectedFrameworks,
@@ -159,13 +193,18 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
           .select()
           .single();
         
+        if (updateError) {
+          console.error('Error updating organizational profile:', updateError);
+          throw new Error(`Failed to update organizational profile: ${updateError.message}`);
+        }
+        
         return updatedProfile;
       } else {
         // Create new profile
-        const { data: newProfile } = await supabase
+        const { data: newProfile, error: insertError } = await supabase
           .from('organizational_profiles')
           .insert({
-            organization_id: profile.organization_id,
+            organization_id: organizationId,
             preferred_framework_types: selectedFrameworks,
             auto_generate_frameworks: true,
             framework_preferences: {
@@ -178,6 +217,11 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
           })
           .select()
           .single();
+        
+        if (insertError) {
+          console.error('Error creating organizational profile:', insertError);
+          throw new Error(`Failed to create organizational profile: ${insertError.message}`);
+        }
         
         return newProfile;
       }
@@ -342,30 +386,78 @@ export const FrameworkGenerationStep: React.FC<FrameworkGenerationStepProps> = (
           </div>
         )}
 
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Framework Generation Error</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{error}</p>
+                </div>
+                <div className="mt-4">
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setError(null)}
+                      className="text-red-700 border-red-300 hover:bg-red-50"
+                    >
+                      Try Again
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onNext}
+                      className="text-red-700"
+                    >
+                      Skip Framework Generation
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="flex justify-between pt-6">
           <Button variant="outline" onClick={onPrevious}>
             <ArrowLeft className="mr-2 h-5 w-5" />
             Previous
           </Button>
-          <Button 
-            onClick={handleGenerateFrameworks} 
-            disabled={selectedFrameworks.length === 0 || isGenerating}
-            size="lg"
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isGenerating ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Generating Frameworks...
-              </>
-            ) : (
-              <>
-                <Brain className="mr-2 h-5 w-5" />
-                Generate Frameworks
-              </>
-            )}
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              variant="ghost"
+              onClick={onNext}
+              disabled={isGenerating}
+            >
+              Skip for Now
+            </Button>
+            <Button 
+              onClick={handleGenerateFrameworks} 
+              disabled={selectedFrameworks.length === 0 || isGenerating}
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Generating Frameworks...
+                </>
+              ) : (
+                <>
+                  <Brain className="mr-2 h-5 w-5" />
+                  Generate Frameworks
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

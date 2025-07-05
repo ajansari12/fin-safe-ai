@@ -27,9 +27,6 @@ const EnhancedOrganizationSetup = () => {
     handleComplete,
     handleChange,
     handleEnrichOrganization,
-    generateFramework,
-    selectFramework,
-    customizeFramework,
   } = useEnhancedOrganizationSetup();
 
   const [showSaveIndicator, setShowSaveIndicator] = useState(false);
@@ -682,9 +679,6 @@ const EnhancedOrganizationSetup = () => {
                 <FrameworkGenerationPreview
                   orgData={orgData}
                   frameworkProgress={frameworkProgress}
-                  onGenerateFramework={generateFramework}
-                  onSelectFramework={selectFramework}
-                  onCustomizeFramework={customizeFramework}
                 />
               </CardContent>
               <CardFooter className="flex justify-between">

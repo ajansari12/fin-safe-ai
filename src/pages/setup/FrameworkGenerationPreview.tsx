@@ -27,9 +27,9 @@ interface FrameworkGenerationPreviewProps {
     customizations?: Record<string, any>;
     errorMessage?: string;
   };
-  onGenerateFramework: () => void;
-  onSelectFramework: (framework: any) => void;
-  onCustomizeFramework: (customizations: Record<string, any>) => void;
+  onGenerateFramework?: () => void;
+  onSelectFramework?: (framework: any) => void;
+  onCustomizeFramework?: (customizations: Record<string, any>) => void;
 }
 
 const FrameworkGenerationPreview: React.FC<FrameworkGenerationPreviewProps> = ({
@@ -128,41 +128,40 @@ const FrameworkGenerationPreview: React.FC<FrameworkGenerationPreviewProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-center py-8">
-              <Brain className="h-16 w-16 text-primary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Ready to Generate Your Framework</h3>
-              <p className="text-muted-foreground mb-6">
-                Our AI will analyze your organization profile and generate customized risk management frameworks 
-                tailored to your specific needs, sector requirements, and regulatory obligations.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="text-center">
-                  <Shield className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-                  <div className="font-medium">Regulatory Compliance</div>
-                  <div className="text-sm text-muted-foreground">OSFI E-21, Basel III, ISO standards</div>
+              <div className="text-center py-8">
+                <Brain className="h-16 w-16 text-primary mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Framework Generation Ready</h3>
+                <p className="text-muted-foreground mb-6">
+                  Your organization profile is complete. Framework generation will be handled in the next step 
+                  where our AI will analyze your profile and generate customized risk management frameworks 
+                  tailored to your specific needs, sector requirements, and regulatory obligations.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="text-center">
+                    <Shield className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                    <div className="font-medium">Regulatory Compliance</div>
+                    <div className="text-sm text-muted-foreground">OSFI E-21, Basel III, ISO standards</div>
+                  </div>
+                  <div className="text-center">
+                    <Settings className="h-8 w-8 text-green-500 mx-auto mb-2" />
+                    <div className="font-medium">Custom Controls</div>
+                    <div className="text-sm text-muted-foreground">Tailored to your maturity level</div>
+                  </div>
+                  <div className="text-center">
+                    <Zap className="h-8 w-8 text-purple-500 mx-auto mb-2" />
+                    <div className="font-medium">Best Practices</div>
+                    <div className="text-sm text-muted-foreground">Industry-leading frameworks</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <Settings className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                  <div className="font-medium">Custom Controls</div>
-                  <div className="text-sm text-muted-foreground">Tailored to your maturity level</div>
-                </div>
-                <div className="text-center">
-                  <Zap className="h-8 w-8 text-purple-500 mx-auto mb-2" />
-                  <div className="font-medium">Best Practices</div>
-                  <div className="text-sm text-muted-foreground">Industry-leading frameworks</div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="text-sm text-blue-800">
+                    <strong>Next Step:</strong> Framework generation will happen in the dedicated onboarding step 
+                    where you can select and customize frameworks for your organization.
+                  </div>
                 </div>
               </div>
-
-              <Button 
-                size="lg" 
-                onClick={onGenerateFramework}
-                className="min-w-[200px]"
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                Generate Framework
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -252,9 +251,9 @@ const FrameworkGenerationPreview: React.FC<FrameworkGenerationPreviewProps> = ({
               <p className="text-muted-foreground mb-4">
                 {errorMessage || 'An error occurred during framework generation. Please try again.'}
               </p>
-              <Button onClick={onGenerateFramework} variant="outline">
-                Try Again
-              </Button>
+                <Button onClick={() => onGenerateFramework?.()} variant="outline">
+                  Try Again
+                </Button>
             </div>
           </CardContent>
         </Card>
@@ -294,7 +293,7 @@ const FrameworkGenerationPreview: React.FC<FrameworkGenerationPreviewProps> = ({
                   ? 'ring-2 ring-primary border-primary' 
                   : 'hover:shadow-md'
               }`}
-              onClick={() => onSelectFramework(framework)}
+              onClick={() => onSelectFramework?.(framework)}
             >
               <CardHeader>
                 <div className="flex items-start justify-between">

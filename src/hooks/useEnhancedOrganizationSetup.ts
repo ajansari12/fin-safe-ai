@@ -242,104 +242,8 @@ export function useEnhancedOrganizationSetup() {
     setStep(step - 1);
   };
 
-  const generateFramework = async () => {
-    setFrameworkProgress({
-      status: 'analyzing',
-      progress: 10,
-      currentStep: 'Analyzing organizational profile',
-      generatedFrameworks: []
-    });
-
-    try {
-      // Step 1: Create organizational profile
-      setFrameworkProgress(prev => ({
-        ...prev,
-        progress: 25,
-        currentStep: 'Creating organizational profile'
-      }));
-
-      const profileData = {
-        sub_sector: orgData.subSector,
-        employee_count: orgData.employeeCount,
-        asset_size: orgData.assetSize,
-        geographic_scope: orgData.geographicScope,
-        risk_maturity: orgData.riskMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
-        compliance_maturity: orgData.complianceMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
-        technology_maturity: orgData.technologyMaturity as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
-        digital_transformation: orgData.digitalTransformation as 'basic' | 'developing' | 'advanced' | 'sophisticated' | undefined,
-        risk_culture: orgData.riskCulture,
-        regulatory_history: orgData.regulatoryHistory,
-        business_lines: orgData.businessLines,
-        primary_regulators: orgData.primaryRegulators,
-        applicable_frameworks: orgData.applicableFrameworks,
-        growth_strategy: orgData.growthStrategy,
-        market_position: orgData.marketPosition
-      };
-
-      const profile = await organizationalIntelligenceService.createOrUpdateProfile(profileData);
-
-      // Step 2: Generate framework templates
-      setFrameworkProgress(prev => ({
-        ...prev,
-        status: 'generating',
-        progress: 50,
-        currentStep: 'Generating framework templates'
-      }));
-
-      const frameworks = await templateLibraryService.generateIndustrySpecificTemplates(
-        orgData.sector,
-        profile
-      );
-
-      // Step 3: Customize frameworks
-      setFrameworkProgress(prev => ({
-        ...prev,
-        status: 'customizing',
-        progress: 75,
-        currentStep: 'Customizing frameworks for your organization'
-      }));
-
-      const customizedFrameworks = [];
-      for (const framework of frameworks) {
-        const customized = await templateLibraryService.getCustomizedTemplate({
-          orgId: profile?.organization_id || '',
-          templateId: framework.id,
-          organizationalProfile: profile,
-          customizationPreferences: orgData.customizationPreferences
-        });
-        customizedFrameworks.push(customized);
-      }
-
-      // Step 4: Complete
-      setFrameworkProgress({
-        status: 'completed',
-        progress: 100,
-        currentStep: 'Framework generation completed',
-        generatedFrameworks: customizedFrameworks
-      });
-
-      toast({
-        title: "Framework Generation Complete",
-        description: `Generated ${customizedFrameworks.length} customized frameworks for your organization.`,
-      });
-
-    } catch (error) {
-      console.error('Framework generation failed:', error);
-      setFrameworkProgress({
-        status: 'error',
-        progress: 0,
-        currentStep: 'Framework generation failed',
-        generatedFrameworks: [],
-        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred'
-      });
-
-      toast({
-        title: "Framework Generation Failed",
-        description: "There was an error generating your frameworks. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Framework generation will be handled by FrameworkGenerationStep component
+  // This removes the conflicting framework generation flow
 
   const selectFramework = (framework: any) => {
     setFrameworkProgress(prev => ({
@@ -609,7 +513,7 @@ export function useEnhancedOrganizationSetup() {
 
     if (profile?.organization_id) {
       console.log('Organization already exists, skipping creation');
-      return;
+      return profile.organization_id;
     }
 
     // Create organization
@@ -626,12 +530,21 @@ export function useEnhancedOrganizationSetup() {
     // Create user role
     await createUserRole(organization.id, orgData.userRole);
 
+    // Force refresh of the user profile in auth context by refetching
+    try {
+      await supabase.auth.refreshSession();
+    } catch (error) {
+      console.warn('Failed to refresh session:', error);
+    }
+
     console.log('Organization created successfully:', organization.id);
     
     toast({
       title: "Organization Created",
       description: "Your organization has been set up and is ready for framework generation.",
     });
+
+    return organization.id;
   };
 
   const handleComplete = async () => {
@@ -811,9 +724,7 @@ export function useEnhancedOrganizationSetup() {
     handleComplete,
     handleChange,
     handleEnrichOrganization,
-    generateFramework,
-    selectFramework,
-    customizeFramework,
+    // Framework generation now handled by FrameworkGenerationStep
     resumeFromSaved,
     startFresh,
     validateCurrentStep,
