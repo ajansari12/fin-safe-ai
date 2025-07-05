@@ -65,19 +65,19 @@ serve(async (req) => {
     
     console.log(`Starting enrichment for: ${company_name} (mode: ${isSetupMode ? 'setup' : 'update'}, org_id: ${org_id || 'none'})`)
 
+    // Verify user authentication for both modes
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+    
+    if (userError || !user) {
+      console.error('Failed to get authenticated user:', userError)
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // For update mode, verify user has access to the organization
     if (!isSetupMode && org_id) {
-      // Get the authenticated user
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-      
-      if (userError || !user) {
-        console.error('Failed to get authenticated user:', userError)
-        return new Response(
-          JSON.stringify({ error: 'Authentication required' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
       // Check if user has access to this organization through their profile
       const { data: profileData, error: profileError } = await supabaseClient
         .from('profiles')

@@ -12,6 +12,9 @@ vi.mock('@/integrations/supabase/client', () => ({
       refreshSession: vi.fn()
     },
     rpc: vi.fn(),
+    functions: {
+      invoke: vi.fn()
+    },
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
@@ -222,6 +225,134 @@ describe('useEnhancedOrganizationSetup', () => {
         await expect(result.current.createOrganizationRecord()).rejects.toThrow(
           'User not authenticated'
         );
+      });
+    });
+  });
+
+  describe('handleEnrichOrganization', () => {
+    it('should handle setup mode enrichment correctly', async () => {
+      const mockUser = { 
+        id: 'user-123',
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: '2024-01-01T00:00:00Z'
+      } as User;
+
+      // Mock authenticated user
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: mockUser },
+        error: null
+      });
+
+      // Mock no existing organization (setup mode)
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn().mockResolvedValue({
+              data: { organization_id: null },
+              error: null
+            })
+          }))
+        }))
+      } as any);
+
+      // Mock successful enrichment function call
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: {
+          success: true,
+          mode: 'setup',
+          enriched_data: {
+            sector: 'banking',
+            org_type: 'banking-schedule-i',
+            employee_count: 500,
+            geographic_scope: 'National'
+          }
+        },
+        error: null
+      });
+
+      const { result } = renderHook(() => useEnhancedOrganizationSetup());
+
+      // Set organization name
+      act(() => {
+        result.current.handleChange('name', 'Test Bank');
+      });
+
+      // Call enrichment
+      await act(async () => {
+        await result.current.handleEnrichOrganization();
+      });
+
+      // Verify function called correctly
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('enrich-organization-data', {
+        body: {
+          org_id: null,
+          company_name: 'Test Bank',
+          domain: undefined,
+          mode: 'setup'
+        }
+      });
+    });
+
+    it('should handle update mode enrichment correctly', async () => {
+      const mockUser = { 
+        id: 'user-123',
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: '2024-01-01T00:00:00Z'
+      } as User;
+      const existingOrgId = 'existing-org-456';
+
+      // Mock authenticated user
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: mockUser },
+        error: null
+      });
+
+      // Mock existing organization (update mode)
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            single: vi.fn().mockResolvedValue({
+              data: { organization_id: existingOrgId },
+              error: null
+            })
+          }))
+        }))
+      } as any);
+
+      // Mock successful enrichment function call
+      vi.mocked(supabase.functions.invoke).mockResolvedValue({
+        data: {
+          success: true,
+          mode: 'update',
+          message: 'Organization updated'
+        },
+        error: null
+      });
+
+      const { result } = renderHook(() => useEnhancedOrganizationSetup());
+
+      // Set organization name
+      act(() => {
+        result.current.handleChange('name', 'Test Bank');
+      });
+
+      // Call enrichment
+      await act(async () => {
+        await result.current.handleEnrichOrganization();
+      });
+
+      // Verify function called correctly
+      expect(supabase.functions.invoke).toHaveBeenCalledWith('enrich-organization-data', {
+        body: {
+          org_id: existingOrgId,
+          company_name: 'Test Bank',
+          domain: undefined,
+          mode: 'update'
+        }
       });
     });
   });
