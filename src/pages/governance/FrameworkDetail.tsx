@@ -159,7 +159,7 @@ export default function FrameworkDetail() {
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold mb-2">Framework Not Found</h2>
           <p className="mb-4">The governance framework you're looking for doesn't exist or you don't have access.</p>
-          <Button onClick={() => navigate('/governance-framework')}>
+          <Button onClick={() => navigate('/app/governance')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Frameworks
           </Button>
@@ -172,7 +172,7 @@ export default function FrameworkDetail() {
     <AuthenticatedLayout>
       <div className="space-y-6">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" onClick={() => navigate('/governance-framework')}>
+          <Button variant="ghost" onClick={() => navigate('/app/governance')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>

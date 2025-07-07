@@ -147,6 +147,22 @@ function App() {
                   </RouteErrorBoundary>
                 </ProtectedRoute>
               } />
+              <Route path="/app/governance-framework/new" element={
+                <ProtectedRoute>
+                  <RouteErrorBoundary routeName="New Framework" moduleName="Governance">
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      {React.createElement(lazy(() => import('./pages/governance/FrameworkForm')))}
+                    </Suspense>
+                  </RouteErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/app/governance-framework/:frameworkId" element={
+                <ProtectedRoute>
+                  <RouteErrorBoundary routeName="Framework Detail" moduleName="Governance">
+                    {React.createElement(lazy(() => import('./pages/governance/FrameworkDetail')))}
+                  </RouteErrorBoundary>
+                </ProtectedRoute>
+              } />
               <Route path="/app/risk-appetite" element={
                 <ProtectedRoute>
                   <RouteErrorBoundary routeName="Risk Appetite" moduleName="Risk Management">

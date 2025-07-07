@@ -149,7 +149,7 @@ export default function FrameworksList() {
                             asChild
                             className="mr-2"
                           >
-                            <Link to={`/governance-framework/${framework.id}`}>
+                            <Link to={`/app/governance-framework/${framework.id}`}>
                               <Edit className="h-4 w-4 mr-2" />
                               Manage
                             </Link>
@@ -192,7 +192,7 @@ export default function FrameworksList() {
           </Card>
 
           <Button asChild>
-            <Link to="/governance-framework/new">
+            <Link to="/app/governance-framework/new">
               <Plus className="h-4 w-4 mr-2" />
               Add Framework
             </Link>

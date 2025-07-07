@@ -34,22 +34,22 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="font-medium mb-4">Modules</h3>
+            <h3 className="font-medium mb-4">Platform</h3>
             <ul className="space-y-2">
-              <li><Link to="/governance" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Governance</Link></li>
-              <li><Link to="/self-assessment" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Self Assessment</Link></li>
-              <li><Link to="/risk-management" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Risk Management</Link></li>
-              <li><Link to="/incident-management" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Incident Management</Link></li>
+              <li><Link to="/features" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Features</Link></li>
+              <li><Link to="/compliance" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Compliance</Link></li>
+              <li><Link to="/auth/login" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Login</Link></li>
+              <li><Link to="/auth/register" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Get Started</Link></li>
             </ul>
           </div>
           
           <div>
             <h3 className="font-medium mb-4">Resources</h3>
             <ul className="space-y-2">
-              <li><Link to="/resources/e21" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">E-21 Guideline</Link></li>
-              <li><Link to="/resources/b10" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">B-10 Guideline</Link></li>
-              <li><Link to="/resources/b13" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">B-13 Guideline</Link></li>
-              <li><Link to="/resources/iso22301" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">ISO 22301</Link></li>
+              <li><a href="#regulations" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Regulations</a></li>
+              <li><a href="#documentation" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Documentation</a></li>
+              <li><a href="#support" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Support</a></li>
+              <li><a href="#blog" className="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors">Blog</a></li>
             </ul>
           </div>
           
