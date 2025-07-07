@@ -118,6 +118,13 @@ function App() {
                   </Suspense>
                 </ProtectedRoute>
               } />
+              <Route path="/app/settings/roles" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <SettingsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
               <Route path="/app/governance" element={
                 <ProtectedRoute>
                   <RouteErrorBoundary routeName="Governance Framework" moduleName="Governance">

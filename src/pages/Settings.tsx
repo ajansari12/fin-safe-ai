@@ -4,19 +4,30 @@ import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, User, Bell, Building, Database, Lock } from "lucide-react";
+import { Shield, User, Bell, Building, Database, Lock, Users } from "lucide-react";
 import AdminInterface from "@/components/admin/AdminInterface";
 import UserPreferences from "@/components/settings/UserPreferences";
 import NotificationSettings from "@/components/settings/NotificationSettings";
 import OrganizationManagement from "@/components/settings/OrganizationManagement";
 import SecuritySettings from "@/components/security/SecuritySettings";
 import EnterpriseSecurityDashboard from "@/components/security/EnterpriseSecurityDashboard";
+import RoleEditor from "@/components/admin/RoleEditor";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "react-router-dom";
 
 const Settings = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Determine default tab based on route
+  const getDefaultTab = () => {
+    if (location.pathname === '/app/settings/roles') {
+      return 'roles';
+    }
+    return 'preferences';
+  };
 
   useEffect(() => {
     checkAdminRole();
@@ -62,8 +73,8 @@ const Settings = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="preferences" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+        <Tabs defaultValue={getDefaultTab()} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="preferences" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               User
@@ -86,6 +97,10 @@ const Settings = () => {
             </TabsTrigger>
             {isAdmin && (
               <>
+                <TabsTrigger value="roles" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Roles
+                </TabsTrigger>
                 <TabsTrigger value="admin" className="flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   Admin
@@ -117,6 +132,12 @@ const Settings = () => {
           <TabsContent value="enterprise-security">
             <EnterpriseSecurityDashboard />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="roles">
+              <RoleEditor />
+            </TabsContent>
+          )}
 
           {isAdmin && (
             <TabsContent value="admin">

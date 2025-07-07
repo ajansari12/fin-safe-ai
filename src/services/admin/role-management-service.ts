@@ -28,20 +28,32 @@ class RoleManagementService {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) return [];
 
-      // For now, return the predefined roles as user roles
-      const roleDefinitions = this.getRoleDefinitions();
-      return roleDefinitions.map((roleDef, index) => ({
-        id: `role-${index}`,
-        user_id: profile.id || '',
-        role: roleDef.role,
-        role_name: roleDef.role,
-        permissions: roleDef.permissions,
-        description: roleDef.description,
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select(`
+          id,
+          user_id,
+          role,
+          role_type,
+          created_at,
+          profiles!user_roles_user_id_fkey(full_name, email)
+        `)
+        .eq('organization_id', profile.organization_id);
+
+      if (error) throw error;
+
+      return data.map(userRole => ({
+        id: userRole.id,
+        user_id: userRole.user_id,
+        role: userRole.role,
+        role_name: userRole.role,
+        permissions: this.getPermissionsForRole(userRole.role),
+        description: this.getRoleDescription(userRole.role),
         is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_name: 'System',
-        user_email: 'system@example.com'
+        created_at: userRole.created_at || new Date().toISOString(),
+        updated_at: userRole.created_at || new Date().toISOString(),
+        user_name: userRole?.profiles?.[0]?.full_name || 'Unknown',
+        user_email: userRole?.profiles?.[0]?.email || ''
       }));
     } catch (error) {
       console.error('Error fetching user roles:', error);
@@ -77,13 +89,19 @@ class RoleManagementService {
     console.log('Deleting role:', roleId);
   }
 
-  async updateUserRole(userId: string, role: string, permissions: string[]): Promise<void> {
+  async updateUserRole(userId: string, role: string): Promise<void> {
     try {
       const profile = await getCurrentUserProfile();
       if (!profile?.organization_id) throw new Error('No organization found');
 
-      // This would update the user's role in a proper user_roles table
-      console.log('Updating user role:', { userId, role, permissions });
+      const { data, error } = await supabase.rpc('update_user_role_safe', {
+        p_user_id: userId,
+        p_new_role: role,
+        p_organization_id: profile.organization_id
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
     } catch (error) {
       console.error('Error updating user role:', error);
       throw error;
@@ -129,12 +147,14 @@ class RoleManagementService {
         description: 'View and analyze operational data'
       },
       {
-        role: 'viewer',
+        role: 'reviewer',
         permissions: [
-          'dashboard.view',
+          'governance.view',
+          'audit.review',
+          'compliance.review',
           'reports.view'
         ],
-        description: 'Read-only access to dashboards and reports'
+        description: 'Review and approve governance policies and compliance documentation'
       }
     ];
   }
@@ -156,6 +176,16 @@ class RoleManagementService {
       'admin.settings',
       'admin.system'
     ];
+  }
+
+  private getPermissionsForRole(role: string): string[] {
+    const roleDefinition = this.getRoleDefinitions().find(def => def.role === role);
+    return roleDefinition?.permissions || [];
+  }
+
+  private getRoleDescription(role: string): string {
+    const roleDefinition = this.getRoleDefinitions().find(def => def.role === role);
+    return roleDefinition?.description || '';
   }
 }
 

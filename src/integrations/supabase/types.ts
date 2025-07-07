@@ -11035,6 +11035,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_user_role_safe: {
+        Args: {
+          p_user_id: string
+          p_new_role: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
       user_has_org_access: {
         Args: { target_org_id: string; user_id?: string }
         Returns: boolean
