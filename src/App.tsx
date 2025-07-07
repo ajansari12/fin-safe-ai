@@ -44,6 +44,7 @@ const EnhancedOnboardingDashboard = lazy(() => import('./components/onboarding/E
 const InvitationAcceptance = lazy(() => import('./components/auth/InvitationAcceptance'));
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import { ThemeProvider } from 'next-themes';
 import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedAIAssistantContext';
 import ErrorMonitor from './components/error/ErrorMonitor';
 
@@ -61,8 +62,9 @@ function App() {
     <GlobalErrorBoundary>
       <ErrorMonitor />
       <QueryClientProvider client={queryClient}>
-        <Toaster />
-        <BrowserRouter>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <Toaster />
+          <BrowserRouter>
           <AuthProvider>
             <OnboardingProvider>
               <EnhancedAIAssistantProvider>
@@ -337,8 +339,9 @@ function App() {
             </EnhancedAIAssistantProvider>
           </OnboardingProvider>
         </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+        </BrowserRouter>
+        </ThemeProvider>
+      </QueryClientProvider>
     </GlobalErrorBoundary>
   );
 }
