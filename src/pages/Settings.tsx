@@ -12,6 +12,7 @@ import OrganizationManagement from "@/components/settings/OrganizationManagement
 import SecuritySettings from "@/components/security/SecuritySettings";
 import EnterpriseSecurityDashboard from "@/components/security/EnterpriseSecurityDashboard";
 import RoleEditor from "@/components/admin/RoleEditor";
+import OrganizationMembers from "@/components/admin/OrganizationMembers";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 
@@ -25,6 +26,9 @@ const Settings = () => {
   const getDefaultTab = () => {
     if (location.pathname === '/app/settings/roles') {
       return 'roles';
+    }
+    if (location.pathname === '/app/settings/members') {
+      return 'members';
     }
     return 'preferences';
   };
@@ -74,7 +78,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue={getDefaultTab()} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="preferences" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               User
@@ -97,6 +101,10 @@ const Settings = () => {
             </TabsTrigger>
             {isAdmin && (
               <>
+                <TabsTrigger value="members" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Members
+                </TabsTrigger>
                 <TabsTrigger value="roles" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
                   Roles
@@ -132,6 +140,12 @@ const Settings = () => {
           <TabsContent value="enterprise-security">
             <EnterpriseSecurityDashboard />
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="members">
+              <OrganizationMembers />
+            </TabsContent>
+          )}
 
           {isAdmin && (
             <TabsContent value="roles">

@@ -41,6 +41,7 @@ const ReportingPage = lazy(() => import('./pages/Reporting'));
 const BillingPage = lazy(() => import('./pages/Billing'));
 const EnhancedOrganizationSetup = lazy(() => import('./pages/setup/EnhancedOrganizationSetup'));
 const EnhancedOnboardingDashboard = lazy(() => import('./components/onboarding/EnhancedOnboardingDashboard'));
+const InvitationAcceptance = lazy(() => import('./components/auth/InvitationAcceptance'));
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedAIAssistantContext';
@@ -124,6 +125,18 @@ function App() {
                     <SettingsPage />
                   </Suspense>
                 </ProtectedRoute>
+              } />
+              <Route path="/app/settings/members" element={
+                <ProtectedRoute>
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <SettingsPage />
+                  </Suspense>
+                </ProtectedRoute>
+              } />
+              <Route path="/accept-invitation" element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <InvitationAcceptance />
+                </Suspense>
               } />
               <Route path="/app/governance" element={
                 <ProtectedRoute>
