@@ -222,7 +222,20 @@ const EnhancedOrganizationSetup = () => {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={handleNext}>Continue to Profile</Button>
+                <Button 
+                  className="w-full" 
+                  onClick={handleNext}
+                  disabled={!orgData.name || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    "Continue to Profile"
+                  )}
+                </Button>
               </CardFooter>
             </>
           )}
@@ -394,7 +407,20 @@ const EnhancedOrganizationSetup = () => {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <Button variant="outline" onClick={handleBack}>Back</Button>
-                <Button onClick={handleNext}>Continue to Assessment</Button>
+                <Button 
+                  onClick={handleNext} 
+                  disabled={isSubmitting}
+                  className="min-w-[180px] transition-all duration-300"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Creating Organization...
+                    </div>
+                  ) : (
+                    "Continue to Assessment"
+                  )}
+                </Button>
               </CardFooter>
             </>
           )}

@@ -207,44 +207,106 @@ export function useEnhancedOrganizationSetup() {
   const handleNext = async () => {
     if (!validateCurrentStep()) return;
     
+    setIsSubmitting(true);
+    
     try {
+      // Save progress first
       await saveTempProgress();
       
-      // Complete onboarding step if in onboarding context
+      // Step-specific processing with enhanced feedback
       if (step === 1) {
+        // Step 1: Basic Information
+        toast({
+          title: "Information Saved",
+          description: "Basic organization information captured successfully.",
+        });
+        
         await completeStep('organization-basic', 'Organization Basic Information', {
           name: orgData.name,
           sector: orgData.sector,
           size: orgData.size
         });
+        
       } else if (step === 2) {
-        // Create organization record and link user after collecting basic details
+        // Step 2: Create organization record - this is the critical step
+        toast({
+          title: "Creating Organization",
+          description: "Setting up your organization in the system...",
+        });
+        
         try {
-          await createOrganizationRecord();
+          const organizationId = await createOrganizationRecord();
+          console.log('✅ Organization setup completed:', organizationId);
+          
+          // Clear temporary progress after successful creation
+          await clearSavedProgress();
+          
         } catch (error) {
           console.error('Organization creation failed:', error);
+          
+          // Enhanced error feedback based on error type
+          let errorTitle = "Organization Creation Failed";
+          let errorDescription = "Failed to create organization. Please try again.";
+          
+          if (error instanceof Error) {
+            if (error.message.includes('duplicate')) {
+              errorTitle = "Organization Already Exists";
+              errorDescription = "An organization with this name already exists. Please choose a different name.";
+            } else if (error.message.includes('timeout')) {
+              errorTitle = "Request Timed Out";
+              errorDescription = "The request took too long. Please check your connection and try again.";
+            } else if (error.message.includes('permission')) {
+              errorTitle = "Permission Denied";
+              errorDescription = "You don't have permission to create an organization. Please contact support.";
+            } else {
+              errorDescription = error.message;
+            }
+          }
+          
           toast({
-            title: "Organization Creation Failed",
-            description: "Failed to create organization. Please try again.",
+            title: errorTitle,
+            description: errorDescription,
             variant: "destructive",
           });
           return; // Don't proceed to next step
         }
+        
       } else if (step === 3) {
+        // Step 3: Assessment completion
+        toast({
+          title: "Assessment Complete",
+          description: "Organization assessment data saved successfully.",
+        });
+        
         await completeStep('organization-profile', 'Organization Profile Assessment', {
           profileData: orgData
         });
       }
       
+      // Progress to next step
       setStep(step + 1);
       updateCompletionEstimate(orgData);
+      
     } catch (error) {
       console.error('Error progressing to next step:', error);
+      
+      // Progressive error disclosure
+      const isDetailedError = error instanceof Error && error.message.length > 50;
+      
       toast({
-        title: "Error",
-        description: "Failed to save progress. Please try again.",
+        title: "Progress Error",
+        description: isDetailedError 
+          ? "An error occurred. Please try again or contact support if the issue persists."
+          : error instanceof Error ? error.message : "Failed to save progress. Please try again.",
         variant: "destructive",
       });
+      
+      // Log detailed error for debugging
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Detailed error info:', error);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -510,7 +572,8 @@ export function useEnhancedOrganizationSetup() {
   };
 
   // Create organization record atomically with profile linking
-  const createOrganizationRecord = async () => {
+  const createOrganizationRecord = async (retryCount = 0): Promise<string> => {
+    const maxRetries = 3;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -523,60 +586,115 @@ export function useEnhancedOrganizationSetup() {
 
     if (profile?.organization_id) {
       console.log('Organization already exists, skipping creation');
+      toast({
+        title: "Organization Found",
+        description: "Using existing organization setup.",
+      });
       return profile.organization_id;
     }
 
-    // Use atomic database function to create organization and link profile
-    const { data, error } = await supabase.rpc('create_organization_with_profile', {
-      p_org_name: orgData.name,
-      p_sector: orgData.sector,
-      p_size: orgData.size,
-      p_regulatory_guidelines: orgData.regulatoryFrameworks,
-      p_user_id: user.id
-    });
-
-    if (error) {
-      console.error('Failed to create organization:', error);
-      throw new Error(`Organization creation failed: ${error.message}`);
-    }
-
-    if (!data || data.length === 0) {
-      throw new Error('Organization creation returned no data');
-    }
-
-    const result = data[0];
-    if (!result.profile_updated) {
-      console.warn('Profile was not updated during organization creation');
-    }
-
-    // Create user role using our existing service function
     try {
-      await createUserRole(result.organization_id, orgData.userRole);
-    } catch (roleError) {
-      console.error('Failed to create user role:', roleError);
-      // Organization is created but role assignment failed
-      toast({
-        title: "Role Assignment Issue",
-        description: "Organization created but role assignment failed. You may need to contact support.",
-        variant: "destructive",
+      // Use atomic database function to create organization and link profile
+      const { data, error } = await supabase.rpc('create_organization_with_profile', {
+        p_org_name: orgData.name,
+        p_sector: orgData.sector,
+        p_size: orgData.size,
+        p_regulatory_guidelines: orgData.regulatoryFrameworks,
+        p_user_id: user.id
       });
-    }
 
-    // Force refresh of the user profile in auth context
-    try {
-      await supabase.auth.refreshSession();
+      if (error) {
+        console.error('Failed to create organization:', error);
+        
+        // Enhanced error handling with specific messages
+        let errorMessage = 'Failed to create organization.';
+        if (error.message?.includes('duplicate key')) {
+          errorMessage = 'An organization with this name already exists.';
+        } else if (error.message?.includes('foreign key')) {
+          errorMessage = 'User profile not found. Please refresh and try again.';
+        } else if (error.message?.includes('permission')) {
+          errorMessage = 'Insufficient permissions to create organization.';
+        } else if (error.message?.includes('timeout')) {
+          errorMessage = 'Database timeout. Please try again.';
+        } else if (error.message?.includes('connection')) {
+          errorMessage = 'Connection error. Please check your internet and try again.';
+        }
+        
+        const enhancedError = new Error(`${errorMessage} (${error.message})`);
+        throw enhancedError;
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Organization creation returned no data');
+      }
+
+      const result = data[0];
+      if (!result.profile_updated) {
+        console.warn('Profile was not updated during organization creation');
+        toast({
+          title: "Profile Update Warning",
+          description: "Organization created but profile update failed. You may need to refresh the page.",
+          variant: "default",
+        });
+      }
+
+      // Create user role using our existing service function
+      try {
+        await createUserRole(result.organization_id, orgData.userRole);
+        console.log('✅ User role created successfully');
+      } catch (roleError) {
+        console.error('Failed to create user role:', roleError);
+        // Organization is created but role assignment failed
+        toast({
+          title: "Role Assignment Issue",
+          description: "Organization created but role assignment failed. You may need to contact support.",
+          variant: "destructive",
+        });
+        // Don't throw here - org is created, continue
+      }
+
+      // Force refresh of the user profile in auth context
+      try {
+        await supabase.auth.refreshSession();
+      } catch (error) {
+        console.warn('Failed to refresh session:', error);
+      }
+
+      console.log('Organization created successfully:', result.organization_id);
+      
+      toast({
+        title: "Organization Created Successfully",
+        description: "Your organization has been set up and is ready for the next step.",
+      });
+
+      return result.organization_id;
+
     } catch (error) {
-      console.warn('Failed to refresh session:', error);
+      // Retry logic for transient errors
+      if (retryCount < maxRetries && 
+          error instanceof Error && 
+          (error.message.includes('timeout') || 
+           error.message.includes('network') ||
+           error.message.includes('connection') ||
+           error.message.includes('temporary'))) {
+        
+        console.log(`Retrying organization creation (attempt ${retryCount + 1}/${maxRetries})...`);
+        
+        // Show retry notification
+        toast({
+          title: "Retrying...",
+          description: `Connection issue detected. Retrying (${retryCount + 1}/${maxRetries})...`,
+          variant: "default",
+        });
+        
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+        return createOrganizationRecord(retryCount + 1);
+      }
+      
+      // If we've exhausted retries or it's not a retriable error, throw
+      throw error;
     }
-
-    console.log('Organization created successfully:', result.organization_id);
-    
-    toast({
-      title: "Organization Created",
-      description: "Your organization has been set up and is ready for framework generation.",
-    });
-
-    return result.organization_id;
   };
 
   const handleComplete = async () => {
@@ -691,16 +809,29 @@ export function useEnhancedOrganizationSetup() {
         // Don't fail the setup if email fails
       }
 
-      // Success animation and confirmation
+      // Success animation and confirmation with enhanced feedback
+      const successDetails = [
+        "Organization Profile Created",
+        "User Permissions Configured",
+        orgData.policyFiles.length > 0 ? "Policy Documents Uploaded" : null,
+        frameworkProgress.selectedFramework ? "Framework Template Applied" : null
+      ].filter(Boolean);
+
       toast({
-        title: "🎉 Organization Setup Complete", 
-        description: "Your organization has been set up successfully with intelligent frameworks. Redirecting to dashboard...",
+        title: "🎉 Setup Complete!", 
+        description: `Your organization has been successfully configured. Redirecting to your dashboard...`,
       });
 
-      // Small delay to show success message before redirect
+      // Delayed redirect with success animation
       setTimeout(() => {
-        navigate("/app/dashboard");
-      }, 1500);
+        navigate("/app/dashboard", { 
+          state: { 
+            setupCompleted: true,
+            organizationId: organizationId,
+            successDetails
+          }
+        });
+      }, 2000);
     } catch (error) {
       console.error("Organization setup error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
