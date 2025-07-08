@@ -39,16 +39,23 @@ const FrameworkLibrary: React.FC<FrameworkLibraryProps> = ({ orgId }) => {
   const loadFrameworks = async () => {
     setLoading(true);
     try {
+      console.log('Loading frameworks for org:', orgId);
+      
       const { data, error } = await supabase
         .from('generated_frameworks')
         .select(`
           *,
           framework_components(*)
         `)
-        .eq('org_id', orgId)
+        .eq('organization_id', orgId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading frameworks:', error);
+        throw error;
+      }
+      
+      console.log('Loaded frameworks data:', data);
       setFrameworks(data || []);
     } catch (error) {
       console.error('Error loading frameworks:', error);

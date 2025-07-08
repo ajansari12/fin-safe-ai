@@ -4808,41 +4808,50 @@ export type Database = {
       generated_frameworks: {
         Row: {
           created_at: string
-          customizations: Json
+          customization_options: Json
           effectiveness_score: number | null
           framework_data: Json
+          framework_name: string
+          framework_type: string
+          framework_version: string | null
+          generation_metadata: Json | null
           id: string
           implementation_status: string | null
           last_updated_at: string | null
           organization_id: string
           profile_id: string
-          template_id: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          customizations?: Json
+          customization_options?: Json
           effectiveness_score?: number | null
           framework_data?: Json
+          framework_name: string
+          framework_type: string
+          framework_version?: string | null
+          generation_metadata?: Json | null
           id?: string
           implementation_status?: string | null
           last_updated_at?: string | null
           organization_id: string
           profile_id: string
-          template_id?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          customizations?: Json
+          customization_options?: Json
           effectiveness_score?: number | null
           framework_data?: Json
+          framework_name?: string
+          framework_type?: string
+          framework_version?: string | null
+          generation_metadata?: Json | null
           id?: string
           implementation_status?: string | null
           last_updated_at?: string | null
           organization_id?: string
           profile_id?: string
-          template_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -4858,13 +4867,6 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "organizational_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "generated_frameworks_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "risk_framework_templates"
             referencedColumns: ["id"]
           },
         ]

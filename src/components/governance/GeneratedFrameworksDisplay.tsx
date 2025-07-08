@@ -24,6 +24,7 @@ import {
   Archive
 } from "lucide-react";
 import { toast } from "sonner";
+import { testFrameworkGeneration } from "@/utils/test-framework-generation";
 
 interface GeneratedFramework {
   id: string;
@@ -304,6 +305,14 @@ const GeneratedFrameworksDisplay: React.FC = () => {
             >
               <Plus className="h-4 w-4 mr-2" />
               Generate Frameworks
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={testFrameworkGeneration}
+              disabled={isGenerating}
+            >
+              <Brain className="h-4 w-4 mr-2" />
+              Test Generation
             </Button>
           </div>
         </CardContent>

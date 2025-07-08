@@ -556,6 +556,13 @@ class IntelligentFrameworkGenerationService {
         throw new Error(`Unknown framework type: ${frameworkType}`);
     }
 
+    console.log('Saving framework to database:', {
+      organization_id: profile.organization_id,
+      profile_id: profile.id,
+      framework_type: frameworkType,
+      framework_name: frameworkData.name
+    });
+
     // Save framework to database
     const { data: savedFramework, error } = await supabase
       .from('generated_frameworks')
@@ -581,8 +588,11 @@ class IntelligentFrameworkGenerationService {
       .single();
 
     if (error) {
+      console.error('Database error saving framework:', error);
       throw new Error(`Failed to save framework: ${error.message}`);
     }
+
+    console.log('Framework saved successfully:', savedFramework);
 
     // Save components
     const componentsWithFrameworkId = components.map(component => ({
@@ -590,12 +600,17 @@ class IntelligentFrameworkGenerationService {
       framework_id: savedFramework.id
     }));
 
+    console.log('Saving components:', componentsWithFrameworkId);
+
     const { error: componentsError } = await supabase
       .from('framework_components')
       .insert(componentsWithFrameworkId);
 
     if (componentsError) {
       console.error('Error saving components:', componentsError);
+      // Don't throw here as the framework was already saved
+    } else {
+      console.log('Components saved successfully');
     }
 
     // Calculate effectiveness score
