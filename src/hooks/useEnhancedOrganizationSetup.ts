@@ -869,28 +869,91 @@ export function useEnhancedOrganizationSetup() {
     }
 
     try {
+      // Store generation status in the database
+      const { data: generationRecord } = await supabase
+        .from('framework_generation_status')
+        .insert({
+          organization_id: organizationId,
+          profile_id: profileId,
+          status: 'in_progress',
+          current_step: 'Analyzing organization profile...',
+          progress: 10
+        })
+        .select()
+        .single();
+
       toast({
-        title: "Generating AI Frameworks",
-        description: "Creating tailored frameworks based on your organization profile...",
+        title: "🤖 AI Framework Generation Started",
+        description: "Analyzing your organization profile...",
       });
 
+      // Update progress: Profile analysis
+      await supabase
+        .from('framework_generation_status')
+        .update({
+          current_step: 'Generating governance framework...',
+          progress: 25
+        })
+        .eq('id', generationRecord?.id);
+
       const frameworkTypes = ['governance', 'risk_appetite', 'control', 'compliance'];
+      const totalFrameworks = frameworkTypes.length;
       
-      await intelligentFrameworkGenerationService.generateFrameworks({
-        profileId,
-        frameworkTypes,
-        customizations: {}
-      });
+      for (let i = 0; i < frameworkTypes.length; i++) {
+        const frameworkType = frameworkTypes[i];
+        const stepProgress = 25 + ((i + 1) / totalFrameworks) * 60; // 25% to 85%
+        
+        // Update progress for each framework
+        await supabase
+          .from('framework_generation_status')
+          .update({
+            current_step: `Generating ${frameworkType.replace('_', ' ')} framework...`,
+            progress: Math.round(stepProgress)
+          })
+          .eq('id', generationRecord?.id);
+
+        // Generate individual framework
+        await intelligentFrameworkGenerationService.generateFrameworks({
+          profileId,
+          frameworkTypes: [frameworkType],
+          customizations: {}
+        });
+      }
+
+      // Final completion update
+      await supabase
+        .from('framework_generation_status')
+        .update({
+          status: 'completed',
+          current_step: 'Framework generation completed successfully',
+          progress: 100,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', generationRecord?.id);
       
       toast({
-        title: "Frameworks Generated",
-        description: "AI-powered frameworks have been created successfully!",
+        title: "✅ Frameworks Generated Successfully",
+        description: "All AI-powered frameworks have been created and are ready for implementation!",
       });
     } catch (error) {
       console.error('Framework generation failed:', error);
+      
+      // Update status to failed
+      if (organizationId) {
+        await supabase
+          .from('framework_generation_status')
+          .update({
+            status: 'failed',
+            current_step: 'Generation failed - see error details',
+            error_details: error instanceof Error ? error.message : 'Unknown error'
+          })
+          .eq('organization_id', organizationId)
+          .eq('status', 'in_progress');
+      }
+      
       toast({
-        title: "Framework Generation Failed",
-        description: "Failed to generate frameworks automatically. You can view and create them manually in the Governance section.",
+        title: "⚠️ Framework Generation Failed",
+        description: "Failed to generate frameworks automatically. You can retry generation in the Governance section.",
         variant: "destructive",
       });
     }

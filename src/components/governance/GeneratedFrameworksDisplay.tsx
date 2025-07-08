@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { intelligentFrameworkGenerationService } from "@/services/intelligent-framework-generation-service";
 import { 
   Brain, 
   CheckCircle, 
@@ -15,7 +17,11 @@ import {
   FileText,
   Settings,
   Eye,
-  Download
+  Download,
+  RefreshCw,
+  Plus,
+  Trash2,
+  Archive
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,15 +37,26 @@ interface GeneratedFramework {
   components?: any[];
 }
 
+interface GenerationStatus {
+  id: string;
+  status: 'in_progress' | 'completed' | 'failed';
+  current_step: string;
+  progress: number;
+  error_details?: string;
+}
+
 const GeneratedFrameworksDisplay: React.FC = () => {
   const { profile } = useAuth();
   const [frameworks, setFrameworks] = useState<GeneratedFramework[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFramework, setSelectedFramework] = useState<GeneratedFramework | null>(null);
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (profile?.organization_id) {
       loadGeneratedFrameworks();
+      loadGenerationStatus();
     }
   }, [profile?.organization_id]);
 
@@ -74,6 +91,24 @@ const GeneratedFrameworksDisplay: React.FC = () => {
       toast.error('Failed to load generated frameworks');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadGenerationStatus = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('framework_generation_status')
+        .select('*')
+        .eq('organization_id', profile?.organization_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      setGenerationStatus(data);
+    } catch (error) {
+      console.error('Error loading generation status:', error);
     }
   };
 
@@ -125,6 +160,92 @@ const GeneratedFrameworksDisplay: React.FC = () => {
     }
   };
 
+  const generateAdditionalFrameworks = async () => {
+    if (!profile?.organization_id) return;
+
+    setIsGenerating(true);
+    try {
+      const { data: orgProfile } = await supabase
+        .from('organizational_profiles')
+        .select('id')
+        .eq('organization_id', profile.organization_id)
+        .single();
+
+      if (!orgProfile) {
+        toast.error('Organization profile not found');
+        return;
+      }
+
+      toast.success('Additional framework generation started...');
+      
+      await intelligentFrameworkGenerationService.generateFrameworks({
+        profileId: orgProfile.id,
+        frameworkTypes: ['scenario_testing', 'impact_tolerance'],
+        customizations: {}
+      });
+
+      toast.success('Additional frameworks generated successfully!');
+      loadGeneratedFrameworks();
+    } catch (error) {
+      console.error('Error generating additional frameworks:', error);
+      toast.error('Failed to generate additional frameworks');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const regenerateFramework = async (frameworkId: string, frameworkType: string) => {
+    if (!profile?.organization_id) return;
+
+    try {
+      const { data: orgProfile } = await supabase
+        .from('organizational_profiles')
+        .select('id')
+        .eq('organization_id', profile.organization_id)
+        .single();
+
+      if (!orgProfile) {
+        toast.error('Organization profile not found');
+        return;
+      }
+
+      // Archive old framework
+      await supabase
+        .from('generated_frameworks')
+        .update({ implementation_status: 'archived' })
+        .eq('id', frameworkId);
+
+      toast.success('Regenerating framework...');
+
+      await intelligentFrameworkGenerationService.generateFrameworks({
+        profileId: orgProfile.id,
+        frameworkTypes: [frameworkType],
+        customizations: {}
+      });
+
+      toast.success('Framework regenerated successfully!');
+      loadGeneratedFrameworks();
+    } catch (error) {
+      console.error('Error regenerating framework:', error);
+      toast.error('Failed to regenerate framework');
+    }
+  };
+
+  const deleteFramework = async (frameworkId: string) => {
+    try {
+      await supabase
+        .from('generated_frameworks')
+        .delete()
+        .eq('id', frameworkId);
+
+      toast.success('Framework deleted successfully');
+      loadGeneratedFrameworks();
+    } catch (error) {
+      console.error('Error deleting framework:', error);
+      toast.error('Failed to delete framework');
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -132,6 +253,27 @@ const GeneratedFrameworksDisplay: React.FC = () => {
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             <span className="ml-2">Loading generated frameworks...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show generation progress if in progress
+  if (generationStatus?.status === 'in_progress') {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center space-y-4">
+            <div className="flex items-center justify-center mb-4">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary mr-2" />
+              <span className="text-lg font-medium">Generating AI Frameworks</span>
+            </div>
+            <Progress value={generationStatus.progress} className="w-full max-w-md mx-auto" />
+            <p className="text-sm text-muted-foreground">{generationStatus.current_step}</p>
+            <p className="text-xs text-muted-foreground">
+              Progress: {generationStatus.progress}% Complete
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -148,12 +290,22 @@ const GeneratedFrameworksDisplay: React.FC = () => {
             Frameworks are automatically generated during organization setup. If you don't see any frameworks, 
             they may still be generating or the generation process may have encountered an issue.
           </p>
-          <Button 
-            variant="outline"
-            onClick={() => window.location.reload()}
-          >
-            Refresh Page
-          </Button>
+          <div className="flex gap-2 justify-center">
+            <Button 
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Page
+            </Button>
+            <Button 
+              onClick={generateAdditionalFrameworks}
+              disabled={isGenerating}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Generate Frameworks
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -168,10 +320,21 @@ const GeneratedFrameworksDisplay: React.FC = () => {
             AI-generated risk management frameworks tailored to your organization
           </p>
         </div>
-        <Badge variant="outline" className="flex items-center gap-2">
-          <Brain className="h-4 w-4" />
-          {frameworks.length} Frameworks Generated
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            {frameworks.length} Frameworks Generated
+          </Badge>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={generateAdditionalFrameworks}
+            disabled={isGenerating}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Generate More
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -218,6 +381,21 @@ const GeneratedFrameworksDisplay: React.FC = () => {
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   View
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => regenerateFramework(framework.id, framework.framework_type)}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => deleteFramework(framework.id)}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
                 {framework.implementation_status === 'generated' && (
                   <Button 
