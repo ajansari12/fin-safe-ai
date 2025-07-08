@@ -406,16 +406,17 @@ const GeneratedFrameworksDisplay: React.FC = () => {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-                {framework.implementation_status === 'generated' && (
-                  <Button 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={() => updateFrameworkStatus(framework.id, 'in_progress')}
-                  >
-                    Start Implementation
-                  </Button>
-                )}
               </div>
+
+              {framework.implementation_status === 'generated' && (
+                <Button 
+                  size="sm" 
+                  className="w-full mt-2"
+                  onClick={() => updateFrameworkStatus(framework.id, 'in_progress')}
+                >
+                  Start Implementation
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

@@ -73,17 +73,20 @@ class IntelligentFrameworkGenerationService {
             .from('generated_frameworks')
             .insert({
               organization_id: organizationId,
+              profile_id: profileId,
               framework_type: frameworkType,
               framework_name: frameworkContent.name,
               framework_version: '1.0',
               framework_data: frameworkContent,
+              customization_options: customizations,
               implementation_status: 'generated',
               effectiveness_score: effectivenessScore,
               generation_metadata: {
                 generated_at: new Date().toISOString(),
                 profile_used: profile.id,
                 generation_method: 'intelligent_ai',
-                customizations_applied: customizations
+                customizations_applied: customizations,
+                components_count: components.length
               }
             })
             .select()
@@ -96,7 +99,7 @@ class IntelligentFrameworkGenerationService {
 
           console.log('Framework created successfully:', framework);
 
-          // Create framework components
+          // Create framework components in batch
           if (components && components.length > 0) {
             const { error: componentsError } = await supabase
               .from('framework_components')
@@ -417,56 +420,29 @@ class IntelligentFrameworkGenerationService {
         'Regulatory Reporting and Communication',
         'Issue Management and Remediation'
       ],
-      regulatory_obligations: regulatoryFrameworks.map(framework => ({
-        framework: framework.label,
+      regulatory_frameworks: regulatoryFrameworks.map(framework => ({
+        framework_name: framework.label,
+        framework_code: framework.value,
         key_requirements: FrameworkContentGenerator.getKeyRequirements(framework.value),
         compliance_activities: FrameworkContentGenerator.getComplianceActivities(framework.value),
         reporting_frequency: FrameworkContentGenerator.getReportingFrequency(framework.value),
-        penalties_for_breach: FrameworkContentGenerator.getPenaltiesInfo(framework.value)
+        penalties_for_non_compliance: FrameworkContentGenerator.getPenaltiesInfo(framework.value)
       })),
       compliance_calendar: FrameworkContentGenerator.generateComplianceCalendar(regulatoryFrameworks),
-      monitoring_framework: {
-        key_compliance_indicators: [
-          'Regulatory submission timeliness (target: 100%)',
-          'Compliance training completion (target: 95%)',
-          'Policy review currency (target: 100%)',
-          'Regulatory breach incidents (target: 0)'
-        ],
-        reporting_structure: [
-          'Monthly compliance dashboard to management',
-          'Quarterly board compliance reports',
-          'Annual compliance effectiveness assessment'
-        ]
-      },
-      implementation_roadmap: [
-        {
-          milestone: 'Regulatory Mapping Complete',
-          timeline: '6 weeks',
-          deliverables: ['Obligation register', 'Gap analysis', 'Risk assessment']
-        },
-        {
-          milestone: 'Framework Design',
-          timeline: '8 weeks', 
-          deliverables: ['Policies and procedures', 'Control framework', 'Monitoring system']
-        },
-        {
-          milestone: 'Implementation',
-          timeline: '12 weeks',
-          deliverables: ['Training delivery', 'System deployment', 'Process integration']
-        },
-        {
-          milestone: 'Validation',
-          timeline: '4 weeks',
-          deliverables: ['Testing results', 'Effectiveness validation', 'Continuous monitoring']
-        }
+      implementation_guidelines: [
+        'Establish regulatory universe mapping and regular updates',
+        'Implement compliance risk assessment processes',
+        'Create comprehensive compliance monitoring program',
+        'Develop regulatory change management procedures',
+        'Establish compliance training and certification programs'
       ],
-      estimated_implementation_months: 7,
       success_metrics: [
-        'Zero material regulatory breaches',
-        'Compliance training completion > 95%',
-        'Regulatory submissions 100% on-time',
-        'Compliance audit findings < 5 annually'
-      ]
+        'Zero regulatory breaches annually',
+        'Compliance monitoring effectiveness > 95%',
+        'Staff compliance training completion > 98%',
+        'Regulatory examination ratings maintained'
+      ],
+      estimated_implementation_months: 8
     };
 
     return frameworkData;
@@ -476,209 +452,240 @@ class IntelligentFrameworkGenerationService {
     const scenarioTypes = FrameworkContentGenerator.getScenarioTypesForSector(profile.sub_sector);
     
     const frameworkData = {
-      name: `${profile.sub_sector} Scenario Testing & Stress Testing Framework`,
-      description: `A comprehensive framework for conducting scenario analysis and stress testing to assess organizational resilience under adverse conditions. Designed for ${profile.sub_sector} organizations to meet regulatory requirements and enhance risk management capabilities.`,
+      name: `${profile.sub_sector} Scenario Testing Framework`,
+      description: `A comprehensive framework for stress testing and scenario analysis to assess resilience under adverse conditions. Designed for ${profile.sub_sector} organizations to meet regulatory requirements and enhance risk management capabilities.`,
       elements: [
         'Scenario Design and Development',
         'Stress Testing Methodologies',
-        'Data Collection and Validation',
-        'Model Implementation and Execution',
+        'Data Quality and Governance',
+        'Model Validation and Calibration',
         'Results Analysis and Interpretation',
-        'Management Reporting and Action Plans',
-        'Regulatory Submission Requirements',
-        'Continuous Framework Enhancement'
+        'Management Actions and Response Plans',
+        'Regulatory Reporting and Communication',
+        'Continuous Improvement and Enhancement'
       ],
-      scenario_categories: scenarioTypes.map(type => ({
-        category: type.category,
-        scenarios: type.scenarios,
-        frequency: type.frequency,
-        regulatory_requirement: type.regulatory_requirement,
-        key_metrics: type.key_metrics
-      })),
+      scenario_types: scenarioTypes,
       testing_schedule: {
-        baseline_scenarios: 'Quarterly',
-        stress_scenarios: 'Semi-annually',
-        adverse_scenarios: 'Annually',
-        regulatory_scenarios: 'As required by regulators',
-        ad_hoc_scenarios: 'As needed for major decisions'
+        comprehensive_annual: 'Annual comprehensive stress testing exercise',
+        quarterly_updates: 'Quarterly scenario updates and targeted testing',
+        ad_hoc_testing: 'Event-driven scenario testing as required',
+        regulatory_submissions: 'Regulatory stress testing submissions'
       },
-      implementation_components: [
-        {
-          component: 'Scenario Library Development',
-          description: 'Build comprehensive library of relevant scenarios',
-          timeline: '6 weeks'
-        },
-        {
-          component: 'Testing Infrastructure',
-          description: 'Implement systems and processes for scenario execution',
-          timeline: '8 weeks'
-        },
-        {
-          component: 'Model Validation',
-          description: 'Validate models and methodologies used in testing',
-          timeline: '4 weeks'
-        },
-        {
-          component: 'Governance and Controls',
-          description: 'Establish oversight and control framework',
-          timeline: '3 weeks'
-        }
+      implementation_guidelines: [
+        'Develop comprehensive scenario testing policy and procedures',
+        'Establish scenario design committee with cross-functional representation',
+        'Implement robust data governance and quality assurance processes',
+        'Create scenario testing infrastructure and modeling capabilities',
+        'Establish regular testing schedule and reporting protocols'
       ],
-      deliverables: [
-        'Scenario testing policy and procedures',
-        'Comprehensive scenario library',
-        'Testing execution infrastructure',
-        'Reporting templates and dashboards',
-        'Model validation documentation',
-        'Regulatory submission templates'
+      success_metrics: [
+        'Scenario coverage across all material risk categories',
+        'Model validation results within acceptable thresholds',
+        'Regulatory stress testing compliance maintained',
+        'Management action plans developed for all severe scenarios'
       ],
-      success_criteria: [
-        'Scenario coverage meets regulatory requirements',
-        'Testing execution within defined timelines',
-        'Results provide actionable insights',
-        'Management reporting effectiveness > 90%',
-        'Regulatory approval of stress testing approach'
-      ],
-      estimated_implementation_months: 5
+      estimated_implementation_months: 6
     };
 
     return frameworkData;
   }
 
-  private calculateEffectivenessScore(profile: OrganizationalProfile, content: any): number {
-    let score = 50; // Base score
+  private calculateEffectivenessScore(profile: OrganizationalProfile, frameworkContent: any): number {
+    // Calculate effectiveness based on profile maturity and content quality
+    let baseScore = 70; // Base effectiveness score
     
     // Adjust based on risk maturity
-    if (profile.risk_maturity === 'advanced') score += 20;
-    else if (profile.risk_maturity === 'developing') score += 10;
+    if (profile.risk_maturity === 'sophisticated') {
+      baseScore += 15;
+    } else if (profile.risk_maturity === 'developing') {
+      baseScore += 10;
+    } else if (profile.risk_maturity === 'basic') {
+      baseScore += 5;
+    }
     
-    // Adjust based on content richness
-    if (content.elements && content.elements.length > 5) score += 15;
-    if (content.implementation_guidelines) score += 10;
-    if (content.regulatory_alignment) score += 5;
+    // Adjust based on organization size (larger orgs may have more resources)
+    if (profile.employee_count > 1000) {
+      baseScore += 10;
+    } else if (profile.employee_count > 100) {
+      baseScore += 5;
+    }
     
-    return Math.min(score, 100);
+    // Adjust based on framework complexity and content quality
+    if (frameworkContent?.elements?.length > 6) {
+      baseScore += 5;
+    }
+    if (frameworkContent?.implementation_guidelines?.length > 4) {
+      baseScore += 5;
+    }
+    
+    // Add minor randomization for realism (±5 points)
+    const variation = (Math.random() - 0.5) * 10; 
+    
+    return Math.max(45, Math.min(95, Math.round(baseScore + variation)));
   }
 
-  private generateFrameworkComponents(frameworkType: string, content: any) {
+  private generateFrameworkComponents(frameworkType: string, frameworkContent: any): any[] {
+    // Generate meaningful components based on framework content
     const components = [];
-
-    // Generate components based on framework elements
-    if (content.elements) {
-      content.elements.forEach((element: string, index: number) => {
+    
+    // Extract key elements as components
+    if (frameworkContent?.elements) {
+      frameworkContent.elements.slice(0, 6).forEach((element: string, index: number) => {
         components.push({
-          type: this.getComponentType(frameworkType, element),
+          type: 'policy',
           name: element,
-          description: this.getComponentDescription(frameworkType, element),
-          priority: index + 1,
-          effort_hours: this.estimateEffortHours(frameworkType, element),
+          description: `Comprehensive implementation guidelines for ${element.toLowerCase()}`,
           data: {
-            implementation_steps: this.getImplementationSteps(element),
-            success_criteria: this.getSuccessCriteria(element),
-            dependencies: []
-          }
+            status: 'not_started',
+            priority: index < 3 ? 'high' : 'medium',
+            implementation_phase: Math.floor(index / 2) + 1,
+            regulatory_requirement: frameworkContent?.regulatory_alignment?.[0] || 'Best Practice'
+          },
+          priority: index + 1,
+          effort_hours: 30 + (index * 15)
         });
       });
     }
-
-    // Add framework-specific components
-    if (frameworkType === 'governance') {
-      components.push({
-        type: 'policy',
-        name: 'Board Risk Oversight Policy',
-        description: 'Comprehensive policy defining board responsibilities for risk oversight',
-        priority: 1,
-        effort_hours: 60,
-        data: {
-          implementation_steps: ['Draft policy', 'Stakeholder review', 'Board approval'],
-          success_criteria: ['Board approval obtained', 'Policy distributed', 'Training completed'],
-          dependencies: []
-        }
-      });
+    
+    // Add framework-specific high-value components
+    switch (frameworkType) {
+      case 'governance':
+        components.push(
+          {
+            type: 'charter',
+            name: 'Board Risk Committee Charter',
+            description: 'Comprehensive charter defining board oversight responsibilities for risk management',
+            data: { 
+              template_type: 'board_charter',
+              approval_required: 'board',
+              review_frequency: 'annual'
+            },
+            priority: 1,
+            effort_hours: 40
+          },
+          {
+            type: 'procedure',
+            name: 'Three Lines of Defense Implementation',
+            description: 'Detailed procedures for implementing the three lines of defense model',
+            data: { 
+              lines: ['business_units', 'risk_management', 'internal_audit'],
+              independence_requirements: true
+            },
+            priority: 2,
+            effort_hours: 60
+          }
+        );
+        break;
+        
+      case 'risk_appetite':
+        components.push(
+          {
+            type: 'statement',
+            name: 'Risk Appetite Statement',
+            description: 'Board-approved statement defining organizational risk appetite across all risk categories',
+            data: { 
+              requires_board_approval: true,
+              risk_categories: frameworkContent?.risk_categories?.length || 6,
+              review_frequency: 'annual'
+            },
+            priority: 1,
+            effort_hours: 80
+          },
+          {
+            type: 'dashboard',
+            name: 'Risk Appetite Monitoring Dashboard',
+            description: 'Real-time dashboard for monitoring risk appetite vs. actual risk levels',
+            data: { 
+              kri_count: frameworkContent?.risk_categories?.length * 3 || 18,
+              alert_thresholds: true,
+              reporting_frequency: 'monthly'
+            },
+            priority: 2,
+            effort_hours: 120
+          }
+        );
+        break;
+        
+      case 'control':
+        components.push(
+          {
+            type: 'matrix',
+            name: 'Risk Control Matrix',
+            description: 'Comprehensive mapping of operational risks to preventive and detective controls',
+            data: { 
+              control_categories: ['preventive', 'detective', 'corrective'],
+              coverage_percentage: 95,
+              testing_frequency: 'quarterly'
+            },
+            priority: 1,
+            effort_hours: 100
+          },
+          {
+            type: 'program',
+            name: 'Control Testing Program',
+            description: 'Systematic program for testing control effectiveness and reporting results',
+            data: { 
+              testing_methodologies: ['walkthrough', 'inspection', 'observation'],
+              annual_testing_plan: true
+            },
+            priority: 2,
+            effort_hours: 80
+          }
+        );
+        break;
+        
+      case 'compliance':
+        components.push(
+          {
+            type: 'calendar',
+            name: 'Regulatory Compliance Calendar',
+            description: 'Comprehensive calendar of all regulatory reporting and compliance obligations',
+            data: { 
+              reporting_requirements: frameworkContent?.regulatory_frameworks?.length * 4 || 16,
+              automated_alerts: true
+            },
+            priority: 1,
+            effort_hours: 60
+          }
+        );
+        break;
+        
+      case 'impact_tolerance':
+        components.push(
+          {
+            type: 'thresholds',
+            name: 'Impact Tolerance Thresholds',
+            description: 'Quantitative thresholds for operational, financial, and regulatory impact tolerance',
+            data: { 
+              business_functions: frameworkContent?.business_functions?.length || 8,
+              tolerance_categories: 3,
+              escalation_triggers: true
+            },
+            priority: 1,
+            effort_hours: 70
+          }
+        );
+        break;
+        
+      case 'scenario_testing':
+        components.push(
+          {
+            type: 'scenarios',
+            name: 'Stress Testing Scenarios',
+            description: 'Comprehensive stress testing scenarios covering operational and financial risks',
+            data: { 
+              scenario_count: frameworkContent?.scenario_types?.length * 3 || 9,
+              regulatory_scenarios: true,
+              testing_frequency: 'semi-annual'
+            },
+            priority: 1,
+            effort_hours: 90
+          }
+        );
+        break;
     }
-
+    
     return components;
-  }
-
-  private getComponentType(frameworkType: string, element: string): string {
-    if (element.toLowerCase().includes('policy') || element.toLowerCase().includes('governance')) {
-      return 'policy';
-    }
-    if (element.toLowerCase().includes('procedure') || element.toLowerCase().includes('process')) {
-      return 'procedure';
-    }
-    if (element.toLowerCase().includes('control') || element.toLowerCase().includes('monitoring')) {
-      return 'control';
-    }
-    if (element.toLowerCase().includes('assessment') || element.toLowerCase().includes('analysis')) {
-      return 'assessment';
-    }
-    return 'documentation';
-  }
-
-  private getComponentDescription(frameworkType: string, element: string): string {
-    const descriptions = {
-      'Risk Governance': 'Establish clear risk governance structure with defined roles and responsibilities',
-      'Board Oversight': 'Implement board-level oversight mechanisms for effective risk management',
-      'Management Structure': 'Define management structure and accountability for risk management',
-      'Risk Appetite Definition': 'Develop comprehensive risk appetite statements aligned with business strategy',
-      'Risk Tolerance Levels': 'Establish specific risk tolerance levels and thresholds',
-      'Risk Monitoring': 'Implement continuous risk monitoring and reporting mechanisms'
-    };
-
-    return descriptions[element as keyof typeof descriptions] || `Implementation of ${element} component`;
-  }
-
-  private estimateEffortHours(frameworkType: string, element: string): number {
-    const baseHours = {
-      governance: 80,
-      risk_appetite: 60,
-      impact_tolerance: 50,
-      control: 70,
-      compliance: 90,
-      scenario_testing: 100
-    };
-
-    const multipliers = {
-      policy: 1.2,
-      procedure: 1.0,
-      control: 1.1,
-      assessment: 1.3,
-      documentation: 0.8
-    };
-
-    const base = baseHours[frameworkType as keyof typeof baseHours] || 60;
-    const type = this.getComponentType(frameworkType, element);
-    const multiplier = multipliers[type as keyof typeof multipliers] || 1.0;
-
-    return Math.round(base * multiplier);
-  }
-
-  private getImplementationSteps(element: string): string[] {
-    const steps = {
-      'Risk Governance': ['Define governance structure', 'Assign roles and responsibilities', 'Create governance charter', 'Implement oversight processes'],
-      'Board Oversight': ['Establish board risk committee', 'Define reporting requirements', 'Create board risk dashboard', 'Implement regular review cycles'],
-      'Management Structure': ['Define management roles', 'Create accountability framework', 'Establish reporting lines', 'Implement performance metrics']
-    };
-
-    return steps[element as keyof typeof steps] || [
-      'Analyze current state',
-      'Design target state',
-      'Develop implementation plan',
-      'Execute implementation',
-      'Validate and test',
-      'Deploy and monitor'
-    ];
-  }
-
-  private getSuccessCriteria(element: string): string[] {
-    return [
-      'Implementation completed on time',
-      'All stakeholders trained',
-      'Documentation approved',
-      'Quality assurance passed',
-      'Operational readiness achieved'
-    ];
   }
 }
 
