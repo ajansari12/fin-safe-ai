@@ -28,7 +28,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
         <Input
           id="vendor_name"
           {...register('vendor_name', { required: 'Vendor name is required' })}
-          placeholder="Enter vendor name"
+          placeholder="e.g. Canadian Core Banking Solutions Inc."
         />
         {errors.vendor_name && (
           <p className="text-sm text-destructive mt-1">
@@ -42,7 +42,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
         <Input
           id="service_provided"
           {...register('service_provided', { required: 'Service description is required' })}
-          placeholder="Describe the service provided"
+          placeholder="e.g. Core Banking Platform, Payment Processing, Cloud Infrastructure"
         />
         {errors.service_provided && (
           <p className="text-sm text-destructive mt-1">
@@ -61,10 +61,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
             <SelectValue placeholder="Select criticality" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
+          <SelectItem value="critical">Critical - Core business functions</SelectItem>
+          <SelectItem value="high">High - Important operations</SelectItem>
+          <SelectItem value="medium">Medium - Supporting services</SelectItem>
+          <SelectItem value="low">Low - Non-essential services</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -75,9 +75,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
           value={watchedStatus} 
           onValueChange={(value) => setValue('status', value as 'active' | 'inactive' | 'under_review' | 'terminated')}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select status" />
-          </SelectTrigger>
+        <SelectTrigger>
+          <SelectValue placeholder="Current vendor relationship status" />
+        </SelectTrigger>
           <SelectContent>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>

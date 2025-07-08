@@ -17,7 +17,7 @@ const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ register }) => 
           id="contact_email"
           type="email"
           {...register('contact_email')}
-          placeholder="vendor@company.com"
+          placeholder="primary.contact@vendor.ca"
         />
       </div>
 
@@ -26,7 +26,7 @@ const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ register }) => 
         <Input
           id="contact_phone"
           {...register('contact_phone')}
-          placeholder="+1 (555) 123-4567"
+          placeholder="+1 (416) 555-0123"
         />
       </div>
 
@@ -35,7 +35,7 @@ const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({ register }) => 
         <Input
           id="website"
           {...register('website')}
-          placeholder="https://vendor-website.com"
+          placeholder="https://www.vendor.ca"
         />
       </div>
 

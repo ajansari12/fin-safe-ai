@@ -196,8 +196,8 @@ export const NoDataFallback: React.FC<{
   icon?: React.ReactNode;
   retry?: () => void;
 }> = ({ 
-  title = "No Data Available", 
-  description = "No data found for this component.", 
+  title = "No Risk Data Available", 
+  description = "Configure your risk management data to see analytics here.", 
   icon = <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />,
   retry
 }) => (
