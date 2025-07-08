@@ -47,19 +47,26 @@ const GeneratedFrameworksDisplay: React.FC = () => {
     try {
       const { data: frameworkData, error } = await supabase
         .from('generated_frameworks')
-        .select(`
-          *,
-          framework_components (*)
-        `)
+        .select('*')
         .eq('organization_id', profile?.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const frameworksWithComponents = frameworkData.map(framework => ({
-        ...framework,
-        components: framework.framework_components || []
-      }));
+      // Load components separately if needed
+      const frameworksWithComponents = frameworkData ? await Promise.all(
+        frameworkData.map(async (framework) => {
+          const { data: components } = await supabase
+            .from('framework_components')
+            .select('*')
+            .eq('framework_id', framework.id);
+          
+          return {
+            ...framework,
+            components: components || []
+          };
+        })
+      ) : [];
 
       setFrameworks(frameworksWithComponents);
     } catch (error) {
@@ -138,10 +145,14 @@ const GeneratedFrameworksDisplay: React.FC = () => {
           <Brain className="h-12 w-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Generated Frameworks</h3>
           <p className="text-gray-500 mb-4">
-            Complete the onboarding process to generate AI-powered frameworks tailored to your organization.
+            Frameworks are automatically generated during organization setup. If you don't see any frameworks, 
+            they may still be generating or the generation process may have encountered an issue.
           </p>
-          <Button variant="outline">
-            Start Onboarding
+          <Button 
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            Refresh Page
           </Button>
         </CardContent>
       </Card>

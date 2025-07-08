@@ -11,6 +11,7 @@ import {
   createUserRole, 
   uploadPolicyFile 
 } from "@/services/organization-service";
+import { intelligentFrameworkGenerationService } from "@/services/intelligent-framework-generation-service";
 
 interface EnhancedOrganizationData {
   // Basic organization data
@@ -787,6 +788,9 @@ export function useEnhancedOrganizationSetup() {
           });
       }
 
+      // Generate AI frameworks after organization setup
+      await generateInitialFrameworks(organizationId, orgProfile?.id);
+
       // Complete onboarding step
       await completeStep('organization-setup-complete', 'Organization Setup Complete', {
         organizationId: organizationId,
@@ -856,6 +860,40 @@ export function useEnhancedOrganizationSetup() {
 
   const resumeFromSaved = () => {
     loadSavedProgress();
+  };
+
+  const generateInitialFrameworks = async (organizationId: string, profileId?: string) => {
+    if (!profileId) {
+      console.warn('No profile ID provided for framework generation');
+      return;
+    }
+
+    try {
+      toast({
+        title: "Generating AI Frameworks",
+        description: "Creating tailored frameworks based on your organization profile...",
+      });
+
+      const frameworkTypes = ['governance', 'risk_appetite', 'control', 'compliance'];
+      
+      await intelligentFrameworkGenerationService.generateFrameworks({
+        profileId,
+        frameworkTypes,
+        customizations: {}
+      });
+      
+      toast({
+        title: "Frameworks Generated",
+        description: "AI-powered frameworks have been created successfully!",
+      });
+    } catch (error) {
+      console.error('Framework generation failed:', error);
+      toast({
+        title: "Framework Generation Failed",
+        description: "Failed to generate frameworks automatically. You can view and create them manually in the Governance section.",
+        variant: "destructive",
+      });
+    }
   };
 
   const startFresh = async () => {
