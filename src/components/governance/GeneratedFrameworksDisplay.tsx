@@ -21,10 +21,16 @@ import {
   RefreshCw,
   Plus,
   Trash2,
-  Archive
+  Archive,
+  Activity,
+  Calendar,
+  TrendingUp,
+  AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 import { testFrameworkGeneration } from "@/utils/test-framework-generation";
+import FrameworkProgressTracker from "./FrameworkProgressTracker";
+import { formatDistanceToNow } from "date-fns";
 
 interface GeneratedFramework {
   id: string;
@@ -36,6 +42,13 @@ interface GeneratedFramework {
   generation_metadata: any;
   created_at: string;
   components?: any[];
+  overall_completion_percentage?: number;
+  last_activity_at?: string;
+  is_stagnant?: boolean;
+  stagnant_since?: string | null;
+  framework_components?: any[];
+  framework_assignments?: any[];
+  framework_activities?: any[];
 }
 
 interface GenerationStatus {
@@ -51,6 +64,7 @@ const GeneratedFrameworksDisplay: React.FC = () => {
   const [frameworks, setFrameworks] = useState<GeneratedFramework[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedFramework, setSelectedFramework] = useState<GeneratedFramework | null>(null);
+  const [selectedProgressFramework, setSelectedProgressFramework] = useState<string | null>(null);
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -65,9 +79,13 @@ const GeneratedFrameworksDisplay: React.FC = () => {
     try {
       const { data: frameworkData, error } = await supabase
         .from('generated_frameworks')
-        .select('*')
+        .select(`
+          *,
+          framework_assignments(assigned_to_name, role),
+          framework_activities(activity_type, created_at)
+        `)
         .eq('organization_id', profile?.organization_id)
-        .order('created_at', { ascending: false });
+        .order('last_activity_at', { ascending: false });
 
       if (error) throw error;
 
@@ -133,6 +151,13 @@ const GeneratedFrameworksDisplay: React.FC = () => {
       case 'archived': return 'bg-gray-100 text-gray-800 border-gray-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const getProgressColor = (percentage: number) => {
+    if (percentage >= 80) return 'text-green-600';
+    if (percentage >= 50) return 'text-yellow-600';
+    if (percentage >= 25) return 'text-orange-600';
+    return 'text-red-600';
   };
 
   const formatFrameworkType = (type: string) => {
@@ -346,9 +371,23 @@ const GeneratedFrameworksDisplay: React.FC = () => {
         </div>
       </div>
 
+      {selectedProgressFramework && (
+        <FrameworkProgressTracker
+          framework={frameworks.find(f => f.id === selectedProgressFramework)!}
+          onProgressUpdate={loadGeneratedFrameworks}
+        />
+      )}
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {frameworks.map((framework) => (
-          <Card key={framework.id} className="hover:shadow-md transition-shadow">
+        {frameworks.map((framework) => {
+          const progressPercentage = (framework as any).overall_completion_percentage || 0;
+          const isStagnant = (framework as any).is_stagnant;
+          const lastActivity = (framework as any).last_activity_at;
+          const assignments = (framework as any).framework_assignments || [];
+          const owner = assignments.find((a: any) => a.role === 'owner');
+
+          return (
+          <Card key={framework.id} className={`hover:shadow-md transition-shadow ${isStagnant ? 'border-orange-300 bg-orange-50' : ''}`}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -357,13 +396,35 @@ const GeneratedFrameworksDisplay: React.FC = () => {
                     {formatFrameworkType(framework.framework_type)}
                   </span>
                 </div>
-                <Badge variant="outline" className={getStatusColor(framework.implementation_status)}>
-                  {framework.implementation_status}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {isStagnant && (
+                    <Badge variant="destructive" className="text-xs">
+                      Stagnant
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className={getStatusColor(framework.implementation_status)}>
+                    {framework.implementation_status}
+                  </Badge>
+                </div>
               </div>
               <CardTitle className="text-lg">{framework.framework_name}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Progress Section */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    Progress
+                  </span>
+                  <span className={`font-medium ${getProgressColor(progressPercentage)}`}>
+                    {progressPercentage}%
+                  </span>
+                </div>
+                <Progress value={progressPercentage} className="h-2" />
+              </div>
+
+              {/* Key Metrics */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Components:</span>
@@ -377,19 +438,46 @@ const GeneratedFrameworksDisplay: React.FC = () => {
                 </div>
               </div>
 
-              <div className="text-xs text-muted-foreground">
-                Generated: {new Date(framework.created_at).toLocaleDateString()}
+              {/* Assignment and Activity */}
+              <div className="space-y-2 text-sm">
+                {owner && (
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-blue-500" />
+                    <span className="text-muted-foreground">Owner:</span>
+                    <span className="font-medium">{owner.assigned_to_name}</span>
+                  </div>
+                )}
+                
+                {lastActivity && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-green-500" />
+                    <span className="text-muted-foreground">Last activity:</span>
+                    <span className="font-medium">
+                      {formatDistanceToNow(new Date(lastActivity), { addSuffix: true })}
+                    </span>
+                  </div>
+                )}
               </div>
 
+              {/* Action Buttons */}
               <div className="flex gap-2">
                 <Button 
                   size="sm" 
-                  variant="outline" 
+                  variant={selectedProgressFramework === framework.id ? "default" : "outline"}
                   className="flex-1"
+                  onClick={() => setSelectedProgressFramework(
+                    selectedProgressFramework === framework.id ? null : framework.id
+                  )}
+                >
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  {selectedProgressFramework === framework.id ? 'Hide' : 'Progress'}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
                   onClick={() => setSelectedFramework(framework)}
                 >
-                  <Eye className="h-4 w-4 mr-1" />
-                  View
+                  <Eye className="h-4 w-4" />
                 </Button>
                 <Button 
                   size="sm" 
@@ -419,7 +507,8 @@ const GeneratedFrameworksDisplay: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
       </div>
 
       {/* Framework Detail Modal/Dialog would go here */}

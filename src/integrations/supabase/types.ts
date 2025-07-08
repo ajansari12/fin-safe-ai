@@ -4514,6 +4514,147 @@ export type Database = {
           },
         ]
       }
+      framework_activities: {
+        Row: {
+          activity_data: Json | null
+          activity_description: string | null
+          activity_type: string
+          created_at: string
+          framework_id: string
+          id: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          activity_data?: Json | null
+          activity_description?: string | null
+          activity_type: string
+          created_at?: string
+          framework_id: string
+          id?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          activity_data?: Json | null
+          activity_description?: string | null
+          activity_type?: string
+          created_at?: string
+          framework_id?: string
+          id?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_activities_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "generated_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      framework_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by_id: string | null
+          assigned_by_name: string | null
+          assigned_to_id: string
+          assigned_to_name: string | null
+          created_at: string
+          framework_id: string
+          id: string
+          role: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by_id?: string | null
+          assigned_by_name?: string | null
+          assigned_to_id: string
+          assigned_to_name?: string | null
+          created_at?: string
+          framework_id: string
+          id?: string
+          role: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by_id?: string | null
+          assigned_by_name?: string | null
+          assigned_to_id?: string
+          assigned_to_name?: string | null
+          created_at?: string
+          framework_id?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_assignments_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "generated_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      framework_component_progress: {
+        Row: {
+          actual_hours: number | null
+          assigned_to_id: string | null
+          assigned_to_name: string | null
+          completion_percentage: number | null
+          component_id: string
+          created_at: string
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          last_activity_at: string | null
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to_id?: string | null
+          assigned_to_name?: string | null
+          completion_percentage?: number | null
+          component_id: string
+          created_at?: string
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to_id?: string | null
+          assigned_to_name?: string | null
+          completion_percentage?: number | null
+          component_id?: string
+          created_at?: string
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          last_activity_at?: string | null
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_component_progress_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "framework_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       framework_components: {
         Row: {
           component_data: Json
@@ -4807,9 +4948,11 @@ export type Database = {
       }
       generated_frameworks: {
         Row: {
+          actual_start_date: string | null
           created_at: string
           customization_options: Json
           effectiveness_score: number | null
+          estimated_completion_date: string | null
           framework_data: Json
           framework_name: string
           framework_type: string
@@ -4817,15 +4960,21 @@ export type Database = {
           generation_metadata: Json | null
           id: string
           implementation_status: string | null
+          is_stagnant: boolean | null
+          last_activity_at: string | null
           last_updated_at: string | null
           organization_id: string
+          overall_completion_percentage: number | null
           profile_id: string
+          stagnant_since: string | null
           updated_at: string
         }
         Insert: {
+          actual_start_date?: string | null
           created_at?: string
           customization_options?: Json
           effectiveness_score?: number | null
+          estimated_completion_date?: string | null
           framework_data?: Json
           framework_name: string
           framework_type: string
@@ -4833,15 +4982,21 @@ export type Database = {
           generation_metadata?: Json | null
           id?: string
           implementation_status?: string | null
+          is_stagnant?: boolean | null
+          last_activity_at?: string | null
           last_updated_at?: string | null
           organization_id: string
+          overall_completion_percentage?: number | null
           profile_id: string
+          stagnant_since?: string | null
           updated_at?: string
         }
         Update: {
+          actual_start_date?: string | null
           created_at?: string
           customization_options?: Json
           effectiveness_score?: number | null
+          estimated_completion_date?: string | null
           framework_data?: Json
           framework_name?: string
           framework_type?: string
@@ -4849,9 +5004,13 @@ export type Database = {
           generation_metadata?: Json | null
           id?: string
           implementation_status?: string | null
+          is_stagnant?: boolean | null
+          last_activity_at?: string | null
           last_updated_at?: string | null
           organization_id?: string
+          overall_completion_percentage?: number | null
           profile_id?: string
+          stagnant_since?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -10914,6 +11073,10 @@ export type Database = {
         Args: { data_content: string; org_id: string }
         Returns: Json
       }
+      detect_stagnant_frameworks: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_analytics_summary: {
         Args: { org_id_param: string }
         Returns: Json
@@ -11028,6 +11191,17 @@ export type Database = {
           p_user_agent?: string
           p_user_name?: string
           p_success?: boolean
+        }
+        Returns: string
+      }
+      log_framework_activity: {
+        Args: {
+          p_framework_id: string
+          p_user_id: string
+          p_user_name: string
+          p_activity_type: string
+          p_description?: string
+          p_data?: Json
         }
         Returns: string
       }
