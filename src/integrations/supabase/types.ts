@@ -4697,6 +4697,45 @@ export type Database = {
         }
         Relationships: []
       }
+      framework_generation_status: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_step: string | null
+          error_details: string | null
+          id: string
+          organization_id: string
+          profile_id: string
+          progress: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_step?: string | null
+          error_details?: string | null
+          id?: string
+          organization_id: string
+          profile_id: string
+          progress?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_step?: string | null
+          error_details?: string | null
+          id?: string
+          organization_id?: string
+          profile_id?: string
+          progress?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       framework_versions: {
         Row: {
           approval_status: string
