@@ -120,6 +120,16 @@ class IntelligentFrameworkGenerationService {
               // Don't throw here - framework was created successfully
             } else {
               console.log(`Created ${components.length} components for framework ${framework.id}`);
+              
+              // Initialize progress tracking for components
+              try {
+                const { FrameworkProgressService } = await import('./framework-progress-service');
+                await FrameworkProgressService.initializeComponentProgress(framework.id);
+                console.log(`Initialized progress tracking for framework ${framework.id}`);
+              } catch (progressError) {
+                console.error('Error initializing progress tracking:', progressError);
+                // Don't throw - framework creation was successful
+              }
             }
           }
 
