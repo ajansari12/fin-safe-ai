@@ -497,20 +497,27 @@ const GeneratedFrameworksDisplay: React.FC = () => {
                         </Badge>
                       </div>
                       
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={() => updateFrameworkStatus(selectedFramework.id, 'in_progress')}
-                          disabled={selectedFramework.implementation_status !== 'generated'}
-                        >
-                          Start Implementation
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          onClick={() => updateFrameworkStatus(selectedFramework.id, 'implemented')}
-                          disabled={selectedFramework.implementation_status !== 'in_progress'}
-                        >
-                          Mark as Implemented
-                        </Button>
+                      <div className="flex flex-col gap-3">
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium">Implementation Actions</h5>
+                          <div className="grid grid-cols-1 gap-2">
+                            <Button 
+                              onClick={() => updateFrameworkStatus(selectedFramework.id, 'in_progress')}
+                              disabled={selectedFramework.implementation_status !== 'generated'}
+                              className="w-full"
+                            >
+                              Start Implementation
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => updateFrameworkStatus(selectedFramework.id, 'implemented')}
+                              disabled={selectedFramework.implementation_status !== 'in_progress'}
+                              className="w-full"
+                            >
+                              Mark as Implemented
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </TabsContent>

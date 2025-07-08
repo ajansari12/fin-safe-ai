@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { FrameworkContentGenerator } from './framework-content-generators';
 import { 
   OrganizationalProfile, 
   GeneratedFrameworkData, 
@@ -173,76 +175,195 @@ class IntelligentFrameworkGenerationService {
   }
 
   private async generateImpactToleranceFramework(profile: OrganizationalProfile): Promise<any> {
-    // Fetch relevant data based on the profile
-    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
-    const frameworkRules = await this.getFrameworkGenerationRules({
-      employee_count: profile.employee_count,
-      asset_size: profile.asset_size
-    });
-
-    // Example: Construct a basic framework
+    const businessFunctions = this.getBusinessFunctionsForSector(profile.sub_sector);
+    
     const frameworkData = {
-      name: 'Basic Impact Tolerance Framework',
-      description: 'A basic impact tolerance framework tailored for the organization.',
+      name: `${profile.sub_sector} Impact Tolerance Framework`,
+      description: `A comprehensive framework defining maximum acceptable levels of disruption to critical business functions. Designed for ${profile.sub_sector} organizations to ensure business continuity and regulatory compliance.`,
       elements: [
-        'Impact Identification',
-        'Impact Assessment',
-        'Impact Response'
+        'Critical Business Function Identification',
+        'Impact Tolerance Thresholds Definition',
+        'Recovery Time Objectives (RTO)',
+        'Recovery Point Objectives (RPO)',
+        'Minimum Service Level Requirements',
+        'Escalation and Decision-Making Protocols',
+        'Impact Assessment Methodologies',
+        'Continuous Monitoring and Testing'
       ],
-      sector_thresholds: sectorThresholds,
-      framework_rules: frameworkRules
+      business_functions: businessFunctions.map(func => ({
+        function_name: func.name,
+        criticality: func.criticality,
+        maximum_downtime: this.getMaxDowntime(func.criticality),
+        recovery_time_objective: this.getRTO(func.criticality),
+        recovery_point_objective: this.getRPO(func.criticality),
+        minimum_service_level: this.getMinServiceLevel(func.criticality)
+      })),
+      tolerance_categories: [
+        {
+          category: 'Operational Disruption',
+          tolerance_levels: ['No Impact', 'Minor Impact', 'Moderate Impact', 'Severe Impact', 'Extreme Impact'],
+          thresholds: this.getOperationalThresholds(profile.sub_sector)
+        },
+        {
+          category: 'Financial Impact',
+          tolerance_levels: ['Negligible', 'Minor', 'Moderate', 'Major', 'Catastrophic'],
+          thresholds: this.getFinancialThresholds(profile.asset_size)
+        },
+        {
+          category: 'Regulatory Impact',
+          tolerance_levels: ['No Breach', 'Minor Breach', 'Material Breach', 'Significant Breach'],
+          thresholds: this.getRegulatoryThresholds(profile.sub_sector)
+        }
+      ],
+      implementation_guidelines: [
+        'Conduct business impact analysis for all critical functions',
+        'Define clear impact tolerance statements for each function',
+        'Establish monitoring systems for real-time impact assessment',
+        'Implement automated alerting for tolerance threshold breaches',
+        'Conduct quarterly tolerance threshold reviews and updates'
+      ],
+      estimated_implementation_months: 4
     };
 
     return frameworkData;
   }
 
   private async generateControlFramework(profile: OrganizationalProfile): Promise<any> {
-    // Fetch relevant data based on the profile
-    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
-    const frameworkRules = await this.getFrameworkGenerationRules({
-      employee_count: profile.employee_count,
-      asset_size: profile.asset_size
-    });
-    const controlLibraryItems = await this.getControlLibraryItems(['operational', 'cyber']);
-
-    // Example: Construct a basic framework
+    const contextualDefaults = this.getContextualDefaults(profile.sub_sector);
+    const controlExamples = this.getControlExamplesForSector(profile.sub_sector);
+    
     const frameworkData = {
-      name: 'Basic Control Framework',
-      description: 'A basic control framework tailored for the organization.',
+      name: `${profile.sub_sector === 'banking' ? 'OSFI-Compliant ' : ''}Control Framework`,
+      description: `A comprehensive internal control framework ensuring operational effectiveness, reliable financial reporting, and regulatory compliance. Designed for ${profile.sub_sector} organizations with ${profile.employee_count} employees.`,
       elements: [
-        'Control Identification',
-        'Control Assessment',
-        'Control Implementation'
+        'Control Environment and Governance',
+        'Risk Assessment and Control Design',
+        'Control Activities and Procedures',
+        'Information Systems and Communication',
+        'Monitoring and Continuous Improvement',
+        'Three Lines of Defense Implementation',
+        'Control Testing and Validation',
+        'Remediation and Corrective Actions'
       ],
-      sector_thresholds: sectorThresholds,
-      framework_rules: frameworkRules,
-      control_library_items: controlLibraryItems
+      control_categories: [
+        {
+          category: 'Preventive Controls',
+          description: 'Controls designed to prevent errors, fraud, or compliance violations',
+          examples: controlExamples.filter(c => c.type === 'preventive').slice(0, 3)
+        },
+        {
+          category: 'Detective Controls',
+          description: 'Controls designed to identify issues after they occur',
+          examples: controlExamples.filter(c => c.type === 'detective').slice(0, 3)
+        },
+        {
+          category: 'Corrective Controls',
+          description: 'Controls designed to address identified issues and prevent recurrence',
+          examples: controlExamples.filter(c => c.type === 'corrective').slice(0, 2)
+        }
+      ],
+      regulatory_frameworks: contextualDefaults.primaryFrameworks,
+      implementation_phases: [
+        {
+          phase: 'Phase 1: Foundation',
+          duration_months: 2,
+          activities: ['Control environment assessment', 'Governance structure design', 'Policy framework development']
+        },
+        {
+          phase: 'Phase 2: Design',
+          duration_months: 3,
+          activities: ['Risk assessment', 'Control design', 'Process documentation']
+        },
+        {
+          phase: 'Phase 3: Implementation',
+          duration_months: 4,
+          activities: ['Control deployment', 'Training delivery', 'System integration']
+        },
+        {
+          phase: 'Phase 4: Testing & Validation',
+          duration_months: 2,
+          activities: ['Control testing', 'Effectiveness validation', 'Continuous monitoring setup']
+        }
+      ],
+      success_metrics: [
+        'Control effectiveness rating > 85%',
+        'Audit findings reduction of 40%',
+        'Regulatory compliance score > 95%',
+        'Operational risk incidents reduction of 30%'
+      ],
+      estimated_implementation_months: 11
     };
 
     return frameworkData;
   }
 
   private async generateComplianceFramework(profile: OrganizationalProfile): Promise<any> {
-    // Fetch relevant data based on the profile
-    const sectorThresholds = await this.getSectorThresholds(profile.sub_sector, profile.sub_sector);
-    const frameworkRules = await this.getFrameworkGenerationRules({
-      employee_count: profile.employee_count,
-      asset_size: profile.asset_size
-    });
-    const regulatoryMappings = await this.getRegulatoryMappings([profile.sub_sector]);
-
-    // Example: Construct a basic framework
+    const contextualDefaults = this.getContextualDefaults(profile.sub_sector);
+    const regulatoryFrameworks = this.getRegulatoryFrameworksForSector(profile.sub_sector);
+    
     const frameworkData = {
-      name: 'Basic Compliance Framework',
-      description: 'A basic compliance framework tailored for the organization.',
+      name: `${profile.sub_sector} Regulatory Compliance Framework`,
+      description: `A comprehensive compliance management framework ensuring adherence to all applicable regulatory requirements. Tailored for ${profile.sub_sector} organizations operating in Canada with focus on proactive compliance monitoring and risk mitigation.`,
       elements: [
-        'Compliance Identification',
-        'Compliance Assessment',
-        'Compliance Implementation'
+        'Regulatory Universe and Obligations Mapping',
+        'Compliance Risk Assessment and Monitoring',
+        'Policies, Procedures, and Controls',
+        'Compliance Training and Awareness',
+        'Regulatory Change Management',
+        'Compliance Testing and Validation',
+        'Regulatory Reporting and Communication',
+        'Issue Management and Remediation'
       ],
-      sector_thresholds: sectorThresholds,
-      framework_rules: frameworkRules,
-      regulatory_mappings: regulatoryMappings
+      regulatory_obligations: regulatoryFrameworks.map(framework => ({
+        framework: framework.label,
+        key_requirements: this.getKeyRequirements(framework.value),
+        compliance_activities: this.getComplianceActivities(framework.value),
+        reporting_frequency: this.getReportingFrequency(framework.value),
+        penalties_for_breach: this.getPenaltiesInfo(framework.value)
+      })),
+      compliance_calendar: this.generateComplianceCalendar(regulatoryFrameworks),
+      monitoring_framework: {
+        key_compliance_indicators: [
+          'Regulatory submission timeliness (target: 100%)',
+          'Compliance training completion (target: 95%)',
+          'Policy review currency (target: 100%)',
+          'Regulatory breach incidents (target: 0)'
+        ],
+        reporting_structure: [
+          'Monthly compliance dashboard to management',
+          'Quarterly board compliance reports',
+          'Annual compliance effectiveness assessment'
+        ]
+      },
+      implementation_roadmap: [
+        {
+          milestone: 'Regulatory Mapping Complete',
+          timeline: '6 weeks',
+          deliverables: ['Obligation register', 'Gap analysis', 'Risk assessment']
+        },
+        {
+          milestone: 'Framework Design',
+          timeline: '8 weeks', 
+          deliverables: ['Policies and procedures', 'Control framework', 'Monitoring system']
+        },
+        {
+          milestone: 'Implementation',
+          timeline: '12 weeks',
+          deliverables: ['Training delivery', 'System deployment', 'Process integration']
+        },
+        {
+          milestone: 'Validation',
+          timeline: '4 weeks',
+          deliverables: ['Testing results', 'Effectiveness validation', 'Continuous monitoring']
+        }
+      ],
+      estimated_implementation_months: 7,
+      success_metrics: [
+        'Zero material regulatory breaches',
+        'Compliance training completion > 95%',
+        'Regulatory submissions 100% on-time',
+        'Compliance audit findings < 5 annually'
+      ]
     };
 
     return frameworkData;
@@ -707,6 +828,29 @@ class IntelligentFrameworkGenerationService {
                           'Large team (7+ people)'
     };
   }
+
+  // Add helper methods that are called in the framework generators
+  private getContextualDefaults = FrameworkContentGenerator.getContextualDefaults;
+  private getSectorSpecificRequirements = FrameworkContentGenerator.getSectorSpecificRequirements;
+  private getRiskCategoriesForSector = FrameworkContentGenerator.getRiskCategoriesForSector;
+  private getKeyMetricsForCategory = FrameworkContentGenerator.getKeyMetricsForCategory;
+  private getToleranceThresholds = FrameworkContentGenerator.getToleranceThresholds;
+  private getBusinessFunctionsForSector = FrameworkContentGenerator.getBusinessFunctionsForSector;
+  private getMaxDowntime = FrameworkContentGenerator.getMaxDowntime;
+  private getRTO = FrameworkContentGenerator.getRTO;
+  private getRPO = FrameworkContentGenerator.getRPO;
+  private getMinServiceLevel = FrameworkContentGenerator.getMinServiceLevel;
+  private getOperationalThresholds = FrameworkContentGenerator.getOperationalThresholds;
+  private getFinancialThresholds = FrameworkContentGenerator.getFinancialThresholds;
+  private getRegulatoryThresholds = FrameworkContentGenerator.getRegulatoryThresholds;
+  private getControlExamplesForSector = FrameworkContentGenerator.getControlExamplesForSector;
+  private getRegulatoryFrameworksForSector = FrameworkContentGenerator.getRegulatoryFrameworksForSector;
+  private getKeyRequirements = FrameworkContentGenerator.getKeyRequirements;
+  private getComplianceActivities = FrameworkContentGenerator.getComplianceActivities;
+  private getReportingFrequency = FrameworkContentGenerator.getReportingFrequency;
+  private getPenaltiesInfo = FrameworkContentGenerator.getPenaltiesInfo;
+  private generateComplianceCalendar = FrameworkContentGenerator.generateComplianceCalendar;
+  private getScenarioTypesForSector = FrameworkContentGenerator.getScenarioTypesForSector;
 }
 
 export const intelligentFrameworkGenerationService = new IntelligentFrameworkGenerationService();
