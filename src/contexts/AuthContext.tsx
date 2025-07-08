@@ -112,6 +112,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Check if it's a missing profile (not an error, profile might not be created yet)
         if (error.code === 'PGRST116') {
           console.warn('⚠️ No profile found for user, may need to be created');
+          // Redirect to organization setup if no profile exists
+          if (location.pathname.startsWith('/app/')) {
+            navigate('/setup/enhanced');
+          }
           return;
         }
         
@@ -121,13 +125,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data) {
         console.log('✅ Profile fetched successfully:', data.full_name);
         setProfile(data as Profile);
+        
+        // Check organization_id after setting profile
+        checkOrganizationAccess(data as Profile);
       } else {
         console.warn('⚠️ No profile data found for user');
+        // Redirect to organization setup if no profile data
+        if (location.pathname.startsWith('/app/')) {
+          navigate('/setup/enhanced');
+        }
       }
     } catch (error) {
       console.error('💥 Failed to fetch profile:', error);
       // Don't throw here - missing profile shouldn't break auth
     }
+  };
+
+  const checkOrganizationAccess = (profile: Profile) => {
+    // Skip check if already on setup page or public routes
+    if (location.pathname === '/setup/enhanced' || !location.pathname.startsWith('/app/')) {
+      return;
+    }
+
+    // Check if user has valid organization_id
+    if (!profile.organization_id) {
+      console.log('🏢 No organization_id found, redirecting to setup');
+      navigate('/setup/enhanced');
+      return;
+    }
+
+    console.log('✅ Valid organization access confirmed:', profile.organization_id);
   };
 
   const login = async (email: string, password: string) => {
