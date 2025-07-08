@@ -61,17 +61,45 @@ export async function createUserRole(organizationId: string, role: 'admin' | 'an
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('No authenticated user');
 
+  // Check if role already exists first  
+  const { data: existingRole, error: checkError } = await supabase
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error('Error checking existing role:', checkError);
+  }
+
+  if (existingRole) {
+    console.log('User role already exists, skipping creation');
+    return existingRole;
+  }
+
+  // Create the user role with proper mapping
+  const roleData = {
+    user_id: user.id,
+    organization_id: organizationId,
+    role: role,
+    role_type: role as 'admin' | 'analyst' | 'reviewer', // Ensure type matches
+    role_name: role === 'admin' ? 'Administrator' : role === 'analyst' ? 'Risk Analyst' : 'Reviewer',
+    permissions: role === 'admin' ? ['read', 'write', 'delete', 'admin'] : ['read', 'write'],
+    is_active: true
+  };
+
   const { data, error } = await supabase
     .from('user_roles')
-    .insert([{
-      user_id: user.id,
-      organization_id: organizationId,
-      role: role
-    }])
+    .insert([roleData])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Failed to create user role:', error);
+    throw error;
+  }
+  
   return data;
 }
 

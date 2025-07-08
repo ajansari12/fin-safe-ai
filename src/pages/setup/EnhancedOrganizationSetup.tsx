@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Save, Clock, Users, Building, Brain, Settings, Target, Sparkles } from "lucide-react";
+import { Shield, Save, Clock, Users, Building, Brain, Settings, Target, Sparkles, CheckCircle } from "lucide-react";
 import { PolicyUploader } from "@/components/setup/PolicyUploader";
 import { useEnhancedOrganizationSetup } from "@/hooks/useEnhancedOrganizationSetup";
 import FrameworkGenerationPreview from "./FrameworkGenerationPreview";
@@ -686,9 +686,19 @@ const EnhancedOrganizationSetup = () => {
                 <Button 
                   onClick={handleComplete} 
                   disabled={isSubmitting}
-                  className="min-w-[120px]"
+                  className="min-w-[140px] transition-all duration-300"
                 >
-                  {isSubmitting ? "Setting up..." : "Complete Setup"}
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Setting up...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4" />
+                      Complete Setup
+                    </div>
+                  )}
                 </Button>
               </CardFooter>
             </>

@@ -218,8 +218,18 @@ export function useEnhancedOrganizationSetup() {
           size: orgData.size
         });
       } else if (step === 2) {
-        // Create organization record after collecting basic details (before framework generation)
-        await createOrganizationRecord();
+        // Create organization record and link user after collecting basic details
+        try {
+          await createOrganizationRecord();
+        } catch (error) {
+          console.error('Organization creation failed:', error);
+          toast({
+            title: "Organization Creation Failed",
+            description: "Failed to create organization. Please try again.",
+            variant: "destructive",
+          });
+          return; // Don't proceed to next step
+        }
       } else if (step === 3) {
         await completeStep('organization-profile', 'Organization Profile Assessment', {
           profileData: orgData
@@ -539,8 +549,18 @@ export function useEnhancedOrganizationSetup() {
       console.warn('Profile was not updated during organization creation');
     }
 
-    // Create user role
-    await createUserRole(result.organization_id, orgData.userRole);
+    // Create user role using our existing service function
+    try {
+      await createUserRole(result.organization_id, orgData.userRole);
+    } catch (roleError) {
+      console.error('Failed to create user role:', roleError);
+      // Organization is created but role assignment failed
+      toast({
+        title: "Role Assignment Issue",
+        description: "Organization created but role assignment failed. You may need to contact support.",
+        variant: "destructive",
+      });
+    }
 
     // Force refresh of the user profile in auth context
     try {
@@ -671,12 +691,16 @@ export function useEnhancedOrganizationSetup() {
         // Don't fail the setup if email fails
       }
 
+      // Success animation and confirmation
       toast({
-        title: "Setup Complete", 
-        description: "Your organization has been set up successfully with intelligent frameworks.",
+        title: "🎉 Organization Setup Complete", 
+        description: "Your organization has been set up successfully with intelligent frameworks. Redirecting to dashboard...",
       });
 
-      navigate("/app/dashboard");
+      // Small delay to show success message before redirect
+      setTimeout(() => {
+        navigate("/app/dashboard");
+      }, 1500);
     } catch (error) {
       console.error("Organization setup error:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
