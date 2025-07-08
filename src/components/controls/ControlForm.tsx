@@ -1,5 +1,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Control } from "@/services/controls";
+import { lookupService } from "@/services/lookup-service";
 
 interface ControlFormProps {
   control?: Control;
@@ -35,6 +37,17 @@ const ControlForm: React.FC<ControlFormProps> = ({
   const watchedFrequency = watch('frequency');
   const watchedStatus = watch('status');
 
+  // Fetch control frameworks and examples for contextual defaults
+  const { data: controlFrameworks } = useQuery({
+    queryKey: ['control-frameworks'],
+    queryFn: () => lookupService.getControlFrameworks()
+  });
+
+  const { data: controlExamples } = useQuery({
+    queryKey: ['control-examples'],
+    queryFn: () => lookupService.getControlExamples()
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -45,11 +58,11 @@ const ControlForm: React.FC<ControlFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="title">Control Title *</Label>
-              <Input
-                id="title"
-                {...register('title', { required: 'Title is required' })}
-                placeholder="Enter control title"
-              />
+                <Input
+                  id="title"
+                  {...register('title', { required: 'Title is required' })}
+                  placeholder="e.g. Multi-Factor Authentication (MFA)"
+                />
               {errors.title && (
                 <p className="text-sm text-destructive mt-1">
                   {typeof errors.title.message === 'string' ? errors.title.message : 'Title is required'}
@@ -59,11 +72,11 @@ const ControlForm: React.FC<ControlFormProps> = ({
 
             <div>
               <Label htmlFor="owner">Control Owner *</Label>
-              <Input
-                id="owner"
-                {...register('owner', { required: 'Owner is required' })}
-                placeholder="Enter control owner"
-              />
+                <Input
+                  id="owner"
+                  {...register('owner', { required: 'Owner is required' })}
+                  placeholder="e.g. IT Security Manager"
+                />
               {errors.owner && (
                 <p className="text-sm text-destructive mt-1">
                   {typeof errors.owner.message === 'string' ? errors.owner.message : 'Owner is required'}
@@ -75,11 +88,11 @@ const ControlForm: React.FC<ControlFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="scope">Scope *</Label>
-              <Input
-                id="scope"
-                {...register('scope', { required: 'Scope is required' })}
-                placeholder="Enter control scope"
-              />
+                <Input
+                  id="scope"
+                  {...register('scope', { required: 'Scope is required' })}
+                  placeholder="e.g. All banking system access points"
+                />
               {errors.scope && (
                 <p className="text-sm text-destructive mt-1">
                   {typeof errors.scope.message === 'string' ? errors.scope.message : 'Scope is required'}
@@ -94,7 +107,7 @@ const ControlForm: React.FC<ControlFormProps> = ({
                 onValueChange={(value) => setValue('frequency', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select frequency" />
+                  <SelectValue placeholder="How often is this control tested?" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="daily">Daily</SelectItem>
@@ -113,9 +126,9 @@ const ControlForm: React.FC<ControlFormProps> = ({
               value={watchedStatus} 
               onValueChange={(value) => setValue('status', value as 'active' | 'inactive' | 'under_review')}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Current control status" />
+                </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
@@ -126,12 +139,12 @@ const ControlForm: React.FC<ControlFormProps> = ({
 
           <div>
             <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              {...register('description')}
-              placeholder="Enter control description"
-              rows={3}
-            />
+              <Textarea
+                id="description"
+                {...register('description')}
+                placeholder="Describe the control objective, procedures, and compliance requirements..."
+                rows={3}
+              />
           </div>
 
           <div className="flex gap-2 justify-end">

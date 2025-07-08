@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateIncidentData } from "@/services/incident/validated-incident-service";
+import { lookupService } from "@/services/lookup-service";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { InfoIcon } from "lucide-react";
@@ -81,32 +82,20 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
     }
   }, [watchedSeverity, form]);
 
-  // Fetch business functions for the dropdown
-  const { data: businessFunctions } = useQuery({
-    queryKey: ['business-functions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('business_functions')
-        .select('id, name')
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    }
+  // Fetch dynamic options for contextual defaults
+  const { data: incidentCategories } = useQuery({
+    queryKey: ['incident-categories'],
+    queryFn: () => lookupService.getIncidentCategories()
   });
 
-  // Fetch users for assignment
+  const { data: businessFunctions } = useQuery({
+    queryKey: ['business-functions'],
+    queryFn: () => lookupService.getBusinessFunctions()
+  });
+
   const { data: users } = useQuery({
     queryKey: ['users'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .order('full_name');
-      
-      if (error) throw error;
-      return data;
-    }
+    queryFn: () => lookupService.getUsers()
   });
 
   const handleFormSubmit = async (data: IncidentFormData) => {
@@ -179,7 +168,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                       <FormLabel>Incident Title *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Brief description of the incident"
+                          placeholder="e.g. Core banking system outage affecting customer transactions"
                           {...field}
                         />
                       </FormControl>
@@ -198,17 +187,17 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Type of incident (OSFI E-21 categories)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="system_failure">System Failure</SelectItem>
-                        <SelectItem value="data_loss">Data Loss</SelectItem>
-                        <SelectItem value="vendor_breach">Vendor Breach</SelectItem>
-                        <SelectItem value="security_incident">Security Incident</SelectItem>
-                        <SelectItem value="operational_disruption">Operational Disruption</SelectItem>
-                        <SelectItem value="compliance_breach">Compliance Breach</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        {incidentCategories?.map((category) => (
+                          <SelectItem key={category.value} value={category.value}>
+                            {category.label}
+                            {category.priority === 'critical' && ' 🔴'}
+                            {category.priority === 'high' && ' 🟡'}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -225,7 +214,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select severity" />
+                          <SelectValue placeholder="Business impact severity level" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -256,14 +245,14 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                   <FormItem>
                     <FormLabel>Impact Rating (1-10)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="10"
-                        placeholder="Rate the business impact"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                      />
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10"
+                          placeholder="1=Minor, 5=Moderate, 10=Severe"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -279,13 +268,14 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select business function" />
+                          <SelectValue placeholder="Which business area is affected?" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {businessFunctions?.map((func) => (
-                          <SelectItem key={func.id} value={func.id}>
-                            {func.name}
+                          <SelectItem key={func.value} value={func.value}>
+                            {func.label}
+                            {func.criticality === 'critical' && ' (Critical)'}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -305,13 +295,13 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select assignee (optional)" />
+                            <SelectValue placeholder="Who should respond? (auto-assigned by severity)" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {users?.map((user) => (
-                            <SelectItem key={user.id} value={user.id}>
-                              {user.full_name || 'Unknown User'}
+                            <SelectItem key={user.value} value={user.value}>
+                              {user.label} {user.role && `(${user.role})`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -334,13 +324,13 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                   <FormItem>
                     <FormLabel>Max Response Time (hours)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder="Maximum time to first response"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                      />
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Hours (auto-set by severity: Critical=1h, High=4h)"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -354,13 +344,13 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                   <FormItem>
                     <FormLabel>Max Resolution Time (hours)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        min="1"
-                        placeholder="Maximum time to resolution"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                      />
+                        <Input
+                          type="number"
+                          min="1"
+                          placeholder="Hours (auto-set: Critical=4h, High=24h, Medium=72h)"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -376,7 +366,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                       <FormLabel>Description</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Detailed description of the incident..."
+                          placeholder="Include: What happened? When? Which systems/customers affected? Root cause if known? OSFI reporting requirements if applicable..."
                           rows={4}
                           {...field}
                         />
