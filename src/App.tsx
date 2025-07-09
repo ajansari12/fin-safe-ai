@@ -2,6 +2,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { EnhancedAuthProvider } from './contexts/EnhancedAuthContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { OrgProvider } from './contexts/OrgContext';
 import { PermissionProvider } from './contexts/PermissionContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
@@ -68,10 +69,11 @@ function App() {
           <Toaster />
           <BrowserRouter>
           <EnhancedAuthProvider>
-            <OrgProvider>
-              <PermissionProvider>
-                <OnboardingProvider>
-                  <EnhancedAIAssistantProvider>
+            <AuthProvider>
+              <OrgProvider>
+                <PermissionProvider>
+                  <OnboardingProvider>
+                    <EnhancedAIAssistantProvider>
             <Routes>
               {/* Public website homepage */}
               <Route path="/" element={<IndexPage />} />
@@ -356,10 +358,11 @@ function App() {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-                  </EnhancedAIAssistantProvider>
-                </OnboardingProvider>
-              </PermissionProvider>
-            </OrgProvider>
+                    </EnhancedAIAssistantProvider>
+                  </OnboardingProvider>
+                </PermissionProvider>
+              </OrgProvider>
+            </AuthProvider>
           </EnhancedAuthProvider>
         </BrowserRouter>
         </ThemeProvider>
