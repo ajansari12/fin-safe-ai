@@ -54,13 +54,24 @@ const EnhancedAuthContext = createContext<EnhancedAuthContextType | undefined>(u
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   'super_admin': ['*'], // All permissions
   'admin': [
+    // Dashboard permissions
+    'dashboard:view', 'dashboard:customize',
+    // Core permissions
     'org:read', 'org:write', 'org:delete',
     'users:read', 'users:write', 'users:delete',
     'frameworks:read', 'frameworks:write', 'frameworks:delete',
     'incidents:read', 'incidents:write', 'incidents:delete',
     'controls:read', 'controls:write', 'controls:delete',
     'audit:read', 'audit:write',
-    'reporting:read', 'reporting:write'
+    'reporting:read', 'reporting:write',
+    // Module permissions
+    'risks:read', 'risks:write', 'risks:delete', 'risks:manage',
+    'governance:read', 'governance:write', 'governance:approve', 'governance:manage',
+    'third_party:read', 'third_party:write', 'third_party:assess',
+    'continuity:read', 'continuity:write', 'continuity:test',
+    'documents:read', 'documents:write', 'documents:delete', 'documents:approve',
+    'analytics:read', 'analytics:advanced',
+    'integrations:read', 'integrations:write', 'integrations:configure'
   ],
   'manager': [
     'org:read', 
