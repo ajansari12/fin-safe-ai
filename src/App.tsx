@@ -1,11 +1,13 @@
 
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { EnhancedAuthProvider } from './contexts/EnhancedAuthContext';
+import { OrgProvider } from './contexts/OrgContext';
+import { PermissionProvider } from './contexts/PermissionContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
 import { GlobalErrorBoundary } from './components/error/GlobalErrorBoundary';
 import { RouteErrorBoundary } from './components/error/RouteErrorBoundary';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import EnhancedProtectedRoute from './components/auth/EnhancedProtectedRoute';
 import AuthPage from './pages/auth/AuthPage';
 import IndexPage from './pages/Index';
 import DashboardPage from './pages/Dashboard';
@@ -65,9 +67,11 @@ function App() {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />
           <BrowserRouter>
-          <AuthProvider>
-            <OnboardingProvider>
-              <EnhancedAIAssistantProvider>
+          <EnhancedAuthProvider>
+            <OrgProvider>
+              <PermissionProvider>
+                <OnboardingProvider>
+                  <EnhancedAIAssistantProvider>
             <Routes>
               {/* Public website homepage */}
               <Route path="/" element={<IndexPage />} />
@@ -89,51 +93,51 @@ function App() {
               
               {/* Protected application routes */}
               <Route path="/app" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <Navigate to="/app/dashboard" />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/onboarding" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <EnhancedOnboardingDashboard />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/onboarding/dashboard" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <EnhancedOnboardingDashboard />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/dashboard" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <RouteErrorBoundary routeName="Dashboard" moduleName="Core">
                     <DashboardPage />
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/settings" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <SettingsPage />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/settings/roles" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'super_admin']}>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <SettingsPage />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/settings/members" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'super_admin']}>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <SettingsPage />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/accept-invitation" element={
                 <Suspense fallback={<DashboardSkeleton />}>
@@ -141,203 +145,203 @@ function App() {
                 </Suspense>
               } />
               <Route path="/app/governance" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="frameworks:read">
                   <RouteErrorBoundary routeName="Governance Framework" moduleName="Governance">
                     <GovernanceFrameworkPage />
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/governance-framework/new" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="frameworks:write">
                   <RouteErrorBoundary routeName="New Framework" moduleName="Governance">
                     <Suspense fallback={<DashboardSkeleton />}>
                       {React.createElement(lazy(() => import('./pages/governance/FrameworkForm')))}
                     </Suspense>
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/governance-framework/:frameworkId" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="frameworks:read">
                   <RouteErrorBoundary routeName="Framework Detail" moduleName="Governance">
                     {React.createElement(lazy(() => import('./pages/governance/FrameworkDetail')))}
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/risk-appetite" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <RouteErrorBoundary routeName="Risk Appetite" moduleName="Risk Management">
                     <RiskAppetitePage />
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/impact-tolerances" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <ImpactTolerancesPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/business-functions" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <BusinessFunctionsPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/dependencies" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <DependenciesPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/tolerance-framework" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <ToleranceFrameworkPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/controls-and-kri" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="controls:read">
                   <RouteErrorBoundary routeName="Controls & KRI" moduleName="Risk Management">
                     <ControlsAndKriPage />
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/third-party-risk" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <RouteErrorBoundary routeName="Third-Party Risk" moduleName="Risk Management">
                     <ThirdPartyRiskPage />
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/incident-log" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="incidents:read">
                   <RouteErrorBoundary routeName="Incident Log" moduleName="Risk Management">
                     <IncidentLogPage />
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/scenario-testing" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <ScenarioTestingPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/business-continuity" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <BusinessContinuityPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/audit-and-compliance" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="audit:read">
                   <AuditAndCompliancePage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/document-management" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <RouteErrorBoundary routeName="Document Management" moduleName="Documents">
                     <DocumentManagementPage />
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/integrations" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'manager']}>
                   <IntegrationsPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/analytics-hub" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="reporting:read">
                   <RouteErrorBoundary routeName="Analytics Hub" moduleName="Analytics">
                     <Suspense fallback={<DashboardSkeleton />}>
                       <AnalyticsHubPage />
                     </Suspense>
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/workflow-center" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <WorkflowCenterPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/dependency-mapping" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <DependencyMappingPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/deployment-center" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'super_admin']}>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <DeploymentCenterPage />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/reporting" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="reporting:read">
                   <Suspense fallback={<DashboardSkeleton />}>
                     <ReportingPage />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/billing" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'super_admin']}>
                   <Suspense fallback={<DashboardSkeleton />}>
                     <BillingPage />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/support" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <SupportPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/analytics" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="reporting:read">
                   <RouteErrorBoundary routeName="Analytics" moduleName="Analytics">
                     <Suspense fallback={<DashboardSkeleton />}>
                       <AnalyticsPage />
                     </Suspense>
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/analytics/custom" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="reporting:write">
                   <RouteErrorBoundary routeName="Custom Analytics" moduleName="Analytics">
                     <Suspense fallback={<DashboardSkeleton />}>
                       <CustomDashboardPage />
                     </Suspense>
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/organizational-intelligence" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'manager', 'analyst']}>
                   <RouteErrorBoundary routeName="Organizational Intelligence" moduleName="Analytics">
                     <Suspense fallback={<DashboardSkeleton />}>
                       <OrganizationalIntelligencePage />
                     </Suspense>
                   </RouteErrorBoundary>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               
               {/* Phase 4 Enterprise Routes */}
               <Route path="/app/enterprise-security" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'super_admin']}>
                   <Navigate to="/app/settings" />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/regulatory-reporting" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="reporting:read">
                   <Navigate to="/app/reporting" />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/integration-hub" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredAnyRole={['admin', 'manager']}>
                   <IntegrationsPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/performance" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute requiredPermission="reporting:read">
                   <Suspense fallback={<DashboardSkeleton />}>
                     <AnalyticsPage />
                   </Suspense>
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               <Route path="/app/mobile" element={
-                <ProtectedRoute>
+                <EnhancedProtectedRoute>
                   <DashboardPage />
-                </ProtectedRoute>
+                </EnhancedProtectedRoute>
               } />
               
               {/* Legacy routes - redirect to new structure */}
@@ -352,9 +356,11 @@ function App() {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-            </EnhancedAIAssistantProvider>
-          </OnboardingProvider>
-        </AuthProvider>
+                  </EnhancedAIAssistantProvider>
+                </OnboardingProvider>
+              </PermissionProvider>
+            </OrgProvider>
+          </EnhancedAuthProvider>
         </BrowserRouter>
         </ThemeProvider>
       </QueryClientProvider>
