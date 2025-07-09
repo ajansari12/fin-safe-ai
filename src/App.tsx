@@ -45,6 +45,8 @@ const BillingPage = lazy(() => import('./pages/Billing'));
 const EnhancedOrganizationSetup = lazy(() => import('./pages/setup/EnhancedOrganizationSetup'));
 const EnhancedOnboardingDashboard = lazy(() => import('./components/onboarding/EnhancedOnboardingDashboard'));
 const InvitationAcceptance = lazy(() => import('./components/auth/InvitationAcceptance'));
+const Debug = lazy(() => import('./pages/Debug'));
+const DataManagement = lazy(() => import('./pages/DataManagement'));
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
@@ -316,6 +318,34 @@ function App() {
                   </RouteErrorBoundary>
                 </EnhancedProtectedRoute>
               } />
+              
+              {/* Admin-only routes */}
+              <Route 
+                path="/app/debug" 
+                element={
+                  <EnhancedProtectedRoute 
+                    requiredAnyRole={['admin', 'super_admin']} 
+                    fallbackRoute="/app/dashboard"
+                  >
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <Debug />
+                    </Suspense>
+                  </EnhancedProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/app/data" 
+                element={
+                  <EnhancedProtectedRoute 
+                    requiredAnyRole={['admin', 'super_admin']} 
+                    fallbackRoute="/app/dashboard"
+                  >
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <DataManagement />
+                    </Suspense>
+                  </EnhancedProtectedRoute>
+                } 
+              />
               
               {/* Phase 4 Enterprise Routes */}
               <Route path="/app/enterprise-security" element={

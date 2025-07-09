@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AIAssistantProvider, AIAssistantButton, AIAssistantDialog } from "@/components/ai-assistant";
+import { navItems } from "@/nav-items";
+import RoleAwareNavigation from "@/components/navigation/RoleAwareNavigation";
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
@@ -20,28 +22,16 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
     setSidebarOpen(!isSidebarOpen);
   };
 
-  const navLinks = [
-    { path: "/app/dashboard", label: "Dashboard" },
-    { path: "/app/governance", label: "Governance" },
-    { path: "/app/risk-appetite", label: "Risk Appetite" },
-    { path: "/app/impact-tolerances", label: "Impact Tolerances" },
-    { path: "/app/business-functions", label: "Business Functions" },
-    { path: "/app/dependencies", label: "Dependencies" },
-    { path: "/app/tolerance-framework", label: "Tolerance Framework" },
-    { path: "/app/controls-and-kri", label: "Controls & KRIs" },
-    { path: "/app/third-party-risk", label: "Third-Party Risk" },
-    { path: "/app/incident-log", label: "Incident Log" },
-    { path: "/app/scenario-testing", label: "Scenario Testing" },
-    { path: "/app/business-continuity", label: "Business Continuity" },
-    { path: "/app/audit-and-compliance", label: "Audit & Compliance" },
-    { path: "/app/document-management", label: "Document Management" },
-    { path: "/app/integrations", label: "Integrations" },
-    { path: "/app/analytics-hub", label: "Analytics Hub" },
-    { path: "/app/workflow-center", label: "Workflow Center" },
-    { path: "/app/dependency-mapping", label: "Dependency Mapping" },
-    { path: "/app/deployment-center", label: "Deployment Center" },
-    { path: "/app/reporting", label: "Reporting" },
-  ];
+  // Convert nav items to navigation format
+  const navigationItems = navItems.map(item => ({
+    title: item.title,
+    url: item.url,
+    icon: item.icon,
+    items: item.items?.map(subItem => ({
+      title: subItem.title,
+      url: subItem.url,
+    })),
+  }));
 
   const bottomLinks = [
     { path: "/app/settings", label: "Settings" },
@@ -84,31 +74,16 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             {/* Sidebar content */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
               <ScrollArea className="flex-1">
-                <nav className="px-2 py-4 space-y-1">
-                  {navLinks.map((link) => {
-                    const isActive = location.pathname === link.path;
-                    return (
-                      <Link
-                        key={link.path}
-                        to={link.path}
-                        onClick={() => {
-                          if (window.innerWidth < 1024) {
-                            setSidebarOpen(false);
-                          }
-                        }}
-                        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors group min-h-[44px] ${
-                          isActive
-                            ? "bg-primary/10 text-primary"
-                            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-                        } truncate`}
-                      >
-                        <span className="truncate">
-                          {link.label}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </nav>
+                <div className="px-2 py-4">
+                  <RoleAwareNavigation 
+                    items={navigationItems}
+                    onItemClick={() => {
+                      if (window.innerWidth < 1024) {
+                        setSidebarOpen(false);
+                      }
+                    }}
+                  />
+                </div>
               </ScrollArea>
 
               {/* Sidebar footer */}
@@ -162,7 +137,9 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                   
                   {/* Breadcrumb or page title - with responsive spacing */}
                   <div className="hidden sm:block text-sm text-muted-foreground">
-                    {navLinks.find(link => link.path === location.pathname)?.label || 'Dashboard'}
+                    {navItems.find(item => item.url === location.pathname)?.title || 
+                     navItems.flatMap(item => item.items || [])
+                            .find(subItem => subItem.url === location.pathname)?.title || 'Dashboard'}
                   </div>
                 </div>
 
