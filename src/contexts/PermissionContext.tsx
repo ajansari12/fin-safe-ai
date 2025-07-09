@@ -64,19 +64,27 @@ export const PermissionProvider: React.FC<{ children: ReactNode }> = ({ children
   const { userContext, hasPermission: authHasPermission, hasRole: authHasRole, hasAnyRole: authHasAnyRole } = useEnhancedAuth();
   const { hasOrgAccess, isOrgAdmin } = useOrg();
 
-  // Debug logging
+  // Enhanced debug logging
   console.log('🔐 PermissionProvider Debug:', {
     userContext: !!userContext,
-    userRoles: userContext?.roles,
-    userPermissions: userContext?.permissions?.length,
+    userContextReady: !!(userContext?.userId && userContext?.organizationId),
+    userId: userContext?.userId?.slice(0, 8) || 'missing',
+    orgId: userContext?.organizationId?.slice(0, 8) || 'missing',
+    userRoles: userContext?.roles || [],
+    userPermissions: userContext?.permissions?.length || 0,
     hasOrgAccess: typeof hasOrgAccess,
     isOrgAdmin: typeof isOrgAdmin,
     authHasPermission: typeof authHasPermission,
-    authHasRole: typeof authHasRole
+    authHasRole: typeof authHasRole,
+    functionsReady: !!(authHasPermission && authHasRole && authHasAnyRole)
   });
 
-  // Core permission checking functions
+  // Core permission checking functions with safety checks
   const hasPermission = (permission: string): boolean => {
+    if (!userContext || !authHasPermission) {
+      console.log(`🔍 hasPermission(${permission}): false (context not ready)`);
+      return false;
+    }
     const result = authHasPermission(permission);
     console.log(`🔍 hasPermission(${permission}):`, result);
     return result;
@@ -91,12 +99,20 @@ export const PermissionProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const hasRole = (role: string): boolean => {
+    if (!userContext || !authHasRole) {
+      console.log(`🔍 hasRole(${role}): false (context not ready)`);
+      return false;
+    }
     const result = authHasRole(role);
     console.log(`🔍 hasRole(${role}):`, result);
     return result;
   };
 
   const hasAnyRole = (roles: string[]): boolean => {
+    if (!userContext || !authHasAnyRole) {
+      console.log(`🔍 hasAnyRole(${roles}): false (context not ready)`);
+      return false;
+    }
     return authHasAnyRole(roles);
   };
 

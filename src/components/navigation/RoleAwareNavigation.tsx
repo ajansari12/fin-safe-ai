@@ -31,22 +31,38 @@ export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
   const location = useLocation();
   const { hasPermission, hasRole, hasAnyRole, isOrgAdmin } = usePermissions();
 
-  // Debug logging
+  // Enhanced debug logging with fallback detection
+  const permissionFunctionsReady = typeof hasPermission === 'function' && 
+                                  typeof hasRole === 'function' && 
+                                  typeof hasAnyRole === 'function' && 
+                                  typeof isOrgAdmin === 'function';
+
   console.log('🧭 RoleAwareNavigation Debug:', {
     itemsCount: items.length,
+    permissionFunctionsReady,
     hasPermission: typeof hasPermission,
     hasRole: typeof hasRole,
     hasAnyRole: typeof hasAnyRole,
     isOrgAdmin: typeof isOrgAdmin,
-    testPermission: hasPermission('dashboard:view'),
-    testRole: hasRole('user')
+    testPermission: permissionFunctionsReady ? hasPermission('dashboard:view') : 'NOT_READY',
+    testRole: permissionFunctionsReady ? hasRole('user') : 'NOT_READY',
+    testAdmin: permissionFunctionsReady ? isOrgAdmin() : 'NOT_READY'
   });
 
   const isItemAccessible = (item: NavigationItem): boolean => {
-    // Fallback: if permission system is not working, show basic navigation
-    if (typeof hasPermission !== 'function' || typeof hasRole !== 'function') {
-      console.warn('⚠️ Permission functions not available, showing all items');
-      return true;
+    // EMERGENCY FALLBACK: If permission system is not ready, show basic navigation items
+    if (!permissionFunctionsReady) {
+      console.warn('⚠️ Permission system not ready, showing basic navigation items');
+      // Show essential navigation items when permissions aren't loaded
+      const basicAccessibleRoutes = [
+        '/app/dashboard', 
+        '/app/risk-appetite', 
+        '/app/governance', 
+        '/app/incident-log', 
+        '/app/analytics',
+        '/app/settings'
+      ];
+      return basicAccessibleRoutes.includes(item.url);
     }
 
     // Check route-specific permissions first
@@ -165,8 +181,22 @@ export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
         renderedItems
       ) : (
         <div className="p-4 text-sm text-muted-foreground">
-          <p>Loading navigation...</p>
-          <p className="text-xs mt-1">If this persists, check permissions</p>
+          <p className="mb-2">
+            {!permissionFunctionsReady ? 'Loading permissions...' : 'No accessible items found'}
+          </p>
+          <p className="text-xs">
+            {!permissionFunctionsReady 
+              ? 'Initializing role-based navigation...' 
+              : 'Your role may have limited access. Contact admin if this seems wrong.'
+            }
+          </p>
+          {/* Emergency navigation fallback */}
+          {!permissionFunctionsReady && (
+            <div className="mt-3 space-y-1">
+              <Link to="/app/dashboard" className="block text-xs hover:text-primary">→ Dashboard</Link>
+              <Link to="/app/settings" className="block text-xs hover:text-primary">→ Settings</Link>
+            </div>
+          )}
         </div>
       )}
     </nav>
