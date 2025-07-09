@@ -94,9 +94,17 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'reporting:read'
   ],
   'user': [
-    'frameworks:read',
+    'dashboard:view',
+    'risks:read',
+    'controls:read',
     'incidents:read',
-    'controls:read'
+    'governance:read',
+    'third_party:read',
+    'continuity:read',
+    'documents:read',
+    'analytics:read',
+    'reporting:read',
+    'org:read'
   ]
 };
 
