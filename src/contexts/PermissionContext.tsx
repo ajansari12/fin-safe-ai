@@ -64,9 +64,22 @@ export const PermissionProvider: React.FC<{ children: ReactNode }> = ({ children
   const { userContext, hasPermission: authHasPermission, hasRole: authHasRole, hasAnyRole: authHasAnyRole } = useEnhancedAuth();
   const { hasOrgAccess, isOrgAdmin } = useOrg();
 
+  // Debug logging
+  console.log('🔐 PermissionProvider Debug:', {
+    userContext: !!userContext,
+    userRoles: userContext?.roles,
+    userPermissions: userContext?.permissions?.length,
+    hasOrgAccess: typeof hasOrgAccess,
+    isOrgAdmin: typeof isOrgAdmin,
+    authHasPermission: typeof authHasPermission,
+    authHasRole: typeof authHasRole
+  });
+
   // Core permission checking functions
   const hasPermission = (permission: string): boolean => {
-    return authHasPermission(permission);
+    const result = authHasPermission(permission);
+    console.log(`🔍 hasPermission(${permission}):`, result);
+    return result;
   };
 
   const hasAnyPermission = (permissions: string[]): boolean => {
@@ -78,7 +91,9 @@ export const PermissionProvider: React.FC<{ children: ReactNode }> = ({ children
   };
 
   const hasRole = (role: string): boolean => {
-    return authHasRole(role);
+    const result = authHasRole(role);
+    console.log(`🔍 hasRole(${role}):`, result);
+    return result;
   };
 
   const hasAnyRole = (roles: string[]): boolean => {
