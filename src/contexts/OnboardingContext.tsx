@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "./AuthContext";
+import { useEnhancedAuth } from "./EnhancedAuthContext";
 import { toast } from "sonner";
 
 interface OnboardingStep {
@@ -45,7 +45,7 @@ const ONBOARDING_STEPS = [
 ];
 
 export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, profile } = useAuth();
+  const { user, userContext } = useEnhancedAuth();
   const [onboardingStatus, setOnboardingStatus] = useState<'not_started' | 'in_progress' | 'completed' | 'skipped'>('not_started');
   const [currentSession, setCurrentSession] = useState<OnboardingSession | null>(null);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
@@ -54,21 +54,25 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Initialize onboarding state
   useEffect(() => {
-    if (!user || !profile) {
+    if (!user || !userContext) {
       setIsLoading(false);
       return;
     }
 
     initializeOnboardingState();
-  }, [user, profile]);
+  }, [user, userContext]);
 
   const initializeOnboardingState = async () => {
     try {
       setIsLoading(true);
       
-      // Get current onboarding status from profile
-      const currentStatus = (profile as any)?.onboarding_status || 'not_started';
-      setOnboardingStatus(currentStatus);
+      // Get current onboarding status from userContext profile
+      const currentStatus = userContext?.profile?.onboarding_status || 'not_started';
+      // Ensure the status is one of the expected values
+      const validStatus = ['not_started', 'in_progress', 'completed', 'skipped'].includes(currentStatus)
+        ? currentStatus as 'not_started' | 'in_progress' | 'completed' | 'skipped'
+        : 'not_started';
+      setOnboardingStatus(validStatus);
 
       // Get user's progress
       const { data: progressData } = await supabase
