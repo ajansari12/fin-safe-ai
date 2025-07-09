@@ -125,6 +125,15 @@ class IntelligentFrameworkGenerationService {
               try {
                 const { FrameworkProgressService } = await import('./framework-progress-service');
                 await FrameworkProgressService.initializeComponentProgress(framework.id);
+                
+                // Log initial activity
+                await FrameworkProgressService.logActivity(
+                  framework.id,
+                  'created',
+                  'Framework generated with AI assistance',
+                  { component_count: components.length, generation_type: 'ai_assisted' }
+                );
+                
                 console.log(`Initialized progress tracking for framework ${framework.id}`);
               } catch (progressError) {
                 console.error('Error initializing progress tracking:', progressError);

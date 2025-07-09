@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { testFrameworkGeneration } from "@/utils/test-framework-generation";
 import FrameworkProgressTracker from "./FrameworkProgressTracker";
+import FrameworkProgressTester from "./FrameworkProgressTester";
 import { formatDistanceToNow } from "date-fns";
 
 interface GeneratedFramework {
@@ -607,6 +608,15 @@ const GeneratedFrameworksDisplay: React.FC = () => {
                               Mark as Implemented
                             </Button>
                           </div>
+                        </div>
+                        
+                        {/* Progress Testing Tool */}
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium">Progress Testing</h5>
+                          <FrameworkProgressTester 
+                            framework={selectedFramework}
+                            onUpdate={loadGeneratedFrameworks}
+                          />
                         </div>
                       </div>
                     </div>
