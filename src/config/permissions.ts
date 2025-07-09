@@ -276,6 +276,14 @@ export const ROUTE_PERMISSIONS: RoutePermission[] = [
     adminOnly: true,
     description: 'System deployment center',
   },
+  
+  // Testing and validation routes
+  {
+    path: '/app/rbac-testing',
+    requiredPermission: PERMISSIONS.ADMIN.DEBUG,
+    adminOnly: true,
+    description: 'RBAC system testing dashboard',
+  },
 ];
 
 // Role-based permission mappings

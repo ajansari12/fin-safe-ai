@@ -47,6 +47,7 @@ const EnhancedOnboardingDashboard = lazy(() => import('./components/onboarding/E
 const InvitationAcceptance = lazy(() => import('./components/auth/InvitationAcceptance'));
 const Debug = lazy(() => import('./pages/Debug'));
 const DataManagement = lazy(() => import('./pages/DataManagement'));
+const RBACTesting = lazy(() => import('./pages/RBACTesting'));
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
@@ -342,6 +343,19 @@ function App() {
                   >
                     <Suspense fallback={<DashboardSkeleton />}>
                       <DataManagement />
+                    </Suspense>
+                  </EnhancedProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/app/rbac-testing" 
+                element={
+                  <EnhancedProtectedRoute 
+                    requiredAnyRole={['admin', 'super_admin']} 
+                    fallbackRoute="/app/dashboard"
+                  >
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      <RBACTesting />
                     </Suspense>
                   </EnhancedProtectedRoute>
                 } 
