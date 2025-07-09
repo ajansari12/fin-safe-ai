@@ -40,7 +40,7 @@ class IntelligentFrameworkGenerationService {
 
       const results = [];
       
-      // Update generation status
+      // Update generation status to in_progress
       await this.updateGenerationStatus(organizationId, profileId, 'in_progress', 'Generating frameworks');
 
       // Generate frameworks for each requested type
@@ -79,7 +79,7 @@ class IntelligentFrameworkGenerationService {
               framework_version: '1.0',
               framework_data: frameworkContent,
               customization_options: customizations,
-              implementation_status: 'generated',
+              implementation_status: 'in_progress',
               effectiveness_score: effectivenessScore,
               generation_metadata: {
                 generated_at: new Date().toISOString(),
