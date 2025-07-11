@@ -7150,7 +7150,6 @@ export type Database = {
           onboarding_data: Json | null
           onboarding_status: string | null
           organization_id: string | null
-          role: string
           updated_at: string
         }
         Insert: {
@@ -7162,7 +7161,6 @@ export type Database = {
           onboarding_data?: Json | null
           onboarding_status?: string | null
           organization_id?: string | null
-          role?: string
           updated_at?: string
         }
         Update: {
@@ -7174,7 +7172,6 @@ export type Database = {
           onboarding_data?: Json | null
           onboarding_status?: string | null
           organization_id?: string | null
-          role?: string
           updated_at?: string
         }
         Relationships: [
@@ -11008,6 +11005,10 @@ export type Database = {
         }
         Returns: number
       }
+      can_manage_user_roles: {
+        Args: { target_org_id: string }
+        Returns: boolean
+      }
       check_expiring_contracts: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -11114,6 +11115,10 @@ export type Database = {
         Args: { user_id?: string }
         Returns: string
       }
+      get_user_role_secure: {
+        Args: { target_user_id?: string }
+        Returns: string
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown
@@ -11152,6 +11157,10 @@ export type Database = {
       }
       is_admin_role: {
         Args: { user_id?: string }
+        Returns: boolean
+      }
+      is_admin_secure: {
+        Args: { target_user_id?: string }
         Returns: boolean
       }
       is_admin_user: {
