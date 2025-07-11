@@ -8,6 +8,9 @@ import OSFIDataQualityIntegration from '@/components/osfi-integration/OSFIDataQu
 import OSFIRegulatoryReportingIntegration from '@/components/osfi-integration/OSFIRegulatoryReportingIntegration';
 import OSFIComplianceMonitoringDashboard from '@/components/osfi-integration/OSFIComplianceMonitoringDashboard';
 import OSFIAdvancedCapabilitiesDashboard from '@/components/osfi-integration/OSFIAdvancedCapabilitiesDashboard';
+import OSFIGovernanceOversight from '@/components/osfi-integration/OSFIGovernanceOversight';
+import OperationalRiskTaxonomy from '@/components/osfi-integration/OperationalRiskTaxonomy';
+import OSFIScenarioTesting from '@/components/osfi-integration/OSFIScenarioTesting';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
@@ -61,14 +64,24 @@ const OSFICompliancePage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="compliance">Framework</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-8">
+            <TabsTrigger value="governance">Governance</TabsTrigger>
+            <TabsTrigger value="framework">Framework</TabsTrigger>
+            <TabsTrigger value="compliance">Risk Appetite</TabsTrigger>
             <TabsTrigger value="integration">Integration</TabsTrigger>
             <TabsTrigger value="resilience">Resilience</TabsTrigger>
-            <TabsTrigger value="governance">Data & Reporting</TabsTrigger>
             <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+            <TabsTrigger value="testing">Testing</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="governance">
+            <OSFIGovernanceOversight />
+          </TabsContent>
+
+          <TabsContent value="framework">
+            <OperationalRiskTaxonomy />
+          </TabsContent>
 
           <TabsContent value="compliance">
             <ComplianceDashboard />
@@ -91,6 +104,10 @@ const OSFICompliancePage = () => {
 
           <TabsContent value="monitoring">
             <OSFIComplianceMonitoringDashboard />
+          </TabsContent>
+
+          <TabsContent value="testing">
+            <OSFIScenarioTesting />
           </TabsContent>
 
           <TabsContent value="advanced">
