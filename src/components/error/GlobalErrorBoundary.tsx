@@ -58,6 +58,27 @@ export class GlobalErrorBoundary extends Component<Props, State> {
     window.location.href = '/app/dashboard';
   };
 
+  private handleClearStorage = () => {
+    try {
+      // Clear localStorage and sessionStorage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear Supabase auth data specifically
+      localStorage.removeItem('sb-oooocjyscnvbahsyryxp-auth-token');
+      
+      toast.success("Storage cleared. Redirecting to login...");
+      
+      // Redirect to login after clearing storage
+      setTimeout(() => {
+        window.location.href = '/auth/login';
+      }, 1000);
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+      toast.error("Failed to clear storage");
+    }
+  };
+
   public render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
@@ -91,6 +112,10 @@ export class GlobalErrorBoundary extends Component<Props, State> {
                 <Button variant="outline" onClick={this.handleGoHome} className="w-full">
                   <Home className="h-4 w-4 mr-2" />
                   Go to Dashboard
+                </Button>
+                <Button variant="destructive" onClick={this.handleClearStorage} className="w-full">
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Clear Storage & Reset
                 </Button>
               </div>
 

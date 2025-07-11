@@ -188,12 +188,15 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   const fetchEnhancedUserData = async (userId: string | undefined) => {
-    if (!userId) return;
+    if (!userId) {
+      console.warn('⚠️ No userId provided to fetchEnhancedUserData');
+      return;
+    }
     
     try {
       console.log('👤 Fetching enhanced user data for:', userId);
       
-      // Fetch profile data
+      // Fetch profile data with error resilience
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -203,42 +206,80 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (profileError) {
         console.error('❌ Error fetching profile:', profileError);
         
-        // Check if it's a missing profile (not an error, profile might not be created yet)
+        // Handle missing profile gracefully
         if (profileError.code === 'PGRST116') {
-          console.warn('⚠️ No profile found for user, may need to be created');
-          // Redirect to organization setup if no profile exists and not already there
+          console.warn('⚠️ No profile found for user, creating minimal context');
+          
+          // Create minimal context for user without profile
+          const minimalContext: UnifiedUserContext = {
+            userId,
+            email: user?.email || null,
+            organizationId: null,
+            roles: ['user'], // Default role
+            permissions: ROLE_PERMISSIONS['user'] || [],
+            profile: null
+          };
+          
+          setUserContext(minimalContext);
+          
+          // Redirect to setup only if not already there
           if (location.pathname.startsWith('/app/') && location.pathname !== '/setup/enhanced') {
+            console.log('🔄 Redirecting to organization setup');
             navigate('/setup/enhanced');
           }
           return;
         }
         
-        throw profileError;
+        // For other errors, create fallback context instead of throwing
+        console.warn('⚠️ Profile fetch failed, creating fallback context:', profileError);
+        const fallbackContext: UnifiedUserContext = {
+          userId,
+          email: user?.email || null,
+          organizationId: null,
+          roles: ['user'],
+          permissions: ROLE_PERMISSIONS['user'] || [],
+          profile: null
+        };
+        
+        setUserContext(fallbackContext);
+        return;
       }
       
-      // Fetch user roles
+      // Fetch user roles with error resilience
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('role, role_type')
         .eq('user_id', userId);
         
       if (rolesError) {
-        console.warn('⚠️ Error fetching user roles:', rolesError);
+        console.warn('⚠️ Error fetching user roles, using default:', rolesError);
       }
       
-      // Compute roles array
+      // Safely compute roles array with fallbacks
       const primaryRole = profileData?.role || 'user';
       const additionalRoles = rolesData?.map(r => r.role || r.role_type).filter(Boolean) || [];
       const allRoles = Array.from(new Set([primaryRole, ...additionalRoles]));
       
-      // Compute permissions based on roles
+      // Ensure at least 'user' role is present
+      if (allRoles.length === 0) {
+        allRoles.push('user');
+      }
+      
+      // Compute permissions based on roles with safety check
       const permissions = computePermissions(allRoles);
       
-      // Create enhanced profile
+      // Create enhanced profile with safety checks
       const enhancedProfile: EnhancedProfile = {
-        ...profileData,
+        id: profileData?.id || userId,
+        full_name: profileData?.full_name || null,
+        avatar_url: profileData?.avatar_url || null,
+        organization_id: profileData?.organization_id || null,
+        role: primaryRole,
         roles: allRoles,
-        permissions
+        permissions,
+        onboarding_status: profileData?.onboarding_status,
+        created_at: profileData?.created_at,
+        updated_at: profileData?.updated_at
       };
       
       // Create unified user context
@@ -252,10 +293,10 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       };
       
       console.log('✅ Enhanced user data fetched successfully:', {
-        profile: enhancedProfile.full_name,
+        profile: enhancedProfile.full_name || 'Anonymous',
         roles: allRoles,
         permissions: permissions.length,
-        organizationId: profileData?.organization_id
+        organizationId: profileData?.organization_id || 'None'
       });
       
       setProfile(enhancedProfile);
@@ -265,7 +306,19 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       checkOrganizationAccess(enhancedProfile);
     } catch (error) {
       console.error('💥 Failed to fetch enhanced user data:', error);
-      // Don't throw here - missing profile shouldn't break auth
+      
+      // Create emergency fallback context to prevent total application failure
+      const emergencyContext: UnifiedUserContext = {
+        userId,
+        email: user?.email || null,
+        organizationId: null,
+        roles: ['user'],
+        permissions: ROLE_PERMISSIONS['user'] || [],
+        profile: null
+      };
+      
+      setUserContext(emergencyContext);
+      console.warn('🆘 Created emergency user context due to error');
     }
   };
 
@@ -306,19 +359,39 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const hasRole = (role: string): boolean => {
-    return userContext?.roles.includes(role) || false;
+    try {
+      return userContext?.roles?.includes(role) || false;
+    } catch (error) {
+      console.warn('⚠️ Error checking role:', error);
+      return false;
+    }
   };
 
   const hasPermission = (permission: string): boolean => {
-    return userContext?.permissions.includes(permission) || false;
+    try {
+      return userContext?.permissions?.includes(permission) || false;
+    } catch (error) {
+      console.warn('⚠️ Error checking permission:', error);
+      return false;
+    }
   };
 
   const hasAnyRole = (roles: string[]): boolean => {
-    return roles.some(role => hasRole(role));
+    try {
+      return Array.isArray(roles) && roles.some(role => hasRole(role));
+    } catch (error) {
+      console.warn('⚠️ Error checking multiple roles:', error);
+      return false;
+    }
   };
 
   const isOrgAdmin = (): boolean => {
-    return hasAnyRole(['admin', 'super_admin']);
+    try {
+      return hasAnyRole(['admin', 'super_admin']);
+    } catch (error) {
+      console.warn('⚠️ Error checking admin status:', error);
+      return false;
+    }
   };
 
   const refreshUserContext = async () => {
