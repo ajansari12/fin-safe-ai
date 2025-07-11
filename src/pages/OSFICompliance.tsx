@@ -4,6 +4,9 @@ import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
 import OSFIIntegrationDashboard from "@/components/osfi-integration/OSFIIntegrationDashboard";
 import OSFIResilienceDashboard from "@/components/osfi-integration/OSFIResilienceDashboard";
+import OSFIDataQualityIntegration from '@/components/osfi-integration/OSFIDataQualityIntegration';
+import OSFIRegulatoryReportingIntegration from '@/components/osfi-integration/OSFIRegulatoryReportingIntegration';
+import OSFIComplianceMonitoringDashboard from '@/components/osfi-integration/OSFIComplianceMonitoringDashboard';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
@@ -57,10 +60,12 @@ const OSFICompliancePage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="compliance">OSFI Compliance Framework</TabsTrigger>
-            <TabsTrigger value="integration">Cross-Module Integration</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="compliance">Compliance Framework</TabsTrigger>
+            <TabsTrigger value="integration">Module Integration</TabsTrigger>
             <TabsTrigger value="resilience">Business Resilience</TabsTrigger>
+            <TabsTrigger value="governance">Data & Reporting</TabsTrigger>
+            <TabsTrigger value="monitoring">Compliance Monitoring</TabsTrigger>
           </TabsList>
 
           <TabsContent value="compliance">
@@ -73,6 +78,17 @@ const OSFICompliancePage = () => {
 
           <TabsContent value="resilience">
             <OSFIResilienceDashboard />
+          </TabsContent>
+
+          <TabsContent value="governance">
+            <div className="space-y-6">
+              <OSFIDataQualityIntegration />
+              <OSFIRegulatoryReportingIntegration />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="monitoring">
+            <OSFIComplianceMonitoringDashboard />
           </TabsContent>
         </Tabs>
       </div>
