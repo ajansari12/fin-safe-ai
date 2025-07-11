@@ -3,17 +3,11 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ComplianceReportGenerator from "./ComplianceReportGenerator";
 import ComplianceAnalyticsDashboard from "./ComplianceAnalyticsDashboard";
-import OSFIGovernanceOversight from "./OSFIGovernanceOversight";
-import OperationalRiskTaxonomy from "./OperationalRiskTaxonomy";
-import OSFIRealTimeMonitoring from "./OSFIRealTimeMonitoring";
-import OSFIRegulatorySelfAssessment from "./OSFIRegulatorySelfAssessment";
-import EnhancedRiskAppetite from "./EnhancedRiskAppetite";
-import OSFICriticalOperations from "./OSFICriticalOperations";
-import OSFIRegulatoryReporting from "./OSFIRegulatoryReporting";
-import OSFIDisruptionTolerances from "./OSFIDisruptionTolerances";
-import OSFIComprehensiveScenarioTesting from "./OSFIComprehensiveScenarioTesting";
-import OSFIComplianceVerification from "./OSFIComplianceVerification";
-import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp, Building2, Send, Gauge, Play, ClipboardCheck } from "lucide-react";
+import UnifiedRiskAppetite from "@/components/risk-appetite/UnifiedRiskAppetite";
+import VendorRiskDashboard from "@/components/third-party/VendorRiskDashboard";
+import IncidentLog from "@/pages/IncidentLog";
+import OSFIGovernanceOversight from "../osfi-integration/OSFIGovernanceOversight";
+import { BarChart3, FileText, Shield, TrendingUp, Building2, AlertTriangle } from "lucide-react";
 
 export default function ComplianceDashboard() {
   return (
@@ -26,7 +20,7 @@ export default function ComplianceDashboard() {
       </div>
 
       <Tabs defaultValue="governance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-12">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="governance" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Governance
@@ -35,41 +29,17 @@ export default function ComplianceDashboard() {
             <TrendingUp className="h-4 w-4" />
             Risk Appetite
           </TabsTrigger>
-          <TabsTrigger value="risk-taxonomy" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Risk Framework
+          <TabsTrigger value="third-party" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Third Party
           </TabsTrigger>
-          <TabsTrigger value="monitoring" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Monitoring
-          </TabsTrigger>
-          <TabsTrigger value="assessment" className="flex items-center gap-2">
-            <CheckSquare className="h-4 w-4" />
-            Self-Assessment
+          <TabsTrigger value="incidents" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Incidents
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
-          </TabsTrigger>
-          <TabsTrigger value="tolerances" className="flex items-center gap-2">
-            <Gauge className="h-4 w-4" />
-            Tolerances
-          </TabsTrigger>
-          <TabsTrigger value="scenarios" className="flex items-center gap-2">
-            <Play className="h-4 w-4" />
-            Scenarios
-          </TabsTrigger>
-          <TabsTrigger value="operations" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Operations
-          </TabsTrigger>
-          <TabsTrigger value="regulatory" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            Regulatory
-          </TabsTrigger>
-          <TabsTrigger value="verification" className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4" />
-            Verification
           </TabsTrigger>
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -82,39 +52,23 @@ export default function ComplianceDashboard() {
         </TabsContent>
         
         <TabsContent value="risk-appetite">
-          <EnhancedRiskAppetite />
+          <UnifiedRiskAppetite />
         </TabsContent>
         
-        <TabsContent value="risk-taxonomy">
-          <OperationalRiskTaxonomy />
+        <TabsContent value="third-party">
+          <VendorRiskDashboard />
         </TabsContent>
         
-        <TabsContent value="monitoring">
-          <OSFIRealTimeMonitoring />
-        </TabsContent>
-        
-        <TabsContent value="assessment">
-          <OSFIRegulatorySelfAssessment />
-        </TabsContent>
-        
-        <TabsContent value="tolerances">
-          <OSFIDisruptionTolerances />
-        </TabsContent>
-        
-        <TabsContent value="scenarios">
-          <OSFIComprehensiveScenarioTesting />
-        </TabsContent>
-        
-        <TabsContent value="operations">
-          <OSFICriticalOperations />
-        </TabsContent>
-        
-        <TabsContent value="regulatory">
-          <OSFIRegulatoryReporting />
-        </TabsContent>
-        
-        <TabsContent value="verification">
-          <OSFIComplianceVerification />
+        <TabsContent value="incidents">
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-blue-900 mb-2">OSFI E-21 Incident Management</h3>
+              <p className="text-sm text-blue-700">
+                Enhanced incident tracking with operational risk taxonomy, critical operations mapping, and disruption tolerance assessment.
+              </p>
+            </div>
+            <IncidentLog />
+          </div>
         </TabsContent>
         
         <TabsContent value="analytics">

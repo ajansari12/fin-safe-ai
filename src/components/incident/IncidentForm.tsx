@@ -152,8 +152,16 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
       <CardHeader>
         <CardTitle>Log New Incident</CardTitle>
         <CardDescription>
-          Report a new operational incident or disruption.
+          Report a new operational incident or disruption according to OSFI E-21 operational risk taxonomy.
         </CardDescription>
+        <div className="flex items-center gap-2 mt-2">
+          <Badge variant="outline" className="text-xs">
+            OSFI E-21 Compliant
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            Operational Risk
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -187,10 +195,17 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Type of incident (OSFI E-21 categories)" />
+                          <SelectValue placeholder="Select OSFI E-21 risk category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="internal_process">Internal Process Failures</SelectItem>
+                        <SelectItem value="people_systems">People & Systems Risk</SelectItem>
+                        <SelectItem value="external_events">External Events</SelectItem>
+                        <SelectItem value="technology_cyber">Technology & Cyber Risk</SelectItem>
+                        <SelectItem value="third_party">Third Party Dependencies</SelectItem>
+                        <SelectItem value="business_continuity">Business Continuity</SelectItem>
+                        <SelectItem value="regulatory_compliance">Regulatory & Compliance</SelectItem>
                         {incidentCategories?.map((category) => (
                           <SelectItem key={category.value} value={category.value}>
                             {category.label}
@@ -365,11 +380,11 @@ const IncidentForm: React.FC<IncidentFormProps> = ({ onSubmit, isSubmitting }) =
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea
-                          placeholder="Include: What happened? When? Which systems/customers affected? Root cause if known? OSFI reporting requirements if applicable..."
-                          rows={4}
-                          {...field}
-                        />
+                         <Textarea
+                           placeholder="OSFI E-21 Incident Details: What happened? When? Which critical operations affected? Impact on disruption tolerance? Root cause analysis? Severe-but-plausible scenario factors? Regulatory reporting requirements..."
+                           rows={6}
+                           {...field}
+                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
