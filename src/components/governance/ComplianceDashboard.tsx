@@ -7,7 +7,8 @@ import OSFIGovernanceOversight from "./OSFIGovernanceOversight";
 import OperationalRiskTaxonomy from "./OperationalRiskTaxonomy";
 import OSFIRealTimeMonitoring from "./OSFIRealTimeMonitoring";
 import OSFIRegulatorySelfAssessment from "./OSFIRegulatorySelfAssessment";
-import { BarChart3, FileText, Shield, Target, Activity, CheckSquare } from "lucide-react";
+import EnhancedRiskAppetite from "./EnhancedRiskAppetite";
+import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp } from "lucide-react";
 
 export default function ComplianceDashboard() {
   return (
@@ -20,10 +21,14 @@ export default function ComplianceDashboard() {
       </div>
 
       <Tabs defaultValue="governance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="governance" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Governance
+          </TabsTrigger>
+          <TabsTrigger value="risk-appetite" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Risk Appetite
           </TabsTrigger>
           <TabsTrigger value="risk-taxonomy" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
@@ -49,6 +54,10 @@ export default function ComplianceDashboard() {
         
         <TabsContent value="governance">
           <OSFIGovernanceOversight />
+        </TabsContent>
+        
+        <TabsContent value="risk-appetite">
+          <EnhancedRiskAppetite />
         </TabsContent>
         
         <TabsContent value="risk-taxonomy">
