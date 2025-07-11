@@ -53,6 +53,7 @@ import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
 import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedAIAssistantContext';
 import ErrorMonitor from './components/error/ErrorMonitor';
+import { AuthDebugTrigger } from './components/debug/AuthDebugTrigger';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,7 +77,8 @@ function App() {
               <OrgProvider>
                 <PermissionProvider>
                   <OnboardingProvider>
-                    <EnhancedAIAssistantProvider>
+                     <EnhancedAIAssistantProvider>
+                      <AuthDebugTrigger />
             <Routes>
               {/* Public website homepage */}
               <Route path="/" element={<IndexPage />} />

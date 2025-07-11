@@ -11229,6 +11229,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      repair_user_data: {
+        Args: { user_id: string }
+        Returns: Json
+      }
       send_weekly_executive_summary: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -11273,6 +11277,10 @@ export type Database = {
       }
       validate_password_strength: {
         Args: { password: string; org_id: string }
+        Returns: Json
+      }
+      validate_user_org_relationship: {
+        Args: { user_id: string }
         Returns: Json
       }
       vector_avg: {

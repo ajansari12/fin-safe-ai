@@ -187,14 +187,17 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
   }, []);
 
-  const fetchEnhancedUserData = async (userId: string | undefined) => {
+  const fetchEnhancedUserData = async (userId: string | undefined, retryCount = 0) => {
     if (!userId) {
       console.warn('⚠️ No userId provided to fetchEnhancedUserData');
       return;
     }
     
+    const maxRetries = 3;
+    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+    
     try {
-      console.log('👤 Fetching enhanced user data for:', userId);
+      console.log('👤 Fetching enhanced user data for:', userId, retryCount > 0 ? `(retry ${retryCount})` : '');
       
       // Fetch profile data with error resilience
       const { data: profileData, error: profileError } = await supabase
@@ -307,6 +310,15 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } catch (error) {
       console.error('💥 Failed to fetch enhanced user data:', error);
       
+      // Retry mechanism with exponential backoff
+      if (retryCount < maxRetries) {
+        console.log(`🔄 Retrying fetchEnhancedUserData in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => {
+          fetchEnhancedUserData(userId, retryCount + 1);
+        }, retryDelay);
+        return;
+      }
+      
       // Create emergency fallback context to prevent total application failure
       const emergencyContext: UnifiedUserContext = {
         userId,
@@ -318,7 +330,7 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       };
       
       setUserContext(emergencyContext);
-      console.warn('🆘 Created emergency user context due to error');
+      console.warn('🆘 Created emergency user context after max retries');
     }
   };
 
