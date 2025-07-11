@@ -20,7 +20,7 @@ import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssi
 const OSFICompliancePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState('compliance');
+  const [activeTab, setActiveTab] = useState('governance');
   
   useEffect(() => {
     setCurrentModule("osfi_compliance");
@@ -94,23 +94,16 @@ const OSFICompliancePage = () => {
             <OSFIScenarioAnalysis />
           </TabsContent>
 
-          <TabsContent value="compliance">
-            <ComplianceDashboard />
-          </TabsContent>
-
           <TabsContent value="integration">
-            <OSFIIntegrationDashboard />
+            <div className="space-y-6">
+              <OSFIIntegrationDashboard />
+              <OSFIDataQualityIntegration />
+              <OSFIRegulatoryReportingIntegration />
+            </div>
           </TabsContent>
 
           <TabsContent value="resilience">
             <OSFIResilienceDashboard />
-          </TabsContent>
-
-          <TabsContent value="governance">
-            <div className="space-y-6">
-              <OSFIDataQualityIntegration />
-              <OSFIRegulatoryReportingIntegration />
-            </div>
           </TabsContent>
 
           <TabsContent value="monitoring">
