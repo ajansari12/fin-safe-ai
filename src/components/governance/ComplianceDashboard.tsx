@@ -10,7 +10,9 @@ import OSFIRegulatorySelfAssessment from "./OSFIRegulatorySelfAssessment";
 import EnhancedRiskAppetite from "./EnhancedRiskAppetite";
 import OSFICriticalOperations from "./OSFICriticalOperations";
 import OSFIRegulatoryReporting from "./OSFIRegulatoryReporting";
-import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp, Building2, Send } from "lucide-react";
+import OSFIDisruptionTolerances from "./OSFIDisruptionTolerances";
+import OSFIComprehensiveScenarioTesting from "./OSFIComprehensiveScenarioTesting";
+import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp, Building2, Send, Gauge, Play } from "lucide-react";
 
 export default function ComplianceDashboard() {
   return (
@@ -23,7 +25,7 @@ export default function ComplianceDashboard() {
       </div>
 
       <Tabs defaultValue="governance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="governance" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Governance
@@ -47,6 +49,14 @@ export default function ComplianceDashboard() {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="tolerances" className="flex items-center gap-2">
+            <Gauge className="h-4 w-4" />
+            Tolerances
+          </TabsTrigger>
+          <TabsTrigger value="scenarios" className="flex items-center gap-2">
+            <Play className="h-4 w-4" />
+            Scenarios
           </TabsTrigger>
           <TabsTrigger value="operations" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
@@ -80,6 +90,14 @@ export default function ComplianceDashboard() {
         
         <TabsContent value="assessment">
           <OSFIRegulatorySelfAssessment />
+        </TabsContent>
+        
+        <TabsContent value="tolerances">
+          <OSFIDisruptionTolerances />
+        </TabsContent>
+        
+        <TabsContent value="scenarios">
+          <OSFIComprehensiveScenarioTesting />
         </TabsContent>
         
         <TabsContent value="operations">
