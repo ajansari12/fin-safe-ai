@@ -8,7 +8,9 @@ import OperationalRiskTaxonomy from "./OperationalRiskTaxonomy";
 import OSFIRealTimeMonitoring from "./OSFIRealTimeMonitoring";
 import OSFIRegulatorySelfAssessment from "./OSFIRegulatorySelfAssessment";
 import EnhancedRiskAppetite from "./EnhancedRiskAppetite";
-import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp } from "lucide-react";
+import OSFICriticalOperations from "./OSFICriticalOperations";
+import OSFIRegulatoryReporting from "./OSFIRegulatoryReporting";
+import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp, Building2, Send } from "lucide-react";
 
 export default function ComplianceDashboard() {
   return (
@@ -21,7 +23,7 @@ export default function ComplianceDashboard() {
       </div>
 
       <Tabs defaultValue="governance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="governance" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Governance
@@ -45,6 +47,14 @@ export default function ComplianceDashboard() {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="operations" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Operations
+          </TabsTrigger>
+          <TabsTrigger value="regulatory" className="flex items-center gap-2">
+            <Send className="h-4 w-4" />
+            Regulatory
           </TabsTrigger>
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -70,6 +80,14 @@ export default function ComplianceDashboard() {
         
         <TabsContent value="assessment">
           <OSFIRegulatorySelfAssessment />
+        </TabsContent>
+        
+        <TabsContent value="operations">
+          <OSFICriticalOperations />
+        </TabsContent>
+        
+        <TabsContent value="regulatory">
+          <OSFIRegulatoryReporting />
         </TabsContent>
         
         <TabsContent value="analytics">
