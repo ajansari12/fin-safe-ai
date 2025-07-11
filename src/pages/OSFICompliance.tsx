@@ -7,6 +7,7 @@ import OSFIResilienceDashboard from "@/components/osfi-integration/OSFIResilienc
 import OSFIDataQualityIntegration from '@/components/osfi-integration/OSFIDataQualityIntegration';
 import OSFIRegulatoryReportingIntegration from '@/components/osfi-integration/OSFIRegulatoryReportingIntegration';
 import OSFIComplianceMonitoringDashboard from '@/components/osfi-integration/OSFIComplianceMonitoringDashboard';
+import OSFIAdvancedCapabilitiesDashboard from '@/components/osfi-integration/OSFIAdvancedCapabilitiesDashboard';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
@@ -60,12 +61,13 @@ const OSFICompliancePage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="compliance">Compliance Framework</TabsTrigger>
-            <TabsTrigger value="integration">Module Integration</TabsTrigger>
-            <TabsTrigger value="resilience">Business Resilience</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="compliance">Framework</TabsTrigger>
+            <TabsTrigger value="integration">Integration</TabsTrigger>
+            <TabsTrigger value="resilience">Resilience</TabsTrigger>
             <TabsTrigger value="governance">Data & Reporting</TabsTrigger>
-            <TabsTrigger value="monitoring">Compliance Monitoring</TabsTrigger>
+            <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
           <TabsContent value="compliance">
@@ -89,6 +91,10 @@ const OSFICompliancePage = () => {
 
           <TabsContent value="monitoring">
             <OSFIComplianceMonitoringDashboard />
+          </TabsContent>
+
+          <TabsContent value="advanced">
+            <OSFIAdvancedCapabilitiesDashboard />
           </TabsContent>
         </Tabs>
       </div>
