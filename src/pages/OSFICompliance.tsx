@@ -11,6 +11,8 @@ import OSFIAdvancedCapabilitiesDashboard from '@/components/osfi-integration/OSF
 import OSFIGovernanceOversight from '@/components/osfi-integration/OSFIGovernanceOversight';
 import OperationalRiskTaxonomy from '@/components/osfi-integration/OperationalRiskTaxonomy';
 import OSFIScenarioTesting from '@/components/osfi-integration/OSFIScenarioTesting';
+import EnhancedRiskAppetite from '@/components/osfi-integration/EnhancedRiskAppetite';
+import OSFIScenarioAnalysis from '@/components/osfi-integration/OSFIScenarioAnalysis';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
@@ -64,10 +66,11 @@ const OSFICompliancePage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="governance">Governance</TabsTrigger>
             <TabsTrigger value="framework">Framework</TabsTrigger>
-            <TabsTrigger value="compliance">Risk Appetite</TabsTrigger>
+            <TabsTrigger value="appetite">Appetite</TabsTrigger>
+            <TabsTrigger value="assessment">Assessment</TabsTrigger>
             <TabsTrigger value="integration">Integration</TabsTrigger>
             <TabsTrigger value="resilience">Resilience</TabsTrigger>
             <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
@@ -81,6 +84,14 @@ const OSFICompliancePage = () => {
 
           <TabsContent value="framework">
             <OperationalRiskTaxonomy />
+          </TabsContent>
+
+          <TabsContent value="appetite">
+            <EnhancedRiskAppetite />
+          </TabsContent>
+
+          <TabsContent value="assessment">
+            <OSFIScenarioAnalysis />
           </TabsContent>
 
           <TabsContent value="compliance">
