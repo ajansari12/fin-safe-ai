@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
 import OSFIIntegrationDashboard from "@/components/osfi-integration/OSFIIntegrationDashboard";
+import OSFIResilienceDashboard from "@/components/osfi-integration/OSFIResilienceDashboard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
@@ -56,9 +57,10 @@ const OSFICompliancePage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="compliance">OSFI Compliance Framework</TabsTrigger>
             <TabsTrigger value="integration">Cross-Module Integration</TabsTrigger>
+            <TabsTrigger value="resilience">Business Resilience</TabsTrigger>
           </TabsList>
 
           <TabsContent value="compliance">
@@ -67,6 +69,10 @@ const OSFICompliancePage = () => {
 
           <TabsContent value="integration">
             <OSFIIntegrationDashboard />
+          </TabsContent>
+
+          <TabsContent value="resilience">
+            <OSFIResilienceDashboard />
           </TabsContent>
         </Tabs>
       </div>
