@@ -2,7 +2,7 @@ import { useEnhancedAuth } from "@/contexts/EnhancedAuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
 
 /**
- * Hook for role-based access control
+ * Hook for role-based access control - Uses secure database functions
  */
 export const useRoles = () => {
   const { userContext, hasRole, hasAnyRole } = useEnhancedAuth();
@@ -13,17 +13,17 @@ export const useRoles = () => {
     userRoles: userContext?.roles || [],
     userPermissions: userContext?.permissions || [],
     
-    // Role checking functions
+    // Role checking functions (now using secure database functions)
     hasRole,
     hasAnyRole,
     
-    // Common role checks
+    // Common role checks - enhanced security
     isAdmin: () => hasAnyRole(['admin', 'super_admin']),
-    isManager: () => hasRole('manager'),
     isAnalyst: () => hasRole('analyst'),
     isAuditor: () => hasRole('auditor'),
     isExecutive: () => hasRole('executive'),
     isSuperAdmin: () => hasRole('super_admin'),
+    isReviewer: () => hasRole('reviewer'),
     
     // Permission checking from PermissionContext
     ...permissions

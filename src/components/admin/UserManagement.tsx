@@ -12,10 +12,10 @@ import { UserPlus, UserX, Edit } from "lucide-react";
 import {
   getOrganizationUsers,
   inviteUser,
-  updateUserRole,
   deactivateUser,
   type UserProfile
 } from "@/services/admin-service";
+import { SecureRoleService } from "@/services/secure-role-service";
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -71,7 +71,24 @@ const UserManagement: React.FC = () => {
 
   const handleUpdateRole = async (userId: string, newRole: string) => {
     try {
-      await updateUserRole(userId, newRole);
+      // Input validation
+      if (!userId || !newRole) {
+        throw new Error('Missing required parameters');
+      }
+
+      // Get current user's organization
+      const orgId = await SecureRoleService.getCurrentUserOrganization();
+      if (!orgId) {
+        throw new Error('Unable to determine organization');
+      }
+
+      // Use secure role service with server-side validation
+      const result = await SecureRoleService.updateUserRole(userId, newRole, orgId);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update role');
+      }
+
       await loadUsers();
       toast({
         title: "Role Updated",
@@ -81,7 +98,7 @@ const UserManagement: React.FC = () => {
       console.error("Failed to update role:", error);
       toast({
         title: "Error",
-        description: "Failed to update user role",
+        description: error instanceof Error ? error.message : "Failed to update user role",
         variant: "destructive",
       });
     }

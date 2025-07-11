@@ -6,8 +6,8 @@ import { AuthDebugPanel } from './AuthDebugPanel';
 export const AuthDebugTrigger: React.FC = () => {
   const [isDebugOpen, setIsDebugOpen] = useState(false);
 
-  // Only show in development or for admin users
-  if (process.env.NODE_ENV === 'production') {
+  // SECURITY: Only show in development and localhost - Remove in production
+  if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost') {
     return null;
   }
 
