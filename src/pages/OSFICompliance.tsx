@@ -1,19 +1,28 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
+import OSFIIntegrationDashboard from "@/components/osfi-integration/OSFIIntegrationDashboard";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 const OSFICompliancePage = () => {
   const { setCurrentModule } = useEnhancedAIAssistant();
   const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState('compliance');
   
   useEffect(() => {
     setCurrentModule("osfi_compliance");
   }, [setCurrentModule]);
 
-  // Pass tab parameter to ComplianceDashboard for deep linking
-  const initialTab = searchParams.get('tab') || 'governance';
+  // Get initial tab from URL parameters
+  useEffect(() => {
+    const tab = searchParams.get('view');
+    if (tab === 'integration') {
+      setActiveTab('integration');
+    }
+  }, [searchParams]);
 
   return (
     <AuthenticatedLayout>
@@ -46,7 +55,20 @@ const OSFICompliancePage = () => {
           </div>
         </div>
 
-        <ComplianceDashboard />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="compliance">OSFI Compliance Framework</TabsTrigger>
+            <TabsTrigger value="integration">Cross-Module Integration</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="compliance">
+            <ComplianceDashboard />
+          </TabsContent>
+
+          <TabsContent value="integration">
+            <OSFIIntegrationDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
     </AuthenticatedLayout>
   );
