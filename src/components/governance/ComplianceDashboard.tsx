@@ -12,7 +12,8 @@ import OSFICriticalOperations from "./OSFICriticalOperations";
 import OSFIRegulatoryReporting from "./OSFIRegulatoryReporting";
 import OSFIDisruptionTolerances from "./OSFIDisruptionTolerances";
 import OSFIComprehensiveScenarioTesting from "./OSFIComprehensiveScenarioTesting";
-import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp, Building2, Send, Gauge, Play } from "lucide-react";
+import OSFIComplianceVerification from "./OSFIComplianceVerification";
+import { BarChart3, FileText, Shield, Target, Activity, CheckSquare, TrendingUp, Building2, Send, Gauge, Play, ClipboardCheck } from "lucide-react";
 
 export default function ComplianceDashboard() {
   return (
@@ -25,7 +26,7 @@ export default function ComplianceDashboard() {
       </div>
 
       <Tabs defaultValue="governance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-11">
+        <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="governance" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Governance
@@ -65,6 +66,10 @@ export default function ComplianceDashboard() {
           <TabsTrigger value="regulatory" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             Regulatory
+          </TabsTrigger>
+          <TabsTrigger value="verification" className="flex items-center gap-2">
+            <ClipboardCheck className="h-4 w-4" />
+            Verification
           </TabsTrigger>
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
@@ -106,6 +111,10 @@ export default function ComplianceDashboard() {
         
         <TabsContent value="regulatory">
           <OSFIRegulatoryReporting />
+        </TabsContent>
+        
+        <TabsContent value="verification">
+          <OSFIComplianceVerification />
         </TabsContent>
         
         <TabsContent value="analytics">
