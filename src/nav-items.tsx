@@ -15,6 +15,7 @@ import {
   HelpCircle,
   AlertTriangle,
   KanbanSquare,
+  Shield,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -72,6 +73,33 @@ export const navItems: NavigationItem[] = [
     title: "Third Party Risk",
     url: "/app/third-party-risk",
     icon: Network,
+  },
+  {
+    title: "OSFI E-21 Compliance",
+    url: "/app/osfi-compliance",
+    icon: Shield,
+    items: [
+      {
+        title: "Compliance Dashboard",
+        url: "/app/osfi-compliance",
+      },
+      {
+        title: "Governance Oversight",
+        url: "/app/osfi-compliance?tab=governance",
+      },
+      {
+        title: "Risk Framework",
+        url: "/app/osfi-compliance?tab=risk-taxonomy",
+      },
+      {
+        title: "Real-time Monitoring",
+        url: "/app/osfi-compliance?tab=monitoring",
+      },
+      {
+        title: "Scenario Testing",
+        url: "/app/osfi-compliance?tab=scenarios",
+      },
+    ],
   },
   {
     title: "Incident Management",

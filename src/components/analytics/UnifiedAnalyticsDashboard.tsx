@@ -13,7 +13,8 @@ import {
   Settings,
   Brain,
   Zap,
-  Eye
+  Eye,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +23,7 @@ import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification
 import { ErrorBoundaryWrapper, AnalyticsCardFallback, NoDataFallback } from './ErrorBoundaryWrapper';
 import { DashboardSkeleton } from './AnalyticsLoadingStates';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import OSFIComplianceWidgets from './OSFIComplianceWidgets';
 
 interface AnalyticsInsight {
   id: string;
@@ -172,6 +174,15 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
           {isGeneratingInsights ? 'Generating...' : 'Refresh Insights'}
         </Button>
       </div>
+
+      {/* OSFI E-21 Compliance Widgets */}
+      <ErrorBoundaryWrapper 
+        title="OSFI Compliance Error"
+        description="Unable to load OSFI compliance status"
+        fallback={AnalyticsCardFallback}
+      >
+        <OSFIComplianceWidgets />
+      </ErrorBoundaryWrapper>
 
       {/* AI-Generated Insights Banner with Error Handling */}
       <ErrorBoundaryWrapper 
