@@ -24,6 +24,13 @@ import {
   type ControlEffectivenessData,
   type ActiveAlert
 } from '@/services/operational-dashboard-service';
+import { AlertsManagementDialog } from '@/components/dialogs/AlertsManagementDialog';
+import { KRICheckDialog } from '@/components/dialogs/KRICheckDialog';
+import { ControlTestDialog } from '@/components/dialogs/ControlTestDialog';
+import { TaskAssignmentDialog } from '@/components/dialogs/TaskAssignmentDialog';
+import { CreateIncidentDialog } from '@/components/dialogs/CreateIncidentDialog';
+import { ReportGenerationDialog } from '@/components/dialogs/ReportGenerationDialog';
+import { BulkActionsDialog } from '@/components/dialogs/BulkActionsDialog';
 
 const OperationalDashboard: React.FC = () => {
   const [realtimeMetrics, setRealtimeMetrics] = useState<OperationalMetric[]>([]);
@@ -31,6 +38,15 @@ const OperationalDashboard: React.FC = () => {
   const [controlEffectiveness, setControlEffectiveness] = useState<ControlEffectivenessData[]>([]);
   const [alertQueue, setAlertQueue] = useState<ActiveAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Dialog states
+  const [alertsDialogOpen, setAlertsDialogOpen] = useState(false);
+  const [kriCheckDialogOpen, setKriCheckDialogOpen] = useState(false);
+  const [controlTestDialogOpen, setControlTestDialogOpen] = useState(false);
+  const [taskAssignmentDialogOpen, setTaskAssignmentDialogOpen] = useState(false);
+  const [createIncidentDialogOpen, setCreateIncidentDialogOpen] = useState(false);
+  const [reportGenerationDialogOpen, setReportGenerationDialogOpen] = useState(false);
+  const [bulkActionsDialogOpen, setBulkActionsDialogOpen] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -190,7 +206,12 @@ const OperationalDashboard: React.FC = () => {
                 </div>
               ))}
             </div>
-            <Button variant="outline" size="sm" className="w-full mt-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full mt-3"
+              onClick={() => setAlertsDialogOpen(true)}
+            >
               View All Alerts
             </Button>
           </CardContent>
@@ -275,33 +296,100 @@ const OperationalDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => setKriCheckDialogOpen(true)}
+            >
               <Zap className="h-4 w-4" />
               Run KRI Check
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => setControlTestDialogOpen(true)}
+            >
               <Target className="h-4 w-4" />
               Control Test
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => setTaskAssignmentDialogOpen(true)}
+            >
               <Users className="h-4 w-4" />
               Assign Task
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => setCreateIncidentDialogOpen(true)}
+            >
               <AlertTriangle className="h-4 w-4" />
               Create Incident
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => setReportGenerationDialogOpen(true)}
+            >
               <Activity className="h-4 w-4" />
               Generate Report
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2"
+              onClick={() => setBulkActionsDialogOpen(true)}
+            >
               <CheckCircle className="h-4 w-4" />
               Bulk Actions
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <AlertsManagementDialog 
+        open={alertsDialogOpen}
+        onOpenChange={setAlertsDialogOpen}
+        alerts={alertQueue}
+      />
+      
+      <KRICheckDialog 
+        open={kriCheckDialogOpen}
+        onOpenChange={setKriCheckDialogOpen}
+      />
+      
+      <ControlTestDialog 
+        open={controlTestDialogOpen}
+        onOpenChange={setControlTestDialogOpen}
+      />
+      
+      <TaskAssignmentDialog 
+        open={taskAssignmentDialogOpen}
+        onOpenChange={setTaskAssignmentDialogOpen}
+      />
+      
+      <CreateIncidentDialog 
+        open={createIncidentDialogOpen}
+        onOpenChange={setCreateIncidentDialogOpen}
+      />
+      
+      <ReportGenerationDialog 
+        open={reportGenerationDialogOpen}
+        onOpenChange={setReportGenerationDialogOpen}
+      />
+      
+      <BulkActionsDialog 
+        open={bulkActionsDialogOpen}
+        onOpenChange={setBulkActionsDialogOpen}
+      />
     </div>
   );
 };
