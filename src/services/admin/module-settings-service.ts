@@ -1,4 +1,6 @@
 
+import { logger } from "@/lib/logger";
+
 export interface ModuleSetting {
   id: string;
   module_key: string;
@@ -63,7 +65,10 @@ class ModuleSettingsService {
 
   async updateModuleSetting(moduleKey: string, enabled: boolean): Promise<void> {
     // In a real implementation, this would update the database
-    console.log(`Module ${moduleKey} ${enabled ? 'enabled' : 'disabled'}`);
+    logger.info(`Module setting updated`, {
+      module: 'module_settings',
+      metadata: { moduleKey, enabled }
+    });
   }
 
   getAvailableModules(): Array<{ key: string; name: string; description: string }> {

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 import type { BoardReport } from "./types";
@@ -16,7 +17,9 @@ export async function getBoardReports(): Promise<BoardReport[]> {
     if (error) throw error;
     return (data || []) as BoardReport[];
   } catch (error) {
-    console.error('Error fetching board reports:', error);
+    logger.error('Failed to fetch board reports', {
+      module: 'appetite_breach'
+    }, error as Error);
     return [];
   }
 }
@@ -65,7 +68,10 @@ export async function generateBoardReport(
     if (error) throw error;
     return data as BoardReport;
   } catch (error) {
-    console.error('Error generating board report:', error);
+    logger.error('Failed to generate board report', {
+      module: 'appetite_breach',
+      metadata: { reportData }
+    }, error as Error);
     return null;
   }
 }

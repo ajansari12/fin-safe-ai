@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { enhancedOrganizationalIntelligenceService } from './enhanced-organizational-intelligence-service';
 import { organizationalIntelligenceService } from './organizational-intelligence-service';
 import type { 
@@ -20,7 +21,10 @@ class AIOrganizationalIntelligenceIntegration {
   // Enhanced AI-powered organizational analysis
   async generateComprehensiveAnalysis(profileId: string): Promise<AIAnalysisResult> {
     try {
-      console.log('Generating comprehensive AI analysis for profile:', profileId);
+      logger.info('Generating comprehensive AI analysis', {
+        module: 'ai_intelligence',
+        metadata: { profileId }
+      });
       
       const [insights, recommendations, riskPredictions, maturityAnalysis] = await Promise.all([
         enhancedOrganizationalIntelligenceService.generatePredictiveInsights(profileId),
@@ -42,7 +46,10 @@ class AIOrganizationalIntelligenceIntegration {
         generated_at: new Date().toISOString()
       };
     } catch (error) {
-      console.error('Error generating comprehensive analysis:', error);
+      logger.error('Failed to generate comprehensive AI analysis', {
+        module: 'ai_intelligence',
+        metadata: { profileId }
+      }, error as Error);
       throw error;
     }
   }
@@ -70,7 +77,10 @@ class AIOrganizationalIntelligenceIntegration {
 
       return this.generateGeneralResponse(query, profile, context);
     } catch (error) {
-      console.error('Error generating contextual response:', error);
+      logger.error('Failed to generate contextual AI response', {
+        module: 'ai_intelligence',
+        metadata: { query, context }
+      }, error as Error);
       return "I'm experiencing some technical difficulties. Please try again later.";
     }
   }
@@ -118,7 +128,10 @@ class AIOrganizationalIntelligenceIntegration {
         ]
       };
     } catch (error) {
-      console.error('Error getting intelligence dashboard data:', error);
+      logger.error('Failed to retrieve intelligence dashboard data', {
+        module: 'ai_intelligence',
+        metadata: { orgId }
+      }, error as Error);
       throw error;
     }
   }

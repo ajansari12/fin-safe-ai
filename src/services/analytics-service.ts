@@ -1,4 +1,5 @@
 
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface PredictiveAnalytics {
@@ -102,7 +103,9 @@ export async function getPredictiveAnalytics(): Promise<PredictiveAnalytics> {
       risk_score_prediction: riskScore
     };
   } catch (error) {
-    console.error('Error fetching predictive analytics:', error);
+    logger.error('Failed to fetch predictive analytics', {
+      module: 'analytics'
+    }, error as Error);
     return { kri_forecast: [], incident_forecast: [], risk_score_prediction: 0 };
   }
 }
@@ -143,7 +146,9 @@ export async function getRiskHeatmapData(): Promise<RiskHeatmap[]> {
 
     return generateRiskHeatmap(functions || [], incidents || [], dependencyRisks || []);
   } catch (error) {
-    console.error('Error fetching risk heatmap data:', error);
+    logger.error('Failed to fetch risk heatmap data', {
+      module: 'analytics'
+    }, error as Error);
     return [];
   }
 }
@@ -197,7 +202,9 @@ export async function getComplianceScorecard(): Promise<ComplianceScorecard> {
 
     return calculateComplianceScores(policies || [], findings || [], incidents || [], vendors || [], continuityPlans || []);
   } catch (error) {
-    console.error('Error fetching compliance scorecard:', error);
+    logger.error('Failed to fetch compliance scorecard', {
+      module: 'analytics'
+    }, error as Error);
     return getDefaultScorecard();
   }
 }
@@ -207,7 +214,10 @@ export async function getDashboardWidgets(userRole: string): Promise<DashboardWi
     // For now, return default widgets based on role
     return getDefaultWidgetsByRole(userRole);
   } catch (error) {
-    console.error('Error fetching dashboard widgets:', error);
+    logger.error('Failed to fetch dashboard widgets', {
+      module: 'analytics',
+      metadata: { userRole }
+    }, error as Error);
     return [];
   }
 }

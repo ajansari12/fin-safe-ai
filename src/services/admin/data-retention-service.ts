@@ -1,4 +1,5 @@
 
+import { logger } from "@/lib/logger";
 import { ModuleSetting } from "./module-settings-service";
 
 class DataRetentionService {
@@ -59,7 +60,10 @@ class DataRetentionService {
     autoDelete: boolean
   ): Promise<void> {
     // In a real implementation, this would update the database
-    console.log(`Data retention for ${module}: ${retentionDays} days, auto-delete: ${autoDelete}`);
+    logger.info(`Data retention setting updated`, {
+      module: 'data_retention',
+      metadata: { module, retentionDays, autoDelete }
+    });
   }
 
   getDataRetentionPolicies(): Array<{
