@@ -1,18 +1,19 @@
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell } from "recharts";
+import OptimizedChart from "@/components/common/OptimizedChart";
 
 interface ControlsChartsProps {
   statusData: Array<{ name: string; value: number }>;
   frequencyData: Array<{ name: string; count: number }>;
 }
 
-const ControlsCharts: React.FC<ControlsChartsProps> = ({
+const ControlsCharts = memo<ControlsChartsProps>(({
   statusData,
   frequencyData
 }) => {
-  const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const COLORS = useMemo(() => ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], []);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -21,7 +22,7 @@ const ControlsCharts: React.FC<ControlsChartsProps> = ({
           <CardTitle>Controls by Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <OptimizedChart height={300}>
             <PieChart>
               <Pie
                 data={statusData}
@@ -38,7 +39,7 @@ const ControlsCharts: React.FC<ControlsChartsProps> = ({
               </Pie>
               <Tooltip />
             </PieChart>
-          </ResponsiveContainer>
+          </OptimizedChart>
         </CardContent>
       </Card>
 
@@ -47,7 +48,7 @@ const ControlsCharts: React.FC<ControlsChartsProps> = ({
           <CardTitle>Controls by Frequency</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <OptimizedChart height={300}>
             <BarChart data={frequencyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
@@ -55,11 +56,13 @@ const ControlsCharts: React.FC<ControlsChartsProps> = ({
               <Tooltip />
               <Bar dataKey="count" fill="#10b981" />
             </BarChart>
-          </ResponsiveContainer>
+          </OptimizedChart>
         </CardContent>
       </Card>
     </div>
   );
-};
+});
+
+ControlsCharts.displayName = 'ControlsCharts';
 
 export default ControlsCharts;

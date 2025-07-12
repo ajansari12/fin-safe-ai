@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import KRIVarianceCard from "./KRIVarianceCard";
@@ -13,7 +13,7 @@ interface DashboardMetricsProps {
   recentBreaches: number;
 }
 
-const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
+const DashboardMetrics = memo<DashboardMetricsProps>(({
   controlsCount,
   activeControls,
   activeKris,
@@ -72,6 +72,8 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({
       <KRIVarianceCard />
     </div>
   );
-};
+});
+
+DashboardMetrics.displayName = 'DashboardMetrics';
 
 export default DashboardMetrics;

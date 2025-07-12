@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo, useMemo } from "react";
 import { useControlsDashboardData } from "@/hooks/useControlsDashboardData";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -11,7 +11,7 @@ import KRIBreachesTrendChart from "./KRIBreachesTrendChart";
 import KRIVarianceChart from "./KRIVarianceChart";
 import KRIAppetiteBreaches from "./KRIAppetiteBreaches";
 
-const ControlsDashboard: React.FC = () => {
+const ControlsDashboard = memo(() => {
   const {
     controls,
     kris,
@@ -48,6 +48,21 @@ const ControlsDashboard: React.FC = () => {
     enabled: !isLoading
   });
 
+  // Memoize chart data to prevent unnecessary recalculations
+  const statusChartData = useMemo(() => 
+    Object.entries(controlsByStatus).map(([status, count]) => ({
+      name: status.replace('_', ' '),
+      value: count
+    })), [controlsByStatus]
+  );
+
+  const frequencyChartData = useMemo(() => 
+    Object.entries(controlsByFrequency).map(([frequency, count]) => ({
+      name: frequency,
+      count
+    })), [controlsByFrequency]
+  );
+
   return (
     <AsyncWrapper 
       loading={isLoading} 
@@ -74,14 +89,8 @@ const ControlsDashboard: React.FC = () => {
 
         {/* Controls Charts */}
         <ControlsCharts
-          statusData={Object.entries(controlsByStatus).map(([status, count]) => ({
-            name: status.replace('_', ' '),
-            value: count
-          }))}
-          frequencyData={Object.entries(controlsByFrequency).map(([frequency, count]) => ({
-            name: frequency,
-            count
-          }))}
+          statusData={statusChartData}
+          frequencyData={frequencyChartData}
         />
 
         {/* KRI Breaches Trend */}
@@ -89,6 +98,8 @@ const ControlsDashboard: React.FC = () => {
       </div>
     </AsyncWrapper>
   );
-};
+});
+
+ControlsDashboard.displayName = 'ControlsDashboard';
 
 export default ControlsDashboard;
