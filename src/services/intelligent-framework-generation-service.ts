@@ -316,7 +316,8 @@ class IntelligentFrameworkGenerationService {
         'Continuous Monitoring and Testing'
       ],
       business_functions: businessFunctions.map(func => ({
-        function_name: func.name,
+        function_name: func.name, // Keep function_name for framework generation output compatibility
+        name: func.name, // Add primary column
         criticality: func.criticality,
         maximum_downtime: FrameworkContentGenerator.getMaxDowntime(func.criticality),
         recovery_time_objective: FrameworkContentGenerator.getRTO(func.criticality),

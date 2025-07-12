@@ -174,6 +174,7 @@ export interface FrameworkGenerationRule {
 
 export interface ControlLibraryItem {
   id: string;
+  /** @deprecated Use title instead */
   control_name: string;
   control_category: string;
   control_type: string;

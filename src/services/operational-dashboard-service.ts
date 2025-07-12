@@ -172,7 +172,7 @@ export async function getControlEffectiveness(): Promise<ControlEffectivenessDat
 
     const { data: controls } = await supabase
       .from('controls')
-      .select('control_name, control_type, effectiveness_score')
+      .select('title, control_type, effectiveness_score')
       .eq('org_id', profile.organization_id)
       .eq('status', 'active')
       .limit(5);
@@ -182,7 +182,7 @@ export async function getControlEffectiveness(): Promise<ControlEffectivenessDat
     }
 
     return controls.map(control => ({
-      control: control.control_name,
+      control: control.title || 'Unknown Control',
       effectiveness: control.effectiveness_score || 85,
       trend: control.effectiveness_score > 90 ? 'up' : control.effectiveness_score < 80 ? 'down' : 'stable'
     }));
@@ -209,7 +209,7 @@ export async function getActiveAlerts(): Promise<ActiveAlert[]> {
       .from('kri_logs')
       .select(`
         *,
-        kri_definitions!inner(kri_name)
+        kri_definitions!inner(name)
       `)
       .not('threshold_breached', 'is', null)
       .gte('measurement_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
@@ -228,13 +228,16 @@ export async function getActiveAlerts(): Promise<ActiveAlert[]> {
 
     // Add KRI breach alerts
     kriBreaches?.forEach(breach => {
-      alerts.push({
-        id: breach.id,
-        type: 'KRI Breach',
-        severity: breach.threshold_breached === 'critical' ? 'critical' : 'medium',
-        description: `${breach.kri_definitions.kri_name} exceeded threshold`,
-        time: formatTimeAgo(new Date(breach.measurement_date))
-      });
+      const kriName = breach.kri_definitions?.name;
+      if (kriName) {
+        alerts.push({
+          id: breach.id,
+          type: 'KRI Breach',
+          severity: breach.threshold_breached === 'critical' ? 'critical' : 'medium',
+          description: `${kriName} exceeded threshold`,
+          time: formatTimeAgo(new Date(breach.measurement_date))
+        });
+      }
     });
 
     // Add incident alerts

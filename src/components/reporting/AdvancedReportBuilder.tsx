@@ -131,7 +131,7 @@ const AdvancedReportBuilder: React.FC<AdvancedReportBuilderProps> = ({ onReportG
 
   const processControlsData = (controls: any[]) => {
     return controls.map(control => ({
-      name: control.control_name,
+      name: control.title || control.control_name || 'Unknown Control', // Use primary column with fallback
       effectiveness: control.effectiveness_score || 0,
       last_tested: control.last_test_date,
       status: control.status,

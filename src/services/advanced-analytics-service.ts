@@ -175,14 +175,14 @@ class AdvancedAnalyticsService {
   }
 
   private async analyzeKRIPatterns(orgId: string): Promise<AnalyticsInsight[]> {
-    const { data: kriLogs } = await supabase
-      .from('kri_logs')
-      .select(`
-        *,
-        kri_definitions!inner(kri_name, warning_threshold, critical_threshold)
-      `)
-      .gte('measurement_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-      .order('measurement_date', { ascending: false });
+      const { data: kriLogs } = await supabase
+        .from('kri_logs')
+        .select(`
+          *,
+          kri_definitions!inner(name, warning_threshold, critical_threshold)
+        `)
+        .gte('measurement_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+        .order('measurement_date', { ascending: false });
 
     if (!kriLogs || kriLogs.length === 0) return [];
 
@@ -192,8 +192,10 @@ class AdvancedAnalyticsService {
     const breachPatterns = kriLogs
       .filter(log => log.threshold_breached)
       .reduce((acc, log) => {
-        const kriName = log.kri_definitions.kri_name;
-        acc[kriName] = (acc[kriName] || 0) + 1;
+        const kriName = log.kri_definitions?.name;
+        if (kriName) {
+          acc[kriName] = (acc[kriName] || 0) + 1;
+        }
         return acc;
       }, {} as Record<string, number>);
 
@@ -333,7 +335,7 @@ class AdvancedAnalyticsService {
         .from('kri_logs')
         .select(`
           *,
-          kri_definitions!inner(kri_name)
+          kri_definitions!inner(name)
         `)
         .not('threshold_breached', 'is', null)
         .gte('measurement_date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0])
@@ -341,15 +343,18 @@ class AdvancedAnalyticsService {
         .limit(5);
 
       kriBreaches?.forEach(breach => {
-        alerts.push({
-          id: `kri_${breach.id}`,
-          type: 'KRI Breach',
-          severity: breach.threshold_breached === 'critical' ? 'critical' : 'high',
-          message: `${breach.kri_definitions.kri_name} exceeded ${breach.threshold_breached} threshold`,
-          source: 'KRI Monitoring',
-          timestamp: new Date(breach.measurement_date).toISOString(),
-          acknowledged: false
-        });
+        const kriName = breach.kri_definitions?.name;
+        if (kriName) {
+          alerts.push({
+            id: `kri_${breach.id}`,
+            type: 'KRI Breach',
+            severity: breach.threshold_breached === 'critical' ? 'critical' : 'high',
+            message: `${kriName} exceeded ${breach.threshold_breached} threshold`,
+            source: 'KRI Monitoring',
+            timestamp: new Date(breach.measurement_date).toISOString(),
+            acknowledged: false
+          });
+        }
       });
 
       // Get active incidents

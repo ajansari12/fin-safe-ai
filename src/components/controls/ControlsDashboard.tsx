@@ -39,7 +39,7 @@ const ControlsDashboard = memo(() => {
         type: 'control',
         severity: 'medium',
         title: 'Control Status Updated',
-        message: `${update.new.control_name || 'Unknown control'} status changed to ${update.new.status}`,
+        message: `${update.new.title || 'Unknown control'} status changed to ${update.new.status}`,
         actionUrl: `/app/controls/${update.new.id}`
       });
     }
@@ -52,7 +52,7 @@ const ControlsDashboard = memo(() => {
         type: 'kri',
         severity: update.new.threshold_breached === 'critical' ? 'critical' : 'high',
         title: 'KRI Threshold Breach',
-        message: `${update.new.kri_name || 'Unknown KRI'} has breached its threshold`,
+        message: `${update.new.kri_definitions?.name || 'Unknown KRI'} has breached its threshold`,
         actionUrl: `/app/kris/${update.new.kri_id}`
       });
     }

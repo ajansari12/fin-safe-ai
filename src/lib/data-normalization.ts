@@ -60,7 +60,11 @@ export function extractJoinProperty<T>(joinResult: any, propertyPath: string): T
 
 /**
  * Column name compatibility layer - deprecated, use primary column names
- * @deprecated Use primary column names directly (name, title, etc.)
+ * @deprecated Use primary column names directly:
+ * - kri_definitions.name (not kri_name)
+ * - controls.title (not control_name) 
+ * - business_functions.name (not function_name)
+ * Database provides generated columns for backward compatibility
  */
 export function normalizeColumnNames<T extends Record<string, any>>(data: T): T {
   // Simplified implementation - database handles aliases via generated columns
@@ -108,9 +112,11 @@ export function validateRelationships(data: any, requiredRelations: string[]): b
 
 /**
  * Type-safe business function extraction
+ * @deprecated function_name - use name instead
  */
 export interface NormalizedBusinessFunction {
   name: string;
+  /** @deprecated Use name instead */
   function_name?: string;
   criticality: string;
   [key: string]: any;

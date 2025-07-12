@@ -150,7 +150,7 @@ class EnhancedAnalyticsService {
       .from('kri_logs')
       .select(`
         *,
-        kri_definitions!inner(kri_name, warning_threshold, critical_threshold)
+        kri_definitions!inner(name, warning_threshold, critical_threshold)
       `)
       .gte('measurement_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
       .order('measurement_date', { ascending: true });
@@ -567,7 +567,7 @@ class EnhancedAnalyticsService {
         .from('kri_logs')
         .select(`
           *,
-          kri_definitions!inner(kri_name, warning_threshold, critical_threshold)
+          kri_definitions!inner(name, warning_threshold, critical_threshold)
         `)
         .gte('measurement_date', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
         .order('measurement_date', { ascending: false });
@@ -585,7 +585,7 @@ class EnhancedAnalyticsService {
           if (log.actual_value > baseline.upperBound) {
             anomalies.push({
               id: `kri_spike_${log.id}`,
-              metric_name: log.kri_definitions.kri_name,
+              metric_name: log.kri_definitions?.name || 'Unknown KRI',
               current_value: log.actual_value,
               expected_value: baseline.mean,
               deviation_score: Math.min(1, (log.actual_value - baseline.mean) / (baseline.stdDev * 2)),
@@ -721,7 +721,7 @@ class EnhancedAnalyticsService {
         .from('kri_logs')
         .select(`
           *,
-          kri_definitions!inner(kri_name, measurement_frequency)
+          kri_definitions!inner(name, measurement_frequency)
         `)
         .gte('measurement_date', new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
         .order('measurement_date', { ascending: true });
@@ -736,7 +736,7 @@ class EnhancedAnalyticsService {
 
         const trendAnalysis = this.analyzeKRIValueTrend(logs);
         trends.push({
-          metric: logs[0].kri_definitions.kri_name,
+          metric: logs[0].kri_definitions?.name || 'Unknown KRI',
           time_period: '6 months',
           trend_direction: trendAnalysis.direction,
           trend_strength: trendAnalysis.strength,
@@ -812,12 +812,12 @@ class EnhancedAnalyticsService {
           .eq('org_id', orgId)
           .gte('reported_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()),
         supabase
-          .from('kri_logs')
-          .select(`
-            measurement_date, actual_value, threshold_breached,
-            kri_definitions!inner(kri_name, category)
-          `)
-          .gte('measurement_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+        .from('kri_logs')
+        .select(`
+          measurement_date, actual_value, threshold_breached,
+          kri_definitions!inner(name, category)
+        `)
+        .gte('measurement_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
       ]);
 
       const incidents = incidentsResult.data || [];
@@ -880,12 +880,12 @@ class EnhancedAnalyticsService {
           .eq('org_id', orgId)
           .gte('reported_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()),
         supabase
-          .from('kri_logs')
-          .select(`
-            measurement_date, actual_value, threshold_breached,
-            kri_definitions!inner(kri_name, category)
-          `)
-          .gte('measurement_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+        .from('kri_logs')
+        .select(`
+          measurement_date, actual_value, threshold_breached,
+          kri_definitions!inner(name, category)
+        `)
+        .gte('measurement_date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
         supabase
           .from('vendor_assessments')
           .select(`
@@ -985,7 +985,7 @@ class EnhancedAnalyticsService {
         .from('kri_logs')
         .select(`
           *,
-          kri_definitions!inner(kri_name)
+          kri_definitions!inner(name)
         `)
         .neq('threshold_breached', 'none')
         .is('threshold_breached', null)
@@ -996,7 +996,7 @@ class EnhancedAnalyticsService {
           id: `kri_breach_${breach.id}`,
           type: 'kri_breach',
           severity: breach.threshold_breached === 'critical' ? 'critical' : 'high',
-          message: `KRI threshold breach: ${breach.kri_definitions.kri_name}`,
+          message: `KRI threshold breach: ${breach.kri_definitions?.name || 'Unknown KRI'}`,
           source: 'KRI Monitoring',
           timestamp: new Date(breach.measurement_date).toISOString(),
           acknowledged: false,

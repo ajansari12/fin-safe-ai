@@ -38,6 +38,7 @@ export interface ScenarioTestFunction {
 export interface ScenarioTestControl {
   id: string;
   scenario_test_id: string;
+  /** @deprecated Use title instead */
   control_name: string;
   control_type?: string;
   effectiveness: string;
