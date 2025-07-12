@@ -49,9 +49,11 @@ class ErrorLoggingService {
         .insert(logEntry);
 
       if (error) {
+        // TODO: LOGGER_MIGRATION - Replace with logger.critical
         console.error('Failed to log error to database:', error);
       }
     } catch (err) {
+      // TODO: LOGGER_MIGRATION - Replace with logger.critical  
       console.error('Error logging service failed:', err);
     }
   }
@@ -91,6 +93,7 @@ class ErrorLoggingService {
       if (error) throw error;
       return data || [];
     } catch (error) {
+      // TODO: LOGGER_MIGRATION - Replace with logger.error
       console.error('Failed to fetch error logs:', error);
       return [];
     }

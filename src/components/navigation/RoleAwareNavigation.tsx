@@ -31,28 +31,32 @@ export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
   const location = useLocation();
   const { hasPermission, hasRole, hasAnyRole, isOrgAdmin } = usePermissions();
 
-  // Enhanced debug logging with fallback detection
+  // TODO: LOGGER_MIGRATION - Remove excessive debug logging in navigation
+  // FIXME: Replace with logger.debug in development only
   const permissionFunctionsReady = typeof hasPermission === 'function' && 
                                   typeof hasRole === 'function' && 
                                   typeof hasAnyRole === 'function' && 
                                   typeof isOrgAdmin === 'function';
 
-  console.log('🧭 RoleAwareNavigation Debug:', {
-    itemsCount: items.length,
-    permissionFunctionsReady,
-    hasPermission: typeof hasPermission,
-    hasRole: typeof hasRole,
-    hasAnyRole: typeof hasAnyRole,
-    isOrgAdmin: typeof isOrgAdmin,
-    testPermission: permissionFunctionsReady ? hasPermission('dashboard:view') : 'NOT_READY',
-    testRole: permissionFunctionsReady ? hasRole('user') : 'NOT_READY',
-    testAdmin: permissionFunctionsReady ? isOrgAdmin() : 'NOT_READY'
-  });
+  // TODO: REMOVE - Excessive debug logging, replace with structured logger
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🧭 RoleAwareNavigation Debug:', {
+      itemsCount: items.length,
+      permissionFunctionsReady,
+      hasPermission: typeof hasPermission,
+      hasRole: typeof hasRole,
+      hasAnyRole: typeof hasAnyRole,
+      isOrgAdmin: typeof isOrgAdmin,
+      testPermission: permissionFunctionsReady ? hasPermission('dashboard:view') : 'NOT_READY',
+      testRole: permissionFunctionsReady ? hasRole('user') : 'NOT_READY',
+      testAdmin: permissionFunctionsReady ? isOrgAdmin() : 'NOT_READY'
+    });
+  }
 
   const isItemAccessible = (item: NavigationItem): boolean => {
     // EMERGENCY FALLBACK: If permission system is not ready, show basic navigation items
     if (!permissionFunctionsReady) {
-      console.warn('⚠️ Permission system not ready, showing basic navigation items');
+      // TODO: LOGGER_MIGRATION - Replace with logger.warn
       // Show essential navigation items when permissions aren't loaded
       const basicAccessibleRoutes = [
         '/app/dashboard', 
