@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useEnhancedAuth } from '@/contexts/EnhancedAuthContext';
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { useProgressiveAuth } from '@/hooks/useProgressiveAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -33,7 +34,7 @@ export const AuthDebugPanel: React.FC<AuthDebugPanelProps> = ({ isOpen, onClose 
     userContext, 
     isLoading,
     refreshUserContext 
-  } = useEnhancedAuth();
+  } = useAuth(); // FIXME: Updated from useEnhancedAuth
   
   const { authState, checkAuthState, getNextSetupStep } = useProgressiveAuth();
   const [validationResult, setValidationResult] = useState<any>(null);

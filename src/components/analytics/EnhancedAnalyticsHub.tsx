@@ -14,7 +14,8 @@ import {
   Target,
   Activity
  } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import PredictiveAnalyticsPanel from './PredictiveAnalyticsPanel';

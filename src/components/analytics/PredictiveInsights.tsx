@@ -8,7 +8,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { TrendingUp, TrendingDown, AlertTriangle, Activity } from "lucide-react";
 import { predictiveAnalyticsService } from "@/services/predictive-analytics-service";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 
 const chartConfig = {
   current: { label: "Current", color: "#2563eb" },

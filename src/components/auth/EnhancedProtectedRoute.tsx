@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useEnhancedAuth } from "@/contexts/EnhancedAuthContext";
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 
 interface EnhancedProtectedRouteProps {
@@ -27,7 +28,7 @@ const EnhancedProtectedRoute: React.FC<EnhancedProtectedRouteProps> = ({
     hasRole, 
     hasPermission, 
     hasAnyRole 
-  } = useEnhancedAuth();
+  } = useAuth(); // FIXME: Updated from useEnhancedAuth
   const location = useLocation();
 
   if (isLoading) {

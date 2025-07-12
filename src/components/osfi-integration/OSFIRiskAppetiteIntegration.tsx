@@ -13,7 +13,8 @@ import {
   Shield,
   BarChart3
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { osfiIntegrationService } from '@/services/osfi-integration-service';
 import { useNavigate } from 'react-router-dom';
 

@@ -22,7 +22,8 @@ import {
   Settings,
   FileText
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { collaborationService } from '@/services/collaboration-service';
 import { toast } from 'sonner';
 

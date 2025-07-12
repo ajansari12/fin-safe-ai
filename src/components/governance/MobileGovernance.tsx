@@ -1,6 +1,7 @@
 
 import React, { useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import FrameworksList from "@/components/governance/FrameworksList";
 import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

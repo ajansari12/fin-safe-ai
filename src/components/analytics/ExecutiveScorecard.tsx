@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, TrendingDown, Minus, Shield, AlertCircle, DollarSign, Users } from "lucide-react";
 import { predictiveAnalyticsService } from "@/services/predictive-analytics-service";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 
 const categoryIcons = {
   operational: Shield,

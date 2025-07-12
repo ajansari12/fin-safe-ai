@@ -1,5 +1,6 @@
 import React, { createContext, useContext, ReactNode } from "react";
-import { useEnhancedAuth } from "./EnhancedAuthContext";
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from "./EnhancedAuthContext";
 import { useOrg } from "./OrgContext";
 
 interface PermissionContextType {
@@ -61,7 +62,7 @@ interface PermissionContextType {
 const PermissionContext = createContext<PermissionContextType | undefined>(undefined);
 
 export const PermissionProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { userContext, hasPermission: authHasPermission, hasRole: authHasRole, hasAnyRole: authHasAnyRole } = useEnhancedAuth();
+  const { userContext, hasPermission: authHasPermission, hasRole: authHasRole, hasAnyRole: authHasAnyRole } = useAuth(); // FIXME: Updated from useEnhancedAuth
   const { hasOrgAccess, isOrgAdmin } = useOrg();
 
   // Enhanced debug logging

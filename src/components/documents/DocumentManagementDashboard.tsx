@@ -19,7 +19,8 @@ import {
   MessageSquare,
   Zap
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { documentManagementService } from '@/services/document-management-service';
 import DocumentList from './DocumentList';
 import DocumentUploader from './DocumentUploader';

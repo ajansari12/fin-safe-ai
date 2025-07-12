@@ -20,7 +20,8 @@ import {
   Clock,
   CheckCircle
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { collaborationService, type ExternalStakeholder } from '@/services/collaboration-service';
 import { toast } from 'sonner';
 

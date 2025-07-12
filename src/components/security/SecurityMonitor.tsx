@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { useEnhancedAuth } from "@/contexts/EnhancedAuthContext";
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -7,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
  * and enforces security policies
  */
 export const SecurityMonitor: React.FC = () => {
-  const { userContext } = useEnhancedAuth();
+  const { userContext } = useAuth(); // FIXME: Updated from useEnhancedAuth
 
   useEffect(() => {
     if (!userContext?.userId) return;

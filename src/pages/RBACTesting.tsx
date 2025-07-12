@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/contexts/PermissionContext";
-import { useEnhancedAuth } from "@/contexts/EnhancedAuthContext";
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { useRoles } from "@/hooks/useRoles";
 import { getRoutePermissions, PERMISSIONS, ROLE_PERMISSIONS } from "@/config/permissions";
 import { CheckCircle, XCircle, AlertTriangle, User, Shield, Settings } from "lucide-react";
 
 const RBACTesting = () => {
-  const { userContext, hasPermission, hasRole, hasAnyRole } = useEnhancedAuth();
+  const { userContext, hasPermission, hasRole, hasAnyRole } = useAuth(); // FIXME: Updated from useEnhancedAuth
   const permissions = usePermissions();
   const roles = useRoles();
   const [testResults, setTestResults] = useState<any>({});

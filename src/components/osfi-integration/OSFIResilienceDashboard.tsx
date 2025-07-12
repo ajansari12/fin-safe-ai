@@ -16,7 +16,8 @@ import {
   FileText,
   Network
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import OSFIBusinessContinuityIntegration from './OSFIBusinessContinuityIntegration';
 import OSFIThirdPartyRiskIntegration from './OSFIThirdPartyRiskIntegration';

@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import IncidentStatistics from "@/components/incident/IncidentStatistics";
 import IncidentForm from "@/components/incident/IncidentForm";
 import IncidentsList from "@/components/incident/IncidentsList";

@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Network, AlertTriangle, Target, Zap, Activity } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { dependencyMappingService } from "@/services/dependency-mapping-service";
 import InteractiveDependencyGraph from "./InteractiveDependencyGraph";
 import DependencyRiskAssessment from "./DependencyRiskAssessment";

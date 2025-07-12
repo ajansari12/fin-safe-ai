@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { useEnhancedAuth } from '@/contexts/EnhancedAuthContext';
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 interface ProgressiveAuthState {
   hasProfile: boolean;
@@ -10,7 +11,7 @@ interface ProgressiveAuthState {
 }
 
 export const useProgressiveAuth = () => {
-  const { user, profile, userContext } = useEnhancedAuth();
+  const { user, profile, userContext } = useAuth(); // FIXME: Updated from useEnhancedAuth
   
   const [authState, setAuthState] = useState<ProgressiveAuthState>(() => {
     const hasProfile = !!profile;

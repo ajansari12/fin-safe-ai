@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useOnboarding } from "@/contexts/OnboardingContext";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { intelligentFrameworkGenerationService } from "@/services/intelligent-framework-generation-service";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Brain, CheckCircle, Zap, Target, Shield, FileText } from "lucide-react";

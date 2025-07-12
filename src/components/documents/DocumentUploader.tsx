@@ -16,7 +16,8 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { documentManagementService } from '@/services/document-management-service';
 import { toast } from 'sonner';
 

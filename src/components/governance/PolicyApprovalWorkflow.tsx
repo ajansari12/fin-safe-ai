@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { GovernancePolicy, PolicyApproval, PolicyReviewStatus } from "@/pages/governance/types";
 import { createPolicyApproval, createPolicyReview, getPolicyApprovalsByPolicyId, getPolicyReviewsByPolicyId } from "@/services/governance-service";
 import { Button } from "@/components/ui/button";

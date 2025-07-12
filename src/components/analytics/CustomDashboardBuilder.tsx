@@ -15,7 +15,8 @@ import {
   Grid,
   Users
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { customDashboardService, CustomDashboard } from '@/services/custom-dashboard-service';
 import DashboardList from './DashboardList';
 import DashboardEditor from './DashboardEditor';

@@ -9,7 +9,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { getFrameworks, getComplianceMetricsByOrgId, getPoliciesByFrameworkId } from "@/services/governance-service";
 import { FileText, Download, Calendar, TrendingUp } from "lucide-react";

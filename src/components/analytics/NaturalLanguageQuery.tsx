@@ -13,7 +13,8 @@ import {
   Table,
   Download
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { advancedAnalyticsService, type QueryResult } from '@/services/advanced-analytics-service';
 import { toast } from 'sonner';
 

@@ -6,7 +6,8 @@ import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getRiskAppetiteStatements, getRiskCategories } from '@/services/risk-management-service';
 import { getKRIDefinitions } from '@/services/kri-definitions';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { RiskAppetiteStatement, RiskCategory } from '@/pages/risk-management/types';
 import { KRIDefinition } from '@/services/kri-definitions';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';

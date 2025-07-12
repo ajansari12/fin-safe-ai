@@ -622,5 +622,4 @@ export const useAuth = () => {
   return context;
 };
 
-// Legacy alias for backward compatibility during transition
-export const useEnhancedAuth = useAuth;
+// CLEANUP: useEnhancedAuth alias removed after migration completed

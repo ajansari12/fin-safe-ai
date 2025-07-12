@@ -16,7 +16,8 @@ import {
   FileText,
   Target
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { dataAvailabilityService, type DataAvailabilityStatus, type DataRequirement } from '@/services/data-availability-service';
 

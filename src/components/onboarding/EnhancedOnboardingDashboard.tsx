@@ -34,7 +34,8 @@ import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssi
 import { organizationalIntelligenceService } from "@/services/organizational-intelligence-service";
 import { templateLibraryService } from "@/services/template-library-service";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEnhancedOrganizationSetup } from "@/hooks/useEnhancedOrganizationSetup";
 

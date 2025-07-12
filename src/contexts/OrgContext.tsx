@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEnhancedAuth } from "./EnhancedAuthContext";
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from "./EnhancedAuthContext";
 import { toast } from "sonner";
 
 interface Organization {
@@ -41,7 +42,7 @@ interface OrgContextType {
 const OrgContext = createContext<OrgContextType | undefined>(undefined);
 
 export const OrgProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userContext, isAuthenticated, hasRole } = useEnhancedAuth();
+  const { userContext, isAuthenticated, hasRole } = useAuth(); // FIXME: Updated from useEnhancedAuth
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfile | null>(null);
   const [isLoading, setIsLoading] = useState(false);

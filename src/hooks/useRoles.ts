@@ -1,11 +1,12 @@
-import { useEnhancedAuth } from "@/contexts/EnhancedAuthContext";
+// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { usePermissions } from "@/contexts/PermissionContext";
 
 /**
  * Hook for role-based access control - Uses secure database functions
  */
 export const useRoles = () => {
-  const { userContext, hasRole, hasAnyRole } = useEnhancedAuth();
+  const { userContext, hasRole, hasAnyRole } = useAuth(); // FIXME: Updated from useEnhancedAuth
   const permissions = usePermissions();
 
   return {
@@ -34,7 +35,7 @@ export const useRoles = () => {
  * Hook for organization-specific access control
  */
 export const useOrgAccess = () => {
-  const { userContext } = useEnhancedAuth();
+  const { userContext } = useAuth(); // FIXME: Updated from useEnhancedAuth
   const { canReadOrg, canWriteOrg, canDeleteOrg } = usePermissions();
 
   return {
