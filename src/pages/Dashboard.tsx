@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import AuthenticatedLayout from '@/components/layout/AuthenticatedLayout';
 import { performanceMonitor, logBundleMetrics } from '@/lib/performance-utils';
 import { DashboardSkeleton } from '@/components/common/SkeletonLoaders';

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Button } from "@/components/ui/button";
 import { Control } from "@/services/controls";

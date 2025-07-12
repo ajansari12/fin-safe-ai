@@ -18,7 +18,8 @@ import {
   CheckCircle,
   AlertTriangle
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { createVendorProfile } from '@/services/third-party-service';
 import { toast } from 'sonner';
 

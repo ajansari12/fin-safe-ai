@@ -12,7 +12,8 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { getVendorProfiles } from '@/services/third-party-service';
 import VendorAssessmentForm from './VendorAssessmentForm';
 import { toast } from 'sonner';

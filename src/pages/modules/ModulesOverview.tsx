@@ -17,7 +17,8 @@ import {
   ChevronRight,
   CheckCircle
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 
 const modules = [
   {

@@ -1,7 +1,8 @@
 
 import React, { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";

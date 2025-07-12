@@ -21,7 +21,8 @@ import VisualWorkflowDesigner from './VisualWorkflowDesigner';
 import DataOrchestrationManager from './DataOrchestrationManager';
 import { workflowOrchestrationService, type Workflow } from '@/services/workflow-orchestration-service';
 import { intelligentAutomationService } from '@/services/intelligent-automation-service';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 const WorkflowOrchestrationDashboard: React.FC = () => {
   const { profile } = useAuth();

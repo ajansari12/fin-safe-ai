@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { advancedAnalyticsService, type PredictiveMetric, type RealTimeAlert, type AnalyticsInsight } from '@/services/enhanced-analytics-service';
 import { dataAvailabilityService, type DataAvailabilityStatus } from '@/services/data-availability-service';
 import { useErrorHandler } from '@/hooks/useErrorHandler';

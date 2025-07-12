@@ -24,7 +24,8 @@ import WorkflowCanvas from './WorkflowCanvas';
 import WorkflowNodePalette from './WorkflowNodePalette';
 import { workflowOrchestrationService, type Workflow, type WorkflowNode } from '@/services/workflow-orchestration-service';
 import { intelligentAutomationService } from '@/services/intelligent-automation-service';
-import { useAuth } from '@/contexts/AuthContext';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 interface VisualWorkflowDesignerProps {
   workflowId?: string;

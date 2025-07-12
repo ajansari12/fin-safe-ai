@@ -12,7 +12,8 @@ import ContinuityPlansManager from "@/components/business-continuity/ContinuityP
 import RecoveryContactsManager from "@/components/business-continuity/RecoveryContactsManager";
 import AIAssistantContinuityBuilder from "@/components/business-continuity/AIAssistantContinuityBuilder";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 
 const BusinessContinuityContent = () => {
   const isMobile = useIsMobile();

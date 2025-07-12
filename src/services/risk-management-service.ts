@@ -9,7 +9,8 @@ import {
   RiskAppetiteFormData,
   RiskAppetiteComplete 
 } from "@/pages/risk-management/types";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 
 // Risk Categories
 export async function getRiskCategories(): Promise<RiskCategory[]> {
