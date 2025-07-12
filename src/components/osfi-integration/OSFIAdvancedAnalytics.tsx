@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AIInsight {
   id: string;
@@ -45,94 +46,131 @@ const OSFIAdvancedAnalytics: React.FC = () => {
   const { data: aiInsights } = useQuery({
     queryKey: ['osfi-ai-insights'],
     queryFn: async () => {
-      const mockData: AIInsight[] = [
-        {
-          id: '1',
-          title: 'Operational Risk Trend Deterioration',
-          category: 'Risk Assessment',
-          priority: 'high',
-          confidence: 0.87,
-          impact_score: 8.5,
-          recommendation: 'Increase monitoring frequency for operational risk indicators',
-          osfi_principle: 'Principle 2',
+      // Fetch real analytics insights from database
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.organization_id) {
+        return [];
+      }
+
+      const { data: insights, error } = await supabase
+        .from('analytics_insights')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching analytics insights:', error);
+        return [];
+      }
+
+      // Transform database insights to match interface
+      const transformedInsights: AIInsight[] = (insights || []).map(insight => ({
+        id: insight.id,
+        title: typeof insight.insight_data === 'object' && insight.insight_data && 'title' in insight.insight_data 
+          ? (insight.insight_data as any).title 
+          : `${insight.insight_type} Analysis`,
+        category: insight.insight_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        priority: insight.confidence_score && insight.confidence_score > 0.8 ? 'high' : 
+                 insight.confidence_score && insight.confidence_score > 0.6 ? 'medium' : 'low',
+        confidence: insight.confidence_score || 0.5,
+        impact_score: insight.confidence_score ? insight.confidence_score * 10 : 5,
+        recommendation: typeof insight.insight_data === 'object' && insight.insight_data && 'recommendation' in insight.insight_data
+          ? (insight.insight_data as any).recommendation
+          : 'Review and analyze this insight for compliance impact',
+        osfi_principle: 'Principle 2 - Operational Resilience',
+        auto_generated: true,
+        created_at: insight.created_at.split('T')[0]
+      }));
+
+      // Add sample insights if no data exists
+      if (transformedInsights.length === 0) {
+        transformedInsights.push({
+          id: 'sample-1',
+          title: 'No Analytics Insights Available',
+          category: 'System Status',
+          priority: 'low',
+          confidence: 0.5,
+          impact_score: 1,
+          recommendation: 'Generate analytics insights by adding data to your organization',
+          osfi_principle: 'Data Required',
           auto_generated: true,
-          created_at: '2024-01-15'
-        },
-        {
-          id: '2',
-          title: 'Model Performance Anomaly Detected',
-          category: 'Model Risk',
-          priority: 'high',
-          confidence: 0.92,
-          impact_score: 9.2,
-          recommendation: 'Immediate model recalibration required for credit risk model',
-          osfi_principle: 'Principle 2',
-          auto_generated: true,
-          created_at: '2024-01-14'
-        },
-        {
-          id: '3',
-          title: 'Third Party Risk Concentration',
-          category: 'Vendor Management',
-          priority: 'medium',
-          confidence: 0.78,
-          impact_score: 6.8,
-          recommendation: 'Diversify critical vendor dependencies',
-          osfi_principle: 'Principle 7',
-          auto_generated: true,
-          created_at: '2024-01-13'
-        },
-        {
-          id: '4',
-          title: 'Data Quality Improvement Opportunity',
-          category: 'Data Governance',
-          priority: 'medium',
-          confidence: 0.85,
-          impact_score: 7.1,
-          recommendation: 'Implement automated data validation rules',
-          osfi_principle: 'Principle 4',
-          auto_generated: true,
-          created_at: '2024-01-12'
-        }
-      ];
-      return mockData;
+          created_at: new Date().toISOString().split('T')[0]
+        });
+      }
+
+      return transformedInsights;
     }
   });
 
   const { data: predictiveAlerts } = useQuery({
     queryKey: ['osfi-predictive-alerts'],
     queryFn: async () => {
-      const mockData: PredictiveAlert[] = [
-        {
-          id: '1',
-          alert_type: 'Risk Threshold Breach',
-          predicted_event: 'Operational loss exceeding risk appetite',
-          probability: 0.73,
-          time_horizon: '30 days',
-          potential_impact: 'High - Risk appetite breach likely',
+      // Fetch real anomaly detections from database
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.organization_id) {
+        return [];
+      }
+
+      const { data: anomalies, error } = await supabase
+        .from('anomaly_detections')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .eq('investigation_status', 'new')
+        .order('detected_at', { ascending: false })
+        .limit(5);
+
+      if (error) {
+        console.error('Error fetching anomaly detections:', error);
+        return [];
+      }
+
+      // Transform database anomalies to predictive alerts
+      const transformedAlerts: PredictiveAlert[] = (anomalies || []).map(anomaly => ({
+        id: anomaly.id,
+        alert_type: anomaly.anomaly_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        predicted_event: `${anomaly.anomaly_type} anomaly detected in system monitoring`,
+        probability: anomaly.confidence_score / 100,
+        time_horizon: '7-14 days',
+        potential_impact: anomaly.severity_score > 7 ? 'High - Immediate attention required' :
+                         anomaly.severity_score > 4 ? 'Medium - Monitor closely' :
+                         'Low - Review and assess',
+        recommended_actions: [
+          'Investigate anomaly source',
+          'Review related controls',
+          'Update monitoring thresholds'
+        ],
+        osfi_relevance: 'OSFI E-21 Principle 2 - Risk Identification'
+      }));
+
+      // Add sample alert if no data exists
+      if (transformedAlerts.length === 0) {
+        transformedAlerts.push({
+          id: 'sample-1',
+          alert_type: 'System Status',
+          predicted_event: 'No anomalies currently detected',
+          probability: 0.1,
+          time_horizon: 'N/A',
+          potential_impact: 'Low - System operating normally',
           recommended_actions: [
-            'Review operational controls',
-            'Increase monitoring frequency',
-            'Prepare contingency plans'
+            'Continue monitoring',
+            'Review detection parameters'
           ],
-          osfi_relevance: 'OSFI E-21 Principle 3 - Risk Appetite'
-        },
-        {
-          id: '2',
-          alert_type: 'Business Continuity Risk',
-          predicted_event: 'Critical vendor service degradation',
-          probability: 0.65,
-          time_horizon: '14 days',
-          potential_impact: 'Medium - Service availability at risk',
-          recommended_actions: [
-            'Activate backup vendor',
-            'Test contingency procedures',
-            'Notify stakeholders'
-          ],
-          osfi_relevance: 'OSFI E-21 Principle 6 & 7 - Business Continuity'
-        }
-      ];
-      return mockData;
+          osfi_relevance: 'OSFI E-21 - Ongoing Monitoring'
+        });
+      }
+
+      return transformedAlerts;
     }
   });
 

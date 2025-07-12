@@ -22,12 +22,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface ComplianceItem {
   id: string;
-  principle: string;
+  section: string;
   requirement: string;
   status: 'compliant' | 'partial' | 'non_compliant';
   evidence: string;
-  lastAssessment: string;
-  nextReview: string;
+  lastAssessed: string;
+  assessor: string;
   riskLevel: 'low' | 'medium' | 'high';
 }
 
@@ -44,96 +44,89 @@ const OSFIComplianceVerification = () => {
 
   const loadComplianceData = async () => {
     try {
-      // Simulate comprehensive compliance verification
-      const mockData: ComplianceItem[] = [
-        {
-          id: "1",
-          principle: "Principle 1",
-          requirement: "Senior Management Oversight",
-          status: "compliant",
-          evidence: "Board resolutions, management policies",
-          lastAssessment: "2024-07-01",
-          nextReview: "2024-10-01",
-          riskLevel: "low"
-        },
-        {
-          id: "2", 
-          principle: "Principle 2",
-          requirement: "Operational Resilience Management",
-          status: "compliant",
-          evidence: "Risk management framework, policies",
-          lastAssessment: "2024-07-05",
-          nextReview: "2024-10-05",
-          riskLevel: "low"
-        },
-        {
-          id: "3",
-          principle: "Principle 3", 
-          requirement: "Business Environment Analysis",
-          status: "partial",
-          evidence: "Environmental analysis reports",
-          lastAssessment: "2024-06-15",
-          nextReview: "2024-09-15",
-          riskLevel: "medium"
-        },
-        {
-          id: "4",
-          principle: "Principle 4",
-          requirement: "Risk Identification & Assessment",
-          status: "compliant",
-          evidence: "Risk registers, assessment reports",
-          lastAssessment: "2024-07-10",
-          nextReview: "2024-10-10",
-          riskLevel: "low"
-        },
-        {
-          id: "5",
-          principle: "Principle 5",
-          requirement: "Risk Appetite & Tolerance",
-          status: "compliant",
-          evidence: "Risk appetite statements, metrics",
-          lastAssessment: "2024-07-08",
-          nextReview: "2024-10-08",
-          riskLevel: "low"
-        },
-        {
-          id: "6",
-          principle: "Principle 6",
-          requirement: "Operational Risk Management",
-          status: "compliant",
-          evidence: "ORM framework, procedures",
-          lastAssessment: "2024-07-12",
-          nextReview: "2024-10-12",
-          riskLevel: "low"
-        },
-        {
-          id: "7",
-          principle: "Principle 7",
-          requirement: "Impact Tolerance & Disruption Thresholds",
-          status: "compliant",
-          evidence: "Tolerance definitions, monitoring",
-          lastAssessment: "2024-07-11",
-          nextReview: "2024-10-11",
-          riskLevel: "low"
-        },
-        {
-          id: "8",
-          principle: "Principle 8",
-          requirement: "Scenario Testing & Planning",
-          status: "compliant",
-          evidence: "Testing reports, scenarios",
-          lastAssessment: "2024-07-09",
-          nextReview: "2024-10-09",
-          riskLevel: "low"
-        }
-      ];
+      // Fetch real compliance data from database
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
 
-      setComplianceData(mockData);
+      if (!profile?.organization_id) {
+        throw new Error('User not associated with an organization');
+      }
+
+      // Fetch compliance findings and audit gap logs for comprehensive verification
+      const [complianceFindings, auditGaps] = await Promise.all([
+        supabase
+          .from('compliance_findings')
+          .select('*')
+          .eq('org_id', profile.organization_id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('audit_gap_logs')
+          .select('*')
+          .eq('org_id', profile.organization_id)
+          .order('created_at', { ascending: false })
+      ]);
+
+      const complianceData: ComplianceItem[] = [];
+
+      // Map compliance findings to compliance items
+      if (complianceFindings.data) {
+        complianceFindings.data.forEach(finding => {
+          complianceData.push({
+            id: finding.id,
+            section: finding.module_affected || 'General Compliance',
+            requirement: finding.finding_title,
+            status: finding.status === 'resolved' ? 'compliant' : 
+                   finding.status === 'in_progress' ? 'partial' : 'non_compliant',
+            evidence: finding.corrective_actions || finding.finding_description,
+            lastAssessed: finding.created_at.split('T')[0],
+            assessor: finding.assigned_to_name || 'System',
+            riskLevel: finding.severity === 'critical' ? 'high' : 
+                      finding.severity === 'high' ? 'medium' : 'low'
+          });
+        });
+      }
+
+      // Map audit gaps to compliance items
+      if (auditGaps.data) {
+        auditGaps.data.forEach(gap => {
+          complianceData.push({
+            id: gap.id,
+            section: gap.gap_type === 'compliance' ? 'Regulatory Compliance' : 'Operational Risk',
+            requirement: gap.gap_title,
+            status: gap.current_status === 'closed' ? 'compliant' : 
+                   gap.current_status === 'in_progress' ? 'partial' : 'non_compliant',
+            evidence: gap.resolution_plan || gap.gap_description || '',
+            lastAssessed: gap.identified_date,
+            assessor: gap.assigned_to_name || 'System',
+            riskLevel: gap.regulatory_risk_score && gap.regulatory_risk_score >= 4 ? 'high' :
+                      gap.regulatory_risk_score && gap.regulatory_risk_score >= 2 ? 'medium' : 'low'
+          });
+        });
+      }
+
+      // If no data exists, provide sample structure
+      if (complianceData.length === 0) {
+        complianceData.push({
+          id: "sample-1",
+          section: "OSFI E-21 Operational Risk Management",
+          requirement: "Risk Management Framework",
+          status: "compliant",
+          evidence: "No specific compliance data found. Please add compliance findings or audit gaps.",
+          lastAssessed: new Date().toISOString().split('T')[0],
+          assessor: "System",
+          riskLevel: "low"
+        });
+      }
+
+      setComplianceData(complianceData);
       
       // Calculate overall compliance score
-      const compliantCount = mockData.filter(item => item.status === 'compliant').length;
-      const partialCount = mockData.filter(item => item.status === 'partial').length;
-      const score = ((compliantCount + (partialCount * 0.5)) / mockData.length) * 100;
+      const compliantCount = complianceData.filter(item => item.status === 'compliant').length;
+      const partialCount = complianceData.filter(item => item.status === 'partial').length;
+      const score = complianceData.length > 0 ? ((compliantCount + (partialCount * 0.5)) / complianceData.length) * 100 : 0;
       setOverallScore(Math.round(score));
       
     } catch (error) {
@@ -297,7 +290,7 @@ const OSFIComplianceVerification = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="flex items-center gap-2">
                       {getStatusIcon(item.status)}
-                      {item.principle}: {item.requirement}
+                      {item.section}: {item.requirement}
                     </CardTitle>
                     <div className="flex gap-2">
                       {getStatusBadge(item.status)}
@@ -313,11 +306,11 @@ const OSFIComplianceVerification = () => {
                     </div>
                     <div>
                       <span className="font-medium">Last Assessment:</span>
-                      <p className="text-muted-foreground">{item.lastAssessment}</p>
+                      <p className="text-muted-foreground">{item.lastAssessed}</p>
                     </div>
                     <div>
-                      <span className="font-medium">Next Review:</span>
-                      <p className="text-muted-foreground">{item.nextReview}</p>
+                      <span className="font-medium">Assessor:</span>
+                      <p className="text-muted-foreground">{item.assessor}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -381,23 +374,23 @@ const OSFIComplianceVerification = () => {
                 Review Timeline
               </CardTitle>
               <CardDescription>
-                Upcoming reviews and assessment schedules
+                Recent assessments and compliance activities
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {complianceData
-                  .sort((a, b) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime())
+                  .sort((a, b) => new Date(b.lastAssessed).getTime() - new Date(a.lastAssessed).getTime())
                   .slice(0, 5)
                   .map((item) => (
                     <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <div className="font-medium">{item.principle}</div>
+                        <div className="font-medium">{item.section}</div>
                         <div className="text-sm text-muted-foreground">{item.requirement}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium">{item.nextReview}</div>
-                        <div className="text-sm text-muted-foreground">Next Review</div>
+                        <div className="font-medium">{item.lastAssessed}</div>
+                        <div className="text-sm text-muted-foreground">Last Assessed</div>
                       </div>
                     </div>
                   ))}
@@ -416,9 +409,9 @@ const OSFIComplianceVerification = () => {
                   <AlertDescription>
                     <div className="flex items-center justify-between">
                       <div>
-                        <strong>{item.principle}</strong>: {item.requirement} requires attention.
+                        <strong>{item.section}</strong>: {item.requirement} requires attention.
                         <br />
-                        <span className="text-sm">Last assessed: {item.lastAssessment}</span>
+                        <span className="text-sm">Last assessed: {item.lastAssessed}</span>
                       </div>
                       <Button size="sm" variant="outline">
                         <Eye className="h-4 w-4 mr-2" />
