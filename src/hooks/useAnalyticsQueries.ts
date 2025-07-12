@@ -5,6 +5,7 @@ import { advancedAnalyticsService, type PredictiveMetric, type RealTimeAlert, ty
 import { dataAvailabilityService, type DataAvailabilityStatus } from '@/services/data-availability-service';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export const useDataAvailability = () => {
   const { profile } = useAuth();
@@ -16,7 +17,11 @@ export const useDataAvailability = () => {
       try {
         return await dataAvailabilityService.checkDataAvailability(profile?.organization_id!);
       } catch (error) {
-        console.error('Data availability check failed:', error);
+        logger.error('Data availability check failed', { 
+          component: 'useAnalyticsQueries',
+          module: 'data-availability',
+          organizationId: profile?.organization_id 
+        }, error as Error);
         handleError(error, 'checking data availability');
         // Return default value instead of throwing to prevent error boundary trigger
         return { readyForPredictive: false, dataScore: 0, issues: ['Service unavailable'] };
@@ -40,7 +45,11 @@ export const usePredictiveMetrics = (enabled: boolean = true) => {
       try {
         return await advancedAnalyticsService.getPredictiveMetrics(profile?.organization_id!);
       } catch (error) {
-        console.error('Predictive metrics generation failed:', error);
+        logger.error('Predictive metrics generation failed', { 
+          component: 'useAnalyticsQueries',
+          module: 'predictive-analytics',
+          organizationId: profile?.organization_id 
+        }, error as Error);
         handleError(error, 'generating predictive metrics');
         // Return empty array instead of throwing to prevent error boundary trigger
         return [];
@@ -64,12 +73,20 @@ export const useRealTimeAlerts = (enabled: boolean = true) => {
       try {
         const result = await advancedAnalyticsService.getRealTimeAlerts(profile?.organization_id!);
         if (!result) {
-          console.warn('Real-time alerts query returned undefined/null');
+          logger.warn('Real-time alerts query returned undefined/null', { 
+            component: 'useAnalyticsQueries',
+            module: 'real-time-alerts',
+            organizationId: profile?.organization_id 
+          });
           return [];
         }
         return result;
       } catch (error) {
-        console.error('Real-time alerts fetch failed:', error);
+        logger.error('Real-time alerts fetch failed', { 
+          component: 'useAnalyticsQueries',
+          module: 'real-time-alerts',
+          organizationId: profile?.organization_id 
+        }, error as Error);
         handleError(error, 'fetching real-time alerts');
         // Return empty array instead of throwing to prevent error boundary trigger
         return [];
@@ -94,7 +111,11 @@ export const useAnalyticsInsights = (enabled: boolean = true) => {
       try {
         return await advancedAnalyticsService.generateAutomatedInsights(profile?.organization_id!);
       } catch (error) {
-        console.error('Analytics insights generation failed:', error);
+        logger.error('Analytics insights generation failed', { 
+          component: 'useAnalyticsQueries',
+          module: 'analytics-insights',
+          organizationId: profile?.organization_id 
+        }, error as Error);
         handleError(error, 'generating analytics insights');
         // Return empty array instead of throwing to prevent error boundary trigger
         return [];

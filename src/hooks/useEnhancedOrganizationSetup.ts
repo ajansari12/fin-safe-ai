@@ -12,6 +12,7 @@ import {
   uploadPolicyFile 
 } from "@/services/organization-service";
 import { intelligentFrameworkGenerationService } from "@/services/intelligent-framework-generation-service";
+import { logger } from "@/lib/logger";
 
 interface EnhancedOrganizationData {
   // Basic organization data
@@ -106,7 +107,11 @@ export function useEnhancedOrganizationSetup() {
       try {
         await saveTempProgress();
       } catch (error) {
-        console.error('Auto-save failed:', error);
+        logger.warn('Auto-save failed', { 
+          component: 'useEnhancedOrganizationSetup',
+          module: 'organization-setup',
+          metadata: { step, hasOrgName: !!orgData.name }
+        });
       } finally {
         setSaveInProgress(false);
       }
@@ -237,13 +242,22 @@ export function useEnhancedOrganizationSetup() {
         
         try {
           const organizationId = await createOrganizationRecord();
-          console.log('✅ Organization setup completed:', organizationId);
+          logger.info('Organization setup completed successfully', { 
+            component: 'useEnhancedOrganizationSetup',
+            module: 'organization-setup',
+            organizationId,
+            metadata: { step: 2 }
+          });
           
           // Clear temporary progress after successful creation
           await clearSavedProgress();
           
         } catch (error) {
-          console.error('Organization creation failed:', error);
+          logger.error('Organization creation failed', { 
+            component: 'useEnhancedOrganizationSetup',
+            module: 'organization-setup',
+            metadata: { step: 2, orgName: orgData.name }
+          }, error as Error);
           
           // Enhanced error feedback based on error type
           let errorTitle = "Organization Creation Failed";
@@ -289,7 +303,11 @@ export function useEnhancedOrganizationSetup() {
       updateCompletionEstimate(orgData);
       
     } catch (error) {
-      console.error('Error progressing to next step:', error);
+      logger.error('Error progressing to next step', { 
+        component: 'useEnhancedOrganizationSetup',
+        module: 'organization-setup',
+        metadata: { step, orgName: orgData.name }
+      }, error as Error);
       
       // Progressive error disclosure
       const isDetailedError = error instanceof Error && error.message.length > 50;
@@ -302,9 +320,13 @@ export function useEnhancedOrganizationSetup() {
         variant: "destructive",
       });
       
-      // Log detailed error for debugging
+      // Additional debug logging for development
       if (process.env.NODE_ENV === 'development') {
-        console.error('Detailed error info:', error);
+        logger.debug('Detailed progress error info', { 
+          component: 'useEnhancedOrganizationSetup',
+          module: 'organization-setup',
+          metadata: { step, isDetailedError }
+        });
       }
     } finally {
       setIsSubmitting(false);
@@ -343,7 +365,11 @@ export function useEnhancedOrganizationSetup() {
     }
 
     setIsEnrichingOrganization(true);
-    console.log(`Starting organization enrichment for: "${orgData.name}"`);
+    logger.info('Starting organization enrichment', { 
+      component: 'useEnhancedOrganizationSetup',
+      module: 'organization-enrichment',
+      metadata: { orgName: orgData.name, domain }
+    });
 
     try {
       // Detect whether user has an existing organization (Update mode) or not (Setup mode)
@@ -357,7 +383,11 @@ export function useEnhancedOrganizationSetup() {
       const existingOrgId = profile?.organization_id;
       const isSetupMode = !existingOrgId;
       
-      console.log(`Operating in ${isSetupMode ? 'Setup' : 'Update'} mode${existingOrgId ? ` (org_id: ${existingOrgId})` : ''}`);
+      logger.info('Organization enrichment mode determined', { 
+        component: 'useEnhancedOrganizationSetup',
+        module: 'organization-enrichment',
+        metadata: { mode: isSetupMode ? 'setup' : 'update', existingOrgId, orgName: orgData.name }
+      });
 
       const { data, error } = await supabase.functions.invoke('enrich-organization-data', {
         body: {
@@ -369,7 +399,11 @@ export function useEnhancedOrganizationSetup() {
       });
 
       if (error) {
-        console.error('Supabase function invocation error:', error);
+        logger.error('Supabase function invocation error', { 
+          component: 'useEnhancedOrganizationSetup',
+          module: 'organization-enrichment',
+          metadata: { orgName: orgData.name, domain }
+        }, error);
         
         // Parse error details for better user feedback
         let errorMessage = 'Unable to auto-populate organization details.';
@@ -396,7 +430,11 @@ export function useEnhancedOrganizationSetup() {
         if (data.mode === 'setup' && data.enriched_data) {
           // Setup mode: Update local state with enriched data
           const enrichedData = data.enriched_data;
-          console.log('Received enriched data for setup:', enrichedData);
+          logger.info('Received enriched data for setup', { 
+            component: 'useEnhancedOrganizationSetup',
+            module: 'organization-enrichment',
+            metadata: { enrichedFieldsCount: Object.keys(enrichedData).length, orgName: orgData.name }
+          });
           
           // Track which fields were updated
           let fieldsUpdated = 0;
@@ -469,7 +507,11 @@ export function useEnhancedOrganizationSetup() {
           });
 
           if (fieldsUpdated > 0) {
-            console.log(`Successfully enriched ${fieldsUpdated} fields in setup mode:`, updatedFields);
+            logger.info('Successfully enriched organization fields in setup mode', { 
+              component: 'useEnhancedOrganizationSetup',
+              module: 'organization-enrichment',
+              metadata: { fieldsUpdated, updatedFields, orgName: orgData.name }
+            });
             toast({
               title: "Organization Data Auto-Populated",
               description: `Successfully populated ${fieldsUpdated} field${fieldsUpdated > 1 ? 's' : ''}: ${updatedFields.join(', ')}.`,

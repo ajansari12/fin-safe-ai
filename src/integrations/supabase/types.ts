@@ -1149,6 +1149,7 @@ export type Database = {
           guide_type: string
           id: string
           is_published: boolean | null
+          org_id: string | null
           prerequisites: string[] | null
           review_status: string | null
           reviewed_at: string | null
@@ -1175,6 +1176,7 @@ export type Database = {
           guide_type?: string
           id?: string
           is_published?: boolean | null
+          org_id?: string | null
           prerequisites?: string[] | null
           review_status?: string | null
           reviewed_at?: string | null
@@ -1201,6 +1203,7 @@ export type Database = {
           guide_type?: string
           id?: string
           is_published?: boolean | null
+          org_id?: string | null
           prerequisites?: string[] | null
           review_status?: string | null
           reviewed_at?: string | null
@@ -1215,6 +1218,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "best_practice_guides_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "best_practice_guides_template_id_fkey"
             columns: ["template_id"]
@@ -4690,6 +4700,7 @@ export type Database = {
           framework_id: string
           id: string
           implementation_priority: number | null
+          org_id: string | null
         }
         Insert: {
           component_data?: Json
@@ -4702,6 +4713,7 @@ export type Database = {
           framework_id: string
           id?: string
           implementation_priority?: number | null
+          org_id?: string | null
         }
         Update: {
           component_data?: Json
@@ -4714,8 +4726,17 @@ export type Database = {
           framework_id?: string
           id?: string
           implementation_priority?: number | null
+          org_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "framework_components_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       framework_dependencies: {
         Row: {
@@ -5154,6 +5175,7 @@ export type Database = {
           file_type: string | null
           framework_id: string | null
           id: string
+          org_id: string | null
           rejected_at: string | null
           review_due_date: string | null
           status: string
@@ -5172,6 +5194,7 @@ export type Database = {
           file_type?: string | null
           framework_id?: string | null
           id?: string
+          org_id?: string | null
           rejected_at?: string | null
           review_due_date?: string | null
           status?: string
@@ -5190,6 +5213,7 @@ export type Database = {
           file_type?: string | null
           framework_id?: string | null
           id?: string
+          org_id?: string | null
           rejected_at?: string | null
           review_due_date?: string | null
           status?: string
@@ -5204,6 +5228,13 @@ export type Database = {
             columns: ["framework_id"]
             isOneToOne: false
             referencedRelation: "governance_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_policies_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -6330,6 +6361,7 @@ export type Database = {
           kri_id: string
           measurement_date: string
           notes: string | null
+          org_id: string | null
           threshold_breached: string | null
           updated_at: string | null
         }
@@ -6340,6 +6372,7 @@ export type Database = {
           kri_id: string
           measurement_date: string
           notes?: string | null
+          org_id?: string | null
           threshold_breached?: string | null
           updated_at?: string | null
         }
@@ -6350,6 +6383,7 @@ export type Database = {
           kri_id?: string
           measurement_date?: string
           notes?: string | null
+          org_id?: string | null
           threshold_breached?: string | null
           updated_at?: string | null
         }
@@ -6359,6 +6393,13 @@ export type Database = {
             columns: ["kri_id"]
             isOneToOne: false
             referencedRelation: "kri_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kri_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -8194,6 +8235,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          org_id: string | null
           updated_at: string
         }
         Insert: {
@@ -8201,6 +8243,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          org_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -8208,9 +8251,18 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          org_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "risk_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       risk_correlations: {
         Row: {
@@ -8413,6 +8465,7 @@ export type Database = {
           description: string | null
           escalation_trigger: string | null
           id: string
+          org_id: string | null
           statement_id: string
           tolerance_level: string
           updated_at: string
@@ -8423,6 +8476,7 @@ export type Database = {
           description?: string | null
           escalation_trigger?: string | null
           id?: string
+          org_id?: string | null
           statement_id: string
           tolerance_level: string
           updated_at?: string
@@ -8433,6 +8487,7 @@ export type Database = {
           description?: string | null
           escalation_trigger?: string | null
           id?: string
+          org_id?: string | null
           statement_id?: string
           tolerance_level?: string
           updated_at?: string
@@ -8443,6 +8498,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "risk_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_thresholds_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
           {
@@ -10355,6 +10417,7 @@ export type Database = {
           file_size: number | null
           id: string
           mime_type: string | null
+          org_id: string | null
           renewal_notice_days: number | null
           responsible_user_id: string | null
           responsible_user_name: string | null
@@ -10377,6 +10440,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          org_id?: string | null
           renewal_notice_days?: number | null
           responsible_user_id?: string | null
           responsible_user_name?: string | null
@@ -10399,6 +10463,7 @@ export type Database = {
           file_size?: number | null
           id?: string
           mime_type?: string | null
+          org_id?: string | null
           renewal_notice_days?: number | null
           responsible_user_id?: string | null
           responsible_user_name?: string | null
@@ -10411,6 +10476,13 @@ export type Database = {
           version_number?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "vendor_contracts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vendor_contracts_vendor_profile_id_fkey"
             columns: ["vendor_profile_id"]
