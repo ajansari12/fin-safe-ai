@@ -23,7 +23,10 @@ import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification
 import { ErrorBoundaryWrapper, AnalyticsCardFallback, NoDataFallback } from './ErrorBoundaryWrapper';
 import { DashboardSkeleton } from './AnalyticsLoadingStates';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
 import OSFIComplianceWidgets from './OSFIComplianceWidgets';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
+import RealtimeIndicator from '@/components/common/RealtimeIndicator';
 
 interface AnalyticsInsight {
   id: string;
@@ -63,6 +66,11 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [dataError, setDataError] = useState<Error | null>(null);
   const { handleError } = useErrorHandler();
+
+  // Set up real-time monitoring for analytics
+  const { connectionStatus, lastUpdate } = useRealtimeMetrics({
+    enabled: !!profile?.organization_id
+  });
 
   useEffect(() => {
     if (profile?.organization_id) {
@@ -168,14 +176,21 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             Comprehensive insights across all risk management activities
           </p>
         </div>
-        <Button 
-          onClick={() => loadAutomatedInsights()}
-          disabled={isGeneratingInsights}
-          className="flex items-center gap-2"
-        >
-          <Brain className="h-4 w-4" />
-          {isGeneratingInsights ? 'Generating...' : 'Refresh Insights'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <NotificationCenter />
+          <RealtimeIndicator 
+            connectionStatus={connectionStatus}
+            lastUpdate={lastUpdate}
+          />
+          <Button 
+            onClick={() => loadAutomatedInsights()}
+            disabled={isGeneratingInsights}
+            className="flex items-center gap-2"
+          >
+            <Brain className="h-4 w-4" />
+            {isGeneratingInsights ? 'Generating...' : 'Refresh Insights'}
+          </Button>
+        </div>
       </div>
 
       {/* OSFI E-21 Compliance Widgets */}
