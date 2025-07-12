@@ -47,6 +47,9 @@ const OperationalDashboard = lazy(() =>
 const ControlsDashboard = lazy(() => 
   import('../controls/ControlsDashboard').then(module => ({ default: module.default }))
 );
+const AdvancedAnalyticsDashboard = lazy(() => 
+  import('./AdvancedAnalyticsDashboard').then(module => ({ default: module.default }))
+);
 const CustomDashboardBuilder = lazy(() => 
   import('./CustomDashboardBuilder').then(module => ({ default: module.default }))
 );
@@ -267,7 +270,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       </ErrorBoundaryWrapper>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="executive" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Executive
@@ -280,8 +283,12 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             <Shield className="h-4 w-4" />
             Controls
           </TabsTrigger>
-          <TabsTrigger value="predictive" className="flex items-center gap-2">
+          <TabsTrigger value="advanced" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
+            Advanced
+          </TabsTrigger>
+          <TabsTrigger value="predictive" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
             Predictive
           </TabsTrigger>
           <TabsTrigger value="custom" className="flex items-center gap-2">
@@ -322,6 +329,18 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
           >
             <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <ControlsDashboard />
+            </Suspense>
+          </ErrorBoundaryWrapper>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-6">
+          <ErrorBoundaryWrapper 
+            title="Advanced Analytics Error"
+            description="Unable to load advanced analytics dashboard"
+            fallback={AnalyticsCardFallback}
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <AdvancedAnalyticsDashboard />
             </Suspense>
           </ErrorBoundaryWrapper>
         </TabsContent>
