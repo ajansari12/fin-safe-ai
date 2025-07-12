@@ -1,61 +1,72 @@
-
 import { supabase } from "@/integrations/supabase/client";
-import { AppetiteBreachLog } from "./types";
+import { getCurrentUserProfile } from "@/lib/supabase-utils";
+import type { AppetiteBreachLog } from "./types";
 
 export async function getAppetiteBreachLogs(): Promise<AppetiteBreachLog[]> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('id', (await supabase.auth.getUser()).data.user?.id)
-    .single();
+  try {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) return [];
 
-  if (!profile?.organization_id) {
+    const { data, error } = await supabase
+      .from('appetite_breach_logs')
+      .select(`
+        *,
+        risk_category:risk_categories(name)
+      `)
+      .eq('org_id', profile.organization_id)
+      .order('breach_date', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as AppetiteBreachLog[];
+  } catch (error) {
+    console.error('Error fetching appetite breach logs:', error);
     return [];
   }
-
-  const { data, error } = await supabase
-    .from('appetite_breach_logs')
-    .select(`
-      *,
-      risk_categories(name),
-      risk_appetite_statements(title),
-      risk_thresholds(tolerance_level)
-    `)
-    .eq('org_id', profile.organization_id)
-    .order('breach_date', { ascending: false });
-
-  if (error) throw error;
-  return (data || []).map(item => ({
-    ...item,
-    breach_severity: item.breach_severity as 'warning' | 'breach' | 'critical',
-    resolution_status: item.resolution_status as 'open' | 'acknowledged' | 'in_progress' | 'resolved'
-  }));
 }
 
-export async function updateBreachLog(id: string, updates: Partial<AppetiteBreachLog>): Promise<AppetiteBreachLog> {
-  const { data, error } = await supabase
-    .from('appetite_breach_logs')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+export async function updateBreachLog(
+  id: string, 
+  updates: Partial<AppetiteBreachLog>
+): Promise<AppetiteBreachLog | null> {
+  try {
+    const { data, error } = await supabase
+      .from('appetite_breach_logs')
+      .update(updates)
+      .eq('id', id)
+      .select(`
+        *,
+        risk_category:risk_categories(name)
+      `)
+      .single();
 
-  if (error) throw error;
-  return {
-    ...data,
-    breach_severity: data.breach_severity as 'warning' | 'breach' | 'critical',
-    resolution_status: data.resolution_status as 'open' | 'acknowledged' | 'in_progress' | 'resolved'
-  };
+    if (error) throw error;
+    return data as AppetiteBreachLog;
+  } catch (error) {
+    console.error('Error updating breach log:', error);
+    return null;
+  }
 }
 
-export async function escalateBreach(breachId: string, escalationLevel: number, escalatedTo?: string): Promise<void> {
-  await supabase
-    .from('appetite_breach_logs')
-    .update({
-      escalation_level: escalationLevel,
-      escalated_at: new Date().toISOString(),
-      escalated_to: escalatedTo,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', breachId);
+export async function escalateBreach(
+  id: string,
+  escalationData: {
+    escalated_to: string;
+    escalated_to_name: string;
+    escalation_level: number;
+  }
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('appetite_breach_logs')
+      .update({
+        ...escalationData,
+        escalated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    return !error;
+  } catch (error) {
+    console.error('Error escalating breach:', error);
+    return false;
+  }
 }

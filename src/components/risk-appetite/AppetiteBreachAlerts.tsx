@@ -35,7 +35,11 @@ const AppetiteBreachAlerts: React.FC = () => {
 
   const handleEscalate = async (breachId: string, currentLevel: number) => {
     try {
-      await escalateBreach(breachId, currentLevel + 1);
+      await escalateBreach(breachId, {
+        escalated_to: 'system',
+        escalated_to_name: 'System Auto-Escalation',
+        escalation_level: currentLevel + 1
+      });
       toast({
         title: "Success",
         description: "Breach escalated successfully",

@@ -12,6 +12,7 @@ import { KRIList } from "./KRIList";
 import AppetiteBreachAlerts from "./AppetiteBreachAlerts";
 import BoardReportGenerator from "./BoardReportGenerator";
 import EscalationWorkflow from "./EscalationWorkflow";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 interface RiskMetric {
   id: string;
@@ -333,7 +334,9 @@ const UnifiedRiskAppetite: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="breaches">
-          <AppetiteBreachAlerts />
+          <ErrorBoundary>
+            <AppetiteBreachAlerts />
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="reports">

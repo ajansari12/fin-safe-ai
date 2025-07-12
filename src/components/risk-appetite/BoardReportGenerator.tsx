@@ -55,11 +55,11 @@ const BoardReportGenerator: React.FC = () => {
 
     try {
       setIsGenerating(true);
-      await generateBoardReport(
-        startDate.toISOString().split('T')[0],
-        endDate.toISOString().split('T')[0],
-        reportType
-      );
+      await generateBoardReport({
+        report_period_start: startDate.toISOString().split('T')[0],
+        report_period_end: endDate.toISOString().split('T')[0],
+        report_type: reportType
+      });
       toast({
         title: "Success",
         description: "Board report generated successfully",
