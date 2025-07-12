@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DataAvailabilityStatus {
@@ -42,7 +43,10 @@ export interface DataRequirement {
 
 class DataAvailabilityService {
   async checkDataAvailability(orgId: string): Promise<DataAvailabilityStatus> {
-    console.log('DataAvailabilityService: Starting check for org', orgId);
+    logger.info('Starting data availability check', {
+      module: 'data_availability',
+      metadata: { orgId }
+    });
     try {
       // First get KRI definitions
       const krisResult = await supabase
@@ -96,14 +100,17 @@ class DataAvailabilityService {
           .eq('org_id', orgId)
       ]);
 
-      console.log('DataAvailabilityService: Got results', {
-        incidents: incidentsResult.data?.length || 0,
-        kris: krisResult.data?.length || 0,
-        kriLogs: kriLogsResult.data?.length || 0,
-        vendors: vendorsResult.data?.length || 0,
-        controls: controlsResult.data?.length || 0,
-        controlTests: controlTestsResult.data?.length || 0,
-        businessFunctions: businessFunctionsResult.data?.length || 0
+      logger.debug('Data availability check results', {
+        module: 'data_availability',
+        metadata: {
+          incidents: incidentsResult.data?.length || 0,
+          kris: krisResult.data?.length || 0,
+          kriLogs: kriLogsResult.data?.length || 0,
+          vendors: vendorsResult.data?.length || 0,
+          controls: controlsResult.data?.length || 0,
+          controlTests: controlTestsResult.data?.length || 0,
+          businessFunctions: businessFunctionsResult.data?.length || 0
+        }
       });
 
       const incidents = {
@@ -155,7 +162,10 @@ class DataAvailabilityService {
         readyForPredictive
       };
     } catch (error) {
-      console.error('Error checking data availability:', error);
+      logger.error('Failed to check data availability', {
+        module: 'data_availability',
+        metadata: { orgId }
+      }, error as Error);
       return {
         incidents: { count: 0, hasData: false },
         kris: { count: 0, hasData: false, withMeasurements: 0 },

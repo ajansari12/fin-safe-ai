@@ -41,7 +41,12 @@
   - ✅ `src/services/ai-organizational-intelligence-integration.ts` - COMPLETED (4 statements)
   - ✅ `src/services/analytics-service.ts` - COMPLETED (4 statements)
   - ✅ `src/services/appetite-breach/board-reports-service.ts` - COMPLETED (2 statements)
-  - 🔄 Continue with remaining 430+ console.error statements
+  - ✅ `src/services/appetite-breach/escalation-rules-service.ts` - COMPLETED (2 statements)
+  - ✅ `src/services/business-function-analytics-service.ts` - COMPLETED (1 statement)
+  - ✅ `src/services/controls/control-effectiveness-service.ts` - COMPLETED (4 statements)
+  - ✅ `src/services/data-availability-service.ts` - COMPLETED (3 statements)
+  - ✅ `src/services/dependencies-service.ts` - COMPLETED (14 statements)
+  - 🔄 Continue with remaining 415+ console.error statements
 - [ ] Standardize API error handling across all services
 - [ ] Performance monitoring integration
 
@@ -58,16 +63,18 @@
   - 58 console.warn (4.5%)
   - 2 console.info (0.2%)
 - **Files Migrated**: 2 core files (EnhancedAuthContext, error-logging-service)
-- **Statements Migrated**: ~175+ high-impact console statements (13.7% complete)
-- **Services Migrated**: 16 core services
+- **Statements Migrated**: ~200+ high-impact console statements (15.6% complete)
+- **Services Migrated**: 21 core services
   - Authentication & Error Services: 4 files ✅
   - Analytics Services: 5 files ✅  
-  - Business Function Services: 1 file ✅
+  - Business Function Services: 2 files ✅
   - Contract & Vendor Services: 1 file ✅
   - Continuity Services: 1 file ✅
-  - Risk Management Services: 1 file ✅
+  - Risk Management Services: 3 files ✅
   - Admin Services: 3 files ✅
   - AI Intelligence Services: 1 file ✅
+  - Controls Services: 1 file ✅
+  - Dependencies Services: 1 file ✅
 
 ## Search & Replace Patterns Ready
 - ✅ Error logging patterns documented
@@ -77,13 +84,16 @@
 ## Next Steps
 1. ✅ Migrate `EnhancedAuthContext.tsx` console statements - COMPLETED
 2. ✅ Begin service layer error replacement - IN PROGRESS
-3. 🔄 Continue with service layer console.error migration (430+ remaining)
+3. 🔄 Continue with service layer console.error migration (415+ remaining)
    - ✅ Contract services migrated
    - ✅ Continuity services migrated
    - ✅ Analytics services migrated
    - ✅ Admin services migrated
-   - ✅ AI intelligence services migrated  
-   - Target next: Control services, KRI services, vendor services
+   - ✅ AI intelligence services migrated
+   - ✅ Risk management services migrated
+   - ✅ Controls services migrated
+   - ✅ Dependencies services migrated
+   - Target next: KRI services, vendor services, governance services
 4. Remove development debug logs from navigation components  
 5. Test logger functionality in development
 6. Plan external monitoring integration

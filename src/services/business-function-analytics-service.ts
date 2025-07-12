@@ -1,4 +1,5 @@
 
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface SensitiveCBF {
@@ -50,7 +51,9 @@ export async function getMostSensitiveCBFs(): Promise<SensitiveCBF[]> {
         : 'Unknown'
     })) || [];
   } catch (error) {
-    console.error('Error fetching most sensitive CBFs:', error);
+    logger.error('Failed to fetch most sensitive CBFs', {
+      module: 'business_functions'
+    }, error as Error);
     return [];
   }
 }

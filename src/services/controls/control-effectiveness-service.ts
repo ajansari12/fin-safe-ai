@@ -1,4 +1,5 @@
 
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -41,7 +42,9 @@ export class ControlEffectivenessService {
       .eq('org_id', profile.organization_id);
 
     if (controlsError) {
-      console.error('Error fetching controls:', controlsError);
+      logger.error('Failed to fetch controls for effectiveness metrics', {
+        module: 'controls'
+      }, controlsError);
       throw new Error('Failed to fetch controls');
     }
 
@@ -52,7 +55,9 @@ export class ControlEffectivenessService {
       .eq('org_id', profile.organization_id);
 
     if (testsError) {
-      console.error('Error fetching control tests:', testsError);
+      logger.error('Failed to fetch control tests for effectiveness metrics', {
+        module: 'controls'
+      }, testsError);
       throw new Error('Failed to fetch control tests');
     }
 
@@ -117,7 +122,9 @@ export class ControlEffectivenessService {
       .eq('org_id', profile.organization_id);
 
     if (controlsError) {
-      console.error('Error fetching controls:', controlsError);
+      logger.error('Failed to fetch controls for test metrics', {
+        module: 'controls'
+      }, controlsError);
       throw new Error('Failed to fetch controls');
     }
 
@@ -127,7 +134,9 @@ export class ControlEffectivenessService {
       .eq('org_id', profile.organization_id);
 
     if (testsError) {
-      console.error('Error fetching tests:', testsError);
+      logger.error('Failed to fetch tests for metrics', {
+        module: 'controls'
+      }, testsError);
       throw new Error('Failed to fetch tests');
     }
 

@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface Dependency {
@@ -73,13 +74,19 @@ export async function getDependencies(businessFunctionId?: string): Promise<Depe
     const { data, error } = await query;
     
     if (error) {
-      console.error('Error fetching dependencies:', error);
+      logger.error('Failed to fetch dependencies', {
+        module: 'dependencies',
+        metadata: { businessFunctionId }
+      }, error);
       throw error;
     }
     
     return (data || []) as Dependency[];
   } catch (error) {
-    console.error('Error in getDependencies:', error);
+    logger.error('Error in getDependencies operation', {
+      module: 'dependencies',
+      metadata: { businessFunctionId }
+    }, error as Error);
     return [];
   }
 }
@@ -106,13 +113,19 @@ export async function createDependency(input: DependencyInput): Promise<Dependen
       .single();
 
     if (error) {
-      console.error('Error creating dependency:', error);
+      logger.error('Failed to create dependency', {
+        module: 'dependencies',
+        metadata: { input }
+      }, error);
       throw error;
     }
 
     return data as Dependency;
   } catch (error) {
-    console.error('Error in createDependency:', error);
+    logger.error('Error in createDependency operation', {
+      module: 'dependencies',
+      metadata: { input }
+    }, error as Error);
     throw error;
   }
 }
@@ -127,13 +140,19 @@ export async function updateDependency(id: string, input: Partial<DependencyInpu
       .single();
 
     if (error) {
-      console.error('Error updating dependency:', error);
+      logger.error('Failed to update dependency', {
+        module: 'dependencies',
+        metadata: { id, input }
+      }, error);
       throw error;
     }
 
     return data as Dependency;
   } catch (error) {
-    console.error('Error in updateDependency:', error);
+    logger.error('Error in updateDependency operation', {
+      module: 'dependencies',
+      metadata: { id, input }
+    }, error as Error);
     throw error;
   }
 }
@@ -146,11 +165,17 @@ export async function deleteDependency(id: string): Promise<void> {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting dependency:', error);
+      logger.error('Failed to delete dependency', {
+        module: 'dependencies',
+        metadata: { id }
+      }, error);
       throw error;
     }
   } catch (error) {
-    console.error('Error in deleteDependency:', error);
+    logger.error('Error in deleteDependency operation', {
+      module: 'dependencies',
+      metadata: { id }
+    }, error as Error);
     throw error;
   }
 }
@@ -184,13 +209,19 @@ export async function getDependencyLogs(dependencyId?: string, businessFunctionI
     const { data, error } = await query;
     
     if (error) {
-      console.error('Error fetching dependency logs:', error);
+      logger.error('Failed to fetch dependency logs', {
+        module: 'dependencies',
+        metadata: { dependencyId, businessFunctionId }
+      }, error);
       throw error;
     }
     
     return (data || []) as DependencyLog[];
   } catch (error) {
-    console.error('Error in getDependencyLogs:', error);
+    logger.error('Error in getDependencyLogs operation', {
+      module: 'dependencies',
+      metadata: { dependencyId, businessFunctionId }
+    }, error as Error);
     return [];
   }
 }
@@ -220,13 +251,17 @@ export async function getDependencyBreaches(): Promise<DependencyLog[]> {
       .limit(10);
     
     if (error) {
-      console.error('Error fetching dependency breaches:', error);
+      logger.error('Failed to fetch dependency breaches', {
+        module: 'dependencies'
+      }, error);
       throw error;
     }
     
     return (data || []) as DependencyLog[];
   } catch (error) {
-    console.error('Error in getDependencyBreaches:', error);
+    logger.error('Error in getDependencyBreaches operation', {
+      module: 'dependencies'
+    }, error as Error);
     return [];
   }
 }
@@ -270,13 +305,19 @@ export async function createDependencyRelationship(relationship: {
       .single();
 
     if (error) {
-      console.error('Error creating dependency relationship:', error);
+      logger.error('Failed to create dependency relationship', {
+        module: 'dependencies',
+        metadata: { relationship }
+      }, error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error in createDependencyRelationship:', error);
+    logger.error('Error in createDependencyRelationship operation', {
+      module: 'dependencies',
+      metadata: { relationship }
+    }, error as Error);
     throw error;
   }
 }
@@ -299,13 +340,19 @@ export async function updateDependencyEnhancements(id: string, updates: {
       .single();
 
     if (error) {
-      console.error('Error updating dependency enhancements:', error);
+      logger.error('Failed to update dependency enhancements', {
+        module: 'dependencies',
+        metadata: { id, updates }
+      }, error);
       throw error;
     }
 
     return data as Dependency;
   } catch (error) {
-    console.error('Error in updateDependencyEnhancements:', error);
+    logger.error('Error in updateDependencyEnhancements operation', {
+      module: 'dependencies',
+      metadata: { id, updates }
+    }, error as Error);
     throw error;
   }
 }

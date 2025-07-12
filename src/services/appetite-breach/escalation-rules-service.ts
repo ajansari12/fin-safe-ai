@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 import type { EscalationRule } from "./types";
@@ -17,7 +18,9 @@ export async function getEscalationRules(): Promise<EscalationRule[]> {
     if (error) throw error;
     return (data || []) as EscalationRule[];
   } catch (error) {
-    console.error('Error fetching escalation rules:', error);
+    logger.error('Failed to fetch escalation rules', {
+      module: 'appetite_breach'
+    }, error as Error);
     return [];
   }
 }
@@ -41,7 +44,9 @@ export async function createEscalationRule(
     if (error) throw error;
     return data as EscalationRule;
   } catch (error) {
-    console.error('Error creating escalation rule:', error);
+    logger.error('Failed to create escalation rule', {
+      module: 'appetite_breach'
+    }, error as Error);
     return null;
   }
 }
