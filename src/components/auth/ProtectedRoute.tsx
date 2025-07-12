@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
+// FIXME: Already using EnhancedAuthContext - this is correct
 import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 

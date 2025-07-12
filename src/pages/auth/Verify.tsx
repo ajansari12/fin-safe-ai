@@ -4,7 +4,8 @@ import { Link } from "react-router-dom";
 import { Shield, Mail, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+// TODO: Migrated from AuthContext to EnhancedAuthContext
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
