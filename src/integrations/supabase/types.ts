@@ -2419,6 +2419,7 @@ export type Database = {
       controls: {
         Row: {
           control_name: string | null
+          control_type: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -2440,6 +2441,7 @@ export type Database = {
         }
         Insert: {
           control_name?: string | null
+          control_type?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2461,6 +2463,7 @@ export type Database = {
         }
         Update: {
           control_name?: string | null
+          control_type?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
