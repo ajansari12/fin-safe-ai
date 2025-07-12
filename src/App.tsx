@@ -54,6 +54,7 @@ import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedA
 import ErrorMonitor from './components/error/ErrorMonitor';
 import { AuthDebugTrigger } from './components/debug/AuthDebugTrigger';
 import { SecurityMonitor } from './components/security/SecurityMonitor';
+import { quickSchemaCheck } from '@/utils/schema-validation';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,19 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Run schema validation in development
+if (import.meta.env.DEV) {
+  quickSchemaCheck().then(isValid => {
+    if (!isValid) {
+      console.warn('⚠️ Database schema issues detected. Check console for details.');
+    } else {
+      console.log('✅ Database schema validation passed.');
+    }
+  }).catch(error => {
+    console.error('❌ Schema validation failed:', error);
+  });
+}
 
 function App() {
   return (

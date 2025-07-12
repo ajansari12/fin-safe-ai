@@ -95,7 +95,7 @@ export const businessContinuityService = {
       .from('continuity_plans')
       .select(`
         *,
-        business_functions:business_function_id(name, criticality)
+        business_functions!business_function_id(name, criticality)
       `)
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
@@ -103,7 +103,10 @@ export const businessContinuityService = {
     if (error) throw error;
     return (data || []).map(item => ({
       ...item,
-      status: item.status as 'draft' | 'active' | 'archived'
+      status: item.status as 'draft' | 'active' | 'archived',
+      business_functions: Array.isArray(item.business_functions) && item.business_functions.length > 0
+        ? item.business_functions[0]
+        : item.business_functions
     }));
   },
 
@@ -176,9 +179,9 @@ export const businessContinuityService = {
       .from('continuity_tests')
       .select(`
         *,
-        continuity_plans:continuity_plan_id(
+        continuity_plans!continuity_plan_id(
           plan_name,
-          business_functions:business_function_id(name)
+          business_functions!business_function_id(name)
         )
       `)
       .eq('org_id', orgId)

@@ -2407,6 +2407,13 @@ export type Database = {
             referencedRelation: "controls"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_control_tests_control"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "controls"
+            referencedColumns: ["id"]
+          },
         ]
       }
       controls: {
@@ -2975,6 +2982,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "dependencies_business_function_id_fkey"
+            columns: ["business_function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_dependencies_business_function"
             columns: ["business_function_id"]
             isOneToOne: false
             referencedRelation: "business_functions"
@@ -5441,6 +5455,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_impact_tolerances_business_function"
+            columns: ["function_id"]
+            isOneToOne: false
+            referencedRelation: "business_functions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "impact_tolerances_function_id_fkey"
             columns: ["function_id"]
             isOneToOne: false
@@ -6268,6 +6289,13 @@ export type Database = {
           warning_threshold?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_kri_definitions_control"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "controls"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "kri_definitions_control_id_fkey"
             columns: ["control_id"]

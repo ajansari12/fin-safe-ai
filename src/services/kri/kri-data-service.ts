@@ -134,7 +134,7 @@ export class KRIDataService {
     return {
       id: rawKRI.id,
       org_id: rawKRI.org_id,
-      name: rawKRI.name,
+      name: rawKRI.name || rawKRI.kri_name, // Support both column names
       description: rawKRI.description,
       measurement_frequency: rawKRI.measurement_frequency,
       target_value: rawKRI.target_value,

@@ -1,8 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeJoinResults } from "@/lib/data-normalization";
 
 export interface BusinessFunction {
   id: string;
   name: string;
+  function_name?: string; // Alias for name
   description: string | null;
   owner: string | null;
   criticality: string;
@@ -142,14 +144,7 @@ export async function getImpactTolerances(functionId?: string) {
   }
   
   // Normalize the business_functions array to single object
-  const normalizedData = (data || []).map(item => ({
-    ...item,
-    business_functions: Array.isArray(item.business_functions) && item.business_functions.length > 0
-      ? item.business_functions[0]
-      : item.business_functions
-  }));
-  
-  return normalizedData;
+  return normalizeJoinResults(data || []);
 }
 
 export async function createImpactTolerance(toleranceData: {
