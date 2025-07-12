@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile, getUserOrganization } from "@/lib/supabase-utils";
 import { knowledgeBaseService, type VectorSearchResult } from "@/services/knowledge-base-service";
+import { logger } from "@/lib/logger";
 
 export interface WorkflowAnalysis {
   module: string;
@@ -105,7 +106,11 @@ class AIAssistantService {
 
       return Object.values(moduleAnalysis);
     } catch (error) {
-      console.error('Error analyzing workflow completeness:', error);
+      logger.error('Error analyzing workflow completeness', { 
+        component: 'AIAssistantService',
+        module: 'ai-assistant',
+        metadata: { orgId }
+      }, error);
       return [];
     }
   }
@@ -157,7 +162,11 @@ class AIAssistantService {
 
       return riskSummaries;
     } catch (error) {
-      console.error('Error generating executive risk summary:', error);
+      logger.error('Error generating executive risk summary', { 
+        component: 'AIAssistantService',
+        module: 'ai-assistant',
+        metadata: { orgId }
+      }, error);
       return [];
     }
   }
@@ -287,7 +296,11 @@ class AIAssistantService {
 
       return await this.logChatMessage(messageType, enhancedContent, moduleContext, knowledgeSources, responseTimeMs);
     } catch (error) {
-      console.error('Error in enhanced chat logging:', error);
+      logger.error('Error in enhanced chat logging', { 
+        component: 'AIAssistantService',
+        module: 'ai-assistant',
+        metadata: { messageType, moduleContext }
+      }, error);
       // Fallback to regular logging
       return await this.logChatMessage(messageType, content, moduleContext, [], responseTimeMs);
     }
@@ -323,13 +336,19 @@ class AIAssistantService {
       });
 
       if (error) {
-        console.error('AI assistant error:', error);
+        logger.error('AI assistant function error', { 
+          component: 'AIAssistantService',
+          module: 'ai-assistant' 
+        }, error);
         return null;
       }
 
       return data?.response || null;
     } catch (error) {
-      console.error('Error generating contextual response:', error);
+      logger.error('Error generating contextual response', { 
+        component: 'AIAssistantService',
+        module: 'ai-assistant' 
+      }, error);
       return null;
     }
   }
@@ -385,7 +404,11 @@ class AIAssistantService {
       if (error) throw error;
       return data.id;
     } catch (error) {
-      console.error('Error logging chat message:', error);
+      logger.error('Error logging chat message', { 
+        component: 'AIAssistantService',
+        module: 'ai-assistant',
+        metadata: { messageType, moduleContext }
+      }, error);
       throw error;
     }
   }
@@ -402,7 +425,11 @@ class AIAssistantService {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error updating chat feedback:', error);
+      logger.error('Error updating chat feedback', { 
+        component: 'AIAssistantService',
+        module: 'ai-assistant',
+        metadata: { logId, rating }
+      }, error);
       throw error;
     }
   }
@@ -433,7 +460,11 @@ class AIAssistantService {
 
       return chatLogs;
     } catch (error) {
-      console.error('Error fetching chat history:', error);
+      logger.error('Error fetching chat history', { 
+        component: 'AIAssistantService',
+        module: 'ai-assistant',
+        metadata: { sessionId, limit }
+      }, error);
       return [];
     }
   }
