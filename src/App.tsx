@@ -29,7 +29,6 @@ import DocumentManagementPage from './pages/DocumentManagement';
 import WorkflowCenterPage from './pages/WorkflowCenter';
 import DependencyMappingPage from './pages/DependencyMapping';
 import SupportPage from './pages/Support';
-import OSFICompliancePage from './pages/OSFICompliance';
 import { DashboardSkeleton } from './components/common/SkeletonLoaders';
 
 // Lazy load Chart.js-heavy pages
@@ -215,13 +214,6 @@ function App() {
                 <EnhancedProtectedRoute>
                   <RouteErrorBoundary routeName="Third-Party Risk" moduleName="Risk Management">
                     <ThirdPartyRiskPage />
-                  </RouteErrorBoundary>
-                </EnhancedProtectedRoute>
-              } />
-              <Route path="/app/osfi-compliance" element={
-                <EnhancedProtectedRoute>
-                  <RouteErrorBoundary routeName="OSFI E-21 Compliance" moduleName="Compliance">
-                    <OSFICompliancePage />
                   </RouteErrorBoundary>
                 </EnhancedProtectedRoute>
               } />

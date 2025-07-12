@@ -6,7 +6,7 @@ import ComplianceAnalyticsDashboard from "./ComplianceAnalyticsDashboard";
 import UnifiedRiskAppetite from "@/components/risk-appetite/UnifiedRiskAppetite";
 import VendorRiskDashboard from "@/components/third-party/VendorRiskDashboard";
 import IncidentLog from "@/pages/IncidentLog";
-import OSFIGovernanceOversight from "../osfi-integration/OSFIGovernanceOversight";
+import OSFIGovernanceOversight from "./OSFIGovernanceOversight";
 import { BarChart3, FileText, Shield, TrendingUp, Building2, AlertTriangle } from "lucide-react";
 
 export default function ComplianceDashboard() {
@@ -48,7 +48,15 @@ export default function ComplianceDashboard() {
         </TabsList>
         
         <TabsContent value="governance">
-          <OSFIGovernanceOversight />
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-sm font-medium text-blue-900 mb-2">OSFI E-21 Governance Framework</h3>
+              <p className="text-sm text-blue-700">
+                Enhanced governance oversight with OSFI E-21 compliance requirements including board oversight, policy management, and regulatory reporting.
+              </p>
+            </div>
+            <OSFIGovernanceOversight />
+          </div>
         </TabsContent>
         
         <TabsContent value="risk-appetite">

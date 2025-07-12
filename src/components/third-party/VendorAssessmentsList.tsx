@@ -13,7 +13,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { enhancedThirdPartyRiskService } from '@/services/enhanced-third-party-risk-service';
+import { getVendorProfiles } from '@/services/third-party-service';
 import VendorAssessmentForm from './VendorAssessmentForm';
 import { toast } from 'sonner';
 
@@ -49,8 +49,24 @@ const VendorAssessmentsList: React.FC = () => {
   const loadAssessments = async () => {
     try {
       setLoading(true);
-      const data = await enhancedThirdPartyRiskService.getVendorAssessments();
-      setAssessments(data || []);
+      const data = await getVendorProfiles();
+      setAssessments(data.map(vendor => ({
+        id: vendor.id,
+        vendor_profile_id: vendor.id,
+        org_id: vendor.org_id,
+        vendor_name: vendor.vendor_name,
+        assessment_type: 'Risk Assessment',
+        assessment_date: vendor.last_assessment_date || vendor.created_at,
+        overall_risk_score: vendor.calculated_risk_score || 0,
+        status: 'completed',
+        last_updated: vendor.updated_at,
+        assessor_name: 'System',
+        created_at: vendor.created_at,
+        updated_at: vendor.updated_at,
+        assessment_methodology: {},
+        risk_factors: {},
+        mitigation_recommendations: {}
+      })));
     } catch (error) {
       console.error('Error loading vendor assessments:', error);
       toast.error('Failed to load vendor assessments');
