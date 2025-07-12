@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
+import { logger } from "@/lib/logger";
 
 export interface ErrorLogData {
   route: string;
@@ -49,12 +50,18 @@ class ErrorLoggingService {
         .insert(logEntry);
 
       if (error) {
-        // TODO: LOGGER_MIGRATION - Replace with logger.critical
-        console.error('Failed to log error to database:', error);
+        logger.critical('Failed to log error to database', { 
+          component: 'ErrorLoggingService',
+          module: 'error-logging',
+          sessionId: this.sessionId 
+        }, error);
       }
     } catch (err) {
-      // TODO: LOGGER_MIGRATION - Replace with logger.critical  
-      console.error('Error logging service failed:', err);
+      logger.critical('Error logging service failed', { 
+        component: 'ErrorLoggingService',
+        module: 'error-logging',
+        sessionId: this.sessionId 
+      }, err);
     }
   }
 
@@ -93,8 +100,11 @@ class ErrorLoggingService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      // TODO: LOGGER_MIGRATION - Replace with logger.error
-      console.error('Failed to fetch error logs:', error);
+      logger.error('Failed to fetch error logs', { 
+        component: 'ErrorLoggingService',
+        module: 'error-logging',
+        sessionId: this.sessionId 
+      }, error);
       return [];
     }
   }

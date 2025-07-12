@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 // Enhanced user profile with unified roles and permissions
 export interface EnhancedProfile {
@@ -129,34 +130,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const location = useLocation();
 
   useEffect(() => {
-    console.log('🚀 Initializing enhanced auth state...');
+    logger.info('Initializing enhanced auth state', { 
+      component: 'EnhancedAuthContext',
+      module: 'authentication' 
+    });
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.email || 'no user');
+        logger.debug('Auth state changed', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          metadata: { event, userEmail: session?.user?.email || 'no user' }
+        });
         
         setSession(session);
         setUser(session?.user ?? null);
         
         if (event === 'SIGNED_IN') {
-          console.log('✅ User signed in successfully');
+          logger.info('User signed in successfully', { 
+            component: 'EnhancedAuthContext',
+            module: 'authentication',
+            userId: session?.user?.id 
+          });
           // Defer the profile fetch to avoid potential deadlocks
           setTimeout(() => {
             fetchEnhancedUserData(session?.user?.id);
           }, 0);
         } else if (event === 'TOKEN_REFRESHED') {
-          console.log('🔄 Token refreshed');
+          logger.debug('Token refreshed', { 
+            component: 'EnhancedAuthContext',
+            module: 'authentication',
+            userId: session?.user?.id 
+          });
           // Optionally refresh profile data
           setTimeout(() => {
             fetchEnhancedUserData(session?.user?.id);
           }, 0);
         } else if (event === 'SIGNED_OUT') {
-          console.log('👋 User signed out');
+          logger.info('User signed out', { 
+            component: 'EnhancedAuthContext',
+            module: 'authentication' 
+          });
           setProfile(null);
           setUserContext(null);
         } else if (event === 'USER_UPDATED') {
-          console.log('👤 User updated');
+          logger.debug('User updated', { 
+            component: 'EnhancedAuthContext',
+            module: 'authentication',
+            userId: session?.user?.id 
+          });
           setTimeout(() => {
             fetchEnhancedUserData(session?.user?.id);
           }, 0);
@@ -167,29 +190,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
-        console.error('❌ Error getting session:', error);
+        logger.error('Error getting session', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication' 
+        }, error);
       } else if (session) {
-        console.log('✅ Existing session found for:', session.user.email);
+        logger.info('Existing session found', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          metadata: { userEmail: session.user.email }
+        });
         setSession(session);
         setUser(session.user);
         fetchEnhancedUserData(session.user.id);
       } else {
-        console.log('ℹ️ No existing session found');
+        logger.debug('No existing session found', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication' 
+        });
       }
     }).finally(() => {
-      console.log('🏁 Enhanced auth initialization complete');
+      logger.info('Enhanced auth initialization complete', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication' 
+      });
       setIsLoading(false);
     });
 
     return () => {
-      console.log('🧹 Cleaning up enhanced auth subscription');
+      logger.debug('Cleaning up enhanced auth subscription', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication' 
+      });
       subscription.unsubscribe();
     };
   }, []);
 
   const fetchEnhancedUserData = async (userId: string | undefined, retryCount = 0) => {
     if (!userId) {
-      console.warn('⚠️ No userId provided to fetchEnhancedUserData');
+      logger.warn('No userId provided to fetchEnhancedUserData', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication' 
+      });
       return;
     }
     
@@ -197,7 +239,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
     
     try {
-      console.log('👤 Fetching enhanced user data for:', userId, retryCount > 0 ? `(retry ${retryCount})` : '');
+      logger.debug('Fetching enhanced user data', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        userId,
+        metadata: { retryCount }
+      });
       
       // Fetch profile data with error resilience
       const { data: profileData, error: profileError } = await supabase
@@ -207,11 +254,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
         
       if (profileError) {
-        console.error('❌ Error fetching profile:', profileError);
+        logger.error('Error fetching profile', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          userId,
+          metadata: { errorCode: profileError.code }
+        }, profileError);
         
         // Handle missing profile gracefully
         if (profileError.code === 'PGRST116') {
-          console.warn('⚠️ No profile found for user, creating minimal context');
+          logger.warn('No profile found for user, creating minimal context', { 
+            component: 'EnhancedAuthContext',
+            module: 'authentication',
+            userId 
+          });
           
           // Create minimal context for user without profile
           const minimalContext: UnifiedUserContext = {
@@ -227,14 +283,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
           // Redirect to setup only if not already there
           if (location.pathname.startsWith('/app/') && location.pathname !== '/setup/enhanced') {
-            console.log('🔄 Redirecting to organization setup');
+            logger.info('Redirecting to organization setup', { 
+              component: 'EnhancedAuthContext',
+              module: 'authentication',
+              userId 
+            });
             navigate('/setup/enhanced');
           }
           return;
         }
         
         // For other errors, create fallback context instead of throwing
-        console.warn('⚠️ Profile fetch failed, creating fallback context:', profileError);
+        logger.warn('Profile fetch failed, creating fallback context', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          userId,
+          metadata: { error: profileError.message }
+        });
         const fallbackContext: UnifiedUserContext = {
           userId,
           email: user?.email || null,
@@ -255,7 +320,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', userId);
         
       if (rolesError) {
-        console.warn('⚠️ Error fetching user roles, using default:', rolesError);
+        logger.warn('Error fetching user roles, using default', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          userId,
+          metadata: { error: rolesError.message }
+        });
       }
       
       // Safely compute roles array with fallbacks
@@ -295,11 +365,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile: enhancedProfile
       };
       
-      console.log('✅ Enhanced user data fetched successfully:', {
-        profile: enhancedProfile.full_name || 'Anonymous',
-        roles: allRoles,
-        permissions: permissions.length,
-        organizationId: profileData?.organization_id || 'None'
+      logger.info('Enhanced user data fetched successfully', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        userId,
+        metadata: {
+          profileName: enhancedProfile.full_name || 'Anonymous',
+          rolesCount: allRoles.length,
+          permissionsCount: permissions.length,
+          organizationId: profileData?.organization_id || 'None'
+        }
       });
       
       setProfile(enhancedProfile);
@@ -308,11 +383,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Check organization access after setting profile
       checkOrganizationAccess(enhancedProfile);
     } catch (error) {
-      console.error('💥 Failed to fetch enhanced user data:', error);
+      logger.error('Failed to fetch enhanced user data', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        userId,
+        metadata: { retryCount, maxRetries }
+      }, error);
       
       // Retry mechanism with exponential backoff
       if (retryCount < maxRetries) {
-        console.log(`🔄 Retrying fetchEnhancedUserData in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        logger.info('Retrying fetchEnhancedUserData', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          userId,
+          metadata: { retryDelay, attempt: retryCount + 1, maxRetries }
+        });
         setTimeout(() => {
           fetchEnhancedUserData(userId, retryCount + 1);
         }, retryDelay);
@@ -330,7 +415,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
       
       setUserContext(emergencyContext);
-      console.warn('🆘 Created emergency user context after max retries');
+      logger.warn('Created emergency user context after max retries', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        userId 
+      });
     }
   };
 
@@ -362,19 +451,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check if user has valid organization_id
     if (!profile.organization_id) {
-      console.log('🏢 No organization_id found, redirecting to setup');
+      logger.info('No organization_id found, redirecting to setup', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        userId: profile.id 
+      });
       navigate('/setup/enhanced');
       return;
     }
 
-    console.log('✅ Valid organization access confirmed:', profile.organization_id);
+    logger.debug('Valid organization access confirmed', { 
+      component: 'EnhancedAuthContext',
+      module: 'authentication',
+      userId: profile.id,
+      organizationId: profile.organization_id 
+    });
   };
 
   const hasRole = (role: string): boolean => {
     try {
       return userContext?.roles?.includes(role) || false;
     } catch (error) {
-      console.warn('⚠️ Error checking role:', error);
+      logger.warn('Error checking role', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { role, error: error.message }
+      });
       return false;
     }
   };
@@ -383,7 +485,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       return userContext?.permissions?.includes(permission) || false;
     } catch (error) {
-      console.warn('⚠️ Error checking permission:', error);
+      logger.warn('Error checking permission', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { permission, error: error.message }
+      });
       return false;
     }
   };
@@ -392,7 +498,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       return Array.isArray(roles) && roles.some(role => hasRole(role));
     } catch (error) {
-      console.warn('⚠️ Error checking multiple roles:', error);
+      logger.warn('Error checking multiple roles', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { roles, error: error.message }
+      });
       return false;
     }
   };
@@ -401,7 +511,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       return hasAnyRole(['admin', 'super_admin']);
     } catch (error) {
-      console.warn('⚠️ Error checking admin status:', error);
+      logger.warn('Error checking admin status', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { error: error.message }
+      });
       return false;
     }
   };
@@ -415,7 +529,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      console.log('🔐 Attempting login for:', email);
+      logger.info('Attempting login', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { email }
+      });
       
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
@@ -423,11 +541,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('❌ Login error details:', {
-          message: error.message,
-          code: error.status,
-          details: error
-        });
+        logger.error('Login error', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          metadata: { email, errorCode: error.status }
+        }, error);
         
         // Provide more specific error messages
         let userMessage = error.message;
@@ -444,17 +562,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        console.log('✅ Login successful for user:', data.user.email);
+        logger.info('Login successful', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          userId: data.user.id,
+          metadata: { email: data.user.email }
+        });
         
         // Redirect to app dashboard or the page they were trying to access
         const origin = location.state?.from?.pathname || "/app/dashboard";
         navigate(origin);
       } else {
-        console.warn('⚠️ Login returned no user data');
+        logger.warn('Login returned no user data', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          metadata: { email }
+        });
         throw new Error('Login failed - no user data received');
       }
     } catch (error) {
-      console.error("💥 Login failed:", error);
+      logger.error('Login failed', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { email }
+      }, error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -464,7 +595,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string, fullName: string) => {
     setIsLoading(true);
     try {
-      console.log('📝 Attempting registration for:', email);
+      logger.info('Attempting registration', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { email, fullName }
+      });
       
       const { data, error } = await supabase.auth.signUp({ 
         email, 
@@ -478,7 +613,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) {
-        console.error('❌ Registration error:', error);
+        logger.error('Registration error', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          metadata: { email }
+        }, error);
         
         let userMessage = error.message;
         if (error.message.includes('User already registered')) {
@@ -492,12 +631,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data.user) {
-        console.log('✅ Registration successful for user:', data.user.email);
+        logger.info('Registration successful', { 
+          component: 'EnhancedAuthContext',
+          module: 'authentication',
+          userId: data.user.id,
+          metadata: { email: data.user.email }
+        });
         toast.success('Registration successful! Please check your email for verification.');
         navigate("/auth/verify");
       }
     } catch (error) {
-      console.error("💥 Registration failed:", error);
+      logger.error('Registration failed', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { email }
+      }, error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -514,7 +662,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       navigate("/");
     } catch (error) {
-      console.error("Logout failed:", error);
+      logger.error('Logout failed', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication' 
+      }, error);
     } finally {
       setIsLoading(false);
     }
@@ -534,7 +685,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast.success("Password reset email sent!");
     } catch (error) {
-      console.error("Password reset failed:", error);
+      logger.error('Password reset failed', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        metadata: { email }
+      }, error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -554,7 +709,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success("Password updated successfully!");
       navigate("/app/dashboard");
     } catch (error) {
-      console.error("Password update failed:", error);
+      logger.error('Password update failed', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication' 
+      }, error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -580,7 +738,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await refreshUserContext();
       toast.success("Profile updated successfully!");
     } catch (error) {
-      console.error("Profile update failed:", error);
+      logger.error('Profile update failed', { 
+        component: 'EnhancedAuthContext',
+        module: 'authentication',
+        userId: user.id 
+      }, error);
       throw error;
     } finally {
       setIsLoading(false);

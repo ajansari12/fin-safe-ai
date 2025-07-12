@@ -38,20 +38,7 @@ export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
                                   typeof hasAnyRole === 'function' && 
                                   typeof isOrgAdmin === 'function';
 
-  // TODO: REMOVE - Excessive debug logging, replace with structured logger
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🧭 RoleAwareNavigation Debug:', {
-      itemsCount: items.length,
-      permissionFunctionsReady,
-      hasPermission: typeof hasPermission,
-      hasRole: typeof hasRole,
-      hasAnyRole: typeof hasAnyRole,
-      isOrgAdmin: typeof isOrgAdmin,
-      testPermission: permissionFunctionsReady ? hasPermission('dashboard:view') : 'NOT_READY',
-      testRole: permissionFunctionsReady ? hasRole('user') : 'NOT_READY',
-      testAdmin: permissionFunctionsReady ? isOrgAdmin() : 'NOT_READY'
-    });
-  }
+  // Development debugging removed - now using structured logger where needed
 
   const isItemAccessible = (item: NavigationItem): boolean => {
     // EMERGENCY FALLBACK: If permission system is not ready, show basic navigation items
@@ -72,72 +59,58 @@ export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
     // Check route-specific permissions first
     const routePermissions = getRoutePermissions(item.url);
     if (routePermissions) {
-      console.log(`🔍 Checking route permissions for ${item.url}:`, routePermissions);
-      
       // Admin only check
       if (routePermissions.adminOnly && !isOrgAdmin()) {
-        console.log(`❌ Admin required for ${item.url}, user is not admin`);
         return false;
       }
       
       // Role requirements
       if (routePermissions.requiredRole && !hasRole(routePermissions.requiredRole)) {
-        console.log(`❌ Role ${routePermissions.requiredRole} required for ${item.url}`);
         return false;
       }
       
       if (routePermissions.requiredAnyRole && !hasAnyRole(routePermissions.requiredAnyRole)) {
-        console.log(`❌ One of roles ${routePermissions.requiredAnyRole} required for ${item.url}`);
         return false;
       }
       
       // Permission requirements
       if (routePermissions.requiredPermission && !hasPermission(routePermissions.requiredPermission)) {
-        console.log(`❌ Permission ${routePermissions.requiredPermission} required for ${item.url}`);
         return false;
       }
       
       if (routePermissions.requiredAnyPermission && 
           !routePermissions.requiredAnyPermission.some(permission => hasPermission(permission))) {
-        console.log(`❌ One of permissions ${routePermissions.requiredAnyPermission} required for ${item.url}`);
         return false;
       }
     }
 
     // Check item-specific permissions (fallback)
     if (item.adminOnly && !isOrgAdmin()) {
-      console.log(`❌ Item ${item.title} requires admin access`);
       return false;
     }
     
     if (item.requiredRole && !hasRole(item.requiredRole)) {
-      console.log(`❌ Item ${item.title} requires role ${item.requiredRole}`);
       return false;
     }
     
     if (item.requiredAnyRole && !hasAnyRole(item.requiredAnyRole)) {
-      console.log(`❌ Item ${item.title} requires one of roles ${item.requiredAnyRole}`);
       return false;
     }
     
     if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
-      console.log(`❌ Item ${item.title} requires permission ${item.requiredPermission}`);
       return false;
     }
     
     if (item.requiredAnyPermission && 
         !item.requiredAnyPermission.some(permission => hasPermission(permission))) {
-      console.log(`❌ Item ${item.title} requires one of permissions ${item.requiredAnyPermission}`);
       return false;
     }
 
-    console.log(`✅ Item ${item.title} is accessible`);
     return true;
   };
 
   const renderNavigationItem = (item: NavigationItem) => {
     const accessible = isItemAccessible(item);
-    console.log(`📝 Rendering ${item.title}: accessible=${accessible}`);
     
     if (!accessible) {
       return null;
@@ -148,7 +121,6 @@ export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
 
     // If item has subitems but none are accessible, don't render
     if (item.items && !hasAccessibleSubItems) {
-      console.log(`📝 ${item.title} has no accessible subitems, skipping`);
       return null;
     }
 
@@ -177,7 +149,6 @@ export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
   };
 
   const renderedItems = items.map(item => renderNavigationItem(item)).filter(Boolean);
-  console.log(`📊 Navigation Summary: ${renderedItems.length}/${items.length} items rendered`);
 
   return (
     <nav className={`space-y-1 ${className}`}>

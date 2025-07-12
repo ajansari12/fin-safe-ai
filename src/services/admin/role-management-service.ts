@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
+import { logger } from "@/lib/logger";
 
 export interface UserRole {
   id: string;
@@ -56,7 +57,10 @@ class RoleManagementService {
         user_email: userRole?.profiles?.[0]?.email || ''
       }));
     } catch (error) {
-      console.error('Error fetching user roles:', error);
+      logger.error('Error fetching user roles', { 
+        component: 'RoleManagementService',
+        module: 'admin' 
+      }, error);
       return [];
     }
   }
@@ -103,7 +107,11 @@ class RoleManagementService {
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
     } catch (error) {
-      console.error('Error updating user role:', error);
+      logger.error('Error updating user role', { 
+        component: 'RoleManagementService',
+        module: 'admin',
+        metadata: { userId, role }
+      }, error);
       throw error;
     }
   }
@@ -113,7 +121,11 @@ class RoleManagementService {
       // This would remove the user's role from a proper user_roles table
       console.log('Removing user role:', userId);
     } catch (error) {
-      console.error('Error removing user role:', error);
+      logger.error('Error removing user role', { 
+        component: 'RoleManagementService',
+        module: 'admin',
+        metadata: { userId }
+      }, error);
       throw error;
     }
   }
