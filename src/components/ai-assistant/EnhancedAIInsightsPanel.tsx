@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { enhancedAIAssistantService } from "@/services/enhanced-ai-assistant-service";
 import type { ModuleCompletion, WorkflowTask } from "@/services/enhanced-ai-assistant-service";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { getUserOrganization } from "@/lib/supabase-utils";
 
 interface EnhancedAIInsightsPanelProps {

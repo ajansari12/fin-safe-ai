@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEnhancedAuth } from "./EnhancedAuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { toast } from "sonner";
 
 interface OnboardingStep {
@@ -45,7 +45,7 @@ const ONBOARDING_STEPS = [
 ];
 
 export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, userContext } = useEnhancedAuth();
+  const { user, userContext } = useAuth();
   const [onboardingStatus, setOnboardingStatus] = useState<'not_started' | 'in_progress' | 'completed' | 'skipped'>('not_started');
   const [currentSession, setCurrentSession] = useState<OnboardingSession | null>(null);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);

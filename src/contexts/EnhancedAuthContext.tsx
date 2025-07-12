@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Enhanced user profile with unified roles and permissions
-interface EnhancedProfile {
+export interface EnhancedProfile {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
@@ -19,7 +19,7 @@ interface EnhancedProfile {
 }
 
 // Unified user session context
-interface UnifiedUserContext {
+export interface UnifiedUserContext {
   userId: string | null;
   email: string | null;
   organizationId: string | null;
@@ -28,7 +28,7 @@ interface UnifiedUserContext {
   profile: EnhancedProfile | null;
 }
 
-interface EnhancedAuthContextType {
+export interface EnhancedAuthContextType {
   user: User | null;
   session: Session | null;
   profile: EnhancedProfile | null;
@@ -119,7 +119,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ]
 };
 
-export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<EnhancedProfile | null>(null);
@@ -612,10 +612,15 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   );
 };
 
-export const useEnhancedAuth = () => {
+export const EnhancedAuthProvider = AuthProvider; // Legacy alias
+
+export const useAuth = () => {
   const context = useContext(EnhancedAuthContext);
   if (context === undefined) {
-    throw new Error("useEnhancedAuth must be used within an EnhancedAuthProvider");
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
+
+// Legacy alias for backward compatibility during transition
+export const useEnhancedAuth = useAuth;

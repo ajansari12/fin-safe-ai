@@ -1,8 +1,7 @@
 
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { EnhancedAuthProvider } from './contexts/EnhancedAuthContext';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/EnhancedAuthContext';
 import { OrgProvider } from './contexts/OrgContext';
 import { PermissionProvider } from './contexts/PermissionContext';
 import { OnboardingProvider } from './contexts/OnboardingContext';
@@ -73,7 +72,6 @@ function App() {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />
           <BrowserRouter>
-          <EnhancedAuthProvider>
             <AuthProvider>
               <OrgProvider>
                 <PermissionProvider>
@@ -411,7 +409,6 @@ function App() {
                 </PermissionProvider>
               </OrgProvider>
             </AuthProvider>
-          </EnhancedAuthProvider>
         </BrowserRouter>
         </ThemeProvider>
       </QueryClientProvider>

@@ -14,10 +14,10 @@ export async function getCurrentUserProfile() {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      console.warn('Profile table not available, using auth user data:', error);
+      console.warn('Error fetching profile:', error);
       // Return a mock profile based on auth user
       return {
         id: user.id,
@@ -31,9 +31,49 @@ export async function getCurrentUserProfile() {
       };
     }
 
+    // If no profile found, create a basic one
+    if (!profile) {
+      console.warn('No profile found for user, creating basic profile');
+      const basicProfile = {
+        id: user.id,
+        full_name: user.user_metadata?.full_name || user.email,
+        avatar_url: user.user_metadata?.avatar_url,
+        role: 'user',
+        organization_id: null,
+        onboarding_status: 'not_started',
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      };
+      
+      // Try to insert the basic profile
+      try {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert(basicProfile);
+          
+        if (insertError) {
+          console.warn('Failed to create basic profile:', insertError);
+        }
+      } catch (insertErr) {
+        console.warn('Error inserting basic profile:', insertErr);
+      }
+      
+      return basicProfile;
+    }
+
     // Validate profile data
     if (!isValidProfile(profile)) {
-      throw new Error('Invalid profile data structure');
+      console.warn('Invalid profile data structure, using fallback');
+      return {
+        id: user.id,
+        full_name: profile.full_name || user.email,
+        avatar_url: profile.avatar_url,
+        role: profile.role || 'user',
+        organization_id: profile.organization_id,
+        onboarding_status: profile.onboarding_status || 'not_started',
+        created_at: profile.created_at || user.created_at,
+        updated_at: profile.updated_at || user.updated_at
+      };
     }
 
     return profile;

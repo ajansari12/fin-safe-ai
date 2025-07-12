@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOnboarding } from "@/contexts/OnboardingContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { ArrowRight, ArrowLeft, User } from "lucide-react";
 
 interface ProfileStepProps {
@@ -18,6 +18,7 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({ onNext, onPrevious }) 
   const { completeStep } = useOnboarding();
   const { profile, updateProfile } = useAuth();
   const [formData, setFormData] = useState({
+    fullName: profile?.full_name || '',
     department: '',
     jobTitle: '',
     phoneNumber: '',
@@ -27,10 +28,11 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({ onNext, onPrevious }) 
 
   const handleContinue = async () => {
     try {
-      // Update profile with additional information
+      // Update profile with form data, not just existing profile data
       await updateProfile({
-        ...profile,
-        full_name: profile?.full_name || '',
+        full_name: formData.fullName || profile?.full_name,
+        // Note: The profile table doesn't have department/jobTitle fields,
+        // but we save them in the onboarding step data
       });
 
       await completeStep('profile', 'Complete Profile', {
@@ -59,6 +61,16 @@ export const ProfileStep: React.FC<ProfileStepProps> = ({ onNext, onPrevious }) 
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <Input
+              id="fullName"
+              placeholder="Enter your full name"
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="department">Department</Label>
             <Input

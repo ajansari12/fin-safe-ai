@@ -7157,6 +7157,7 @@ export type Database = {
           onboarding_data: Json | null
           onboarding_status: string | null
           organization_id: string | null
+          role: string
           updated_at: string
         }
         Insert: {
@@ -7168,6 +7169,7 @@ export type Database = {
           onboarding_data?: Json | null
           onboarding_status?: string | null
           organization_id?: string | null
+          role?: string
           updated_at?: string
         }
         Update: {
@@ -7179,6 +7181,7 @@ export type Database = {
           onboarding_data?: Json | null
           onboarding_status?: string | null
           organization_id?: string | null
+          role?: string
           updated_at?: string
         }
         Relationships: [
