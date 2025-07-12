@@ -1296,6 +1296,7 @@ export type Database = {
           created_at: string | null
           criticality: string
           description: string | null
+          function_name: string | null
           id: string
           name: string
           org_id: string | null
@@ -1307,6 +1308,7 @@ export type Database = {
           created_at?: string | null
           criticality: string
           description?: string | null
+          function_name?: string | null
           id?: string
           name: string
           org_id?: string | null
@@ -1318,6 +1320,7 @@ export type Database = {
           created_at?: string | null
           criticality?: string
           description?: string | null
+          function_name?: string | null
           id?: string
           name?: string
           org_id?: string | null
@@ -2408,6 +2411,7 @@ export type Database = {
       }
       controls: {
         Row: {
+          control_name: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -2428,6 +2432,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          control_name?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -2448,6 +2453,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          control_name?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -5581,6 +5587,7 @@ export type Database = {
           first_response_at: string | null
           id: string
           impact_rating: number | null
+          incident_title: string | null
           max_resolution_time_hours: number | null
           max_response_time_hours: number | null
           org_id: string
@@ -5604,6 +5611,7 @@ export type Database = {
           first_response_at?: string | null
           id?: string
           impact_rating?: number | null
+          incident_title?: string | null
           max_resolution_time_hours?: number | null
           max_response_time_hours?: number | null
           org_id: string
@@ -5627,6 +5635,7 @@ export type Database = {
           first_response_at?: string | null
           id?: string
           impact_rating?: number | null
+          incident_title?: string | null
           max_resolution_time_hours?: number | null
           max_response_time_hours?: number | null
           org_id?: string
@@ -6213,6 +6222,7 @@ export type Database = {
           critical_threshold: string | null
           description: string | null
           id: string
+          kri_name: string | null
           measurement_frequency: string | null
           name: string
           org_id: string
@@ -6229,6 +6239,7 @@ export type Database = {
           critical_threshold?: string | null
           description?: string | null
           id?: string
+          kri_name?: string | null
           measurement_frequency?: string | null
           name: string
           org_id?: string
@@ -6245,6 +6256,7 @@ export type Database = {
           critical_threshold?: string | null
           description?: string | null
           id?: string
+          kri_name?: string | null
           measurement_frequency?: string | null
           name?: string
           org_id?: string
