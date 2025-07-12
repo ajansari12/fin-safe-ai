@@ -59,29 +59,12 @@ export function extractJoinProperty<T>(joinResult: any, propertyPath: string): T
 }
 
 /**
- * Column name compatibility layer for backward compatibility
+ * Column name compatibility layer - deprecated, use primary column names
+ * @deprecated Use primary column names directly (name, title, etc.)
  */
 export function normalizeColumnNames<T extends Record<string, any>>(data: T): T {
-  const normalized = { ...data } as any;
-  
-  // Add aliases for common column name mismatches
-  if (normalized.name && !normalized.kri_name) {
-    normalized.kri_name = normalized.name;
-  }
-  
-  if (normalized.title && !normalized.control_name) {
-    normalized.control_name = normalized.title;
-  }
-  
-  if (normalized.name && !normalized.function_name) {
-    normalized.function_name = normalized.name;
-  }
-  
-  if (normalized.title && !normalized.incident_title) {
-    normalized.incident_title = normalized.title;
-  }
-  
-  return normalized as T;
+  // Simplified implementation - database handles aliases via generated columns
+  return { ...data } as T;
 }
 
 /**

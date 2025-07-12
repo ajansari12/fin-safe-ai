@@ -249,11 +249,11 @@ export async function getBusinessImpact(): Promise<BusinessImpact[]> {
       return getDefaultBusinessImpact();
     }
 
-    // Get business functions and their risk assessments
-    const { data: businessFunctions } = await supabase
-      .from('business_functions')
-      .select('function_name, criticality')
-      .eq('org_id', profile.organization_id);
+      // Get business functions and their risk assessments
+      const { data: businessFunctions } = await supabase
+        .from('business_functions')
+        .select('name, criticality')
+        .eq('org_id', profile.organization_id);
 
     if (!businessFunctions || businessFunctions.length === 0) {
       return getDefaultBusinessImpact();
@@ -263,7 +263,7 @@ export async function getBusinessImpact(): Promise<BusinessImpact[]> {
     const departmentMap: Record<string, { high: number; medium: number; low: number }> = {};
 
     businessFunctions.forEach(func => {
-      const department = categorizeFunctionToDepartment(func.function_name);
+      const department = categorizeFunctionToDepartment(func.name);
       if (!departmentMap[department]) {
         departmentMap[department] = { high: 0, medium: 0, low: 0 };
       }

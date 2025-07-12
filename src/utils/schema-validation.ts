@@ -54,18 +54,18 @@ export class SchemaValidator {
 
   private async validateKRISchema() {
     try {
-      // Test if alias columns exist
+      // Test primary column accessibility
       const { data, error } = await supabase
         .from('kri_definitions')
-        .select('id, name, kri_name')
+        .select('id, name')
         .limit(1);
 
       if (error) {
-        this.addIssue('critical', 'column_mismatch', 'kri_definitions', 'kri_name', 
-          'kri_name alias column missing', 'Add kri_name as generated column alias for name');
+        this.addIssue('critical', 'column_mismatch', 'kri_definitions', 'name', 
+          'KRI name column inaccessible', 'Check database connectivity and table permissions');
       }
     } catch (error) {
-      this.addIssue('critical', 'column_mismatch', 'kri_definitions', 'kri_name',
+      this.addIssue('critical', 'column_mismatch', 'kri_definitions', 'name',
         'Failed to validate KRI schema', 'Check database connectivity and schema');
     }
   }
@@ -74,15 +74,15 @@ export class SchemaValidator {
     try {
       const { data, error } = await supabase
         .from('controls')
-        .select('id, title, control_name')
+        .select('id, title')
         .limit(1);
 
       if (error) {
-        this.addIssue('critical', 'column_mismatch', 'controls', 'control_name',
-          'control_name alias column missing', 'Add control_name as generated column alias for title');
+        this.addIssue('critical', 'column_mismatch', 'controls', 'title',
+          'Control title column inaccessible', 'Check database connectivity and table permissions');
       }
     } catch (error) {
-      this.addIssue('critical', 'column_mismatch', 'controls', 'control_name',
+      this.addIssue('critical', 'column_mismatch', 'controls', 'title',
         'Failed to validate Controls schema', 'Check database connectivity and schema');
     }
   }
@@ -91,15 +91,15 @@ export class SchemaValidator {
     try {
       const { data, error } = await supabase
         .from('business_functions')
-        .select('id, name, function_name')
+        .select('id, name')
         .limit(1);
 
       if (error) {
-        this.addIssue('critical', 'column_mismatch', 'business_functions', 'function_name',
-          'function_name alias column missing', 'Add function_name as generated column alias for name');
+        this.addIssue('critical', 'column_mismatch', 'business_functions', 'name',
+          'Business function name column inaccessible', 'Check database connectivity and table permissions');
       }
     } catch (error) {
-      this.addIssue('critical', 'column_mismatch', 'business_functions', 'function_name',
+      this.addIssue('critical', 'column_mismatch', 'business_functions', 'name',
         'Failed to validate Business Functions schema', 'Check database connectivity and schema');
     }
   }

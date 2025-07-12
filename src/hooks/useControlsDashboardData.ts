@@ -1,9 +1,10 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Control, getControls } from "@/services/controls";
 import { KRIDefinition, getKRIDefinitions } from "@/services/kri-definitions";
 import { getKRIBreachesData } from "@/services/kri-analytics-service";
 import { useErrorHandler } from "./useErrorHandler";
+import { cachedFetch, PerformanceMonitor } from "@/lib/performance-utils";
 
 export const useControlsDashboardData = () => {
   const [controls, setControls] = useState<Control[]>([]);
@@ -18,11 +19,15 @@ export const useControlsDashboardData = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const [controlsData, krisData, breaches] = await Promise.all([
-        getControls(),
-        getKRIDefinitions(),
-        getKRIBreachesData()
-      ]);
+      
+      const [controlsData, krisData, breaches] = await PerformanceMonitor.measureAsync(
+        'Dashboard Data Load',
+        () => Promise.all([
+          cachedFetch('controls', getControls, 3 * 60 * 1000), // 3 minutes cache
+          cachedFetch('kri-definitions', getKRIDefinitions, 3 * 60 * 1000),
+          cachedFetch('kri-breaches', getKRIBreachesData, 1 * 60 * 1000) // 1 minute cache for breaches
+        ])
+      );
       
       setControls(controlsData);
       setKris(krisData);
@@ -40,19 +45,30 @@ export const useControlsDashboardData = () => {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  const controlsByStatus = controls.reduce((acc, control) => {
-    acc[control.status] = (acc[control.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // Memoize calculations to prevent unnecessary recalculations
+  const calculatedMetrics = useMemo(() => {
+    const controlsByStatus = controls.reduce((acc, control) => {
+      acc[control.status] = (acc[control.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-  const controlsByFrequency = controls.reduce((acc, control) => {
-    acc[control.frequency] = (acc[control.frequency] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+    const controlsByFrequency = controls.reduce((acc, control) => {
+      acc[control.frequency] = (acc[control.frequency] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-  const activeControls = controls.filter(c => c.status === 'active').length;
-  const activeKris = kris.filter(k => k.status === 'active').length;
-  const controlCoverage = controls.length > 0 ? (activeControls / controls.length) * 100 : 0;
+    const activeControls = controls.filter(c => c.status === 'active').length;
+    const activeKris = kris.filter(k => k.status === 'active').length;
+    const controlCoverage = controls.length > 0 ? (activeControls / controls.length) * 100 : 0;
+
+    return {
+      controlsByStatus,
+      controlsByFrequency,
+      activeControls,
+      activeKris,
+      controlCoverage
+    };
+  }, [controls, kris]);
 
   return {
     controls,
@@ -60,11 +76,7 @@ export const useControlsDashboardData = () => {
     breachesData,
     isLoading,
     error,
-    controlsByStatus,
-    controlsByFrequency,
-    activeControls,
-    activeKris,
-    controlCoverage,
+    ...calculatedMetrics,
     refetch: loadDashboardData
   };
 };

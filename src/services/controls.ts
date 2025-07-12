@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 export interface Control {
   id: string;
   title: string;
-  control_name?: string; // Alias for title
   description?: string;
   scope: string;
   frequency: string;

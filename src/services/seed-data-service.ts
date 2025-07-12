@@ -41,13 +41,13 @@ export const seedDataService = {
     const businessFunctions = [
       {
         org_id: profile.organization_id,
-        function_name: 'Trading Operations',
+        name: 'Trading Operations',
         criticality: 'critical',
         description: 'Primary trading and market making activities'
       },
       {
         org_id: profile.organization_id,
-        function_name: 'Technology Infrastructure',
+        name: 'Technology Infrastructure',
         criticality: 'critical',
         description: 'Core banking systems and IT infrastructure'
       }

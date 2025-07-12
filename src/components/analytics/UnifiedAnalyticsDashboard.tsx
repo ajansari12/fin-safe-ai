@@ -20,7 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification';
-import { ErrorBoundaryWrapper, AnalyticsCardFallback, NoDataFallback } from './ErrorBoundaryWrapper';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { DashboardSkeleton } from './AnalyticsLoadingStates';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
@@ -197,26 +197,24 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       </div>
 
       {/* OSFI E-21 Compliance Widgets */}
-      <ErrorBoundaryWrapper 
+      <ErrorBoundary 
         title="OSFI Compliance Error"
         description="Unable to load OSFI compliance status"
-        fallback={AnalyticsCardFallback}
       >
         <OSFIComplianceWidgets />
-      </ErrorBoundaryWrapper>
+      </ErrorBoundary>
 
       {/* AI-Generated Insights Banner with Error Handling */}
-      <ErrorBoundaryWrapper 
+      <ErrorBoundary 
         title="AI Insights Error"
         description="Unable to load AI-generated insights"
-        fallback={AnalyticsCardFallback}
       >
         {dataError ? (
-          <NoDataFallback 
-            title="Insights Unavailable"
-            description="Unable to load AI-generated insights. Please try refreshing."
-            retry={() => loadAutomatedInsights()}
-          />
+          <div className="text-center p-8">
+            <h3 className="text-lg font-medium mb-2">Insights Unavailable</h3>
+            <p className="text-muted-foreground mb-4">Unable to load AI-generated insights. Please try refreshing.</p>
+            <Button onClick={() => loadAutomatedInsights()}>Retry</Button>
+          </div>
         ) : insights.length > 0 ? (
           <Card className="border-blue-200 bg-blue-50">
             <CardHeader className="pb-3">
@@ -260,14 +258,14 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             </CardContent>
           </Card>
         ) : !isGeneratingInsights ? (
-          <NoDataFallback 
-            title="No Insights Available"
-            description="AI insights will appear here as your data grows. Continue using the platform to generate meaningful insights."
-            icon={<Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />}
-            retry={() => loadAutomatedInsights()}
-          />
+          <div className="text-center p-8">
+            <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-medium mb-2">No Insights Available</h3>
+            <p className="text-muted-foreground mb-4">AI insights will appear here as your data grows. Continue using the platform to generate meaningful insights.</p>
+            <Button onClick={() => loadAutomatedInsights()}>Generate Insights</Button>
+          </div>
         ) : null}
-      </ErrorBoundaryWrapper>
+      </ErrorBoundary>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-6">
@@ -298,82 +296,75 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
-          <ErrorBoundaryWrapper 
+          <ErrorBoundary 
             title="Executive Dashboard Error"
             description="Unable to load executive dashboard"
-            fallback={AnalyticsCardFallback}
           >
             <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <ExecutiveDashboard />
             </Suspense>
-          </ErrorBoundaryWrapper>
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="operational" className="space-y-6">
-          <ErrorBoundaryWrapper 
+          <ErrorBoundary 
             title="Operational Dashboard Error"
             description="Unable to load operational dashboard"
-            fallback={AnalyticsCardFallback}
           >
             <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <OperationalDashboard />
             </Suspense>
-          </ErrorBoundaryWrapper>
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="controls" className="space-y-6">
-          <ErrorBoundaryWrapper 
+          <ErrorBoundary 
             title="Controls Dashboard Error"
             description="Unable to load controls dashboard"
-            fallback={AnalyticsCardFallback}
           >
             <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <ControlsDashboard />
             </Suspense>
-          </ErrorBoundaryWrapper>
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-6">
-          <ErrorBoundaryWrapper 
+          <ErrorBoundary 
             title="Advanced Analytics Error"
             description="Unable to load advanced analytics dashboard"
-            fallback={AnalyticsCardFallback}
           >
             <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <AdvancedAnalyticsDashboard />
             </Suspense>
-          </ErrorBoundaryWrapper>
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="predictive" className="space-y-6">
-          <ErrorBoundaryWrapper 
+          <ErrorBoundary 
             title="AI Status Verification Error"
             description="Unable to verify AI status"
-            fallback={AnalyticsCardFallback}
           >
             <AIStatusVerification />
-          </ErrorBoundaryWrapper>
-          <ErrorBoundaryWrapper 
+          </ErrorBoundary>
+          <ErrorBoundary 
             title="Predictive Analytics Error"
             description="Unable to load predictive analytics"
-            fallback={AnalyticsCardFallback}
           >
             <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <PredictiveAnalyticsPanel />
             </Suspense>
-          </ErrorBoundaryWrapper>
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="custom" className="space-y-6">
-          <ErrorBoundaryWrapper 
+          <ErrorBoundary 
             title="Custom Dashboard Builder Error"
             description="Unable to load custom dashboard builder"
-            fallback={AnalyticsCardFallback}
           >
             <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <CustomDashboardBuilder />
             </Suspense>
-          </ErrorBoundaryWrapper>
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
     </div>

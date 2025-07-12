@@ -38,7 +38,7 @@ class MemoryCache {
 export const dataCache = new MemoryCache();
 
 // Performance monitoring
-class PerformanceMonitor {
+class PerformanceTimingMonitor {
   private metrics: Map<string, number[]> = new Map();
 
   startTiming(operation: string): () => void {
@@ -90,7 +90,43 @@ class PerformanceMonitor {
   }
 }
 
-export const performanceMonitor = new PerformanceMonitor();
+export const performanceMonitor = new PerformanceTimingMonitor();
+
+// Static PerformanceMonitor for easier usage
+export class PerformanceMonitor {
+  private static timers = new Map<string, number>();
+
+  static start(label: string): void {
+    this.timers.set(label, performance.now());
+  }
+
+  static end(label: string): number {
+    const startTime = this.timers.get(label);
+    if (!startTime) {
+      console.warn(`No timer found for label: ${label}`);
+      return 0;
+    }
+
+    const duration = performance.now() - startTime;
+    this.timers.delete(label);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`⏱️ ${label}: ${duration.toFixed(2)}ms`);
+    }
+    
+    return duration;
+  }
+
+  static async measureAsync<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    this.start(label);
+    try {
+      const result = await fn();
+      return result;
+    } finally {
+      this.end(label);
+    }
+  }
+}
 
 // Debounced function utility
 export function debounce<T extends (...args: any[]) => any>(

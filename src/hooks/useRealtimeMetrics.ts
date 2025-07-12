@@ -39,7 +39,7 @@ export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
         if (onControlUpdate) {
           onControlUpdate(update);
           if (update.eventType === 'UPDATE' && update.new.status !== update.old?.status) {
-            toast.info(`Control status updated: ${update.new.control_name || 'Unknown'}`);
+            toast.info(`Control status updated: ${update.new.title || 'Unknown'}`);
           }
         }
         break;
@@ -48,7 +48,7 @@ export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
         if (onKRIUpdate) {
           onKRIUpdate(update);
           if (update.eventType === 'INSERT' && update.new.threshold_breached) {
-            toast.warning(`KRI threshold breached: ${update.new.kri_name || 'Unknown KRI'}`);
+            toast.warning(`KRI threshold breached: ${update.new.name || 'Unknown KRI'}`);
           }
         }
         break;
@@ -76,7 +76,7 @@ export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
         if (onIncidentUpdate) {
           onIncidentUpdate(update);
           if (update.eventType === 'INSERT') {
-            toast.error(`New incident reported: ${update.new.incident_title || 'Untitled'}`);
+            toast.error(`New incident reported: ${update.new.title || 'Untitled'}`);
           }
         }
         break;

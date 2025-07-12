@@ -4,7 +4,6 @@ import { normalizeJoinResults } from "@/lib/data-normalization";
 export interface BusinessFunction {
   id: string;
   name: string;
-  function_name?: string; // Alias for name
   description: string | null;
   owner: string | null;
   criticality: string;
