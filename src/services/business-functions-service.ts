@@ -128,7 +128,7 @@ export async function deleteBusinessFunction(id: string): Promise<void> {
 export async function getImpactTolerances(functionId?: string) {
   const query = supabase
     .from('impact_tolerances')
-    .select('*, business_functions(name, criticality)');
+    .select('*, business_functions!function_id(name, criticality)');
   
   if (functionId) {
     query.eq('function_id', functionId);
@@ -141,7 +141,15 @@ export async function getImpactTolerances(functionId?: string) {
     throw error;
   }
   
-  return data || [];
+  // Normalize the business_functions array to single object
+  const normalizedData = (data || []).map(item => ({
+    ...item,
+    business_functions: Array.isArray(item.business_functions) && item.business_functions.length > 0
+      ? item.business_functions[0]
+      : item.business_functions
+  }));
+  
+  return normalizedData;
 }
 
 export async function createImpactTolerance(toleranceData: {

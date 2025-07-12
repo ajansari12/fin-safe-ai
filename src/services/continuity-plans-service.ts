@@ -35,19 +35,22 @@ export const continuityPlansService = {
         .from('continuity_plans')
         .select(`
           *,
-          business_functions:business_function_id(name, criticality)
+          business_functions!business_function_id(name, criticality)
         `)
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Type-safe conversion with proper status casting
+      // Type-safe conversion with proper status casting and business function normalization
       return (data || []).map(item => ({
         ...item,
         status: (item.status === 'draft' || item.status === 'active' || item.status === 'archived') 
           ? item.status 
-          : 'draft' as const
+          : 'draft' as const,
+        business_functions: Array.isArray(item.business_functions) && item.business_functions.length > 0
+          ? item.business_functions[0]
+          : item.business_functions
       }));
     } catch (error) {
       console.error('Error fetching continuity plans:', error);

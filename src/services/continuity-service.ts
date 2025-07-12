@@ -118,7 +118,7 @@ export const continuityService = {
       .from('continuity_plans')
       .select(`
         *,
-        business_functions:business_function_id(name, criticality)
+        business_functions!business_function_id(name, criticality)
       `)
       .eq('org_id', orgId)
       .order('created_at', { ascending: false });
@@ -126,7 +126,10 @@ export const continuityService = {
     if (error) throw error;
     return (data || []).map(item => ({
       ...item,
-      status: item.status as 'draft' | 'active' | 'archived'
+      status: item.status as 'draft' | 'active' | 'archived',
+      business_functions: Array.isArray(item.business_functions) && item.business_functions.length > 0
+        ? item.business_functions[0]
+        : item.business_functions
     }));
   },
 
@@ -332,8 +335,8 @@ export const continuityService = {
       .from('dependency_logs')
       .select(`
         *,
-        dependencies:dependency_id(dependency_name, criticality),
-        business_functions:business_function_id(name)
+        dependencies!dependency_id(dependency_name, criticality),
+        business_functions!business_function_id(name)
       `)
       .eq('org_id', orgId)
       .eq('tolerance_breached', true)
