@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeJoinResults } from "@/lib/data-normalization";
+import { logger } from "@/lib/logger";
 
 export interface BusinessFunction {
   id: string;
@@ -41,13 +42,19 @@ export async function getBusinessFunctions(): Promise<BusinessFunction[]> {
       .order('name', { ascending: true });
     
     if (error) {
-      console.error('Error fetching business functions:', error);
+      logger.error('Error fetching business functions', {
+        component: 'BusinessFunctionsService',
+        module: 'business-functions'
+      }, error);
       throw error;
     }
     
     return data || [];
   } catch (error) {
-    console.error('Error in getBusinessFunctions:', error);
+    logger.error('Error in getBusinessFunctions', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions'
+    }, error);
     return [];
   }
 }
@@ -74,13 +81,21 @@ export async function createBusinessFunction(input: BusinessFunctionInput): Prom
       .single();
 
     if (error) {
-      console.error('Error creating business function:', error);
+      logger.error('Error creating business function', {
+        component: 'BusinessFunctionsService',
+        module: 'business-functions',
+        metadata: { input }
+      }, error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error in createBusinessFunction:', error);
+    logger.error('Error in createBusinessFunction', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions',
+      metadata: { input }
+    }, error);
     throw error;
   }
 }
@@ -98,13 +113,21 @@ export async function updateBusinessFunction(id: string, input: Partial<Business
       .single();
 
     if (error) {
-      console.error('Error updating business function:', error);
+      logger.error('Error updating business function', {
+        component: 'BusinessFunctionsService',
+        module: 'business-functions',
+        metadata: { id, input }
+      }, error);
       throw error;
     }
 
     return data;
   } catch (error) {
-    console.error('Error in updateBusinessFunction:', error);
+    logger.error('Error in updateBusinessFunction', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions',
+      metadata: { id, input }
+    }, error);
     throw error;
   }
 }
@@ -117,11 +140,19 @@ export async function deleteBusinessFunction(id: string): Promise<void> {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting business function:', error);
+      logger.error('Error deleting business function', {
+        component: 'BusinessFunctionsService',
+        module: 'business-functions',
+        metadata: { id }
+      }, error);
       throw error;
     }
   } catch (error) {
-    console.error('Error in deleteBusinessFunction:', error);
+    logger.error('Error in deleteBusinessFunction', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions',
+      metadata: { id }
+    }, error);
     throw error;
   }
 }
@@ -138,7 +169,11 @@ export async function getImpactTolerances(functionId?: string) {
   const { data, error } = await query;
   
   if (error) {
-    console.error('Error fetching impact tolerances:', error);
+    logger.error('Error fetching impact tolerances', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions',
+      metadata: { functionId }
+    }, error);
     throw error;
   }
   
@@ -163,7 +198,11 @@ export async function createImpactTolerance(toleranceData: {
     .single();
   
   if (error) {
-    console.error('Error creating impact tolerance:', error);
+    logger.error('Error creating impact tolerance', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions',
+      metadata: { toleranceData }
+    }, error);
     throw error;
   }
   
@@ -187,7 +226,11 @@ export async function updateImpactTolerance(id: string, toleranceData: {
     .single();
   
   if (error) {
-    console.error('Error updating impact tolerance:', error);
+    logger.error('Error updating impact tolerance', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions',
+      metadata: { id, toleranceData }
+    }, error);
     throw error;
   }
   
@@ -206,7 +249,11 @@ export async function getDependenciesForFunction(functionId: string) {
     .order('dependency_name', { ascending: true });
   
   if (error) {
-    console.error('Error fetching dependencies for function:', error);
+    logger.error('Error fetching dependencies for function', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions',
+      metadata: { functionId }
+    }, error);
     throw error;
   }
   
@@ -253,7 +300,10 @@ export async function getDependencyMetrics() {
       recentBreaches: breaches.length
     };
   } catch (error) {
-    console.error('Error fetching dependency metrics:', error);
+    logger.error('Error fetching dependency metrics', {
+      component: 'BusinessFunctionsService',
+      module: 'business-functions'
+    }, error);
     return {
       totalDependencies: 0,
       criticalDependencies: 0,

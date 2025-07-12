@@ -1,5 +1,6 @@
 
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
+import { logger } from "@/lib/logger";
 
 export interface AdminLog {
   id: string;
@@ -41,7 +42,11 @@ class AdminLoggingService {
         user_agent: navigator.userAgent
       });
     } catch (error) {
-      console.error('Failed to log admin action:', error);
+      logger.error('Failed to log admin action', {
+        component: 'AdminLoggingService',
+        module: 'admin',
+        metadata: { actionType, resourceType, resourceId }
+      }, error);
     }
   }
 
@@ -65,7 +70,11 @@ class AdminLoggingService {
         }
       ];
     } catch (error) {
-      console.error('Error fetching admin logs:', error);
+      logger.error('Error fetching admin logs', {
+        component: 'AdminLoggingService',
+        module: 'admin',
+        metadata: { limit }
+      }, error);
       return [];
     }
   }

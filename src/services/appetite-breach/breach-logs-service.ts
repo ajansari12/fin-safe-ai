@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 import type { AppetiteBreachLog } from "./types";
+import { logger } from "@/lib/logger";
 
 export async function getAppetiteBreachLogs(): Promise<AppetiteBreachLog[]> {
   try {
@@ -19,7 +20,10 @@ export async function getAppetiteBreachLogs(): Promise<AppetiteBreachLog[]> {
     if (error) throw error;
     return (data || []) as AppetiteBreachLog[];
   } catch (error) {
-    console.error('Error fetching appetite breach logs:', error);
+    logger.error('Error fetching appetite breach logs', {
+      component: 'BreachLogsService',
+      module: 'appetite-breach'
+    }, error);
     return [];
   }
 }
@@ -42,7 +46,11 @@ export async function updateBreachLog(
     if (error) throw error;
     return data as AppetiteBreachLog;
   } catch (error) {
-    console.error('Error updating breach log:', error);
+    logger.error('Error updating breach log', {
+      component: 'BreachLogsService',
+      module: 'appetite-breach',
+      metadata: { logId: id }
+    }, error);
     return null;
   }
 }
@@ -66,7 +74,11 @@ export async function escalateBreach(
 
     return !error;
   } catch (error) {
-    console.error('Error escalating breach:', error);
+    logger.error('Error escalating breach', {
+      component: 'BreachLogsService',
+      module: 'appetite-breach',
+      metadata: { logId: id, escalationData }
+    }, error);
     return false;
   }
 }

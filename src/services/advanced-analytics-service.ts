@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { cachedFetch, performanceMonitor } from "@/lib/performance-utils";
+import { logger } from "@/lib/logger";
 
 export interface AnalyticsInsight {
   id: string;
@@ -381,7 +382,11 @@ class AdvancedAnalyticsService {
 
       return alerts.slice(0, 8); // Limit to 8 most recent alerts
     } catch (error) {
-      console.error('Error fetching real-time alerts:', error);
+      logger.error('Error fetching real-time alerts', {
+        component: 'AdvancedAnalyticsService',
+        module: 'analytics',
+        metadata: { orgId }
+      }, error);
       return [];
     }
   }

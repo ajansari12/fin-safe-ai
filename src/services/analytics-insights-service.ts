@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
+import { logger } from "@/lib/logger";
 
 export interface AnalyticsInsight {
   id: string;
@@ -130,7 +131,11 @@ export class AnalyticsInsightsService {
       }
       return results;
     } catch (error) {
-      console.error('Error fetching insights:', error);
+      logger.error('Error fetching insights', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics',
+        metadata: { method: 'getInsights' }
+      }, error);
       return [];
     }
   }
@@ -157,7 +162,11 @@ export class AnalyticsInsightsService {
       }
       return results;
     } catch (error) {
-      console.error('Error fetching insights:', error);
+      logger.error('Error fetching insights by type', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics',
+        metadata: { insightType }
+      }, error);
       return [];
     }
   }
@@ -185,7 +194,11 @@ export class AnalyticsInsightsService {
       
       return data ? this.transformDatabaseInsight(data) : null;
     } catch (error) {
-      console.error('Error creating insight:', error);
+      logger.error('Error creating insight', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics',
+        metadata: { insightType: insight.insight_type }
+      }, error);
       return null;
     }
   }
@@ -229,7 +242,10 @@ export class AnalyticsInsightsService {
 
       return insights;
     } catch (error) {
-      console.error('Error generating predictive insights:', error);
+      logger.error('Error generating predictive insights', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics'
+      }, error);
       return [];
     }
   }
@@ -270,7 +286,10 @@ export class AnalyticsInsightsService {
         significance: Math.min(100, Math.abs(trend) * 10)
       }];
     } catch (error) {
-      console.error('Error generating trend insights:', error);
+      logger.error('Error generating trend insights', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics'
+      }, error);
       return [];
     }
   }
@@ -298,7 +317,10 @@ export class AnalyticsInsightsService {
         confidence: 90
       }));
     } catch (error) {
-      console.error('Error generating anomaly insights:', error);
+      logger.error('Error generating anomaly insights', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics'
+      }, error);
       return [];
     }
   }
@@ -324,7 +346,10 @@ export class AnalyticsInsightsService {
       }
       return results;
     } catch (error) {
-      console.error('Error fetching dashboard templates:', error);
+      logger.error('Error fetching dashboard templates', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics'
+      }, error);
       return [];
     }
   }
@@ -333,7 +358,11 @@ export class AnalyticsInsightsService {
     try {
       console.log(`Template usage incremented for: ${templateId}`);
     } catch (error) {
-      console.error('Error incrementing template usage:', error);
+      logger.error('Error incrementing template usage', {
+        component: 'AnalyticsInsightsService',
+        module: 'analytics',
+        metadata: { templateId }
+      }, error);
     }
   }
 

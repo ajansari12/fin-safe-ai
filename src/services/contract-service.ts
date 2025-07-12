@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export interface VendorContract {
   id: string;
@@ -50,7 +51,11 @@ export async function getVendorContracts(vendorId: string): Promise<VendorContra
     if (error) throw error;
     return data as VendorContract[];
   } catch (error) {
-    console.error('Error fetching vendor contracts:', error);
+    logger.error('Error fetching vendor contracts', {
+      component: 'ContractService',
+      module: 'contract',
+      metadata: { vendorId }
+    }, error);
     toast.error("Failed to load vendor contracts");
     return [];
   }
@@ -98,7 +103,11 @@ export async function createVendorContract(
     toast.success("Contract created successfully");
     return data as VendorContract;
   } catch (error) {
-    console.error('Error creating contract:', error);
+    logger.error('Error creating contract', {
+      component: 'ContractService',
+      module: 'contract',
+      metadata: { vendorProfileId: contract.vendor_profile_id, hasFile: !!file }
+    }, error);
     toast.error("Failed to create contract");
     return null;
   }
@@ -153,7 +162,11 @@ export async function updateVendorContract(
     toast.success("Contract updated successfully");
     return data as VendorContract;
   } catch (error) {
-    console.error('Error updating contract:', error);
+    logger.error('Error updating contract', {
+      component: 'ContractService',
+      module: 'contract',
+      metadata: { contractId: id, hasFile: !!file }
+    }, error);
     toast.error("Failed to update contract");
     return null;
   }
@@ -176,7 +189,11 @@ export async function deleteVendorContract(id: string, filePath?: string): Promi
     toast.success("Contract deleted successfully");
     return true;
   } catch (error) {
-    console.error('Error deleting contract:', error);
+    logger.error('Error deleting contract', {
+      component: 'ContractService',
+      module: 'contract',
+      metadata: { contractId: id, hasFile: !!filePath }
+    }, error);
     toast.error("Failed to delete contract");
     return false;
   }
@@ -202,7 +219,10 @@ export async function getContractRenewalAlerts(): Promise<ContractRenewalAlert[]
     if (error) throw error;
     return data as ContractRenewalAlert[];
   } catch (error) {
-    console.error('Error fetching contract renewal alerts:', error);
+    logger.error('Error fetching contract renewal alerts', {
+      component: 'ContractService',
+      module: 'contract'
+    }, error);
     toast.error("Failed to load contract renewal alerts");
     return [];
   }
@@ -216,7 +236,10 @@ export async function checkExpiringContracts(): Promise<void> {
 
     console.log('Successfully checked for expiring contracts');
   } catch (error) {
-    console.error('Error checking expiring contracts:', error);
+    logger.error('Error checking expiring contracts', {
+      component: 'ContractService',
+      module: 'contract'
+    }, error);
     toast.error("Failed to check expiring contracts");
   }
 }
@@ -240,7 +263,11 @@ export async function acknowledgeRenewalAlert(alertId: string): Promise<boolean>
     toast.success("Alert acknowledged");
     return true;
   } catch (error) {
-    console.error('Error acknowledging alert:', error);
+    logger.error('Error acknowledging alert', {
+      component: 'ContractService',
+      module: 'contract',
+      metadata: { alertId }
+    }, error);
     toast.error("Failed to acknowledge alert");
     return false;
   }
@@ -256,7 +283,11 @@ export async function getContractFileUrl(filePath: string): Promise<string | nul
     if (error) throw error;
     return data?.signedUrl || null;
   } catch (error) {
-    console.error('Error getting contract file URL:', error);
+    logger.error('Error getting contract file URL', {
+      component: 'ContractService',
+      module: 'contract',
+      metadata: { filePath }
+    }, error);
     toast.error("Failed to get contract download link");
     return null;
   }

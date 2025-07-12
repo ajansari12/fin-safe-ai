@@ -2,6 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 import { normalizeJoinResults } from "@/lib/data-normalization";
+import { logger } from "@/lib/logger";
 
 export interface ContinuityPlanData {
   id: string;
@@ -52,7 +53,10 @@ export const continuityPlansService = {
           : 'draft' as const
       }));
     } catch (error) {
-      console.error('Error fetching continuity plans:', error);
+      logger.error('Error fetching continuity plans', {
+        component: 'ContinuityPlansService',
+        module: 'continuity'
+      }, error);
       return [];
     }
   },
@@ -75,7 +79,11 @@ export const continuityPlansService = {
           : 'draft' as const
       } : null;
     } catch (error) {
-      console.error('Error creating continuity plan:', error);
+      logger.error('Error creating continuity plan', {
+        component: 'ContinuityPlansService',
+        module: 'continuity',
+        metadata: { planName: planData.plan_name }
+      }, error);
       return null;
     }
   },
@@ -99,7 +107,11 @@ export const continuityPlansService = {
           : 'draft' as const
       } : null;
     } catch (error) {
-      console.error('Error updating continuity plan:', error);
+      logger.error('Error updating continuity plan', {
+        component: 'ContinuityPlansService',
+        module: 'continuity',
+        metadata: { planId: id }
+      }, error);
       return null;
     }
   },
@@ -114,7 +126,11 @@ export const continuityPlansService = {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error deleting continuity plan:', error);
+      logger.error('Error deleting continuity plan', {
+        component: 'ContinuityPlansService',
+        module: 'continuity',
+        metadata: { planId: id }
+      }, error);
       return false;
     }
   }
