@@ -66,6 +66,13 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       setIsLoading(true);
       
+      // Ensure we have a valid user before proceeding
+      if (!user?.id) {
+        console.warn('OnboardingContext: No valid user ID found');
+        setOnboardingStatus('not_started');
+        return;
+      }
+      
       // Get current onboarding status from userContext profile
       const currentStatus = userContext?.profile?.onboarding_status || 'not_started';
       // Ensure the status is one of the expected values
@@ -75,19 +82,27 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setOnboardingStatus(validStatus);
 
       // Get user's progress
-      const { data: progressData } = await supabase
+      const { data: progressData, error: progressError } = await supabase
         .from('user_onboarding_progress')
         .select('*')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
+
+      if (progressError) {
+        console.warn('OnboardingContext: Error fetching progress data:', progressError);
+      }
 
       // Get active session
-      const { data: sessionData } = await supabase
+      const { data: sessionData, error: sessionError } = await supabase
         .from('onboarding_sessions')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1);
+
+      if (sessionError) {
+        console.warn('OnboardingContext: Error fetching session data:', sessionError);
+      }
 
       // Initialize steps with progress
       const initializedSteps = ONBOARDING_STEPS.map(step => {
@@ -135,13 +150,17 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const startOnboarding = async () => {
     try {
-      console.log('OnboardingContext: Starting onboarding');
+      if (!user?.id) {
+        throw new Error('No valid user ID found');
+      }
+      
+      console.log('OnboardingContext: Starting onboarding for user:', user.id);
       
       // Create new onboarding session
       const { data: sessionData, error: sessionError } = await supabase
         .from('onboarding_sessions')
         .insert({
-          user_id: user?.id,
+          user_id: user.id,
           current_step: ONBOARDING_STEPS[0].id,
           total_steps: ONBOARDING_STEPS.length,
           completion_percentage: 0,
@@ -156,7 +175,7 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ onboarding_status: 'in_progress' })
-        .eq('id', user?.id);
+        .eq('id', user.id);
 
       if (profileError) throw profileError;
 
@@ -181,7 +200,11 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const completeStep = async (stepId: string, stepName: string, data: any = {}) => {
     try {
-      console.log('OnboardingContext: Starting completeStep', { stepId, stepName, data });
+      if (!user?.id) {
+        throw new Error('No valid user ID found');
+      }
+      
+      console.log('OnboardingContext: Starting completeStep', { stepId, stepName, data, userId: user.id });
 
       // Ensure we have a session - if not, create one
       let sessionToUpdate = currentSession;
@@ -189,14 +212,19 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         console.log('OnboardingContext: No session found, creating one first');
         await startOnboarding();
         // Get the newly created session
-        const { data: newSessionData } = await supabase
+        const { data: newSessionData, error: newSessionError } = await supabase
           .from('onboarding_sessions')
           .select('*')
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
+          
+        if (newSessionError) {
+          console.error('OnboardingContext: Error fetching new session:', newSessionError);
+          throw newSessionError;
+        }
         
         if (newSessionData) {
           sessionToUpdate = {
@@ -214,13 +242,18 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       }
 
       // Update step progress
-      await supabase.rpc('update_onboarding_step', {
-        p_user_id: user?.id,
+      const { error: stepError } = await supabase.rpc('update_onboarding_step', {
+        p_user_id: user.id,
         p_step_id: stepId,
         p_step_name: stepName,
         p_completed: true,
         p_data: data
       });
+      
+      if (stepError) {
+        console.error('OnboardingContext: Error updating step progress:', stepError);
+        throw stepError;
+      }
 
       console.log('OnboardingContext: Step progress updated in database');
 
@@ -281,14 +314,23 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const skipOnboarding = async () => {
     try {
+      if (!user?.id) {
+        throw new Error('No valid user ID found');
+      }
+      
       // Update profile status
-      await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           onboarding_status: 'skipped',
           onboarding_completed_at: new Date().toISOString()
         })
-        .eq('id', user?.id);
+        .eq('id', user.id);
+        
+      if (profileError) {
+        console.error('OnboardingContext: Error updating profile for skip:', profileError);
+        throw profileError;
+      }
 
       // Close current session
       if (currentSession) {
@@ -309,14 +351,23 @@ export const OnboardingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const completeOnboarding = async () => {
     try {
+      if (!user?.id) {
+        throw new Error('No valid user ID found');
+      }
+      
       // Update profile status
-      await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           onboarding_status: 'completed',
           onboarding_completed_at: new Date().toISOString()
         })
-        .eq('id', user?.id);
+        .eq('id', user.id);
+        
+      if (profileError) {
+        console.error('OnboardingContext: Error updating profile for completion:', profileError);
+        throw profileError;
+      }
 
       // Close current session
       if (currentSession) {

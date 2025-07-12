@@ -6596,6 +6596,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_onboarding_sessions_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "onboarding_sessions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
