@@ -6,6 +6,7 @@ import { aiOrganizationalIntelligenceIntegration } from "@/services/ai-organizat
 import { getUserOrganization } from "@/lib/supabase-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { ToleranceAIAnalysisService, ToleranceBreachAnalysis, BreachPrediction } from "@/services/tolerance/tolerance-ai-analysis-service";
+import { vendorFeedIntegrationService } from "@/services/third-party/vendor-feed-integration-service";
 
 // Keep existing types from original context
 interface AIMessage {
@@ -19,7 +20,40 @@ interface AIMessage {
 
 export type OrgSector = "banking" | "insurance" | "fintech" | "investment" | "other";
 export type OrgSize = "small" | "medium" | "large" | "enterprise";
-export type KnowledgeDomain = "E-21" | "ISO-22301" | "OSFI" | "general";
+export type KnowledgeDomain = "E-21" | "ISO-22301" | "OSFI" | "B-10" | "general";
+
+// Vendor Analysis Types
+export interface VendorRiskAnalysis {
+  vendorId: string;
+  vendorName: string;
+  riskScore: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  concentrationRisk: number;
+  impactAssessment: {
+    operationalImpact: string;
+    financialImpact: string;
+    reputationalImpact: string;
+    complianceImpact: string;
+  };
+  recommendations: string[];
+  osfiCitations: string[];
+  analysisTimestamp: string;
+}
+
+export interface ConcentrationRiskAssessment {
+  totalVendors: number;
+  criticalVendors: number;
+  concentrationThreshold: number;
+  currentConcentration: number;
+  exceedsThreshold: boolean;
+  riskFactors: string[];
+  mitigationStrategies: string[];
+  osfiCompliance: {
+    e21Principle6: boolean;
+    b10Requirements: boolean;
+    citations: string[];
+  };
+}
 
 export interface KnowledgeSource {
   id: string;
@@ -80,6 +114,15 @@ interface EnhancedAIAssistantContextType {
   generateEscalationRecommendations: (breachAnalysis: ToleranceBreachAnalysis) => Promise<void>;
   assessBreachImpact: (breachId: string, recoveryTime: number, threshold: number) => Promise<void>;
   predictPotentialBreaches: () => Promise<void>;
+  
+  // AI-Powered Vendor Analysis
+  vendorAnalyses: VendorRiskAnalysis[];
+  concentrationAssessment: ConcentrationRiskAssessment | null;
+  isAnalyzingVendor: boolean;
+  analyzeVendorRisk: (vendorId: string, includeFeeds?: boolean) => Promise<VendorRiskAnalysis>;
+  assessConcentrationRisk: () => Promise<ConcentrationRiskAssessment>;
+  generateVendorRecommendations: (vendorId?: string) => Promise<void>;
+  analyzeVendorPortfolio: () => Promise<void>;
 }
 
 const EnhancedAIAssistantContext = createContext<EnhancedAIAssistantContextType | undefined>(undefined);
@@ -113,13 +156,18 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
   const [breachPredictions, setBreachPredictions] = useState<BreachPrediction[]>([]);
   const [isAnalyzingBreach, setIsAnalyzingBreach] = useState(false);
   
+  // Vendor analysis state
+  const [vendorAnalyses, setVendorAnalyses] = useState<VendorRiskAnalysis[]>([]);
+  const [concentrationAssessment, setConcentrationAssessment] = useState<ConcentrationRiskAssessment | null>(null);
+  const [isAnalyzingVendor, setIsAnalyzingVendor] = useState(false);
+  
   const { user, profile } = useAuth();
   
   const [assistantMessages, setAssistantMessages] = useState<AIMessage[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! I'm your enhanced ResilientFI assistant with advanced organizational intelligence:\n\n🔮 **Predictive Analytics** - Forecast risks and identify emerging patterns\n📊 **Intelligent Assessment** - AI-powered risk scoring with benchmarking\n💡 **Proactive Recommendations** - Personalized mitigation strategies\n📄 **Document Analysis** - Extract insights from reports and policies\n🚨 **Anomaly Detection** - Identify unusual patterns in your data\n🎯 **Organizational Intelligence** - Comprehensive organizational profiling and analysis\n⚡ **Workflow Orchestration** - Automated workflow management\n🔄 **Real-Time Intelligence** - Live monitoring and insights\n\nTry asking: 'Analyze my organization' or 'Generate comprehensive insights'",
+      content: "Hello! I'm your enhanced ResilientFI assistant with advanced organizational intelligence:\n\n🔮 **Predictive Analytics** - Forecast risks and identify emerging patterns\n📊 **Intelligent Assessment** - AI-powered risk scoring with benchmarking\n💡 **Proactive Recommendations** - Personalized mitigation strategies\n📄 **Document Analysis** - Extract insights from reports and policies\n🚨 **Anomaly Detection** - Identify unusual patterns in your data\n🎯 **Organizational Intelligence** - Comprehensive organizational profiling and analysis\n⚡ **Workflow Orchestration** - Automated workflow management\n🔄 **Real-Time Intelligence** - Live monitoring and insights\n🏢 **Vendor Risk Analysis** - OSFI E-21 & B-10 compliant third-party risk assessment\n📈 **Concentration Risk** - Monitor vendor dependencies per OSFI guidelines\n\nTry asking: 'Analyze my organization', 'Assess vendor risks', or 'Check concentration risk'",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -345,15 +393,23 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
       
       setIsLoading(true);
       
-      // Check if this is an organizational intelligence query
-      const isOrgIntelligenceQuery = [
-        'analyze', 'organization', 'profile', 'maturity', 'intelligence', 
-        'assessment', 'comprehensive', 'insights', 'recommendations'
-      ].some(keyword => message.toLowerCase().includes(keyword));
+        // Check query type for appropriate routing
+        const isOrgIntelligenceQuery = [
+          'analyze', 'organization', 'profile', 'maturity', 'intelligence', 
+          'assessment', 'comprehensive', 'insights', 'recommendations'
+        ].some(keyword => message.toLowerCase().includes(keyword));
+        
+        const isVendorQuery = [
+          'vendor', 'supplier', 'third party', 'concentration', 'dependency',
+          'b-10', 'e-21', 'principle 6', 'third-party'
+        ].some(keyword => message.toLowerCase().includes(keyword));
 
-      let aiResponse = '';
+        let aiResponse = '';
 
-      if (isOrgIntelligenceQuery && profile?.organization_id) {
+        if (isVendorQuery && profile?.organization_id) {
+          // Handle vendor-specific queries
+          aiResponse = await generateVendorAIResponse(message);
+        } else if (isOrgIntelligenceQuery && profile?.organization_id) {
         // Use organizational intelligence integration for contextual responses
         const context = {
           profileId: '', // Would be populated from organizational profile
@@ -690,6 +746,336 @@ Predictions are based on historical data patterns and current indicators. Actual
     }
   };
 
+  // AI-Powered Vendor Analysis Methods
+  const generateVendorAIResponse = async (message: string): Promise<string> => {
+    try {
+      // Analyze the vendor query type
+      const isConcentrationQuery = message.toLowerCase().includes('concentration');
+      const isSpecificVendor = /vendor (\w+)/i.test(message);
+      const isPortfolioQuery = message.toLowerCase().includes('portfolio') || message.toLowerCase().includes('all vendor');
+
+      if (isConcentrationQuery) {
+        const assessment = await assessConcentrationRisk();
+        return `**OSFI E-21 Principle 6 & B-10 Concentration Risk Assessment:**
+
+🎯 **Current Concentration:** ${assessment.currentConcentration.toFixed(1)}% (Threshold: ${assessment.concentrationThreshold}%)
+📊 **Risk Status:** ${assessment.exceedsThreshold ? '⚠️ EXCEEDS THRESHOLD' : '✅ WITHIN LIMITS'}
+
+🏢 **Vendor Portfolio:**
+• Total Vendors: ${assessment.totalVendors}
+• Critical Vendors: ${assessment.criticalVendors}
+
+${assessment.exceedsThreshold ? `
+🚨 **Risk Factors:**
+${assessment.riskFactors.map(r => `• ${r}`).join('\n')}
+
+💡 **Mitigation Strategies:**
+${assessment.mitigationStrategies.map(s => `• ${s}`).join('\n')}
+` : ''}
+
+📋 **OSFI Compliance:**
+• E-21 Principle 6: ${assessment.osfiCompliance.e21Principle6 ? '✅ Compliant' : '❌ Non-Compliant'}
+• B-10 Requirements: ${assessment.osfiCompliance.b10Requirements ? '✅ Met' : '❌ Not Met'}
+
+**Regulatory Citations:**
+${assessment.osfiCompliance.citations.join('\n')}
+
+⚖️ **Regulatory Disclaimer:**
+This analysis is based on OSFI E-21 Principle 6 and B-10 guidelines. This is not regulatory advice. Consult OSFI or qualified professionals for your institution's specific compliance requirements.`;
+      }
+
+      if (isPortfolioQuery) {
+        await analyzeVendorPortfolio();
+        return `**Comprehensive Vendor Portfolio Analysis initiated. Check the messages above for detailed assessment results.**`;
+      }
+
+      return `**OSFI E-21 & B-10 Vendor Risk Analysis:**
+
+I can help you with third-party risk management according to OSFI guidelines:
+
+🔍 **Available Analysis:**
+• **Concentration Risk Assessment** - "Check concentration risk"
+• **Individual Vendor Analysis** - "Analyze vendor [name]"
+• **Portfolio Overview** - "Analyze all vendors"
+• **Risk Recommendations** - "Vendor risk recommendations"
+
+📋 **OSFI E-21 Principle 6 Compliance:**
+Monitoring third-party dependencies and assessing concentration risk as required for Canadian financial institutions.
+
+**B-10 Integration:**
+Third-party risk assessment aligned with OSFI B-10 guidelines for operational resilience.
+
+What specific vendor analysis would you like me to perform?`;
+    } catch (error) {
+      console.error('Error generating vendor AI response:', error);
+      return 'I encountered an error analyzing vendor risk. Please try again or contact support.';
+    }
+  };
+
+  const analyzeVendorRisk = async (vendorId: string, includeFeeds: boolean = true): Promise<VendorRiskAnalysis> => {
+    setIsAnalyzingVendor(true);
+    try {
+      // Get vendor data from Supabase
+      const { data: vendor, error } = await supabase
+        .from('third_party_profiles')
+        .select('*')
+        .eq('id', vendorId)
+        .single();
+
+      if (error) throw error;
+
+      // Get real-time feed data if requested
+      let feedData = null;
+      if (includeFeeds) {
+        const feeds = await vendorFeedIntegrationService.getVendorMonitoringFeeds(profile?.organization_id || '');
+        feedData = feeds.find(f => f.vendor_profile_id === vendorId);
+      }
+
+      // Calculate risk score
+      const riskScore = vendor.risk_rating === 'critical' ? 90 : 
+                       vendor.risk_rating === 'high' ? 75 :
+                       vendor.risk_rating === 'medium' ? 50 : 25;
+
+      // Determine concentration risk
+      const { data: allVendors } = await supabase
+        .from('third_party_profiles')
+        .select('criticality')
+        .eq('org_id', profile?.organization_id);
+
+      const criticalVendors = allVendors?.filter(v => v.criticality === 'critical').length || 0;
+      const concentrationRisk = criticalVendors > 0 ? (1 / criticalVendors) * 100 : 0;
+
+      const analysis: VendorRiskAnalysis = {
+        vendorId,
+        vendorName: vendor.vendor_name,
+        riskScore,
+        riskLevel: vendor.risk_rating as 'low' | 'medium' | 'high' | 'critical',
+        concentrationRisk,
+        impactAssessment: {
+          operationalImpact: `${vendor.criticality} impact on operations`,
+          financialImpact: `Service disruption cost estimated at ${riskScore * 1000} CAD/hour`,
+          reputationalImpact: vendor.criticality === 'critical' ? 'High reputational risk' : 'Moderate reputational risk',
+          complianceImpact: 'Subject to OSFI E-21 Principle 6 and B-10 requirements'
+        },
+        recommendations: [
+          'Implement continuous monitoring',
+          'Review SLA terms quarterly',
+          'Establish backup suppliers for critical services'
+        ],
+        osfiCitations: [
+          'OSFI E-21 Principle 6: Mapping dependencies',
+          'OSFI B-10: Third-party risk management'
+        ],
+        analysisTimestamp: new Date().toISOString()
+      };
+
+      setVendorAnalyses(prev => {
+        const existing = prev.findIndex(a => a.vendorId === vendorId);
+        if (existing >= 0) {
+          const updated = [...prev];
+          updated[existing] = analysis;
+          return updated;
+        }
+        return [...prev, analysis];
+      });
+
+      return analysis;
+    } catch (error) {
+      console.error('Error analyzing vendor risk:', error);
+      throw error;
+    } finally {
+      setIsAnalyzingVendor(false);
+    }
+  };
+
+  const assessConcentrationRisk = async (): Promise<ConcentrationRiskAssessment> => {
+    setIsAnalyzingVendor(true);
+    try {
+      const { data: vendors, error } = await supabase
+        .from('third_party_profiles')
+        .select('*')
+        .eq('org_id', profile?.organization_id);
+
+      if (error) throw error;
+
+      const totalVendors = vendors?.length || 0;
+      const criticalVendors = vendors?.filter(v => v.criticality === 'critical').length || 0;
+      const concentrationThreshold = 20; // 20% threshold per OSFI guidelines
+      const currentConcentration = totalVendors > 0 ? (criticalVendors / totalVendors) * 100 : 0;
+
+      const assessment: ConcentrationRiskAssessment = {
+        totalVendors,
+        criticalVendors,
+        concentrationThreshold,
+        currentConcentration,
+        exceedsThreshold: currentConcentration > concentrationThreshold,
+        riskFactors: currentConcentration > concentrationThreshold ? [
+          'High dependency on critical vendors',
+          'Limited supplier diversification',
+          'Potential single points of failure'
+        ] : [],
+        mitigationStrategies: [
+          'Diversify supplier base',
+          'Implement backup service providers',
+          'Regular dependency mapping reviews'
+        ],
+        osfiCompliance: {
+          e21Principle6: currentConcentration <= concentrationThreshold,
+          b10Requirements: currentConcentration <= concentrationThreshold,
+          citations: [
+            'OSFI E-21 Principle 6: Institutions should map their dependencies',
+            'OSFI B-10: Third-party risk management framework'
+          ]
+        }
+      };
+
+      setConcentrationAssessment(assessment);
+      return assessment;
+    } catch (error) {
+      console.error('Error assessing concentration risk:', error);
+      throw error;
+    } finally {
+      setIsAnalyzingVendor(false);
+    }
+  };
+
+  const generateVendorRecommendations = async (vendorId?: string) => {
+    setIsAnalyzing(true);
+    try {
+      let recommendationContent = '';
+
+      if (vendorId) {
+        const analysis = await analyzeVendorRisk(vendorId);
+        recommendationContent = `**Vendor Risk Recommendations - ${analysis.vendorName}**
+
+🎯 **Risk Level:** ${analysis.riskLevel.toUpperCase()} (Score: ${analysis.riskScore}/100)
+
+💡 **Specific Recommendations:**
+${analysis.recommendations.map(r => `• ${r}`).join('\n')}
+
+📊 **Impact Assessment:**
+• **Operational:** ${analysis.impactAssessment.operationalImpact}
+• **Financial:** ${analysis.impactAssessment.financialImpact}
+• **Compliance:** ${analysis.impactAssessment.complianceImpact}
+
+📋 **OSFI Citations:**
+${analysis.osfiCitations.join('\n')}`;
+      } else {
+        recommendationContent = `**General Vendor Risk Management Recommendations**
+
+🎯 **OSFI E-21 & B-10 Best Practices:**
+
+• **Dependency Mapping** (E-21 Principle 6)
+  - Document all critical third-party relationships
+  - Assess concentration risk quarterly
+  - Maintain current dependency maps
+
+• **Risk Assessment** (B-10 Framework)
+  - Regular vendor risk scoring
+  - Monitor vendor financial health
+  - Track performance metrics
+
+• **Continuous Monitoring**
+  - Real-time vendor feed integration
+  - Automated risk scoring updates
+  - Proactive alert systems
+
+• **Business Continuity Planning**
+  - Identify backup suppliers
+  - Test recovery procedures
+  - Maintain contingency plans`;
+      }
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant',
+        recommendationContent,
+        currentModule,
+        ['vendor_analysis', 'osfi_b10', 'osfi_e21']
+      );
+
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: recommendationContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['vendor_analysis', 'osfi_b10', 'osfi_e21']
+      }]);
+    } catch (error) {
+      console.error('Error generating vendor recommendations:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const analyzeVendorPortfolio = async () => {
+    setIsAnalyzing(true);
+    try {
+      const { data: vendors, error } = await supabase
+        .from('third_party_profiles')
+        .select('*')
+        .eq('org_id', profile?.organization_id);
+
+      if (error) throw error;
+
+      const portfolioAnalysis = vendors?.reduce((acc, vendor) => {
+        const riskLevel = vendor.risk_rating;
+        acc[riskLevel] = (acc[riskLevel] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      const totalVendors = vendors?.length || 0;
+      const highRiskVendors = (portfolioAnalysis.high || 0) + (portfolioAnalysis.critical || 0);
+
+      const portfolioContent = `**Comprehensive Vendor Portfolio Analysis**
+
+📊 **Portfolio Overview:**
+• Total Vendors: ${totalVendors}
+• High/Critical Risk: ${highRiskVendors} (${((highRiskVendors/totalVendors)*100).toFixed(1)}%)
+
+📈 **Risk Distribution:**
+• Critical: ${portfolioAnalysis.critical || 0}
+• High: ${portfolioAnalysis.high || 0}  
+• Medium: ${portfolioAnalysis.medium || 0}
+• Low: ${portfolioAnalysis.low || 0}
+
+🎯 **Concentration Risk Assessment:**
+${highRiskVendors > totalVendors * 0.2 ? '⚠️ High concentration of critical vendors detected' : '✅ Vendor concentration within acceptable limits'}
+
+📋 **OSFI E-21 Principle 6 Compliance:**
+${highRiskVendors <= totalVendors * 0.2 ? '✅ Dependency mapping and concentration risk management compliant' : '❌ Review required for concentration risk management'}
+
+💡 **Portfolio Recommendations:**
+• Review high-risk vendor relationships quarterly
+• Implement continuous monitoring for critical vendors
+• Develop contingency plans for top 20% of vendors
+• Regular dependency mapping updates per OSFI E-21
+
+⚖️ **Regulatory Disclaimer:**
+This analysis is based on OSFI E-21 Principle 6 and B-10 guidelines. This is not regulatory advice. Consult OSFI or qualified professionals for your institution's specific compliance requirements.`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant',
+        portfolioContent,
+        currentModule,
+        ['vendor_portfolio', 'osfi_e21', 'osfi_b10']
+      );
+
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: portfolioContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['vendor_portfolio', 'osfi_e21', 'osfi_b10']
+      }]);
+    } catch (error) {
+      console.error('Error analyzing vendor portfolio:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <EnhancedAIAssistantContext.Provider 
       value={{ 
@@ -728,7 +1114,16 @@ Predictions are based on historical data patterns and current indicators. Actual
         analyzeToleranceBreach,
         generateEscalationRecommendations,
         assessBreachImpact,
-        predictPotentialBreaches
+        predictPotentialBreaches,
+        
+        // AI-Powered Vendor Analysis
+        vendorAnalyses,
+        concentrationAssessment,
+        isAnalyzingVendor,
+        analyzeVendorRisk,
+        assessConcentrationRisk,
+        generateVendorRecommendations,
+        analyzeVendorPortfolio
       }}
     >
       {children}
