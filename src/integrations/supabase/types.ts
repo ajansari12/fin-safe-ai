@@ -10585,6 +10585,77 @@ export type Database = {
           updated_at?: string
           vendor_profile_id?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_monitoring_feeds_vendor_profile_id_fkey"
+            columns: ["vendor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "third_party_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_risk_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_type: string
+          created_at: string
+          current_value: Json | null
+          disclaimer: string
+          id: string
+          org_id: string
+          osfi_principle: string
+          regulatory_citation: string
+          resolution_date: string | null
+          severity: string
+          status: string
+          threshold_value: Json | null
+          triggered_at: string
+          updated_at: string
+          variance_percentage: number | null
+          vendor_profile_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type: string
+          created_at?: string
+          current_value?: Json | null
+          disclaimer: string
+          id?: string
+          org_id: string
+          osfi_principle: string
+          regulatory_citation: string
+          resolution_date?: string | null
+          severity?: string
+          status?: string
+          threshold_value?: Json | null
+          triggered_at?: string
+          updated_at?: string
+          variance_percentage?: number | null
+          vendor_profile_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          created_at?: string
+          current_value?: Json | null
+          disclaimer?: string
+          id?: string
+          org_id?: string
+          osfi_principle?: string
+          regulatory_citation?: string
+          resolution_date?: string | null
+          severity?: string
+          status?: string
+          threshold_value?: Json | null
+          triggered_at?: string
+          updated_at?: string
+          variance_percentage?: number | null
+          vendor_profile_id?: string
+        }
         Relationships: []
       }
       vendor_sla_alerts: {

@@ -16,7 +16,11 @@ import {
   Building2,
   Clock,
   Network,
-  Target
+  Target,
+  Wifi,
+  AlertCircle,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 // TODO: Migrated from AuthContext to EnhancedAuthContext
 import { useAuth } from '@/contexts/EnhancedAuthContext';
@@ -24,18 +28,155 @@ import { getVendorProfiles } from '@/services/third-party-service';
 import VendorAssessmentsList from './VendorAssessmentsList';
 import VendorAssessmentChart from './VendorAssessmentChart';
 import { toast } from 'sonner';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { vendorFeedIntegrationService, VendorFeedData, VendorRiskAlert } from '@/services/third-party/vendor-feed-integration-service';
+import { useEnhancedAIAssistant } from '@/components/ai-assistant/EnhancedAIAssistantContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast as useToast } from '@/hooks/use-toast';
 
 const VendorRiskDashboard: React.FC = () => {
   const { profile } = useAuth();
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [vendorFeeds, setVendorFeeds] = useState<VendorFeedData[]>([]);
+  const [vendorAlerts, setVendorAlerts] = useState<VendorRiskAlert[]>([]);
+  const [concentrationRisk, setConcentrationRisk] = useState<any>(null);
+  const [orgProfile, setOrgProfile] = useState<any>(null);
+  const [isMonitoringActive, setIsMonitoringActive] = useState(false);
+
+  // Real-time monitoring for vendor monitoring feeds
+  useRealtimeSubscription({
+    table: 'vendor_monitoring_feeds',
+    filter: `org_id=eq.${profile?.organization_id}`,
+    onUpdate: (payload) => {
+      console.log('Vendor feed updated:', payload);
+      loadVendorFeeds();
+      
+      // Show enhanced toast with OSFI compliance messaging
+      useToast({
+        title: "📊 Vendor Feed Update",
+        description: "Real-time vendor monitoring data updated. Per OSFI E-21 Principle 6, continuous monitoring active.",
+      });
+    },
+    onInsert: (payload) => {
+      console.log('New vendor feed:', payload);
+      loadVendorFeeds();
+      
+      useToast({
+        title: "🔄 New Monitoring Feed",
+        description: "New vendor monitoring feed activated for enhanced third-party risk management.",
+      });
+    }
+  });
+
+  // Real-time monitoring for vendor risk alerts
+  useRealtimeSubscription({
+    table: 'vendor_risk_alerts',
+    filter: `org_id=eq.${profile?.organization_id}`,
+    onInsert: (payload) => {
+      console.log('New vendor risk alert:', payload);
+      loadVendorAlerts();
+      
+      const severity = payload.new.severity;
+      const vendorName = payload.new.vendor_name || 'Unknown Vendor';
+      
+      useToast({
+        title: `🚨 OSFI E-21 Vendor Alert - ${severity.toUpperCase()}`,
+        description: `${vendorName}: ${payload.new.regulatory_citation}. Disclaimer: Automated analysis - verify with compliance team.`,
+        variant: severity === 'critical' ? 'destructive' : 'default',
+      });
+      
+      // Enhanced AI analysis trigger for critical alerts
+      if (severity === 'critical') {
+        console.log('Triggering AI analysis for critical vendor alert');
+        // Could integrate with AI assistant here
+      }
+    }
+  });
 
   useEffect(() => {
     if (profile?.organization_id) {
       loadDashboardData();
+      loadVendorFeeds();
+      loadVendorAlerts();
+      loadConcentrationRisk();
+      loadOrganizationalProfile();
     }
   }, [profile?.organization_id]);
+
+  const loadOrganizationalProfile = async () => {
+    if (!profile?.organization_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('organizational_profiles')
+        .select('*')
+        .eq('organization_id', profile.organization_id)
+        .single();
+
+      if (error) throw error;
+      setOrgProfile(data);
+    } catch (error) {
+      console.error('Error loading organizational profile:', error);
+    }
+  };
+
+  const loadVendorFeeds = async () => {
+    if (!profile?.organization_id) return;
+    
+    try {
+      const feeds = await vendorFeedIntegrationService.getVendorMonitoringFeeds(profile.organization_id);
+      setVendorFeeds(feeds);
+      setIsMonitoringActive(feeds.length > 0);
+    } catch (error) {
+      console.error('Error loading vendor feeds:', error);
+    }
+  };
+
+  const loadVendorAlerts = async () => {
+    if (!profile?.organization_id) return;
+    
+    try {
+      const alerts = await vendorFeedIntegrationService.getVendorRiskAlerts(profile.organization_id);
+      setVendorAlerts(alerts);
+    } catch (error) {
+      console.error('Error loading vendor alerts:', error);
+    }
+  };
+
+  const loadConcentrationRisk = async () => {
+    if (!profile?.organization_id) return;
+    
+    try {
+      const riskData = await vendorFeedIntegrationService.calculateConcentrationRisk(profile.organization_id);
+      setConcentrationRisk(riskData);
+    } catch (error) {
+      console.error('Error loading concentration risk:', error);
+    }
+  };
+
+  const simulateVendorFeedUpdates = async () => {
+    try {
+      const mockUpdates = await vendorFeedIntegrationService.simulateVendorFeedUpdates();
+      
+      // Process each update and check for breaches
+      for (const feedUpdate of mockUpdates) {
+        const alert = await vendorFeedIntegrationService.checkThresholdBreaches(feedUpdate);
+        if (alert && profile?.organization_id) {
+          await vendorFeedIntegrationService.createVendorRiskAlert(profile.organization_id, alert);
+        }
+      }
+      
+      await loadVendorFeeds();
+      await loadVendorAlerts();
+      
+      toast.success(`Simulated ${mockUpdates.length} vendor feed updates with OSFI E-21 compliance monitoring`);
+    } catch (error) {
+      console.error('Error simulating vendor feed updates:', error);
+      toast.error('Failed to simulate vendor feed updates');
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -450,16 +591,69 @@ const VendorRiskDashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="monitoring" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Real-time Monitoring</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center py-8 text-muted-foreground">
-                Monitoring feeds component will be implemented here
-              </p>
-            </CardContent>
-          </Card>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Real-time Feed Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wifi className="h-5 w-5" />
+                  Real-time Vendor Feeds
+                  <Badge variant={isMonitoringActive ? "default" : "secondary"}>
+                    {isMonitoringActive ? "Active" : "Inactive"}
+                  </Badge>
+                </CardTitle>
+                <CardDescription>
+                  Continuous monitoring per OSFI E-21 Principle 6 and B-10 requirements
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Active Feeds:</span>
+                    <Badge variant="outline">{vendorFeeds.length}</Badge>
+                  </div>
+                  <Button 
+                    onClick={simulateVendorFeedUpdates}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Simulate Feed Updates
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Vendor Risk Alerts */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Active Alerts
+                  <Badge variant={vendorAlerts.length > 0 ? "destructive" : "default"}>
+                    {vendorAlerts.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {vendorAlerts.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-4">No active alerts</p>
+                  ) : (
+                    vendorAlerts.slice(0, 3).map((alert, index) => (
+                      <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{alert.vendor_name}</span>
+                          <Badge variant="destructive">{alert.severity}</Badge>
+                        </div>
+                        <p className="text-xs text-red-600 mt-1">{alert.alert_type.replace('_', ' ')}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="dependencies" className="space-y-6">

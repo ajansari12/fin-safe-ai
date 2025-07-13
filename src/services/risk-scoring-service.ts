@@ -35,7 +35,7 @@ export function getRiskColor(level: string): string {
   }
 }
 
-export async function calculateVendorRiskScore(vendor: VendorProfile): Promise<VendorRiskScore> {
+export async function calculateVendorRiskScore(vendor: VendorProfile, feedData?: any): Promise<VendorRiskScore> {
   try {
     // Use the database function to calculate risk score
     const { data, error } = await supabase.rpc('calculate_vendor_risk_score', {
@@ -48,20 +48,25 @@ export async function calculateVendorRiskScore(vendor: VendorProfile): Promise<V
 
     if (error) throw error;
 
-    const riskScore = data || 1;
+    let riskScore = data || 1;
     const riskLevel = getRiskLevel(riskScore);
     const riskColor = getRiskColor(riskLevel);
 
+    // Enhanced with real-time feed data integration
+    if (feedData) {
+      riskScore = enhanceRiskScoreWithFeedData(riskScore, feedData);
+    }
+
     // Calculate individual factor scores for detailed breakdown
-    const factors = calculateFactorScores(vendor);
-    const recommendations = generateRecommendations(vendor, factors);
+    const factors = calculateFactorScores(vendor, feedData);
+    const recommendations = generateRecommendations(vendor, factors, feedData);
 
     return {
       vendor_id: vendor.id,
       vendor_name: vendor.vendor_name,
       risk_score: riskScore,
-      risk_level: riskLevel,
-      risk_color: riskColor,
+      risk_level: getRiskLevel(riskScore), // Recalculate after enhancement
+      risk_color: getRiskColor(getRiskLevel(riskScore)),
       factors,
       recommendations
     };
@@ -72,7 +77,7 @@ export async function calculateVendorRiskScore(vendor: VendorProfile): Promise<V
     const fallbackScore = calculateFallbackRiskScore(vendor);
     const riskLevel = getRiskLevel(fallbackScore);
     const riskColor = getRiskColor(riskLevel);
-    const factors = calculateFactorScores(vendor);
+    const factors = calculateFactorScores(vendor, feedData);
 
     return {
       vendor_id: vendor.id,
@@ -86,7 +91,32 @@ export async function calculateVendorRiskScore(vendor: VendorProfile): Promise<V
   }
 }
 
-function calculateFactorScores(vendor: VendorProfile) {
+// Enhanced risk scoring with real-time feed data
+function enhanceRiskScoreWithFeedData(baseScore: number, feedData: any): number {
+  let enhancedScore = baseScore;
+  
+  // Credit rating impact
+  if (feedData.credit_rating) {
+    if (feedData.credit_rating < 50) enhancedScore += 1.5;
+    else if (feedData.credit_rating < 70) enhancedScore += 0.5;
+  }
+  
+  // Cybersecurity risk impact
+  if (feedData.cyber_risk_score) {
+    if (feedData.cyber_risk_score > 85) enhancedScore += 1.0;
+    else if (feedData.cyber_risk_score > 70) enhancedScore += 0.5;
+  }
+  
+  // News sentiment impact
+  if (feedData.sentiment_score) {
+    if (feedData.sentiment_score < -0.7) enhancedScore += 0.8;
+    else if (feedData.sentiment_score < -0.5) enhancedScore += 0.3;
+  }
+  
+  return Math.min(5, enhancedScore); // Cap at 5
+}
+
+function calculateFactorScores(vendor: VendorProfile, feedData?: any) {
   const now = new Date();
   
   // Criticality score
@@ -146,7 +176,7 @@ function calculateFallbackRiskScore(vendor: VendorProfile): number {
   return Math.max(1, Math.min(5, totalScore));
 }
 
-function generateRecommendations(vendor: VendorProfile, factors: any): string[] {
+function generateRecommendations(vendor: VendorProfile, factors: any, feedData?: any): string[] {
   const recommendations: string[] = [];
 
   if (factors.assessment_score >= 2) {
@@ -173,9 +203,25 @@ function generateRecommendations(vendor: VendorProfile, factors: any): string[] 
     recommendations.push('Critical vendor - ensure regular assessments are scheduled');
   }
 
-  if (recommendations.length === 0) {
-    recommendations.push('Vendor risk is well managed - continue monitoring');
+  // Enhanced recommendations with OSFI E-21/B-10 citations and feed data
+  if (feedData) {
+    if (feedData.credit_rating && feedData.credit_rating < 70) {
+      recommendations.push('Per OSFI E-21 Principle 6 and B-10: Credit rating degradation detected - assess vendor financial stability and concentration risk');
+    }
+    if (feedData.cyber_risk_score && feedData.cyber_risk_score > 80) {
+      recommendations.push('Per OSFI B-10: Elevated cybersecurity risk - review vendor security controls and incident response capabilities');
+    }
+    if (feedData.sentiment_score && feedData.sentiment_score < -0.5) {
+      recommendations.push('Per OSFI E-21 Principle 6: Negative sentiment detected - assess reputational and operational risk implications');
+    }
   }
+
+  if (recommendations.length === 0) {
+    recommendations.push('Vendor risk is well managed - continue monitoring per OSFI E-21 Principle 6');
+  }
+
+  // Add regulatory disclaimer to all recommendations
+  recommendations.push('Disclaimer: This analysis is based on OSFI E-21 and B-10 guidelines. This is not regulatory advice. Consult OSFI or qualified professionals for your institution\'s specific requirements.');
 
   return recommendations;
 }
