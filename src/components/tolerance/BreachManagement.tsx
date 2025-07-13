@@ -225,8 +225,8 @@ const BreachManagement = () => {
 
     setActiveBreaches(prev => [transformedBreach, ...prev]);
 
-    // Auto-trigger AI analysis for new breaches
-    await performAIAnalysis(transformedBreach);
+  // Auto-trigger AI analysis for new breaches
+    setTimeout(() => performAIAnalysis(transformedBreach), 1000); // Slight delay to ensure state is updated
 
     toast({
       title: "New Tolerance Breach Detected",
@@ -250,23 +250,121 @@ const BreachManagement = () => {
     ));
   };
 
-  // AI-powered breach analysis
+  // AI-powered breach analysis using enhanced capabilities
   const performAIAnalysis = async (breach: ToleranceBreach) => {
     setAiAnalyzing(true);
     try {
-      const analysisPrompt = `Analyze this OSFI E-21 tolerance breach: 
-        Operation: ${breach.operationName}
-        Severity: ${breach.severity}
-        Type: ${breach.breachType}
-        Impact: ${breach.currentImpact}
-        
-        Provide severity assessment, recovery recommendations, and escalation requirements per OSFI E-21 Principles. Include citations and disclaimers.`;
+      // Calculate variance from breach data
+      const variance = breach.breachLogId ? 
+        await calculateVarianceFromBreachLog(breach.breachLogId) : 
+        calculateEstimatedVariance(breach.severity);
+      
+      // Use the enhanced AI assistant for comprehensive analysis
+      const { analyzeToleranceBreach } = useEnhancedAIAssistant();
+      
+      await analyzeToleranceBreach(
+        breach.id,
+        breach.operationName,
+        breach.breachType,
+        100, // actual value - would be calculated from real data
+        80,  // threshold value - would be fetched from tolerance definitions
+        variance,
+        breach.status
+      );
+      
+      // Update the breach with AI analysis results
+      setActiveBreaches(prev => prev.map(b => 
+        b.id === breach.id 
+          ? { ...b, aiAnalysis: { 
+              severityAssessment: `AI-enhanced severity analysis completed`,
+              recommendations: ['Comprehensive AI analysis available in assistant'],
+              escalationRequired: breach.severity === 'critical',
+              estimatedRecoveryTime: breach.estimatedDuration
+            }}
+          : b
+      ));
 
-      addUserMessage(analysisPrompt);
+      toast({
+        title: "AI Analysis Complete",
+        description: "Comprehensive breach analysis available in AI Assistant",
+        variant: "default",
+      });
     } catch (error) {
       console.error('Error performing AI analysis:', error);
+      toast({
+        title: "AI Analysis Error",
+        description: "Unable to complete AI analysis. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setAiAnalyzing(false);
+    }
+  };
+
+  // Helper functions for AI analysis integration
+  const calculateVarianceFromBreachLog = async (breachLogId: string): Promise<number> => {
+    try {
+      const { data } = await supabase
+        .from('appetite_breach_logs')
+        .select('variance_percentage')
+        .eq('id', breachLogId)
+        .single();
+      
+      return data?.variance_percentage || 50;
+    } catch (error) {
+      return 50; // Default variance
+    }
+  };
+
+  const calculateEstimatedVariance = (severity: string): number => {
+    switch (severity) {
+      case 'critical': return 100;
+      case 'high': return 75;
+      case 'medium': return 50;
+      case 'low': return 25;
+      default: return 50;
+    }
+  };
+
+  // Enhanced impact assessment using AI
+  const performImpactAssessment = async (breach: ToleranceBreach) => {
+    try {
+      const { assessBreachImpact } = useEnhancedAIAssistant();
+      
+      await assessBreachImpact(
+        breach.id,
+        breach.estimatedDuration,
+        240 // threshold - would be fetched from actual tolerance definitions
+      );
+
+      toast({
+        title: "Impact Assessment Complete",
+        description: "Detailed impact analysis available in AI Assistant",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error performing impact assessment:', error);
+      toast({
+        title: "Assessment Error",
+        description: "Unable to complete impact assessment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Predictive analysis trigger
+  const performPredictiveAnalysis = async () => {
+    try {
+      const { predictPotentialBreaches } = useEnhancedAIAssistant();
+      await predictPotentialBreaches();
+
+      toast({
+        title: "Predictive Analysis Complete",
+        description: "Potential breach predictions available in AI Assistant",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error performing predictive analysis:', error);
     }
   };
 
@@ -366,9 +464,20 @@ const BreachManagement = () => {
         <TabsContent value="active-breaches" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Active Tolerance Breaches</h3>
-            <Badge variant="outline" className="text-red-600">
-              {activeBreaches.filter(b => b.status !== 'resolved').length} Active
-            </Badge>
+            <div className="flex gap-2 items-center">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={performPredictiveAnalysis}
+                className="mr-2"
+              >
+                <Brain className="h-4 w-4 mr-1" />
+                Predict Future Breaches
+              </Button>
+              <Badge variant="outline" className="text-red-600">
+                {activeBreaches.filter(b => b.status !== 'resolved').length} Active
+              </Badge>
+            </div>
           </div>
 
           <div className="grid gap-4">
@@ -414,7 +523,15 @@ const BreachManagement = () => {
                         disabled={aiAnalyzing}
                       >
                         <Brain className="h-4 w-4 mr-1" />
-                        AI Analysis
+                        {aiAnalyzing ? 'Analyzing...' : 'AI Analysis'}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => performImpactAssessment(breach)}
+                      >
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        Impact Assessment
                       </Button>
                     </div>
                   </div>

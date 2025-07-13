@@ -5,6 +5,7 @@ import { enhancedAIAssistantService } from "@/services/enhanced-ai-assistant-ser
 import { aiOrganizationalIntelligenceIntegration } from "@/services/ai-organizational-intelligence-integration";
 import { getUserOrganization } from "@/lib/supabase-utils";
 import { supabase } from "@/integrations/supabase/client";
+import { ToleranceAIAnalysisService, ToleranceBreachAnalysis, BreachPrediction } from "@/services/tolerance/tolerance-ai-analysis-service";
 
 // Keep existing types from original context
 interface AIMessage {
@@ -62,6 +63,23 @@ interface EnhancedAIAssistantContextType {
   suggestKRIs: (category: string) => void;
   guideSetup: (step: string) => void;
   summarizeContent: (content: string) => void;
+  
+  // Phase 4: AI-Powered Breach Analysis
+  breachAnalyses: ToleranceBreachAnalysis[];
+  breachPredictions: BreachPrediction[];
+  isAnalyzingBreach: boolean;
+  analyzeToleranceBreach: (
+    breachId: string,
+    operationName: string,
+    breachType: 'rto' | 'rpo' | 'service_level' | 'multiple',
+    actualValue: number,
+    thresholdValue: number,
+    variance: number,
+    currentStatus: string
+  ) => Promise<ToleranceBreachAnalysis>;
+  generateEscalationRecommendations: (breachAnalysis: ToleranceBreachAnalysis) => Promise<void>;
+  assessBreachImpact: (breachId: string, recoveryTime: number, threshold: number) => Promise<void>;
+  predictPotentialBreaches: () => Promise<void>;
 }
 
 const EnhancedAIAssistantContext = createContext<EnhancedAIAssistantContextType | undefined>(undefined);
@@ -89,6 +107,11 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
   const [riskSummary, setRiskSummary] = useState<RiskSummary[]>([]);
   const [sectorRecommendations, setSectorRecommendations] = useState<SectorThreshold[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // Phase 4: Breach analysis state
+  const [breachAnalyses, setBreachAnalyses] = useState<ToleranceBreachAnalysis[]>([]);
+  const [breachPredictions, setBreachPredictions] = useState<BreachPrediction[]>([]);
+  const [isAnalyzingBreach, setIsAnalyzingBreach] = useState(false);
   
   const { user, profile } = useAuth();
   
@@ -412,6 +435,261 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     addUserMessage(`Can you summarize this information: ${content.substring(0, 100)}...`);
   };
 
+  // Phase 4: AI-Powered Breach Analysis Methods
+  const analyzeToleranceBreach = async (
+    breachId: string,
+    operationName: string,
+    breachType: 'rto' | 'rpo' | 'service_level' | 'multiple',
+    actualValue: number,
+    thresholdValue: number,
+    variance: number,
+    currentStatus: string
+  ): Promise<ToleranceBreachAnalysis> => {
+    setIsAnalyzingBreach(true);
+    try {
+      const analysis = await ToleranceAIAnalysisService.analyzeToleranceBreach(
+        breachId,
+        operationName,
+        breachType,
+        actualValue,
+        thresholdValue,
+        variance,
+        currentStatus
+      );
+
+      setBreachAnalyses(prev => {
+        const existing = prev.findIndex(a => a.breachId === breachId);
+        if (existing >= 0) {
+          const updated = [...prev];
+          updated[existing] = analysis;
+          return updated;
+        }
+        return [...prev, analysis];
+      });
+
+      // Generate AI message with analysis summary
+      const analysisContent = `**OSFI E-21 Tolerance Breach Analysis - ${operationName}**
+
+🔍 **Severity Assessment:** ${analysis.severityAssessment.toUpperCase()}
+📊 **Variance:** ${variance.toFixed(1)}% above threshold
+⏱️ **Estimated Duration:** ${analysis.impactAssessment.estimatedDuration} minutes
+
+🚨 **Escalation Required:** ${analysis.escalationRecommendation.required ? 'YES' : 'NO'}
+${analysis.escalationRecommendation.required ? `• Level ${analysis.escalationRecommendation.level} escalation within ${analysis.escalationRecommendation.timeline.replace('_', ' ')}` : ''}
+
+${analysis.boardEscalationRequired ? '🏛️ **Board Notification Required** per OSFI E-21 Principle 1' : ''}
+
+📋 **OSFI E-21 Principles:** ${analysis.osfiPrinciplesCited.map(p => `Principle ${p}`).join(', ')}
+
+💡 **Recovery Recommendations:**
+${analysis.recoveryRecommendations.map(r => `• ${r}`).join('\n')}
+
+🎯 **Next Actions:**
+${analysis.nextActions.map(a => `• ${a}`).join('\n')}
+
+📏 **Proportionality Note:**
+${analysis.proportionalityNotes}
+
+⚖️ **Regulatory Disclaimer:**
+This automated analysis is based on OSFI Guideline E-21 requirements. This does not constitute regulatory advice. Consult OSFI or qualified compliance professionals for your institution's specific regulatory obligations.`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        analysisContent, 
+        currentModule, 
+        ['breach_analysis', 'osfi_e21']
+      );
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: analysisContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['breach_analysis', 'osfi_e21']
+      }]);
+
+      return analysis;
+    } catch (error) {
+      console.error('Error analyzing tolerance breach:', error);
+      throw error;
+    } finally {
+      setIsAnalyzingBreach(false);
+    }
+  };
+
+  const generateEscalationRecommendations = async (breachAnalysis: ToleranceBreachAnalysis) => {
+    setIsAnalyzing(true);
+    try {
+      const org = await getUserOrganization();
+      const recommendations = ToleranceAIAnalysisService.generateEscalationRecommendations(
+        breachAnalysis,
+        { sector: org?.sector, size: org?.size }
+      );
+
+      const recommendationContent = `**Escalation Recommendations for Breach ${breachAnalysis.breachId}**
+
+${recommendations.map(r => r).join('\n\n')}
+
+**Recommended Timeline:**
+• Immediate: ${breachAnalysis.escalationRecommendation.timeline.replace('_', ' ')}
+• Reason: ${breachAnalysis.escalationRecommendation.reason}
+
+**OSFI E-21 Compliance:**
+This escalation recommendation follows OSFI E-21 Principle 5 (Crisis Management) and Principle 7 (Tolerance for Disruption) requirements for Canadian financial institutions.`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        recommendationContent, 
+        currentModule, 
+        ['escalation_analysis', 'osfi_e21']
+      );
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: recommendationContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['escalation_analysis', 'osfi_e21']
+      }]);
+    } catch (error) {
+      console.error('Error generating escalation recommendations:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const assessBreachImpact = async (breachId: string, recoveryTime: number, threshold: number) => {
+    setIsAnalyzingBreach(true);
+    try {
+      const impact = await ToleranceAIAnalysisService.assessBreachImpact(
+        breachId,
+        recoveryTime,
+        threshold
+      );
+
+      const impactContent = `**Breach Impact Assessment - ID: ${breachId}**
+
+🎯 **Risk Level:** ${impact.riskLevel.toUpperCase()}
+📈 **Recovery Time:** ${recoveryTime} minutes (vs ${threshold} threshold)
+
+💼 **Business Impact:**
+${impact.businessImpact}
+
+👥 **Customer Impact:**
+${impact.customerImpact}
+
+⚖️ **Regulatory Impact:**
+${impact.regulatoryImpact}
+
+🔧 **Recommended Actions:**
+${impact.recommendedActions.map(a => `• ${a}`).join('\n')}
+
+**Assessment Methodology:**
+This impact assessment follows OSFI E-21 Principle 6 (Monitoring & Testing) guidelines for operational risk measurement and uses proportional thresholds based on your organization's size and complexity.`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        impactContent, 
+        currentModule, 
+        ['impact_assessment', 'osfi_e21']
+      );
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: impactContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['impact_assessment', 'osfi_e21']
+      }]);
+    } catch (error) {
+      console.error('Error assessing breach impact:', error);
+    } finally {
+      setIsAnalyzingBreach(false);
+    }
+  };
+
+  const predictPotentialBreaches = async () => {
+    if (!profile?.organization_id) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const predictions = await ToleranceAIAnalysisService.predictPotentialBreaches(
+        profile.organization_id,
+        30
+      );
+
+      setBreachPredictions(predictions);
+
+      if (predictions.length > 0) {
+        const predictionContent = `**Predictive Breach Analysis - Next 30 Days**
+
+🔮 **Potential Breach Predictions:**
+
+${predictions.map((p, i) => `
+**Prediction ${i + 1}:**
+• **Likelihood:** ${p.likelihood.toUpperCase()}
+• **Timeframe:** ${p.timeframe}
+• **Trigger Factors:** ${p.triggerFactors.join(', ')}
+• **Preventive Actions:** ${p.preventiveActions.join(', ')}
+`).join('\n')}
+
+**Proactive Measures:**
+Based on historical patterns and current system stress indicators, consider implementing the preventive actions listed above to reduce breach probability.
+
+**OSFI E-21 Alignment:**
+This predictive analysis supports Principle 6 (Monitoring & Testing) requirements for continuous monitoring and early warning systems.
+
+**Disclaimer:**
+Predictions are based on historical data patterns and current indicators. Actual results may vary. This analysis supplements but does not replace professional risk assessment.`;
+
+        const messageId = await aiAssistantService.logChatMessage(
+          'assistant', 
+          predictionContent, 
+          currentModule, 
+          ['breach_prediction', 'predictive_analytics']
+        );
+        
+        setAssistantMessages(prev => [...prev, {
+          id: messageId,
+          role: "assistant",
+          content: predictionContent,
+          timestamp: new Date().toISOString(),
+          logId: messageId,
+          knowledgeSources: ['breach_prediction', 'predictive_analytics']
+        }]);
+      } else {
+        const noPredictionContent = `**Predictive Breach Analysis - Next 30 Days**
+
+✅ **Good News:** No significant breach patterns detected in historical data.
+
+**Recommendation:** Continue current monitoring practices and maintain operational resilience measures per OSFI E-21 framework.`;
+
+        const messageId = await aiAssistantService.logChatMessage(
+          'assistant', 
+          noPredictionContent, 
+          currentModule, 
+          ['breach_prediction']
+        );
+        
+        setAssistantMessages(prev => [...prev, {
+          id: messageId,
+          role: "assistant",
+          content: noPredictionContent,
+          timestamp: new Date().toISOString(),
+          logId: messageId,
+          knowledgeSources: ['breach_prediction']
+        }]);
+      }
+    } catch (error) {
+      console.error('Error predicting potential breaches:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   return (
     <EnhancedAIAssistantContext.Provider 
       value={{ 
@@ -441,7 +719,16 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
         generateExecutiveReport,
         getSectorGuidance,
         provideFeedback,
-        generateOrganizationalAnalysis
+        generateOrganizationalAnalysis,
+        
+        // Phase 4: AI-Powered Breach Analysis
+        breachAnalyses,
+        breachPredictions,
+        isAnalyzingBreach,
+        analyzeToleranceBreach,
+        generateEscalationRecommendations,
+        assessBreachImpact,
+        predictPotentialBreaches
       }}
     >
       {children}

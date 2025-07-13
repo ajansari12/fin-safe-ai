@@ -6,12 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, CheckCircle, Clock, TrendingUp, Activity, Bell, Shield, Settings } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, TrendingUp, Activity, Bell, Shield, Settings, Brain } from "lucide-react";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProportionalityService } from "@/services/tolerance/proportionality-service";
+import { logToleranceBreach } from "@/services/appetite-breach/breach-logs-service";
+import { logger } from "@/lib/logger";
 
 interface ToleranceStatus {
   id: string;
@@ -60,6 +63,12 @@ interface BreachEvent {
 const ToleranceMonitoring = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { 
+    setCurrentModule,
+    analyzeToleranceBreach,
+    predictPotentialBreaches,
+    isAnalyzingBreach 
+  } = useEnhancedAIAssistant();
   
   const [toleranceStatuses, setToleranceStatuses] = useState<ToleranceStatus[]>([]);
   const [orgProfile, setOrgProfile] = useState<OrganizationalProfile | null>(null);
@@ -92,12 +101,15 @@ const ToleranceMonitoring = () => {
     enabled: !!profile?.organization_id
   });
 
-  // Load organizational profile and proportionality configuration
+  // Initialize component
   useEffect(() => {
-    loadOrganizationalProfile();
-    loadProportionalityConfig();
-    loadToleranceData();
-  }, [profile?.organization_id]);
+    setCurrentModule('tolerance-monitoring');
+    if (profile?.organization_id) {
+      loadOrganizationalProfile();
+      loadProportionalityConfig();
+      loadToleranceData();
+    }
+  }, [profile?.organization_id, setCurrentModule]);
 
   const loadProportionalityConfig = async () => {
     const config = await ProportionalityService.getOrganizationalConfig();
@@ -307,17 +319,49 @@ const ToleranceMonitoring = () => {
         duration: isSmallFRFI ? 5000 : 10000, // Longer duration for large FRFIs
       });
 
-      // Log breach to appetite_breach_logs table
-      await supabase.from('appetite_breach_logs').insert({
-        org_id: profile?.organization_id,
-        breach_date: new Date().toISOString(),
-        breach_severity: severity,
-        actual_value: breachEvent.actualValue,
-        threshold_value: breachEvent.thresholdValue,
-        variance_percentage: breachEvent.variance,
-        business_impact: `${breachEvent.operationName} tolerance breach - ${alertType}`,
-        resolution_status: 'open'
-      });
+      // Log the breach for tracking and compliance
+      const breachId = await logToleranceBreach(
+        breachEvent.toleranceId,
+        breachEvent.operationName,
+        breachEvent.actualValue,
+        breachEvent.thresholdValue,
+        severity,
+        `${breachEvent.operationName} ${breachEvent.breachType} tolerance exceeded by ${breachEvent.variance.toFixed(1)}%`
+      );
+
+      if (breachId) {
+        logger.info('Tolerance breach detected and logged', {
+          component: 'ToleranceMonitoring',
+          module: 'tolerance-monitoring',
+          metadata: {
+            breachId,
+            operation: breachEvent.operationName,
+            severity: severity,
+            variance: breachEvent.variance.toFixed(1)
+          }
+        });
+
+        // Trigger AI analysis for the breach if it's critical or high severity
+        if (severity === 'critical' || severity === 'high') {
+          try {
+            await analyzeToleranceBreach(
+              breachId,
+              breachEvent.operationName,
+              breachEvent.breachType,
+              breachEvent.actualValue,
+              breachEvent.thresholdValue,
+              breachEvent.variance,
+              'active'
+            );
+          } catch (aiError) {
+            logger.error('Failed to trigger AI analysis for breach', {
+              component: 'ToleranceMonitoring',
+              module: 'tolerance-monitoring',
+              metadata: { breachId }
+            }, aiError);
+          }
+        }
+      }
 
       // Call enhanced breach alert edge function
       await supabase.functions.invoke('send-tolerance-breach-alert', {
@@ -439,6 +483,15 @@ const ToleranceMonitoring = () => {
               </div>
             </div>
           )}
+          <Button 
+            variant="outline" 
+            onClick={predictPotentialBreaches}
+            disabled={isAnalyzingBreach}
+            className="mr-2"
+          >
+            <Brain className="h-4 w-4 mr-2" />
+            AI Predictions
+          </Button>
           <Button variant="outline" onClick={() => setRefreshTime(new Date())}>
             <Activity className="h-4 w-4 mr-2" />
             Refresh
