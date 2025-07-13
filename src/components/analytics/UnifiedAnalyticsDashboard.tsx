@@ -28,6 +28,7 @@ import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
 import OSFIComplianceWidgets from './OSFIComplianceWidgets';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import RealtimeIndicator from '@/components/common/RealtimeIndicator';
+import AllInsightsDialog from '@/components/dialogs/AllInsightsDialog';
 
 interface AnalyticsInsight {
   id: string;
@@ -69,6 +70,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [dataError, setDataError] = useState<Error | null>(null);
+  const [showAllInsights, setShowAllInsights] = useState(false);
   const { handleError } = useErrorHandler();
 
   // Set up real-time monitoring for analytics
@@ -251,7 +253,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
               </div>
               {insights.length > 3 && (
                 <div className="mt-3 text-center">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" onClick={() => setShowAllInsights(true)}>
                     View all {insights.length} insights
                   </Button>
                 </div>
@@ -368,6 +370,12 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
           </ErrorBoundary>
         </TabsContent>
       </Tabs>
+
+      {/* All Insights Dialog */}
+      <AllInsightsDialog 
+        open={showAllInsights} 
+        onOpenChange={setShowAllInsights} 
+      />
     </div>
   );
 };

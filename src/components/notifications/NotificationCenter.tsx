@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useNotificationCenter, type Notification } from '@/hooks/useNotificationCenter';
 import { formatDistanceToNow } from 'date-fns';
+import AllNotificationsDialog from '@/components/dialogs/AllNotificationsDialog';
 
 const NotificationCenter = memo(() => {
   const {
@@ -31,6 +32,8 @@ const NotificationCenter = memo(() => {
     clearAll,
     removeNotification
   } = useNotificationCenter();
+  
+  const [showAllNotifications, setShowAllNotifications] = useState(false);
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
@@ -196,13 +199,24 @@ const NotificationCenter = memo(() => {
           <>
             <Separator />
             <div className="p-2">
-              <Button variant="ghost" className="w-full text-xs" size="sm">
+              <Button 
+                variant="ghost" 
+                className="w-full text-xs" 
+                size="sm"
+                onClick={() => setShowAllNotifications(true)}
+              >
                 View all notifications
               </Button>
             </div>
           </>
         )}
       </PopoverContent>
+
+      {/* All Notifications Dialog */}
+      <AllNotificationsDialog 
+        open={showAllNotifications} 
+        onOpenChange={setShowAllNotifications} 
+      />
     </Popover>
   );
 });

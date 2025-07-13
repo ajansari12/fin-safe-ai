@@ -11,6 +11,8 @@ import { FolderPlus, Folder, FileText, Settings, Users, Shield } from "lucide-re
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { documentManagementService } from "@/services/document-management-service";
 import { useToast } from "@/components/ui/use-toast";
+import DocumentListingDialog from "@/components/dialogs/DocumentListingDialog";
+import RepositorySettingsDialog from "@/components/dialogs/RepositorySettingsDialog";
 
 interface DocumentRepositoryManagerProps {
   repositories: DocumentRepository[];
@@ -18,6 +20,9 @@ interface DocumentRepositoryManagerProps {
 
 const DocumentRepositoryManager: React.FC<DocumentRepositoryManagerProps> = ({ repositories }) => {
   const [open, setOpen] = useState(false);
+  const [showDocuments, setShowDocuments] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [selectedRepository, setSelectedRepository] = useState<DocumentRepository | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -195,6 +200,29 @@ const DocumentRepositoryManager: React.FC<DocumentRepositoryManagerProps> = ({ r
         </Dialog>
       </div>
 
+      {/* Document Listing Dialog */}
+      {selectedRepository && (
+        <DocumentListingDialog
+          open={showDocuments}
+          onOpenChange={setShowDocuments}
+          repositoryId={selectedRepository.id}
+          repositoryName={selectedRepository.name}
+        />
+      )}
+
+      {/* Repository Settings Dialog */}
+      {selectedRepository && (
+        <RepositorySettingsDialog
+          open={showSettings}
+          onOpenChange={setShowSettings}
+          repository={selectedRepository}
+          onUpdate={(updatedRepo) => {
+            // Optionally refresh the repositories list
+            queryClient.invalidateQueries({ queryKey: ['document-repositories'] });
+          }}
+        />
+      )}
+
       {repositories.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
@@ -253,11 +281,26 @@ const DocumentRepositoryManager: React.FC<DocumentRepositoryManagerProps> = ({ r
                   )}
 
                   <div className="flex gap-2 pt-3">
-                    <Button variant="outline" size="sm" className="flex-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        setSelectedRepository(repository);
+                        setShowDocuments(true);
+                      }}
+                    >
                       <FileText className="h-4 w-4 mr-1" />
                       View Documents
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedRepository(repository);
+                        setShowSettings(true);
+                      }}
+                    >
                       <Settings className="h-4 w-4" />
                     </Button>
                   </div>
