@@ -35,6 +35,7 @@ const AnalyticsPage = lazy(() => import('./pages/Analytics'));
 const AnalyticsHubPage = lazy(() => import('./pages/AnalyticsHub'));
 const CustomDashboardPage = lazy(() => import('./pages/analytics/CustomDashboard'));
 const OrganizationalIntelligencePage = lazy(() => import('./pages/OrganizationalIntelligence'));
+const OSFICompliancePage = lazy(() => import('./pages/OSFICompliance'));
 
 // Lazy load admin/low-priority routes
 const SettingsPage = lazy(() => import('./pages/Settings'));
@@ -176,7 +177,7 @@ function App() {
                 <EnhancedProtectedRoute requiredPermission="frameworks:read">
                   <RouteErrorBoundary routeName="OSFI Compliance" moduleName="Compliance">
                     <Suspense fallback={<DashboardSkeleton />}>
-                      {React.createElement(lazy(() => import('./pages/OSFICompliance')))}
+                      <OSFICompliancePage />
                     </Suspense>
                   </RouteErrorBoundary>
                 </EnhancedProtectedRoute>
