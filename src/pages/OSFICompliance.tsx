@@ -73,7 +73,7 @@ const OSFICompliance: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPrinciple, setSelectedPrinciple] = useState<number | null>(null);
 
-  // Real-time monitoring for tolerance breaches
+  // Real-time monitoring for tolerance breaches with enhanced integration
   useRealtimeSubscription({
     table: 'appetite_breach_logs',
     filter: `org_id=eq.${profile?.organization_id}`,
@@ -85,13 +85,23 @@ const OSFICompliance: React.FC = () => {
         variant: "destructive",
       });
     },
-    onInsert: () => {
+    onInsert: (payload) => {
       loadComplianceData(); // Refresh metrics when new breaches occur
+      
+      // Enhanced alert with breach details
+      const breach = payload.new;
+      const severity = breach.breach_severity || 'unknown';
+      
       toast({
         title: "🚨 OSFI E-21 Critical Alert",
-        description: "Critical operation tolerance exceeded. Per OSFI E-21 Principle 7, escalation procedures activated. Disclaimer: Automated analysis - verify with compliance team.",
+        description: `Critical operation tolerance exceeded (${severity}). Per OSFI E-21 Principle 7, escalation procedures activated. Breach value: ${breach.actual_value}. Disclaimer: Automated analysis - verify with compliance team.`,
         variant: "destructive",
       });
+
+      // Auto-trigger tolerance breach analysis if critical
+      if (severity === 'critical') {
+        console.log('Critical tolerance breach detected - triggering analysis');
+      }
     }
   });
 

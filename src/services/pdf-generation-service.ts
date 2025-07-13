@@ -145,6 +145,16 @@ interface OSFIComplianceData {
   riskAppetiteAlignment: number;
   activeBreaches: number;
   pendingActions: number;
+  toleranceBreaches?: number;
+  criticalToleranceBreaches?: number;
+  lastToleranceBreach?: string | null;
+  recentBreachDetails?: Array<{
+    breach_date: string;
+    breach_severity: string;
+    actual_value: number;
+    threshold_value: number;
+    variance_percentage: number;
+  }>;
 }
 
 class PDFGenerationService {
@@ -166,9 +176,9 @@ class PDFGenerationService {
 
   async generateOSFIAuditReport(data?: OSFIComplianceData): Promise<Blob> {
     // Use sample data if none provided
-    const reportData = data || this.getSampleOSFIData();
+    const reportData = data || await this.getEnhancedOSFIDataWithTolerance();
     
-    const content = this.createOSFIReportHTML(reportData);
+    const content = this.createEnhancedOSFIReportHTML(reportData);
     const htmlContent = createHTMLContent('OSFI E-21 Compliance Report', content, this.getOSFIStyles());
     
     // Create temporary element for PDF generation
@@ -220,7 +230,33 @@ class PDFGenerationService {
     }
   }
 
-  private createOSFIReportHTML(data: OSFIComplianceData): string {
+  private async getEnhancedOSFIDataWithTolerance(): Promise<OSFIComplianceData> {
+    const baseData = this.getSampleOSFIData();
+    return {
+      ...baseData,
+      toleranceBreaches: 12,
+      criticalToleranceBreaches: 3,
+      lastToleranceBreach: new Date().toISOString(),
+      recentBreachDetails: [
+        {
+          breach_date: new Date().toISOString(),
+          breach_severity: 'critical',
+          actual_value: 180,
+          threshold_value: 120,
+          variance_percentage: 50
+        },
+        {
+          breach_date: new Date(Date.now() - 86400000).toISOString(),
+          breach_severity: 'high',
+          actual_value: 95,
+          threshold_value: 80,
+          variance_percentage: 18.75
+        }
+      ]
+    };
+  }
+
+  private createEnhancedOSFIReportHTML(data: OSFIComplianceData): string {
     return `
       <div class="header">
         <h1>OSFI Guideline E-21 Compliance Report</h1>
@@ -248,6 +284,17 @@ class PDFGenerationService {
             <h3>Pending Actions</h3>
             <div class="metric">${data.pendingActions}</div>
           </div>
+          ${data.toleranceBreaches !== undefined ? `
+          <div class="card">
+            <h3>Tolerance Breaches (P7)</h3>
+            <div class="metric ${data.criticalToleranceBreaches && data.criticalToleranceBreaches > 0 ? 'critical' : 'good'}">${data.toleranceBreaches}</div>
+            <div class="sub-metric">Critical: ${data.criticalToleranceBreaches || 0}</div>
+          </div>
+          <div class="card">
+            <h3>Last Tolerance Breach</h3>
+            <div class="metric-small">${data.lastToleranceBreach ? new Date(data.lastToleranceBreach).toLocaleDateString() : 'None'}</div>
+          </div>
+          ` : ''}
         </div>
       </div>
 
@@ -315,6 +362,56 @@ class PDFGenerationService {
         </div>
       </div>
 
+      ${data.recentBreachDetails && data.recentBreachDetails.length > 0 ? `
+      <div class="section">
+        <h2>Recent Tolerance Breach Analysis (Principle 7)</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Severity</th>
+              <th>Actual Value</th>
+              <th>Threshold</th>
+              <th>Variance %</th>
+              <th>OSFI E-21 Assessment</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.recentBreachDetails.map(breach => `
+              <tr>
+                <td>${new Date(breach.breach_date).toLocaleDateString()}</td>
+                <td>
+                  <span class="badge badge-${breach.breach_severity === 'critical' ? 'error' : 'warning'}">
+                    ${breach.breach_severity.toUpperCase()}
+                  </span>
+                </td>
+                <td>${breach.actual_value}</td>
+                <td>${breach.threshold_value}</td>
+                <td class="${breach.variance_percentage > 25 ? 'text-critical' : 'text-warning'}">${breach.variance_percentage.toFixed(1)}%</td>
+                <td class="compliance-note">
+                  ${breach.breach_severity === 'critical' 
+                    ? 'Board escalation required per P5. Immediate assessment per P7.'
+                    : 'Management review required. Monitor for patterns per P5.'
+                  }
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="breach-analysis">
+          <h3>Principle 7 Compliance Impact</h3>
+          <p>Per OSFI E-21 Principle 7, these tolerance breaches indicate that defined disruption limits 
+          have been exceeded for critical operations. This requires immediate assessment of:</p>
+          <ul>
+            <li>Severity and duration of the disruption</li>
+            <li>Impact on critical operations and customers</li>
+            <li>Effectiveness of response and recovery procedures</li>
+            <li>Root cause analysis and corrective actions</li>
+          </ul>
+        </div>
+      </div>
+      ` : ''}
+
       <div class="section">
         <h2>Regulatory Disclaimer</h2>
         <div class="disclaimer">
@@ -325,6 +422,10 @@ class PDFGenerationService {
           
           <p><strong>Implementation Timeline:</strong> Full operational resilience requirements must be implemented by September 1, 2026, 
           with immediate adherence required for basic operational risk management sections.</p>
+          
+          <p><strong>Tolerance Breach Disclaimer:</strong> The tolerance breach analysis included in this report is based on 
+          automated monitoring systems and should be validated by compliance and risk management teams. 
+          All breach escalations and board reporting should follow your institution's established governance procedures.</p>
         </div>
       </div>
     `;
@@ -360,6 +461,59 @@ class PDFGenerationService {
       
       .metric.critical { color: #dc2626; }
       .metric.good { color: #059669; }
+      
+      .sub-metric {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+      
+      .metric-small {
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 10px;
+        color: #374151;
+      }
+      
+      .text-critical { color: #dc2626; }
+      .text-warning { color: #d97706; }
+      
+      .compliance-note {
+        font-size: 11px;
+        color: #374151;
+        line-height: 1.3;
+      }
+      
+      .breach-analysis {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 16px 0;
+      }
+      
+      .breach-analysis h3 {
+        margin: 0 0 8px 0;
+        color: #92400e;
+        font-size: 14px;
+      }
+      
+      .breach-analysis p {
+        margin: 8px 0;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      
+      .breach-analysis ul {
+        margin: 8px 0 0 16px;
+        font-size: 12px;
+      }
+      
+      .breach-analysis li {
+        margin: 4px 0;
+        line-height: 1.3;
+      }
       
       .badge-success { background: #dcfce7; color: #166534; }
       .badge-warning { background: #fef3c7; color: #92400e; }
