@@ -18,8 +18,16 @@ import {
   Mail,
   Calendar,
   BarChart3,
-  Headphones
+  Headphones,
+  Zap,
+  Shield,
+  FileText,
+  PlayCircle
 } from "lucide-react";
+import { GoLiveProcessDialog } from "@/components/dialogs/GoLiveProcessDialog";
+import { SystemChecksDialog } from "@/components/dialogs/SystemChecksDialog";
+import { AlertsManagementDialog } from "@/components/dialogs/AlertsManagementDialog";
+import { SuccessReportDialog } from "@/components/dialogs/SuccessReportDialog";
 
 interface SupportTicket {
   id: string;
@@ -41,6 +49,12 @@ interface SupportAgent {
 }
 
 const GoLiveSupport: React.FC = () => {
+  // Dialog states for critical go-live actions
+  const [goLiveDialogOpen, setGoLiveDialogOpen] = useState(false);
+  const [systemChecksDialogOpen, setSystemChecksDialogOpen] = useState(false);
+  const [alertsDialogOpen, setAlertsDialogOpen] = useState(false);
+  const [successReportDialogOpen, setSuccessReportDialogOpen] = useState(false);
+
   const [supportTickets] = useState<SupportTicket[]>([
     {
       id: 'T001',
@@ -277,6 +291,73 @@ const GoLiveSupport: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Critical Go-Live Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PlayCircle className="h-5 w-5" />
+                Critical Go-Live Actions
+              </CardTitle>
+              <CardDescription>
+                Essential actions for go-live process management
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Button 
+                  onClick={() => setGoLiveDialogOpen(true)}
+                  className="flex items-center gap-2 h-auto p-4 flex-col"
+                  size="lg"
+                >
+                  <Zap className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">Initiate Go-Live</div>
+                    <div className="text-xs opacity-80">Start deployment</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => setSystemChecksDialogOpen(true)}
+                  className="flex items-center gap-2 h-auto p-4 flex-col"
+                  size="lg"
+                >
+                  <Shield className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">Run All Checks</div>
+                    <div className="text-xs opacity-80">System validation</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => setAlertsDialogOpen(true)}
+                  className="flex items-center gap-2 h-auto p-4 flex-col"
+                  size="lg"
+                >
+                  <AlertCircle className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">View All Alerts</div>
+                    <div className="text-xs opacity-80">Alert management</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  onClick={() => setSuccessReportDialogOpen(true)}
+                  className="flex items-center gap-2 h-auto p-4 flex-col"
+                  size="lg"
+                >
+                  <FileText className="h-6 w-6" />
+                  <div className="text-center">
+                    <div className="font-medium">Generate Report</div>
+                    <div className="text-xs opacity-80">Success metrics</div>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="tickets" className="space-y-4">
@@ -427,6 +508,28 @@ const GoLiveSupport: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Go-Live Action Dialogs */}
+      <GoLiveProcessDialog 
+        open={goLiveDialogOpen}
+        onOpenChange={setGoLiveDialogOpen}
+      />
+      
+      <SystemChecksDialog 
+        open={systemChecksDialogOpen}
+        onOpenChange={setSystemChecksDialogOpen}
+      />
+      
+      <AlertsManagementDialog 
+        open={alertsDialogOpen}
+        onOpenChange={setAlertsDialogOpen}
+        alerts={[]} // Mock alerts data
+      />
+      
+      <SuccessReportDialog 
+        open={successReportDialogOpen}
+        onOpenChange={setSuccessReportDialogOpen}
+      />
     </div>
   );
 };

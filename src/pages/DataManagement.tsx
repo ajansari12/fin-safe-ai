@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,34 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { RoleAwareComponent } from "@/components/ui/RoleAwareComponent";
+import { DataExportDialog } from "@/components/dialogs/DataExportDialog";
+import { DataImportDialog } from "@/components/dialogs/DataImportDialog";
+import { useToast } from "@/hooks/use-toast";
 
 const DataManagement = () => {
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [exportType, setExportType] = useState<'json' | 'schema' | 'users'>('json');
+  const [importType, setImportType] = useState<'json' | 'csv'>('json');
+  const { toast } = useToast();
+
+  const handleExportClick = (type: 'json' | 'schema' | 'users') => {
+    setExportType(type);
+    setExportDialogOpen(true);
+  };
+
+  const handleImportClick = (type: 'json' | 'csv') => {
+    setImportType(type);
+    setImportDialogOpen(true);
+  };
+
+  const handleComingSoon = (feature: string) => {
+    toast({
+      title: "Coming Soon",
+      description: `${feature} functionality will be available in the next release.`,
+    });
+  };
+
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
@@ -46,15 +72,27 @@ const DataManagement = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleExportClick('json')}
+                >
                   <FileText className="mr-2 h-4 w-4" />
                   Export All Data (JSON)
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleExportClick('schema')}
+                >
                   <Database className="mr-2 h-4 w-4" />
                   Export Database Schema
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleExportClick('users')}
+                >
                   <Users className="mr-2 h-4 w-4" />
                   Export User Data
                 </Button>
@@ -72,11 +110,19 @@ const DataManagement = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleImportClick('json')}
+                >
                   <FileText className="mr-2 h-4 w-4" />
                   Import JSON Data
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => handleImportClick('csv')}
+                >
                   <Database className="mr-2 h-4 w-4" />
                   Import CSV Files
                 </Button>
@@ -233,6 +279,19 @@ const DataManagement = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Data Management Dialogs */}
+        <DataExportDialog 
+          open={exportDialogOpen}
+          onOpenChange={setExportDialogOpen}
+          exportType={exportType}
+        />
+        
+        <DataImportDialog 
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          importType={importType}
+        />
       </div>
     </AuthenticatedLayout>
   );
