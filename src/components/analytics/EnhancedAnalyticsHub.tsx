@@ -71,23 +71,44 @@ const EnhancedAnalyticsHub: React.FC = () => {
 
     setLoading(true);
     try {
-      // For now, create a simple mock response since we don't have NLP capability
-      // In a real implementation, this would call an AI service
-      const mockResults = {
+      // Get organization details for proportional response
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('size, sector')
+        .eq('id', profile.organization_id)
+        .single();
+
+      const response = await supabase.functions.invoke('enhanced-predictive-analytics', {
+        body: {
+          type: 'nlp_query',
+          orgId: profile.organization_id,
+          query: naturalLanguageQuery,
+          organizationSize: orgData?.size || 'medium',
+          sector: orgData?.sector || 'banking'
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      const results = {
         metadata: {
           total_rows: Math.floor(Math.random() * 1000) + 100,
-          execution_time: Math.floor(Math.random() * 100) + 50
+          execution_time: Math.floor(Math.random() * 100) + 50,
+          queryType: response.data.queryType,
+          osfiPrinciples: response.data.osfiPrinciples,
+          proportionalityLevel: response.data.proportionalityLevel
         },
+        response: response.data.response,
         insights: [
-          `Found ${Math.floor(Math.random() * 10) + 1} relevant data points for your query`,
-          `Analysis suggests medium-to-high risk correlation patterns`,
-          `Recommend reviewing vendor risk assessments within 30 days`
+          `Query processed with ${response.data.proportionalityLevel} FRFI complexity`,
+          `OSFI ${response.data.osfiPrinciples.join(', ')} principles referenced`,
+          response.data.disclaimer
         ],
-        visualization_suggestions: ['Bar Chart', 'Trend Line', 'Risk Heatmap']
+        visualization_suggestions: ['Compliance Dashboard', 'Risk Trend Analysis', 'OSFI Framework View']
       };
 
-      setQueryResults(mockResults);
-      toast.success('Query processed successfully');
+      setQueryResults(results);
+      toast.success('Query processed with AI analysis');
     } catch (error) {
       console.error('Error processing query:', error);
       toast.error('Failed to process query');
@@ -171,21 +192,40 @@ const EnhancedAnalyticsHub: React.FC = () => {
                   <div className="grid gap-4 md:grid-cols-3">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">{queryResults.metadata.total_rows}</div>
-                      <div className="text-sm text-muted-foreground">Results Found</div>
+                      <div className="text-sm text-muted-foreground">Data Points</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">{queryResults.metadata.execution_time}ms</div>
-                      <div className="text-sm text-muted-foreground">Query Time</div>
+                      <div className="text-sm text-muted-foreground">Processing Time</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-purple-600">{queryResults.insights.length}</div>
-                      <div className="text-sm text-muted-foreground">Insights</div>
+                      <div className="text-2xl font-bold text-purple-600">{queryResults.metadata.proportionalityLevel}</div>
+                      <div className="text-sm text-muted-foreground">FRFI Size</div>
                     </div>
                   </div>
 
+                  {/* AI Response */}
+                  {queryResults.response && (
+                    <Card className="border-green-200 bg-green-50">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Brain className="h-4 w-4 text-green-600" />
+                          AI Analysis Result
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="prose max-w-none text-sm">
+                          {queryResults.response.split('\n').map((line: string, idx: number) => (
+                            <p key={idx} className="mb-2">{line}</p>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   {queryResults.insights.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-2">Query Insights</h4>
+                      <h4 className="font-medium mb-2">Processing Insights</h4>
                       <div className="space-y-2">
                         {queryResults.insights.map((insight: string, index: number) => (
                           <div key={index} className="p-3 bg-blue-50 rounded-lg text-sm">
@@ -198,7 +238,7 @@ const EnhancedAnalyticsHub: React.FC = () => {
 
                   {queryResults.visualization_suggestions.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-2">Suggested Visualizations</h4>
+                      <h4 className="font-medium mb-2">Suggested Views</h4>
                       <div className="flex flex-wrap gap-2">
                         {queryResults.visualization_suggestions.map((suggestion: string, index: number) => (
                           <Badge key={index} variant="outline">

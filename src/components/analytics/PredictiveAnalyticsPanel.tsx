@@ -12,18 +12,26 @@ import {
   Zap,
   BarChart3,
   Activity,
-  RefreshCw
+  RefreshCw,
+  Shield
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useDataAvailability, usePredictiveMetrics, useRealTimeAlerts } from '@/hooks/useAnalyticsQueries';
 import { type PredictiveMetric, type RealTimeAlert } from '@/services/enhanced-analytics-service';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import PredictiveEmptyState from './PredictiveEmptyState';
 import PredictiveAnalyticsSkeleton from './PredictiveAnalyticsSkeleton';
 import PredictiveAnalyticsErrorBoundary from './PredictiveAnalyticsErrorBoundary';
 import { toast } from 'sonner';
 
 const PredictiveAnalyticsPanel: React.FC = () => {
-  // Use React Query hooks for data fetching
+  const { profile } = useAuth();
+  const [predictiveData, setPredictiveData] = React.useState<any>(null);
+  const [isGeneratingPredictions, setIsGeneratingPredictions] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Use React Query hooks for data availability
   const { 
     data: dataAvailability, 
     isLoading: isCheckingData, 
@@ -47,7 +55,43 @@ const PredictiveAnalyticsPanel: React.FC = () => {
     refetch: refetchAlerts 
   } = useRealTimeAlerts(isReadyForPredictive);
 
-  const isLoading = isCheckingData || (isReadyForPredictive && (isLoadingMetrics || isLoadingAlerts));
+  const isLoading = isCheckingData || (isReadyForPredictive && (isLoadingMetrics || isLoadingAlerts)) || isGeneratingPredictions;
+
+  const generateRealPredictions = async () => {
+    if (!profile?.organization_id) return;
+    
+    setIsGeneratingPredictions(true);
+    setError(null);
+    
+    try {
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('size, sector')
+        .eq('id', profile.organization_id)
+        .single();
+      
+      const response = await supabase.functions.invoke('enhanced-predictive-analytics', {
+        body: {
+          type: 'forecast',
+          orgId: profile.organization_id,
+          timeHorizon: orgData?.size === 'small' ? 3 : 12,
+          organizationSize: orgData?.size || 'medium',
+          sector: orgData?.sector || 'banking'
+        }
+      });
+      
+      if (response.error) throw response.error;
+      
+      setPredictiveData(response.data);
+      toast.success('Predictions generated successfully');
+    } catch (error) {
+      console.error('Error generating predictions:', error);
+      setError('Failed to generate predictions. Please try again.');
+      toast.error('Failed to generate predictions');
+    } finally {
+      setIsGeneratingPredictions(false);
+    }
+  };
 
   const handleRefresh = () => {
     refetchDataAvailability();
@@ -55,6 +99,7 @@ const PredictiveAnalyticsPanel: React.FC = () => {
       refetchMetrics();
       refetchAlerts();
     }
+    generateRealPredictions();
     toast.success('Data refreshed');
   };
 
@@ -170,95 +215,98 @@ const PredictiveAnalyticsPanel: React.FC = () => {
         </TabsList>
 
         <TabsContent value="predictions" className="space-y-4">
-          {predictiveMetrics.length > 0 ? (
-            <div className="grid gap-4">
-              {predictiveMetrics.map((metric, index) => (
-                <Card key={index}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Target className="h-4 w-4" />
-                      {metric.metric} Prediction
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Current Value</span>
-                          <span className="font-semibold">{metric.current_value}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Predicted Value</span>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold">{metric.predicted_value}</span>
-                            {metric.predicted_value > metric.current_value ? (
-                              <TrendingUp className="h-4 w-4 text-red-500" />
-                            ) : (
-                              <TrendingDown className="h-4 w-4 text-green-500" />
-                            )}
+          {predictiveData?.predictions ? (
+            <div className="space-y-4">
+              {/* OSFI Compliance Notice */}
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2">
+                    <Shield className="h-4 w-4 text-blue-600 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-900">OSFI E-21 Compliance</p>
+                      <p className="text-blue-700 mt-1">{predictiveData.disclaimer}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Analysis */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    AI-Powered Risk Forecast
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose max-w-none text-sm">
+                    {predictiveData.analysis.split('\n').map((line: string, idx: number) => (
+                      <p key={idx} className="mb-2">{line}</p>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Structured Predictions */}
+              <div className="grid gap-4">
+                {predictiveData.predictions.map((prediction: any, index: number) => (
+                  <Card key={index}>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        {prediction.metric}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Current Value</span>
+                            <span className="font-semibold">{prediction.currentValue}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Predicted Value</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{prediction.predictedValue}</span>
+                              {prediction.trend === 'increasing' ? (
+                                <TrendingUp className="h-4 w-4 text-red-500" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4 text-green-500" />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Confidence</span>
+                            <span className="text-sm">{Math.round(prediction.confidence * 100)}%</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Timeframe</span>
+                            <span className="text-sm">{prediction.timeframe}</span>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Confidence Range</span>
-                          <span className="text-sm">
-                            {metric.confidence_interval[0]} - {metric.confidence_interval[1]}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Prediction Date</span>
-                          <span className="text-sm">{new Date(metric.prediction_date).toLocaleDateString()}</span>
+                        <div className="space-y-2">
+                          <div className="p-3 bg-blue-50 rounded-lg">
+                            <p className="text-xs font-medium text-blue-900 mb-1">OSFI Citation</p>
+                            <p className="text-xs text-blue-700">{prediction.osfiPrinciple}</p>
+                          </div>
                         </div>
                       </div>
-                      <div className="h-32">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={generateTrendData(metric)}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis 
-                              dataKey="date" 
-                              tick={{ fontSize: 10 }}
-                              tickFormatter={(date) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip 
-                              labelFormatter={(date) => new Date(date).toLocaleDateString()}
-                              formatter={(value: any, name: string) => [
-                                typeof value === 'number' ? value.toFixed(1) : value,
-                                name === 'value' ? metric.metric : name
-                              ]}
-                            />
-                            <Area 
-                              type="monotone" 
-                              dataKey="value" 
-                              stroke="hsl(var(--primary))" 
-                              fill="hsl(var(--primary))" 
-                              fillOpacity={0.3}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <p className="text-sm text-muted-foreground">Key Factors:</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {metric.factors.map((factor, i) => (
-                          <Badge key={i} variant="secondary" className="text-xs">
-                            {factor}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           ) : (
             <Card>
               <CardContent className="p-6 text-center">
                 <Brain className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground">No predictive metrics available yet.</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Continue collecting data to enable predictive analytics.
+                <p className="text-muted-foreground">Ready to generate AI-powered predictions</p>
+                <p className="text-sm text-muted-foreground mt-1 mb-4">
+                  Click "Generate Predictions" to analyze your data with advanced forecasting models
                 </p>
+                <Button onClick={generateRealPredictions} disabled={isGeneratingPredictions}>
+                  {isGeneratingPredictions ? 'Generating...' : 'Generate Predictions'}
+                </Button>
               </CardContent>
             </Card>
           )}
