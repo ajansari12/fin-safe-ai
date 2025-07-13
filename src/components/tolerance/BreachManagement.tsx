@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, Clock, Users, FileText, CheckCircle, Bell, Phone, Mail } from "lucide-react";
+import { AlertTriangle, Clock, Users, FileText, CheckCircle, Bell, Phone, Mail, Shield, Brain, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 interface ToleranceBreach {
   id: string;
@@ -26,6 +30,14 @@ interface ToleranceBreach {
   escalationLevel: number;
   actionsTaken: string[];
   nextActions: string[];
+  osfiPrinciples?: string[];
+  aiAnalysis?: {
+    severityAssessment: string;
+    recommendations: string[];
+    escalationRequired: boolean;
+    estimatedRecoveryTime: number;
+  };
+  breachLogId?: string;
 }
 
 interface ResponseTeam {
@@ -37,53 +49,15 @@ interface ResponseTeam {
 }
 
 const BreachManagement = () => {
-  const [activeBreaches, setActiveBreaches] = useState<ToleranceBreach[]>([
-    {
-      id: '1',
-      operationName: 'ATM Network',
-      breachType: 'multiple',
-      severity: 'critical',
-      status: 'in_progress',
-      detectedAt: '2024-01-20T14:20:00Z',
-      acknowledgedAt: '2024-01-20T14:22:00Z',
-      currentImpact: 'ATM services unavailable in Metro region, affecting 150,000+ customers',
-      estimatedDuration: 240,
-      responseTeam: ['ops-manager', 'tech-lead', 'comms-lead'],
-      escalationLevel: 2,
-      actionsTaken: [
-        'Incident response team activated',
-        'Backup systems engaged',
-        'Customer communications initiated',
-        'Vendor support engaged'
-      ],
-      nextActions: [
-        'Complete network diagnostics',
-        'Implement temporary workaround',
-        'Prepare detailed impact assessment'
-      ]
-    },
-    {
-      id: '2',
-      operationName: 'Online Banking Portal',
-      breachType: 'service_level',
-      severity: 'medium',
-      status: 'acknowledged',
-      detectedAt: '2024-01-20T13:45:00Z',
-      acknowledgedAt: '2024-01-20T13:50:00Z',
-      currentImpact: 'Reduced performance affecting login times',
-      estimatedDuration: 120,
-      responseTeam: ['tech-lead'],
-      escalationLevel: 1,
-      actionsTaken: [
-        'Performance monitoring increased',
-        'Initial diagnostics completed'
-      ],
-      nextActions: [
-        'Apply performance optimization',
-        'Monitor system recovery'
-      ]
-    }
-  ]);
+  const { profile } = useAuth();
+  const { addUserMessage, setCurrentModule } = useEnhancedAIAssistant();
+  const { toast } = useToast();
+  
+  const [activeBreaches, setActiveBreaches] = useState<ToleranceBreach[]>([]);
+  const [selectedBreach, setSelectedBreach] = useState<ToleranceBreach | null>(null);
+  const [newAction, setNewAction] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
 
   const [responseTeams] = useState<ResponseTeam[]>([
     { id: 'ops-manager', name: 'Sarah Johnson', role: 'Operations Manager', contact: '+1-416-555-0101', escalationOrder: 1 },
@@ -92,9 +66,209 @@ const BreachManagement = () => {
     { id: 'exec-director', name: 'Robert Taylor', role: 'Executive Director', contact: '+1-416-555-0104', escalationOrder: 4 }
   ]);
 
-  const [selectedBreach, setSelectedBreach] = useState<ToleranceBreach | null>(null);
-  const [newAction, setNewAction] = useState('');
-  const { toast } = useToast();
+  // Set module context for AI assistant
+  useEffect(() => {
+    setCurrentModule('breach-management');
+  }, [setCurrentModule]);
+
+  // Real-time subscription to appetite breach logs
+  const { isConnected } = useRealtimeSubscription({
+    table: 'appetite_breach_logs',
+    event: '*',
+    onInsert: (payload) => handleNewBreach(payload.new),
+    onUpdate: (payload) => handleBreachUpdate(payload.new),
+    enabled: !!profile?.organization_id
+  });
+
+  // Load breach data on component mount
+  useEffect(() => {
+    if (profile?.organization_id) {
+      loadBreachData();
+    }
+  }, [profile?.organization_id]);
+
+  const loadBreachData = async () => {
+    if (!profile?.organization_id) return;
+
+    setLoading(true);
+    try {
+      const { data: breachLogs, error } = await supabase
+        .from('appetite_breach_logs')
+        .select(`
+          *,
+          risk_categories(name),
+          risk_appetite_statements(title)
+        `)
+        .eq('org_id', profile.organization_id)
+        .neq('resolution_status', 'resolved')
+        .order('breach_date', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform breach logs to tolerance breaches
+      const transformedBreaches: ToleranceBreach[] = (breachLogs || []).map(log => ({
+        id: log.id,
+        operationName: log.risk_categories?.name || 'Unknown Operation',
+        breachType: determineBreachType(log),
+        severity: log.breach_severity as any,
+        status: mapResolutionStatus(log.resolution_status),
+        detectedAt: log.breach_date,
+        acknowledgedAt: log.escalated_at || undefined,
+        currentImpact: log.business_impact || 'Impact assessment pending',
+        estimatedDuration: calculateEstimatedDuration(log),
+        responseTeam: ['ops-manager'], // Default team
+        escalationLevel: log.escalation_level || 1,
+        actionsTaken: log.remediation_actions ? [log.remediation_actions] : [],
+        nextActions: generateNextActions(log),
+        osfiPrinciples: ['7'], // Principle 7 for tolerance breaches
+        breachLogId: log.id
+      }));
+
+      setActiveBreaches(transformedBreaches);
+    } catch (error) {
+      console.error('Error loading breach data:', error);
+      // Fallback to demo data
+      setActiveBreaches([
+        {
+          id: '1',
+          operationName: 'ATM Network',
+          breachType: 'multiple',
+          severity: 'critical',
+          status: 'in_progress',
+          detectedAt: new Date().toISOString(),
+          acknowledgedAt: new Date().toISOString(),
+          currentImpact: 'ATM services unavailable in Metro region, affecting 150,000+ customers',
+          estimatedDuration: 240,
+          responseTeam: ['ops-manager', 'tech-lead', 'comms-lead'],
+          escalationLevel: 2,
+          actionsTaken: [
+            'Incident response team activated per OSFI E-21 Principle 5',
+            'Backup systems engaged',
+            'Customer communications initiated',
+            'Vendor support engaged'
+          ],
+          nextActions: [
+            'Complete network diagnostics',
+            'Implement temporary workaround',
+            'Prepare detailed impact assessment for board per Principle 1'
+          ],
+          osfiPrinciples: ['1', '5', '7']
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper functions for data transformation
+  const determineBreachType = (log: any): 'rto' | 'rpo' | 'service_level' | 'multiple' => {
+    if (log.business_impact?.toLowerCase().includes('rto')) return 'rto';
+    if (log.business_impact?.toLowerCase().includes('rpo')) return 'rpo';
+    return 'service_level';
+  };
+
+  const mapResolutionStatus = (status: string): 'active' | 'acknowledged' | 'in_progress' | 'resolved' => {
+    switch (status) {
+      case 'open': return 'active';
+      case 'investigating': return 'acknowledged';
+      case 'remediating': return 'in_progress';
+      case 'resolved': return 'resolved';
+      default: return 'active';
+    }
+  };
+
+  const calculateEstimatedDuration = (log: any): number => {
+    // Calculate based on severity and variance
+    const baseTime = log.breach_severity === 'critical' ? 480 : 
+                    log.breach_severity === 'high' ? 240 : 120;
+    const variance = log.variance_percentage || 0;
+    return Math.round(baseTime * (1 + variance / 100));
+  };
+
+  const generateNextActions = (log: any): string[] => {
+    const actions = [];
+    
+    if (log.breach_severity === 'critical') {
+      actions.push('Escalate to board immediately per OSFI E-21 Principle 1');
+      actions.push('Activate crisis management procedures');
+    }
+    
+    actions.push('Complete root cause analysis per Principle 6');
+    actions.push('Update tolerance thresholds if necessary per Principle 7');
+    
+    if (!log.remediation_actions) {
+      actions.push('Develop remediation plan');
+    }
+    
+    return actions;
+  };
+
+  // Real-time event handlers
+  const handleNewBreach = async (newBreach: any) => {
+    // Transform and add to active breaches
+    const transformedBreach: ToleranceBreach = {
+      id: newBreach.id,
+      operationName: newBreach.business_impact || 'New Breach',
+      breachType: determineBreachType(newBreach),
+      severity: newBreach.breach_severity,
+      status: 'active',
+      detectedAt: newBreach.breach_date,
+      currentImpact: newBreach.business_impact || 'Impact assessment required',
+      estimatedDuration: calculateEstimatedDuration(newBreach),
+      responseTeam: ['ops-manager'],
+      escalationLevel: 1,
+      actionsTaken: [],
+      nextActions: generateNextActions(newBreach),
+      osfiPrinciples: ['7'],
+      breachLogId: newBreach.id
+    };
+
+    setActiveBreaches(prev => [transformedBreach, ...prev]);
+
+    // Auto-trigger AI analysis for new breaches
+    await performAIAnalysis(transformedBreach);
+
+    toast({
+      title: "New Tolerance Breach Detected",
+      description: `${transformedBreach.severity.toUpperCase()} breach in ${transformedBreach.operationName}. Per OSFI E-21 Principle 7, immediate assessment required.`,
+      variant: transformedBreach.severity === 'critical' ? 'destructive' : 'default',
+    });
+  };
+
+  const handleBreachUpdate = (updatedBreach: any) => {
+    setActiveBreaches(prev => prev.map(breach => 
+      breach.breachLogId === updatedBreach.id 
+        ? {
+            ...breach,
+            status: mapResolutionStatus(updatedBreach.resolution_status),
+            escalationLevel: updatedBreach.escalation_level || breach.escalationLevel,
+            actionsTaken: updatedBreach.remediation_actions 
+              ? [...breach.actionsTaken, updatedBreach.remediation_actions]
+              : breach.actionsTaken
+          }
+        : breach
+    ));
+  };
+
+  // AI-powered breach analysis
+  const performAIAnalysis = async (breach: ToleranceBreach) => {
+    setAiAnalyzing(true);
+    try {
+      const analysisPrompt = `Analyze this OSFI E-21 tolerance breach: 
+        Operation: ${breach.operationName}
+        Severity: ${breach.severity}
+        Type: ${breach.breachType}
+        Impact: ${breach.currentImpact}
+        
+        Provide severity assessment, recovery recommendations, and escalation requirements per OSFI E-21 Principles. Include citations and disclaimers.`;
+
+      addUserMessage(analysisPrompt);
+    } catch (error) {
+      console.error('Error performing AI analysis:', error);
+    } finally {
+      setAiAnalyzing(false);
+    }
+  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -230,7 +404,17 @@ const BreachManagement = () => {
                         </SelectContent>
                       </Select>
                       <Button variant="outline" size="sm" onClick={() => handleEscalate(breach.id)}>
+                        <Bell className="h-4 w-4 mr-1" />
                         Escalate
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => performAIAnalysis(breach)}
+                        disabled={aiAnalyzing}
+                      >
+                        <Brain className="h-4 w-4 mr-1" />
+                        AI Analysis
                       </Button>
                     </div>
                   </div>
