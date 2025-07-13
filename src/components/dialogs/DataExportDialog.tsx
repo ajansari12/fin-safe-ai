@@ -21,6 +21,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRoles } from "@/hooks/useRoles";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useOperationMonitor } from "@/hooks/useOperationMonitor";
+import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 
 interface DataExportDialogProps {
   open: boolean;
@@ -46,6 +48,16 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const [canCancel, setCanCancel] = useState(false);
+  
+  // Performance monitoring
+  const operationMonitor = useOperationMonitor({
+    operationType: `data_export_${exportType}`,
+    operationId: `export-${exportType}-${Date.now()}`,
+    trackMemory: true,
+    trackNetwork: true,
+    realTimeUpdates: true,
+    reportingInterval: 1000
+  });
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     includeUserData: true,
     includeAuditLogs: false,

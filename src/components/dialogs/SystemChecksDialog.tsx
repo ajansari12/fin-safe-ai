@@ -17,6 +17,8 @@ import {
   Zap
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useOperationMonitor } from "@/hooks/useOperationMonitor";
+import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 
 interface SystemChecksDialogProps {
   open: boolean;
@@ -41,6 +43,16 @@ export const SystemChecksDialog: React.FC<SystemChecksDialogProps> = ({
 }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
+  
+  // Performance monitoring
+  const operationMonitor = useOperationMonitor({
+    operationType: 'system_checks',
+    operationId: `checks-${Date.now()}`,
+    trackMemory: true,
+    trackNetwork: true,
+    realTimeUpdates: true,
+    reportingInterval: 500
+  });
   const [checks, setChecks] = useState<SystemCheck[]>([
     {
       id: '1',
@@ -90,6 +102,9 @@ export const SystemChecksDialog: React.FC<SystemChecksDialogProps> = ({
   const runSystemChecks = async () => {
     setIsRunning(true);
     setProgress(0);
+    
+    // Start performance monitoring
+    operationMonitor.startMonitoring();
 
     // Reset all checks
     setChecks(prev => prev.map(check => ({ 
@@ -121,10 +136,13 @@ export const SystemChecksDialog: React.FC<SystemChecksDialogProps> = ({
         check.id === checkId ? { ...check, ...mockResults } : check
       ));
 
-      setProgress(((i + 1) / totalChecks) * 100);
+      const progressValue = ((i + 1) / totalChecks) * 100;
+      setProgress(progressValue);
+      operationMonitor.updateProgress(progressValue, checks[i].name);
     }
 
     setIsRunning(false);
+    await operationMonitor.completeMonitoring('completed');
     
     const failedChecks = checks.filter(c => c.status === 'fail').length;
     const warningChecks = checks.filter(c => c.status === 'warning').length;
@@ -257,20 +275,34 @@ export const SystemChecksDialog: React.FC<SystemChecksDialogProps> = ({
         
         <div className="space-y-6">
           {isRunning && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Check Progress</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Running system health checks...</span>
-                    <span>{Math.round(progress)}% Complete</span>
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Check Progress</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Running system health checks...</span>
+                      <span>{Math.round(progress)}% Complete</span>
+                    </div>
+                    <Progress value={progress} className="w-full" />
                   </div>
-                  <Progress value={progress} className="w-full" />
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              
+              <PerformanceMonitor
+                metrics={{
+                  progress,
+                  duration: operationMonitor.metrics.duration,
+                  currentStep: operationMonitor.metrics.currentStep,
+                  status: operationMonitor.metrics.status
+                }}
+                realTimeMetrics={operationMonitor.realTimeMetrics}
+                insights={operationMonitor.getPerformanceInsights()}
+                showDetailedMetrics={false}
+              />
+            </>
           )}
 
           {categories.map(category => (

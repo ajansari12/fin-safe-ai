@@ -21,6 +21,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRoles } from "@/hooks/useRoles";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useOperationMonitor } from "@/hooks/useOperationMonitor";
+import { useRealTimeUpdates } from "@/hooks/useRealTimeUpdates";
+import { PerformanceMonitor } from "@/components/ui/performance-monitor";
 
 interface GoLiveProcessDialogProps {
   open: boolean;
@@ -46,6 +49,28 @@ export const GoLiveProcessDialog: React.FC<GoLiveProcessDialogProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [canCancel, setCanCancel] = useState(false);
+  
+  // Performance monitoring
+  const operationMonitor = useOperationMonitor({
+    operationType: 'go_live_process',
+    operationId: `go-live-${Date.now()}`,
+    trackMemory: true,
+    trackNetwork: true,
+    realTimeUpdates: true,
+    reportingInterval: 500
+  });
+
+  // Real-time updates
+  const realTimeUpdates = useRealTimeUpdates({
+    channel: 'go-live-process',
+    eventTypes: ['step_update', 'progress_update', 'status_change'],
+    onUpdate: (event) => {
+      if (event.eventType === 'progress_update') {
+        setProgress(event.payload.progress);
+        operationMonitor.updateProgress(event.payload.progress, event.payload.currentStep);
+      }
+    }
+  });
   const [steps, setSteps] = useState<GoLiveStep[]>([
     {
       id: '1',
@@ -127,6 +152,9 @@ export const GoLiveProcessDialog: React.FC<GoLiveProcessDialogProps> = ({
       setProgress(0);
       setCanCancel(false);
 
+      // Start performance monitoring
+      operationMonitor.startMonitoring();
+
       // Reset all steps to pending
       setSteps(prev => prev.map(step => ({ 
         ...step, 
@@ -173,10 +201,14 @@ export const GoLiveProcessDialog: React.FC<GoLiveProcessDialogProps> = ({
           } : step
         ));
         
-        setProgress(((i + 1) / steps.length) * 100);
+        const progressValue = ((i + 1) / steps.length) * 100;
+        setProgress(progressValue);
+        operationMonitor.updateProgress(progressValue, steps[i].name);
       }
 
       setProcessStatus('completed');
+      await operationMonitor.completeMonitoring('completed');
+      
       toast({
         title: "Go-Live Successful!",
         description: "System is now live and operational. Real-time monitoring initiated.",
@@ -381,6 +413,21 @@ export const GoLiveProcessDialog: React.FC<GoLiveProcessDialogProps> = ({
                   The process typically takes 8-12 minutes and should not be interrupted unless critical issues are detected.
                 </AlertDescription>
               </Alert>
+            )}
+
+            {/* Performance Monitor */}
+            {processStatus !== 'idle' && (
+              <PerformanceMonitor
+                metrics={{
+                  progress,
+                  duration: operationMonitor.metrics.duration,
+                  currentStep: steps[currentStep]?.name,
+                  status: processStatus === 'paused' ? 'cancelled' : processStatus
+                }}
+                realTimeMetrics={operationMonitor.realTimeMetrics}
+                insights={operationMonitor.getPerformanceInsights()}
+                showDetailedMetrics={true}
+              />
             )}
 
             <Card>
