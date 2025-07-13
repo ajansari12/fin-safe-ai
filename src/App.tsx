@@ -172,6 +172,15 @@ function App() {
                   </RouteErrorBoundary>
                 </EnhancedProtectedRoute>
               } />
+              <Route path="/app/osfi-compliance" element={
+                <EnhancedProtectedRoute requiredPermission="frameworks:read">
+                  <RouteErrorBoundary routeName="OSFI Compliance" moduleName="Compliance">
+                    <Suspense fallback={<DashboardSkeleton />}>
+                      {React.createElement(lazy(() => import('./pages/OSFICompliance')))}
+                    </Suspense>
+                  </RouteErrorBoundary>
+                </EnhancedProtectedRoute>
+              } />
               <Route path="/app/governance-framework/new" element={
                 <EnhancedProtectedRoute requiredPermission="frameworks:write">
                   <RouteErrorBoundary routeName="New Framework" moduleName="Governance">
