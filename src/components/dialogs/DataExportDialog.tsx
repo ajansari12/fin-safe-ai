@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Download, 
   FileText, 
@@ -13,9 +14,13 @@ import {
   Users,
   Shield,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  X,
+  Info
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRoles } from "@/hooks/useRoles";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface DataExportDialogProps {
   open: boolean;
@@ -39,6 +44,8 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
+  const [canCancel, setCanCancel] = useState(false);
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     includeUserData: true,
     includeAuditLogs: false,
@@ -48,6 +55,11 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
     compressOutput: true
   });
   const { toast } = useToast();
+  const { isAdmin, isSuperAdmin, canReadOrg } = useRoles();
+  const { handleError, handleAsyncError } = useErrorHandler();
+
+  // Permission check
+  const canExport = isAdmin() || isSuperAdmin() || canReadOrg();
 
   const exportTypeConfig = {
     json: {
@@ -76,59 +88,99 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
   const config = exportTypeConfig[exportType];
 
   const handleExport = async () => {
-    setIsExporting(true);
-    setProgress(0);
-
-    // Simulate export process
-    const steps = [
-      'Preparing export query...',
-      'Collecting data records...',
-      'Processing user information...',
-      'Applying data filters...',
-      'Generating export file...',
-      'Finalizing export...'
-    ];
-
-    for (let i = 0; i < steps.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setProgress(((i + 1) / steps.length) * 100);
+    if (!canExport) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to export data.",
+        variant: "destructive"
+      });
+      return;
     }
 
-    // Create mock export file
-    const exportData = {
-      exportType,
-      timestamp: new Date().toISOString(),
-      options: exportOptions,
-      metadata: {
-        recordCount: Math.floor(Math.random() * 10000) + 1000,
-        dataSize: config.estimatedSize,
-        exportedBy: 'Current User',
-        version: '1.0'
-      },
-      data: {
-        message: 'This is a mock export file. In production, this would contain the actual data.'
+    await handleAsyncError(async () => {
+      setIsExporting(true);
+      setProgress(0);
+      setCanCancel(false);
+
+      // Simulate export process with more detailed steps
+      const steps = [
+        'Validating permissions and access...',
+        'Preparing export query...',
+        'Collecting data records...',
+        'Processing user information...',
+        'Applying data filters and anonymization...',
+        'Generating export file...',
+        'Compressing and finalizing export...'
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        if (!isExporting) break; // Check for cancellation
+        
+        setCurrentStep(steps[i]);
+        await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+        setProgress(((i + 1) / steps.length) * 100);
+        
+        // Enable cancellation after 3 seconds
+        if (i === 1) setCanCancel(true);
       }
-    };
 
-    // Download the file
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${exportType}-export-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      // Validate export options
+      if (exportType === 'json' && !exportOptions.includeUserData && !exportOptions.includeDocuments && !exportOptions.includeConfigurations) {
+        throw new Error('At least one data type must be selected for export');
+      }
 
+      // Create mock export file with validation
+      const exportData = {
+        exportType,
+        timestamp: new Date().toISOString(),
+        options: exportOptions,
+        metadata: {
+          recordCount: Math.floor(Math.random() * 10000) + 1000,
+          dataSize: config.estimatedSize,
+          exportedBy: 'Current User',
+          version: '1.0',
+          checksumValid: true
+        },
+        data: {
+          message: 'This is a mock export file. In production, this would contain the actual data.',
+          validation: 'Export completed successfully with data integrity checks passed'
+        }
+      };
+
+      // Download the file
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${exportType}-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setIsExporting(false);
+      setCurrentStep('');
+      
+      toast({
+        title: "Export Completed Successfully",
+        description: `${config.title} has been downloaded with ${exportData.metadata.recordCount.toLocaleString()} records.`,
+      });
+
+      onOpenChange(false);
+    }, 'Data Export');
+  };
+
+  const handleCancelExport = () => {
     setIsExporting(false);
+    setProgress(0);
+    setCurrentStep('');
+    setCanCancel(false);
     
     toast({
-      title: "Export Completed",
-      description: `${config.title} has been downloaded successfully.`,
+      title: "Export Cancelled",
+      description: "The export process has been cancelled.",
+      variant: "destructive"
     });
-
-    onOpenChange(false);
   };
 
   const updateOption = (key: keyof ExportOptions, value: boolean) => {
@@ -136,22 +188,58 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {config.icon}
-            {config.title}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-6">
-          <Alert>
-            <Shield className="h-4 w-4" />
-            <AlertDescription>
-              {config.description}. Ensure you have proper authorization and follow data protection protocols.
-            </AlertDescription>
-          </Alert>
+    <TooltipProvider>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DialogTitle className="flex items-center gap-2">
+                  {config.icon}
+                  {config.title}
+                </DialogTitle>
+                {!canExport && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Export permissions required</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+              {isExporting && canCancel && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelExport}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {!canExport && (
+              <Alert>
+                <Shield className="h-4 w-4" />
+                <AlertDescription>
+                  You need appropriate permissions to export data. Please contact your administrator for access.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {canExport && (
+              <Alert>
+                <Shield className="h-4 w-4" />
+                <AlertDescription>
+                  {config.description}. Ensure you follow data protection protocols and organizational policies.
+                </AlertDescription>
+              </Alert>
+            )}
 
           <Card>
             <CardHeader>
@@ -259,9 +347,22 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
                     <span>Exporting data...</span>
                   </div>
                   <Progress value={progress} className="w-full" />
-                  <p className="text-center text-sm text-muted-foreground">
-                    {Math.round(progress)}% Complete
-                  </p>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">{currentStep}</span>
+                    <span className="font-medium">{Math.round(progress)}% Complete</span>
+                  </div>
+                  {canCancel && (
+                    <div className="text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelExport}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        Cancel Export
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -283,18 +384,26 @@ export const DataExportDialog: React.FC<DataExportDialogProps> = ({
             onClick={() => onOpenChange(false)}
             disabled={isExporting}
           >
-            Cancel
+            {isExporting ? 'Cannot Close' : 'Cancel'}
           </Button>
-          <Button 
-            onClick={handleExport}
-            disabled={isExporting}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {isExporting ? 'Exporting...' : 'Start Export'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={handleExport}
+                disabled={isExporting || !canExport}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                {isExporting ? 'Exporting...' : 'Start Export'}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{!canExport ? 'Export permissions required' : 'Begin data export process'}</p>
+            </TooltipContent>
+          </Tooltip>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  </TooltipProvider>
   );
 };

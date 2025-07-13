@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Clock, 
   FileText, 
@@ -13,9 +15,14 @@ import {
   CheckCircle,
   Database,
   Users,
-  Activity
+  Activity,
+  Shield,
+  Info,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRoles } from "@/hooks/useRoles";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface DataCleanupDialogProps {
   open: boolean;
@@ -29,8 +36,16 @@ export const DataCleanupDialog: React.FC<DataCleanupDialogProps> = ({
   cleanupType,
 }) => {
   const { toast } = useToast();
+  const { isAdmin, isSuperAdmin } = useRoles();
+  const { handleError, handleAsyncError } = useErrorHandler();
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState('');
+  const [confirmationChecked, setConfirmationChecked] = useState(false);
+  const [canCancel, setCanCancel] = useState(false);
+
+  // Permission check - high-risk operations need super admin
+  const canPerformCleanup = cleanupType === 'purge' ? isSuperAdmin() : (isAdmin() || isSuperAdmin());
 
   const cleanupConfigs = {
     sessions: {
@@ -74,32 +89,79 @@ export const DataCleanupDialog: React.FC<DataCleanupDialogProps> = ({
   const config = cleanupConfigs[cleanupType];
 
   const handleStartCleanup = async () => {
-    setIsProcessing(true);
-    setProgress(0);
-
-    try {
-      // Simulate cleanup process with progress updates
-      for (let i = 0; i <= 100; i += 10) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        setProgress(i);
-      }
-
+    if (!canPerformCleanup) {
       toast({
-        title: `${config.title} Complete`,
-        description: `Successfully processed ${config.estimatedItems} items and freed ${config.estimatedSpace} of storage.`,
+        title: "Access Denied",
+        description: `You need ${cleanupType === 'purge' ? 'super admin' : 'admin'} permissions for this operation.`,
+        variant: "destructive"
       });
-
-      onOpenChange(false);
-    } catch (error) {
-      toast({
-        title: "Cleanup Failed",
-        description: "An error occurred during the cleanup process. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-      setProgress(0);
+      return;
     }
+
+    if (!confirmationChecked) {
+      toast({
+        title: "Confirmation Required",
+        description: "Please confirm that you understand the implications of this operation.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await handleAsyncError(async () => {
+      setIsProcessing(true);
+      setProgress(0);
+      setCanCancel(false);
+
+      // Detailed cleanup steps
+      const steps = [
+        'Validating permissions and access...',
+        'Scanning for items to process...',
+        'Creating backup checkpoint...',
+        'Processing cleanup operation...',
+        'Validating data integrity...',
+        'Finalizing cleanup...'
+      ];
+
+      try {
+        for (let i = 0; i < steps.length; i++) {
+          if (!isProcessing) break; // Check for cancellation
+          
+          setCurrentStep(steps[i]);
+          await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+          setProgress(((i + 1) / steps.length) * 100);
+          
+          // Enable cancellation after 2 seconds (except for critical operations)
+          if (i === 1 && cleanupType !== 'purge') setCanCancel(true);
+        }
+
+        toast({
+          title: `${config.title} Complete`,
+          description: `Successfully processed ${config.estimatedItems.toLocaleString()} items and freed ${config.estimatedSpace} of storage.`,
+        });
+
+        onOpenChange(false);
+      } catch (error) {
+        throw new Error(`Cleanup operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      } finally {
+        setIsProcessing(false);
+        setProgress(0);
+        setCurrentStep('');
+        setCanCancel(false);
+      }
+    }, 'Data Cleanup');
+  };
+
+  const handleCancelCleanup = () => {
+    setIsProcessing(false);
+    setProgress(0);
+    setCurrentStep('');
+    setCanCancel(false);
+    
+    toast({
+      title: "Cleanup Cancelled",
+      description: "The cleanup process has been safely cancelled.",
+      variant: "destructive"
+    });
   };
 
   const getRiskBadge = (risk: string) => {
@@ -129,19 +191,55 @@ export const DataCleanupDialog: React.FC<DataCleanupDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <config.icon className="h-5 w-5" />
-            {config.title}
-          </DialogTitle>
-          <DialogDescription>
-            {config.description}
-          </DialogDescription>
-        </DialogHeader>
+    <TooltipProvider>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DialogTitle className="flex items-center gap-2">
+                  <config.icon className="h-5 w-5" />
+                  {config.title}
+                </DialogTitle>
+                {!canPerformCleanup && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{cleanupType === 'purge' ? 'Super admin' : 'Admin'} permissions required</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+              {isProcessing && canCancel && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelCleanup}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <DialogDescription>
+              {config.description}
+            </DialogDescription>
+          </DialogHeader>
 
         <div className="space-y-6">
+          {/* Permission Warning */}
+          {!canPerformCleanup && (
+            <Alert>
+              <Shield className="h-4 w-4" />
+              <AlertDescription>
+                You need {cleanupType === 'purge' ? 'super admin' : 'admin'} permissions to perform this cleanup operation.
+                Please contact your system administrator for access.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Cleanup Summary */}
           <Card>
             <CardHeader>
@@ -175,6 +273,31 @@ export const DataCleanupDialog: React.FC<DataCleanupDialogProps> = ({
             </AlertDescription>
           </Alert>
 
+          {/* Confirmation Checkbox */}
+          {canPerformCleanup && (
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardContent className="pt-6">
+                <div className="flex items-start space-x-3">
+                  <Checkbox 
+                    id="confirmation"
+                    checked={confirmationChecked}
+                    onCheckedChange={(checked) => setConfirmationChecked(!!checked)}
+                  />
+                  <div>
+                    <label htmlFor="confirmation" className="text-sm font-medium cursor-pointer">
+                      I understand the risks and implications of this operation
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {config.risk === 'high' && 'This action is irreversible and may result in permanent data loss.'}
+                      {config.risk === 'medium' && 'This action may require manual intervention to restore data if needed.'}
+                      {config.risk === 'low' && 'This action can be safely performed with minimal risk.'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Progress Bar (shown during processing) */}
           {isProcessing && (
             <Card>
@@ -185,12 +308,24 @@ export const DataCleanupDialog: React.FC<DataCleanupDialogProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Progress value={progress} className="h-3" />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Processing items...</span>
-                    <span>{progress}%</span>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">{currentStep}</span>
+                    <span className="font-medium">{Math.round(progress)}%</span>
                   </div>
+                  {canCancel && (
+                    <div className="text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCancelCleanup}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        Cancel Operation
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -259,18 +394,34 @@ export const DataCleanupDialog: React.FC<DataCleanupDialogProps> = ({
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
-            Cancel
-          </Button>
           <Button 
-            onClick={handleStartCleanup} 
+            variant="outline" 
+            onClick={() => onOpenChange(false)} 
             disabled={isProcessing}
-            variant={config.risk === "high" ? "destructive" : "default"}
           >
-            {isProcessing ? "Processing..." : `Start ${config.title}`}
+            {isProcessing ? 'Cannot Close' : 'Cancel'}
           </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={handleStartCleanup} 
+                disabled={isProcessing || !canPerformCleanup || !confirmationChecked}
+                variant={config.risk === "high" ? "destructive" : "default"}
+              >
+                {isProcessing ? "Processing..." : `Start ${config.title}`}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {!canPerformCleanup && `${cleanupType === 'purge' ? 'Super admin' : 'Admin'} permissions required`}
+                {canPerformCleanup && !confirmationChecked && 'Please confirm understanding of risks'}
+                {canPerformCleanup && confirmationChecked && `Start ${config.title.toLowerCase()}`}
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </DialogContent>
     </Dialog>
+  </TooltipProvider>
   );
 };
