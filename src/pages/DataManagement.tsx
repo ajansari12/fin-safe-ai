@@ -18,11 +18,18 @@ import {
 import { RoleAwareComponent } from "@/components/ui/RoleAwareComponent";
 import { DataExportDialog } from "@/components/dialogs/DataExportDialog";
 import { DataImportDialog } from "@/components/dialogs/DataImportDialog";
+import { DataRetentionPolicyDialog } from "@/components/dialogs/DataRetentionPolicyDialog";
+import { SecurityReportDialog } from "@/components/dialogs/SecurityReportDialog";
+import { DataCleanupDialog } from "@/components/dialogs/DataCleanupDialog";
 import { useToast } from "@/hooks/use-toast";
 
 const DataManagement = () => {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [retentionDialogOpen, setRetentionDialogOpen] = useState(false);
+  const [securityReportDialogOpen, setSecurityReportDialogOpen] = useState(false);
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
+  const [cleanupType, setCleanupType] = useState<'sessions' | 'logs' | 'archive' | 'purge'>('sessions');
   const [exportType, setExportType] = useState<'json' | 'schema' | 'users'>('json');
   const [importType, setImportType] = useState<'json' | 'csv'>('json');
   const { toast } = useToast();
@@ -37,11 +44,17 @@ const DataManagement = () => {
     setImportDialogOpen(true);
   };
 
-  const handleComingSoon = (feature: string) => {
-    toast({
-      title: "Coming Soon",
-      description: `${feature} functionality will be available in the next release.`,
-    });
+  const handleCleanupClick = (type: 'sessions' | 'logs' | 'archive' | 'purge') => {
+    setCleanupType(type);
+    setCleanupDialogOpen(true);
+  };
+
+  const handleConfigurePolicies = () => {
+    setRetentionDialogOpen(true);
+  };
+
+  const handleSecurityReport = () => {
+    setSecurityReportDialogOpen(true);
   };
 
   return (
@@ -158,7 +171,7 @@ const DataManagement = () => {
                   <span className="text-sm font-medium">User Sessions</span>
                   <Badge variant="secondary">90 days</Badge>
                 </div>
-                <Button variant="outline" size="sm" className="w-full">
+                <Button variant="outline" size="sm" className="w-full" onClick={handleConfigurePolicies}>
                   Configure Policies
                 </Button>
               </div>
@@ -205,16 +218,16 @@ const DataManagement = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => handleCleanupClick('sessions')}>
                   <Clock className="mr-2 h-4 w-4" />
                   Clean Old Sessions
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => handleCleanupClick('logs')}>
                   <FileText className="mr-2 h-4 w-4" />
                   Archive Old Logs
                 </Button>
                 <RoleAwareComponent superAdminOnly>
-                  <Button variant="destructive" className="w-full justify-start">
+                  <Button variant="destructive" className="w-full justify-start" onClick={() => handleCleanupClick('purge')}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Purge Deleted Data
                   </Button>
@@ -245,7 +258,7 @@ const DataManagement = () => {
                   <span className="text-sm font-medium">Compliance</span>
                   <Badge variant="default">SOC 2</Badge>
                 </div>
-                <Button variant="outline" size="sm" className="w-full">
+                <Button variant="outline" size="sm" className="w-full" onClick={handleSecurityReport}>
                   Security Report
                 </Button>
               </div>
@@ -291,6 +304,22 @@ const DataManagement = () => {
           open={importDialogOpen}
           onOpenChange={setImportDialogOpen}
           importType={importType}
+        />
+        
+        <DataRetentionPolicyDialog 
+          open={retentionDialogOpen}
+          onOpenChange={setRetentionDialogOpen}
+        />
+        
+        <SecurityReportDialog 
+          open={securityReportDialogOpen}
+          onOpenChange={setSecurityReportDialogOpen}
+        />
+        
+        <DataCleanupDialog 
+          open={cleanupDialogOpen}
+          onOpenChange={setCleanupDialogOpen}
+          cleanupType={cleanupType}
         />
       </div>
     </AuthenticatedLayout>
