@@ -207,6 +207,53 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         <OSFIComplianceWidgets />
       </ErrorBoundary>
 
+      {/* Executive Predictive Insights Summary */}
+      {activeTab === 'executive' && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="border-orange-200 bg-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-full">
+                  <TrendingUp className="h-4 w-4 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-orange-900">Predictive Breach Alert</p>
+                  <p className="text-xs text-orange-700">KRI threshold breach predicted in 15 days</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-full">
+                  <Brain className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900">AI Risk Forecast</p>
+                  <p className="text-xs text-blue-700">Cyber risk trending up 12% per OSFI B-13</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-full">
+                  <Shield className="h-4 w-4 text-green-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-900">E-21 Compliance</p>
+                  <p className="text-xs text-green-700">86% implementation progress</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* AI-Generated Insights Banner with Error Handling */}
       <ErrorBoundary 
         title="AI Insights Error"

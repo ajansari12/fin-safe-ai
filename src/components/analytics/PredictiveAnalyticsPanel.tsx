@@ -355,16 +355,115 @@ const PredictiveAnalyticsPanel: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="trends" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Trend Analysis Coming Soon</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Advanced trend analysis and pattern recognition features will be available in the next update.
-              </p>
-            </CardContent>
-          </Card>
+          {predictiveMetrics.length > 0 ? (
+            <div className="space-y-4">
+              {predictiveMetrics.map((metric, index) => {
+                const trendData = generateTrendData(metric);
+                
+                return (
+                  <Card key={index}>
+                    <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        {metric.metric} Trend Analysis
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Historical data with predictive forecasting per OSFI E-21 Principle 4
+                      </p>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={trendData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis 
+                              dataKey="date" 
+                              tick={{ fontSize: 12 }}
+                              tickFormatter={(value) => new Date(value).toLocaleDateString()}
+                            />
+                            <YAxis tick={{ fontSize: 12 }} />
+                            <Tooltip 
+                              labelFormatter={(value) => new Date(value).toLocaleDateString()}
+                              formatter={(value: number, name: string) => [
+                                value.toFixed(2),
+                                name === 'value' ? metric.metric : name
+                              ]}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="value" 
+                              stroke="#2563eb" 
+                              strokeWidth={2}
+                              name={metric.metric}
+                              connectNulls={false}
+                              dot={(props: any) => props.payload.type === 'predicted' ? 
+                                <circle cx={props.cx} cy={props.cy} r="4" fill="#dc2626" stroke="#dc2626" strokeWidth="2" /> : 
+                                <circle cx={props.cx} cy={props.cy} r="2" fill="#2563eb" />
+                              }
+                            />
+                            {/* Confidence interval area for predictions */}
+                            <Area
+                              type="monotone"
+                              dataKey="confidence_max"
+                              stroke="none"
+                              fill="#dc2626"
+                              fillOpacity={0.1}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="confidence_min"
+                              stroke="none"
+                              fill="#dc2626"
+                              fillOpacity={0.1}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      {/* Trend Summary */}
+                      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                        <div className="grid gap-2 md:grid-cols-3 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Current Value:</span>
+                            <span className="ml-2 font-medium">{metric.current_value.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Predicted Value:</span>
+                            <span className="ml-2 font-medium text-red-600">{metric.predicted_value.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Confidence:</span>
+                            <span className="ml-2 font-medium">{Math.round((metric.accuracy_score || 0.8) * 100)}%</span>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-blue-700 bg-blue-50 p-2 rounded">
+                          <span className="font-medium">OSFI E-21 Citation:</span> Per Principle 4 (Predictive Risk Assessment), 
+                          trend analysis indicates {metric.trend} trajectory requiring enhanced monitoring protocols.
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground">No trend data available yet.</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Generate predictions first to view trend analysis charts.
+                </p>
+                <Button 
+                  onClick={generateRealPredictions} 
+                  disabled={isGeneratingPredictions}
+                  className="mt-4"
+                >
+                  {isGeneratingPredictions ? 'Generating...' : 'Generate Trend Data'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
       </div>
