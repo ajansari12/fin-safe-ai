@@ -13,6 +13,7 @@ interface EmailRequest {
   subject: string;
   html: string;
   from?: string;
+  priority?: 'normal' | 'high' | 'urgent' | 'critical';
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -28,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const resend = new Resend(resendApiKey);
-    const { to, subject, html, from }: EmailRequest = await req.json();
+    const { to, subject, html, from, priority = 'normal' }: EmailRequest = await req.json();
 
     // Validate required fields
     if (!to || !Array.isArray(to) || to.length === 0) {
@@ -51,14 +52,46 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Sending email to: ${to.join(', ')}, Subject: ${subject}`);
+    // Format subject with priority indicators
+    const priorityPrefix = {
+      'critical': '🚨 CRITICAL',
+      'urgent': '⚠️ URGENT',
+      'high': '🔴 HIGH PRIORITY',
+      'normal': ''
+    }[priority];
+
+    const formattedSubject = priorityPrefix ? `${priorityPrefix} - ${subject}` : subject;
+
+    console.log(`Sending ${priority} priority email to: ${to.join(', ')}, Subject: ${formattedSubject}`);
+
+    // Enhanced HTML with priority styling
+    const styledHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        ${priority !== 'normal' ? `
+          <div style="background-color: ${
+            priority === 'critical' ? '#dc2626' : 
+            priority === 'urgent' ? '#ea580c' : 
+            '#d97706'
+          }; color: white; padding: 16px; text-align: center; font-weight: bold; margin-bottom: 20px; border-radius: 8px;">
+            ${priorityPrefix} NOTIFICATION
+          </div>
+        ` : ''}
+        <div style="padding: 20px; background-color: #f9f9f9; border-radius: 8px;">
+          ${html}
+        </div>
+        <div style="margin-top: 20px; padding: 16px; background-color: #f3f4f6; border-radius: 8px; font-size: 12px; color: #6b7280;">
+          <p><strong>Mobile Optimized:</strong> This email is optimized for mobile viewing for immediate response.</p>
+          <p><strong>Regulatory Notice:</strong> This notification may contain OSFI E-21 and B-10 compliance information. Consult qualified professionals for regulatory guidance.</p>
+        </div>
+      </div>
+    `;
 
     // Send email using Resend
     const emailResponse = await resend.emails.send({
       from: from || "ResilientFI <no-reply@resilientfi.com>",
       to,
-      subject,
-      html,
+      subject: formattedSubject,
+      html: styledHtml,
     });
 
     console.log("Email sent successfully:", emailResponse);

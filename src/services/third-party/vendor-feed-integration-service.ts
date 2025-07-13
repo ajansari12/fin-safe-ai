@@ -299,7 +299,7 @@ class VendorFeedIntegrationService {
         monitoring_frequency: 'hourly',
         alert_sensitivity: 'enhanced',
         ai_analysis_enabled: true,
-        escalation_channels: ['email', 'sms', 'dashboard']
+        escalation_channels: ['priority_email', 'dashboard']
       };
     }
   }
@@ -372,6 +372,77 @@ class VendorFeedIntegrationService {
         concentration_risk_score: 0,
         osfi_compliance_status: 'compliant'
       };
+    }
+  }
+
+  // Send vendor risk alert notification via priority email
+  async sendVendorRiskAlertNotification(
+    orgId: string,
+    alert: VendorRiskAlert,
+    recipients: string[],
+    orgProfile?: any
+  ): Promise<boolean> {
+    try {
+      const config = this.getProportionalConfig(orgProfile);
+      
+      // Determine email priority based on alert severity
+      const emailPriority = {
+        'low': 'normal',
+        'medium': 'normal', 
+        'high': 'high',
+        'critical': 'critical'
+      }[alert.severity] as 'normal' | 'high' | 'urgent' | 'critical';
+
+      const subject = `Third-Party Risk Alert - ${alert.vendor_name}`;
+      
+      const htmlContent = `
+        <div style="margin-bottom: 24px;">
+          <h2 style="color: ${alert.severity === 'critical' ? '#dc2626' : alert.severity === 'high' ? '#ea580c' : '#d97706'}; margin-bottom: 16px;">
+            Vendor Risk Alert: ${alert.vendor_name}
+          </h2>
+          
+          <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+            <p><strong>Alert Type:</strong> ${alert.alert_type.replace(/_/g, ' ').toUpperCase()}</p>
+            <p><strong>Severity:</strong> ${alert.severity.toUpperCase()}</p>
+            <p><strong>Variance:</strong> ${alert.variance_percentage.toFixed(2)}%</p>
+            <p><strong>Triggered:</strong> ${new Date(alert.triggered_at).toLocaleString()}</p>
+          </div>
+
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin-bottom: 20px;">
+            <h3 style="color: #92400e; margin-bottom: 8px;">OSFI E-21 & B-10 Compliance</h3>
+            <p style="margin-bottom: 12px;"><strong>Regulatory Citation:</strong></p>
+            <p style="font-style: italic; margin-bottom: 12px;">${alert.regulatory_citation}</p>
+            <p style="font-size: 12px; color: #92400e;"><strong>Disclaimer:</strong> ${alert.disclaimer}</p>
+          </div>
+
+          <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 16px;">
+            <h3 style="color: #047857; margin-bottom: 8px;">Recommended Actions</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+              <li>Review vendor concentration risk exposure</li>
+              <li>Assess impact on critical business operations</li>
+              <li>Consider backup vendor activation if available</li>
+              <li>Document remediation steps per OSFI E-21 Principle 6</li>
+            </ul>
+          </div>
+        </div>
+      `;
+
+      // Send via enhanced email notification system
+      await supabase.functions.invoke('send-email-notification', {
+        body: {
+          to: recipients,
+          subject,
+          html: htmlContent,
+          priority: emailPriority
+        }
+      });
+
+      console.log(`Vendor risk alert notification sent for ${alert.vendor_name} with ${emailPriority} priority`);
+      return true;
+
+    } catch (error) {
+      console.error('Error sending vendor risk alert notification:', error);
+      return false;
     }
   }
 }

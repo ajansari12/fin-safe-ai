@@ -47,12 +47,12 @@ class ToleranceNotificationService {
         notifications.push(this.sendEmailNotification(breachData, emailRecipients));
       }
 
-      // Send SMS notifications for high/critical severity
+      // Send priority email notifications for high/critical severity (replaced SMS)
       if (config.smsEnabled && 
           ['high', 'critical'].includes(breachData.breachSeverity) && 
-          recipients.some(r => r.phone)) {
-        const smsRecipients = recipients.filter(r => r.phone).map(r => r.phone!);
-        notifications.push(this.sendSMSNotification(breachData, smsRecipients, config.priority));
+          recipients.some(r => r.email)) {
+        const priorityEmailRecipients = recipients.filter(r => r.email).map(r => r.email!);
+        notifications.push(this.sendPriorityEmailNotification(breachData, priorityEmailRecipients, config.priority));
       }
 
       await Promise.all(notifications);
@@ -115,18 +115,20 @@ class ToleranceNotificationService {
     });
   }
 
-  private async sendSMSNotification(
+  private async sendPriorityEmailNotification(
     breachData: BreachNotificationData,
     recipients: string[],
     priority: 'normal' | 'high' | 'urgent'
   ): Promise<void> {
-    const message = this.createSMSContent(breachData);
+    const subject = `Tolerance Breach Alert - ${breachData.businessFunctionName || 'Critical System'}`;
+    const htmlContent = this.createEmailContent(breachData);
 
-    await supabase.functions.invoke('send-sms-notification', {
+    await supabase.functions.invoke('send-email-notification', {
       body: {
         to: recipients,
-        message,
-        priority
+        subject,
+        html: htmlContent,
+        priority: priority === 'urgent' ? 'critical' : priority
       }
     });
   }
@@ -213,13 +215,6 @@ class ToleranceNotificationService {
     `;
   }
 
-  private createSMSContent(breachData: BreachNotificationData): string {
-    return `OSFI E-21 Alert: ${breachData.breachSeverity.toUpperCase()} tolerance breach detected. ` +
-           `Actual: ${breachData.actualValue}, Threshold: ${breachData.thresholdValue} ` +
-           `(${breachData.variancePercentage.toFixed(1)}% variance). ` +
-           `${breachData.breachSeverity === 'critical' ? 'Immediate board escalation required per P5.' : 'Management review required.'} ` +
-           `Check email for full details. Time: ${new Date(breachData.detectedAt).toLocaleTimeString()}`;
-  }
 
   private getSeverityColor(severity: string): string {
     switch (severity) {
