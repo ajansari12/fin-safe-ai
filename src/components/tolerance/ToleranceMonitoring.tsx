@@ -4,11 +4,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle, Clock, TrendingUp, Activity, Bell, Shield } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { AlertTriangle, CheckCircle, Clock, TrendingUp, Activity, Bell, Shield, Settings } from "lucide-react";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ProportionalityService } from "@/services/tolerance/proportionality-service";
 
 interface ToleranceStatus {
   id: string;
@@ -34,6 +37,15 @@ interface OrganizationalProfile {
   sector: string;
 }
 
+interface ProportionalityConfig {
+  size: 'small' | 'medium' | 'large' | 'enterprise';
+  employee_count: number;
+  thresholdSensitivity: 'relaxed' | 'standard' | 'strict' | 'critical';
+  alertFrequency: 'hourly' | 'daily' | 'weekly';
+  escalationTimeline: 'immediate' | 'standard' | 'extended';
+  monitoringDepth: 'basic' | 'standard' | 'comprehensive' | 'enterprise';
+}
+
 interface BreachEvent {
   toleranceId: string;
   operationName: string;
@@ -51,9 +63,11 @@ const ToleranceMonitoring = () => {
   
   const [toleranceStatuses, setToleranceStatuses] = useState<ToleranceStatus[]>([]);
   const [orgProfile, setOrgProfile] = useState<OrganizationalProfile | null>(null);
+  const [proportionalityConfig, setProportionalityConfig] = useState<ProportionalityConfig | null>(null);
   const [refreshTime, setRefreshTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [realtimeBreaches, setRealtimeBreaches] = useState<BreachEvent[]>([]);
+  const [isProportionalMode, setIsProportionalMode] = useState(true);
 
   // Real-time subscriptions for breach detection
   const { isConnected: toleranceConnected } = useRealtimeSubscription({
@@ -78,11 +92,19 @@ const ToleranceMonitoring = () => {
     enabled: !!profile?.organization_id
   });
 
-  // Load organizational profile for proportionality
+  // Load organizational profile and proportionality configuration
   useEffect(() => {
     loadOrganizationalProfile();
+    loadProportionalityConfig();
     loadToleranceData();
   }, [profile?.organization_id]);
+
+  const loadProportionalityConfig = async () => {
+    const config = await ProportionalityService.getOrganizationalConfig();
+    if (config) {
+      setProportionalityConfig(config);
+    }
+  };
 
   const loadOrganizationalProfile = async () => {
     if (!profile?.organization_id) return;
@@ -92,7 +114,7 @@ const ToleranceMonitoring = () => {
         .from('organizational_profiles')
         .select('employee_count, sub_sector')
         .eq('organization_id', profile.organization_id)
-        .single();
+        .maybeSingle();
 
       if (orgData) {
         setOrgProfile({
@@ -183,11 +205,33 @@ const ToleranceMonitoring = () => {
     }
   };
 
-  // Dynamic breach calculation logic
+  // Enhanced breach calculation with proportional thresholds
   const calculateOperationStatus = (tolerance: any): 'operational' | 'degraded' | 'breach' | 'offline' => {
-    const rtoBreached = (tolerance.current_rto_minutes || 0) > (tolerance.max_rto_hours * 60 || 120);
-    const rpoBreached = (tolerance.current_rpo_minutes || 0) > (tolerance.max_rpo_hours * 60 || 60);
-    const availabilityBreached = (tolerance.current_availability_percentage || 99) < (tolerance.min_availability_percentage || 95);
+    if (!proportionalityConfig) {
+      // Fallback to standard calculation
+      const rtoBreached = (tolerance.current_rto_minutes || 0) > (tolerance.max_rto_hours * 60 || 120);
+      const rpoBreached = (tolerance.current_rpo_minutes || 0) > (tolerance.max_rpo_hours * 60 || 60);
+      const availabilityBreached = (tolerance.current_availability_percentage || 99) < (tolerance.min_availability_percentage || 95);
+      
+      if (rtoBreached || rpoBreached) return 'breach';
+      if (availabilityBreached) return 'degraded';
+      if ((tolerance.current_availability_percentage || 99) > 98) return 'operational';
+      return 'degraded';
+    }
+
+    // Apply proportional thresholds based on organization size
+    const adjustedTolerances = ProportionalityService.calculateAdjustedTolerances(
+      {
+        rto: tolerance.max_rto_hours * 60 || 120,
+        rpo: tolerance.max_rpo_hours * 60 || 60,
+        availability: tolerance.min_availability_percentage || 95
+      },
+      proportionalityConfig
+    );
+
+    const rtoBreached = (tolerance.current_rto_minutes || 0) > adjustedTolerances.rto;
+    const rpoBreached = (tolerance.current_rpo_minutes || 0) > adjustedTolerances.rpo;
+    const availabilityBreached = (tolerance.current_availability_percentage || 99) < adjustedTolerances.availability;
     
     if (rtoBreached || rpoBreached) return 'breach';
     if (availabilityBreached) return 'degraded';
@@ -361,18 +405,94 @@ const ToleranceMonitoring = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header with Proportionality Configuration */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Real-time Tolerance Monitoring</h2>
           <p className="text-muted-foreground">
             Live status of all critical operations - Last updated: {refreshTime.toLocaleTimeString()}
           </p>
+          {proportionalityConfig && (
+            <p className="text-sm text-blue-600 mt-1">
+              {ProportionalityService.getOSFIComplianceMessage(proportionalityConfig)}
+            </p>
+          )}
         </div>
-        <Button variant="outline" onClick={() => setRefreshTime(new Date())}>
-          <Activity className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-4">
+          {proportionalityConfig && (
+            <div className="flex items-center space-x-4 bg-blue-50 p-3 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="proportional-mode">Proportional Mode</Label>
+                <Switch
+                  id="proportional-mode"
+                  checked={isProportionalMode}
+                  onCheckedChange={setIsProportionalMode}
+                />
+              </div>
+              <div className="flex flex-col text-xs">
+                <span className="font-medium text-blue-800">
+                  {proportionalityConfig.size.toUpperCase()} FRFI
+                </span>
+                <span className="text-blue-600">
+                  {proportionalityConfig.thresholdSensitivity} thresholds
+                </span>
+              </div>
+            </div>
+          )}
+          <Button variant="outline" onClick={() => setRefreshTime(new Date())}>
+            <Activity className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {/* OSFI E-21 Proportionality Configuration Panel */}
+      {proportionalityConfig && isProportionalMode && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-blue-600" />
+              OSFI E-21 Proportionality Configuration
+            </CardTitle>
+            <CardDescription>
+              Tolerance thresholds adjusted for {proportionalityConfig.size} FRFI with {proportionalityConfig.employee_count} employees
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-sm font-medium text-blue-800">Threshold Sensitivity</p>
+                <Badge variant="outline" className="mt-1">
+                  {proportionalityConfig.thresholdSensitivity}
+                </Badge>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-blue-800">Alert Frequency</p>
+                <Badge variant="outline" className="mt-1">
+                  {proportionalityConfig.alertFrequency}
+                </Badge>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-blue-800">Escalation Timeline</p>
+                <Badge variant="outline" className="mt-1">
+                  {proportionalityConfig.escalationTimeline}
+                </Badge>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-blue-800">Monitoring Depth</p>
+                <Badge variant="outline" className="mt-1">
+                  {proportionalityConfig.monitoringDepth}
+                </Badge>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+              <p className="text-xs text-blue-800">
+                <strong>Regulatory Note:</strong> {ProportionalityService.getRegulatoryDisclaimer()}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

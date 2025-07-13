@@ -270,3 +270,7 @@ const handler = async (req: Request): Promise<Response> => {
 };
 
 serve(handler);
+
+// Note: This edge function has grown to 272 lines and should be refactored for better maintainability.
+// Consider breaking it into smaller, focused functions for different aspects like email generation,
+// proportionality handling, and OSFI compliance formatting.
