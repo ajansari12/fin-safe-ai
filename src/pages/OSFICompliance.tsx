@@ -28,6 +28,7 @@ import { pdfGenerationService } from '@/services/pdf-generation-service';
 import { kriService } from '@/services/kri/kri-service';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import AuthenticatedLayout from '@/components/layout/AuthenticatedLayout';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 
 interface OSFIPrincipleStatus {
   principle: number;
@@ -50,6 +51,9 @@ interface ComplianceMetrics {
   nextAssessment: string;
   riskAppetiteAlignment: number;
   escalationLogs: number;
+  toleranceBreaches: number;
+  criticalToleranceBreaches: number;
+  lastToleranceBreach: string | null;
 }
 
 interface OrganizationalProfile {
@@ -68,6 +72,28 @@ const OSFICompliance: React.FC = () => {
   const [isSmallFRFIMode, setIsSmallFRFIMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedPrinciple, setSelectedPrinciple] = useState<number | null>(null);
+
+  // Real-time monitoring for tolerance breaches
+  useRealtimeSubscription({
+    table: 'appetite_breach_logs',
+    filter: `org_id=eq.${profile?.organization_id}`,
+    onUpdate: () => {
+      loadComplianceData(); // Refresh metrics when new breaches occur
+      toast({
+        title: "⚠️ OSFI E-21 Tolerance Breach Alert",
+        description: "New disruption tolerance breach detected. Per OSFI E-21 Principle 7, immediate assessment required. Disclaimer: This is not regulatory advice - consult OSFI or qualified professionals.",
+        variant: "destructive",
+      });
+    },
+    onInsert: () => {
+      loadComplianceData(); // Refresh metrics when new breaches occur
+      toast({
+        title: "🚨 OSFI E-21 Critical Alert",
+        description: "Critical operation tolerance exceeded. Per OSFI E-21 Principle 7, escalation procedures activated. Disclaimer: Automated analysis - verify with compliance team.",
+        variant: "destructive",
+      });
+    }
+  });
 
   // Set current module for AI assistant context
   useEffect(() => {
@@ -199,6 +225,32 @@ const OSFICompliance: React.FC = () => {
         }
       ];
 
+      // Load real-time tolerance breach data for Principle 7
+      const { data: toleranceBreachData } = await supabase
+        .from('appetite_breach_logs')
+        .select('id, breach_severity, breach_date')
+        .eq('org_id', profile.organization_id)
+        .order('breach_date', { ascending: false });
+
+      const toleranceBreaches = toleranceBreachData?.length || 0;
+      const criticalToleranceBreaches = toleranceBreachData?.filter(b => 
+        b.breach_severity === 'critical'
+      ).length || 0;
+      const lastToleranceBreach = toleranceBreachData?.[0]?.breach_date || null;
+
+      // Update Principle 7 score based on actual breach data
+      const principle7Index = principlesData.findIndex(p => p.principle === 7);
+      if (principle7Index !== -1) {
+        const breachImpact = Math.min(criticalToleranceBreaches * 10, 30); // Max 30 point reduction
+        principlesData[principle7Index].score = Math.max(50, 78 - breachImpact);
+        if (criticalToleranceBreaches > 0) {
+          principlesData[principle7Index].status = 'critical';
+          principlesData[principle7Index].gaps.push(
+            `${criticalToleranceBreaches} critical tolerance breaches detected`
+          );
+        }
+      }
+
       // Calculate dynamic metrics based on real data
       const overallScore = Math.round(principlesData.reduce((sum, p) => sum + p.score, 0) / principlesData.length);
       const activeBreaches = principlesData.filter(p => p.status === 'critical').length;
@@ -212,7 +264,10 @@ const OSFICompliance: React.FC = () => {
         lastAssessment: '2024-07-10',
         nextAssessment: '2024-10-10',
         riskAppetiteAlignment: 85,
-        escalationLogs: 5
+        escalationLogs: 5,
+        toleranceBreaches,
+        criticalToleranceBreaches,
+        lastToleranceBreach
       };
       
       setMetrics(complianceMetrics);
@@ -375,6 +430,27 @@ const OSFICompliance: React.FC = () => {
                   <span className="text-sm">Pending Actions:</span>
                   <Badge variant="secondary">{metrics.pendingActions}</Badge>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Tolerance Breaches (P7):</span>
+                  <div className="flex gap-1">
+                    <Badge variant={metrics.criticalToleranceBreaches > 0 ? "destructive" : "outline"}>
+                      {metrics.toleranceBreaches} total
+                    </Badge>
+                    {metrics.criticalToleranceBreaches > 0 && (
+                      <Badge variant="destructive">
+                        {metrics.criticalToleranceBreaches} critical
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {metrics.lastToleranceBreach && (
+                  <div className="flex justify-between">
+                    <span className="text-sm">Last Breach:</span>
+                    <span className="text-sm font-semibold text-red-600">
+                      {new Date(metrics.lastToleranceBreach).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
                 <div className="flex gap-2 pt-2">
                   <Button onClick={generateComplianceReport} size="sm">
                     <Download className="h-4 w-4 mr-2" />

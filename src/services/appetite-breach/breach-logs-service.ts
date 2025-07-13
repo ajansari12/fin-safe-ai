@@ -82,3 +82,94 @@ export async function escalateBreach(
     return false;
   }
 }
+
+export async function logToleranceBreach(
+  toleranceId: string,
+  operationName: string,
+  actualValue: number,
+  thresholdValue: number,
+  severity: 'low' | 'medium' | 'high' | 'critical',
+  businessImpact?: string
+): Promise<string | null> {
+  try {
+    const profile = await getCurrentUserProfile();
+    if (!profile?.organization_id) {
+      throw new Error('Organization ID not found');
+    }
+
+    const variance = ((actualValue - thresholdValue) / thresholdValue) * 100;
+
+    const { data, error } = await supabase
+      .from('appetite_breach_logs')
+      .insert({
+        org_id: profile.organization_id,
+        threshold_id: toleranceId,
+        actual_value: actualValue,
+        threshold_value: thresholdValue,
+        variance_percentage: variance,
+        breach_severity: severity,
+        business_impact: businessImpact || `${operationName} disruption tolerance exceeded`,
+        resolution_status: 'open',
+        alert_sent: false,
+        board_reported: false
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    // Trigger automated alert
+    if (data?.id) {
+      try {
+        await supabase.functions.invoke('send-tolerance-breach-alert', {
+          body: {
+            breachId: data.id,
+            operationName,
+            severity,
+            actualValue,
+            thresholdValue,
+            variance: variance.toFixed(2)
+          }
+        });
+
+        // Update alert_sent flag
+        await supabase
+          .from('appetite_breach_logs')
+          .update({ alert_sent: true })
+          .eq('id', data.id);
+      } catch (alertError) {
+        logger.error('Failed to send tolerance breach alert', {
+          component: 'BreachLogsService',
+          module: 'tolerance-monitoring',
+          metadata: { breachId: data.id }
+        }, alertError);
+      }
+    }
+
+    logger.info('Tolerance breach logged successfully', {
+      component: 'BreachLogsService',
+      module: 'tolerance-monitoring',
+      metadata: { 
+        breachId: data?.id, 
+        operation: operationName, 
+        severity,
+        variance: variance.toFixed(2)
+      }
+    });
+
+    return data?.id || null;
+  } catch (error) {
+    logger.error('Error logging tolerance breach', {
+      component: 'BreachLogsService',
+      module: 'tolerance-monitoring',
+      metadata: { 
+        toleranceId, 
+        operationName, 
+        actualValue, 
+        thresholdValue,
+        severity 
+      }
+    }, error);
+    return null;
+  }
+}
