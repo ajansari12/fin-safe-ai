@@ -101,6 +101,34 @@ export const useNotificationCenter = (options: NotificationCenterOptions = {}) =
     }
   }, [profile?.organization_id, maxNotifications]);
 
+  // Generate predictive breach alerts
+  const generatePredictiveAlerts = useCallback(async () => {
+    if (!profile?.organization_id) return;
+
+    try {
+      const response = await supabase.functions.invoke('enhanced-predictive-analytics', {
+        body: {
+          type: 'alert_prediction',
+          orgId: profile.organization_id
+        }
+      });
+
+      if (response.data?.alerts) {
+        response.data.alerts.forEach((alert: any) => {
+          addNotification({
+            type: 'breach',
+            severity: alert.severity || 'medium',
+            title: 'Predictive Breach Alert',
+            message: `${alert.message} (Predicted with ${Math.round(alert.confidence * 100)}% confidence)`,
+            actionUrl: '/app/predictive-analytics'
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate predictive alerts:', error);
+    }
+  }, [profile?.organization_id]);
+
   // Add new notification
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
@@ -186,10 +214,11 @@ export const useNotificationCenter = (options: NotificationCenterOptions = {}) =
     }
   }, [notifications.length, autoMarkAsRead, markAllAsRead]);
 
-  // Load notifications on mount
+  // Load notifications on mount and generate predictive alerts
   useEffect(() => {
     loadNotifications();
-  }, [loadNotifications]);
+    generatePredictiveAlerts();
+  }, [loadNotifications, generatePredictiveAlerts]);
 
   return {
     notifications,
@@ -200,6 +229,7 @@ export const useNotificationCenter = (options: NotificationCenterOptions = {}) =
     markAllAsRead,
     clearAll,
     removeNotification,
-    refresh: loadNotifications
+    refresh: loadNotifications,
+    generatePredictiveAlerts
   };
 };

@@ -374,7 +374,7 @@ const PredictiveAnalyticsPanel: React.FC = () => {
                     <CardContent>
                       <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={trendData}>
+                          <AreaChart data={trendData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis 
                               dataKey="date" 
@@ -385,10 +385,30 @@ const PredictiveAnalyticsPanel: React.FC = () => {
                             <Tooltip 
                               labelFormatter={(value) => new Date(value).toLocaleDateString()}
                               formatter={(value: number, name: string) => [
-                                value.toFixed(2),
-                                name === 'value' ? metric.metric : name
+                                value?.toFixed(2) || 'N/A',
+                                name === 'value' ? metric.metric : 
+                                name === 'confidence_max' ? 'Upper Confidence' :
+                                name === 'confidence_min' ? 'Lower Confidence' : name
                               ]}
                             />
+                            {/* Confidence interval area shading */}
+                            <Area
+                              type="monotone"
+                              dataKey="confidence_max"
+                              stroke="none"
+                              fill="#dc2626"
+                              fillOpacity={0.15}
+                              strokeWidth={0}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="confidence_min"
+                              stroke="none"
+                              fill="#ffffff"
+                              fillOpacity={1}
+                              strokeWidth={0}
+                            />
+                            {/* Main trend line */}
                             <Line 
                               type="monotone" 
                               dataKey="value" 
@@ -401,22 +421,7 @@ const PredictiveAnalyticsPanel: React.FC = () => {
                                 <circle cx={props.cx} cy={props.cy} r="2" fill="#2563eb" />
                               }
                             />
-                            {/* Confidence interval area for predictions */}
-                            <Area
-                              type="monotone"
-                              dataKey="confidence_max"
-                              stroke="none"
-                              fill="#dc2626"
-                              fillOpacity={0.1}
-                            />
-                            <Area
-                              type="monotone"
-                              dataKey="confidence_min"
-                              stroke="none"
-                              fill="#dc2626"
-                              fillOpacity={0.1}
-                            />
-                          </LineChart>
+                          </AreaChart>
                         </ResponsiveContainer>
                       </div>
                       
