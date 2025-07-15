@@ -27,6 +27,8 @@ import { ComplianceValidator } from '@/services/testing/ComplianceValidator';
 import { PDFReportTester } from '@/services/testing/PDFReportTester';
 import { EdgeFunctionTester } from '@/services/testing/EdgeFunctionTester';
 import { CostControlValidator } from '@/services/testing/CostControlValidator';
+import { ProductionMonitoringService } from '@/services/testing/ProductionMonitoringService';
+import { CriticalPathTestOrchestrator } from '@/services/testing/CriticalPathTestOrchestrator';
 
 export interface TestResult {
   id: string;
