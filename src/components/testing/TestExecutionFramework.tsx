@@ -24,6 +24,9 @@ import { DatabaseIntegrityChecker } from '@/services/testing/DatabaseIntegrityCh
 import { IntegrationValidator } from '@/services/testing/IntegrationValidator';
 import { PerformanceMonitor } from '@/services/testing/PerformanceMonitor';
 import { ComplianceValidator } from '@/services/testing/ComplianceValidator';
+import { PDFReportTester } from '@/services/testing/PDFReportTester';
+import { EdgeFunctionTester } from '@/services/testing/EdgeFunctionTester';
+import { CostControlValidator } from '@/services/testing/CostControlValidator';
 
 export interface TestResult {
   id: string;
@@ -72,6 +75,9 @@ const TestExecutionFramework: React.FC = () => {
   const [integrationValidator] = useState(() => new IntegrationValidator());
   const [performanceMonitor] = useState(() => new PerformanceMonitor());
   const [complianceValidator] = useState(() => new ComplianceValidator());
+  const [pdfReportTester] = useState(() => new PDFReportTester());
+  const [edgeFunctionTester] = useState(() => new EdgeFunctionTester());
+  const [costControlValidator] = useState(() => new CostControlValidator());
 
   const updateTestResult = useCallback((updatedTest: TestResult) => {
     setTestResults(prev => {
