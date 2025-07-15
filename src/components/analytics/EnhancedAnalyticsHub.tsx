@@ -143,26 +143,51 @@ const EnhancedAnalyticsHub: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="query" className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Natural Language Query
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1">
+          <TabsTrigger 
+            value="query" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Natural language query interface for data analysis"
+          >
+            <Search className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Natural Language Query</span>
+            <span className="sm:hidden">Query</span>
           </TabsTrigger>
-          <TabsTrigger value="predictive" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Predictive Analytics
+          <TabsTrigger 
+            value="predictive" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Predictive analytics and forecasting tools"
+          >
+            <Target className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Predictive Analytics</span>
+            <span className="sm:hidden">Predict</span>
           </TabsTrigger>
-          <TabsTrigger value="insights" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            AI Insights
+          <TabsTrigger 
+            value="insights" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="AI-generated insights and recommendations"
+          >
+            <Brain className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">AI Insights</span>
+            <span className="sm:hidden">AI</span>
           </TabsTrigger>
-          <TabsTrigger value="anomalies" className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Anomaly Detection
+          <TabsTrigger 
+            value="anomalies" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Anomaly detection and alerts"
+          >
+            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Anomaly Detection</span>
+            <span className="sm:hidden">Alerts</span>
           </TabsTrigger>
-          <TabsTrigger value="correlations" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Risk Correlations
+          <TabsTrigger 
+            value="correlations" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Risk correlation analysis"
+          >
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Risk Correlations</span>
+            <span className="sm:hidden">Trends</span>
           </TabsTrigger>
         </TabsList>
 

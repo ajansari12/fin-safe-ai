@@ -43,20 +43,26 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
     <AIAssistantProvider>
       <TooltipProvider>
         <div className="flex h-screen bg-gray-100 dark:bg-slate-900">
-          {/* Mobile overlay */}
+          {/* Mobile overlay with ARIA for accessibility */}
           {isSidebarOpen && (
             <div 
               className="fixed inset-0 z-20 bg-black/50 lg:hidden"
               onClick={toggleSidebar}
+              aria-hidden="true"
+              role="button"
+              aria-label="Close navigation menu"
             />
           )}
 
-          {/* Sidebar */}
+          {/* Sidebar with improved ARIA and mobile responsiveness */}
           <aside 
+            id="sidebar-navigation"
+            role="navigation"
+            aria-label="Main navigation"
             className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-slate-800 shadow-lg transition-all duration-300 ease-in-out lg:static lg:inset-0 ${
               isSidebarOpen 
                 ? 'w-[280px] sm:w-[320px] lg:w-64 xl:w-72 2xl:w-80 translate-x-0' 
-                : 'w-0 lg:w-0 -translate-x-full lg:-translate-x-full'
+                : 'w-0 lg:w-16 -translate-x-full lg:translate-x-0 lg:overflow-hidden'
             }`}
           >
             {/* Sidebar header - simplified without close button */}
@@ -100,7 +106,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                             setSidebarOpen(false);
                           }
                         }}
-                        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] ${
+                        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${
                           isActive
                             ? "bg-primary/10 text-primary"
                             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -123,17 +129,20 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             <header className="bg-white dark:bg-slate-800 shadow-sm z-10 flex-shrink-0">
               <div className="flex items-center justify-between h-16 px-4">
                 <div className={`flex items-center gap-6 ${!isSidebarOpen ? 'ml-3 sm:ml-4 md:ml-6 lg:ml-8' : ''}`}>
-                  {/* Enhanced menu toggle button with dynamic icon */}
-                  <button
-                    onClick={toggleSidebar}
-                    className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
-                  >
-                    {isSidebarOpen ? (
-                      <X className="h-5 w-5" />
-                    ) : (
-                      <Menu className="h-5 w-5" />
-                    )}
-                  </button>
+          {/* Enhanced menu toggle button with ARIA labels and touch targets */}
+          <button
+            onClick={toggleSidebar}
+            aria-label={isSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isSidebarOpen}
+            aria-controls="sidebar-navigation"
+            className="p-3 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            {isSidebarOpen ? (
+              <X className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            )}
+          </button>
                   
                   {/* Breadcrumb or page title - with responsive spacing */}
                   <div className="hidden sm:block text-sm text-muted-foreground">
@@ -156,7 +165,13 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                           </div>
                         )}
                       </div>
-                      <Button variant="outline" size="sm" onClick={logout} className="flex-shrink-0">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={logout} 
+                        className="flex-shrink-0 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        aria-label="Sign out of account"
+                      >
                         Logout
                       </Button>
                     </div>

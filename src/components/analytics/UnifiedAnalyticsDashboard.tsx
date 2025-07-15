@@ -318,30 +318,60 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       </ErrorBoundary>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="executive" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Executive
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+          <TabsTrigger 
+            value="executive" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Executive dashboard with high-level metrics"
+          >
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Executive</span>
+            <span className="sm:hidden">Exec</span>
           </TabsTrigger>
-          <TabsTrigger value="operational" className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Operational
+          <TabsTrigger 
+            value="operational" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Operational dashboard with detailed metrics"
+          >
+            <Target className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Operational</span>
+            <span className="sm:hidden">Ops</span>
           </TabsTrigger>
-          <TabsTrigger value="controls" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Controls
+          <TabsTrigger 
+            value="controls" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Controls dashboard showing security and compliance"
+          >
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Controls</span>
+            <span className="sm:hidden">Ctrl</span>
           </TabsTrigger>
-          <TabsTrigger value="advanced" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Advanced
+          <TabsTrigger 
+            value="advanced" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Advanced analytics with AI insights"
+          >
+            <Brain className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Advanced</span>
+            <span className="sm:hidden">AI</span>
           </TabsTrigger>
-          <TabsTrigger value="predictive" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Predictive
+          <TabsTrigger 
+            value="predictive" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Predictive analytics and forecasting"
+          >
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Predictive</span>
+            <span className="sm:hidden">Pred</span>
           </TabsTrigger>
-          <TabsTrigger value="custom" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Custom
+          <TabsTrigger 
+            value="custom" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Custom dashboard builder"
+          >
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Custom</span>
+            <span className="sm:hidden">Edit</span>
           </TabsTrigger>
         </TabsList>
 
