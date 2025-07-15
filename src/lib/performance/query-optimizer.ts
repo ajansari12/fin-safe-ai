@@ -56,6 +56,82 @@ export class QueryOptimizer {
     }
   }
 
+  // Infinite scroll with optimized caching
+  static createInfiniteQuery<T>(
+    queryKey: string,
+    fetchFn: (page: number, pageSize: number) => Promise<{ data: T[]; hasNextPage: boolean; totalCount: number }>,
+    pageSize: number = 50
+  ) {
+    const cache = new Map<string, { data: T[]; hasNextPage: boolean; totalCount: number }>();
+    let currentPage = 1;
+    let allData: T[] = [];
+    let hasNextPage = true;
+    let totalCount = 0;
+
+    return {
+      async fetchNextPage(): Promise<{ data: T[]; hasNextPage: boolean; totalCount: number }> {
+        if (!hasNextPage) return { data: allData, hasNextPage: false, totalCount };
+
+        const cacheKey = `${queryKey}_${currentPage}_${pageSize}`;
+        
+        // Check cache first
+        if (cache.has(cacheKey)) {
+          const cached = cache.get(cacheKey)!;
+          allData = [...allData, ...cached.data];
+          hasNextPage = cached.hasNextPage;
+          totalCount = cached.totalCount;
+          currentPage++;
+          return { data: allData, hasNextPage, totalCount };
+        }
+
+        // Fetch from API
+        const result = await fetchFn(currentPage, pageSize);
+        
+        // Cache the result
+        cache.set(cacheKey, result);
+        
+        // Update state
+        allData = [...allData, ...result.data];
+        hasNextPage = result.hasNextPage;
+        totalCount = result.totalCount;
+        currentPage++;
+        
+        return { data: allData, hasNextPage, totalCount };
+      },
+      
+      reset() {
+        currentPage = 1;
+        allData = [];
+        hasNextPage = true;
+        totalCount = 0;
+        cache.clear();
+      },
+      
+      getCurrentData() {
+        return { data: allData, hasNextPage, totalCount };
+      }
+    };
+  }
+
+  // Optimized data sampling for charts
+  static sampleChartData<T>(data: T[], maxPoints: number = 500): T[] {
+    if (data.length <= maxPoints) return data;
+    
+    const step = Math.floor(data.length / maxPoints);
+    const sampled: T[] = [];
+    
+    for (let i = 0; i < data.length; i += step) {
+      sampled.push(data[i]);
+    }
+    
+    // Always include the last point
+    if (sampled[sampled.length - 1] !== data[data.length - 1]) {
+      sampled.push(data[data.length - 1]);
+    }
+    
+    return sampled;
+  }
+
   // Debounced search
   static createDebouncedSearch<T>(
     searchFn: (query: string) => Promise<T[]>,

@@ -23,14 +23,19 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Split vendor bundles
+          // Core vendor bundles
           vendor: ['react', 'react-dom', 'react-router-dom'],
           charts: ['recharts'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
           supabase: ['@supabase/supabase-js', '@tanstack/react-query'],
+          // Enhanced analytics chunks
+          analytics: ['@/components/analytics/ExecutiveDashboard', '@/components/analytics/OperationalDashboard'],
+          'vendor-feeds': ['@/services/vendor-feed-integration-service'],
+          auth: ['@/contexts/EnhancedAuthContext', '@/components/auth'],
+          virtualization: ['react-window', 'react-virtualized-auto-sizer'],
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 400, // Reduced from 600KB
   },
 }));

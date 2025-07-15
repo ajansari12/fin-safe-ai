@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { 
   performanceOptimizedQueryService,
   PaginationOptions,
@@ -183,5 +183,54 @@ export const useAnalyticsSummary = () => {
     queryKey: ['analytics-summary'],
     queryFn: () => performanceOptimizedQueryService.getAnalyticsSummary(),
     staleTime: 240000, // Cache for 4 minutes
+  });
+};
+
+// Infinite scroll hooks for large datasets
+export const useInfiniteIncidents = (options: Omit<IncidentQueryOptions, 'page' | 'limit'> = {}) => {
+  return useInfiniteQuery({
+    queryKey: ['incidents-infinite', options],
+    queryFn: ({ pageParam = 1 }) => performanceOptimizedQueryService.getIncidentsPaginated({
+      ...options,
+      page: pageParam,
+      limit: 50
+    }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.hasNextPage ? pages.length + 1 : undefined;
+    },
+    staleTime: 30000,
+  });
+};
+
+export const useInfiniteKRILogs = (options: Omit<KRIQueryOptions, 'page' | 'limit'> = {}) => {
+  return useInfiniteQuery({
+    queryKey: ['kri-logs-infinite', options],
+    queryFn: ({ pageParam = 1 }) => performanceOptimizedQueryService.getKRILogsPaginated({
+      ...options,
+      page: pageParam,
+      limit: 50
+    }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.hasNextPage ? pages.length + 1 : undefined;
+    },
+    staleTime: 60000,
+  });
+};
+
+export const useInfiniteAnalyticsInsights = (options: Omit<AnalyticsQueryOptions, 'page' | 'limit'> = {}) => {
+  return useInfiniteQuery({
+    queryKey: ['analytics-insights-infinite', options],
+    queryFn: ({ pageParam = 1 }) => performanceOptimizedQueryService.getAnalyticsInsightsPaginated({
+      ...options,
+      page: pageParam,
+      limit: 25
+    }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) => {
+      return lastPage.hasNextPage ? pages.length + 1 : undefined;
+    },
+    staleTime: 120000,
   });
 };
