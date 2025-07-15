@@ -4,6 +4,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logger } from "@/lib/logger";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 // Enhanced user profile with unified roles and permissions
 export interface EnhancedProfile {
@@ -128,6 +129,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Session timeout management
+  useSessionTimeout({
+    timeoutMinutes: 30,
+    warningMinutes: 5,
+    onTimeout: () => {
+      logger.warn('Session timeout - signing out user', {
+        component: 'EnhancedAuthContext',
+        module: 'authentication'
+      });
+      logout();
+    },
+    onWarning: () => {
+      logger.info('Session timeout warning displayed', {
+        component: 'EnhancedAuthContext',
+        module: 'authentication'
+      });
+    }
+  });
 
   useEffect(() => {
     logger.info('Initializing enhanced auth state', { 
