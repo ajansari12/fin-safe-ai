@@ -15,7 +15,11 @@ import {
   Settings
 } from 'lucide-react';
 
-const OSFIAdvancedCapabilitiesDashboard: React.FC = () => {
+interface OSFIAdvancedCapabilitiesDashboardProps {
+  orgId: string;
+}
+
+const OSFIAdvancedCapabilitiesDashboard: React.FC<OSFIAdvancedCapabilitiesDashboardProps> = ({ orgId }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -97,7 +101,7 @@ const OSFIAdvancedCapabilitiesDashboard: React.FC = () => {
         </TabsList>
 
         <TabsContent value="model-risk">
-          <OSFIModelRiskManagement />
+          <OSFIModelRiskManagement orgId={orgId} />
         </TabsContent>
 
         <TabsContent value="analytics">
