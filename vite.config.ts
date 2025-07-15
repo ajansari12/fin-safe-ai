@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => ({
           analytics: ['@/components/analytics/ExecutiveDashboard', '@/components/analytics/OperationalDashboard'],
           'vendor-feeds': ['@/services/vendor-feed-integration-service'],
           auth: ['@/contexts/EnhancedAuthContext', '@/components/auth'],
-          virtualization: ['react-window', 'react-virtualized-auto-sizer'],
+          virtualization: ['react-window'],
         },
       },
     },
