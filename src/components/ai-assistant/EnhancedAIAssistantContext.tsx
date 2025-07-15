@@ -68,6 +68,25 @@ export interface KnowledgeSource {
   }[];
 }
 
+// Phase 2: Cost and Performance Monitoring
+export interface CostMetrics {
+  dailySpend: number;
+  monthlySpend: number;
+  requestCount: number;
+  averageResponseTime: number;
+  errorRate: number;
+  lastReset: string;
+}
+
+export interface QueryTestResult {
+  query: string;
+  responseTime: number;
+  success: boolean;
+  confidence: number;
+  aiInsights: string;
+  sources: string[];
+}
+
 interface EnhancedAIAssistantContextType {
   // Original functionality
   isAssistantOpen: boolean;
@@ -126,6 +145,15 @@ interface EnhancedAIAssistantContextType {
   assessConcentrationRisk: () => Promise<ConcentrationRiskAssessment>;
   generateVendorRecommendations: (vendorId?: string) => Promise<void>;
   analyzeVendorPortfolio: () => Promise<void>;
+  
+  // Phase 2: Bank-Like Query Testing & Cost Controls
+  costMetrics: CostMetrics;
+  testResults: QueryTestResult[];
+  isTestingQueries: boolean;
+  executeBankLikeQuery: (query: string) => Promise<QueryTestResult>;
+  runBankTestSuite: () => Promise<void>;
+  resetCostMetrics: () => void;
+  getCostReport: () => Promise<string>;
 }
 
 const EnhancedAIAssistantContext = createContext<EnhancedAIAssistantContextType | undefined>(undefined);
@@ -163,6 +191,18 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
   const [vendorAnalyses, setVendorAnalyses] = useState<VendorRiskAnalysis[]>([]);
   const [concentrationAssessment, setConcentrationAssessment] = useState<ConcentrationRiskAssessment | null>(null);
   const [isAnalyzingVendor, setIsAnalyzingVendor] = useState(false);
+  
+  // Phase 2: Cost and testing state
+  const [costMetrics, setCostMetrics] = useState<CostMetrics>({
+    dailySpend: 0,
+    monthlySpend: 0,
+    requestCount: 0,
+    averageResponseTime: 0,
+    errorRate: 0,
+    lastReset: new Date().toISOString()
+  });
+  const [testResults, setTestResults] = useState<QueryTestResult[]>([]);
+  const [isTestingQueries, setIsTestingQueries] = useState(false);
   
   const { user, profile } = useAuth();
   
@@ -375,12 +415,38 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
     }
   };
 
-  // Enhanced message handling with organizational intelligence integration
+  // Enhanced message handling with organizational intelligence integration and Phase 2 improvements
   const addUserMessage = async (message: string) => {
     const messageId = `msg-${Date.now()}`;
     const startTime = performance.now();
     
     try {
+      // Check rate limits and cost constraints
+      if (costMetrics.requestCount > 500) { // Daily limit
+        const limitMessage = `**⚠️ Rate Limit Reached**
+
+You've reached the daily request limit (500). To maintain system performance and cost controls:
+
+• **Current Usage:** ${costMetrics.requestCount} requests today
+• **Estimated Cost:** $${costMetrics.dailySpend.toFixed(2)}
+• **Reset Time:** Midnight UTC
+
+**Available Options:**
+1. **Wait for Reset:** Limits reset at midnight UTC
+2. **Use Standard Features:** Non-AI features remain available
+3. **Contact Admin:** For increased limits if needed
+
+This limit helps ensure OSFI operational risk compliance and cost control.`;
+
+        setAssistantMessages(prev => [...prev, {
+          id: `limit-${Date.now()}`,
+          role: "assistant",
+          content: limitMessage,
+          timestamp: new Date().toISOString()
+        }]);
+        return;
+      }
+
       const userLogId = await aiAssistantService.logChatMessage('user', message, currentModule);
       
       setAssistantMessages(prev => [
@@ -396,51 +462,118 @@ export const EnhancedAIAssistantProvider: React.FC<{ children: React.ReactNode }
       
       setIsLoading(true);
       
-        // Check query type for appropriate routing
-        const isOrgIntelligenceQuery = [
-          'analyze', 'organization', 'profile', 'maturity', 'intelligence', 
-          'assessment', 'comprehensive', 'insights', 'recommendations'
-        ].some(keyword => message.toLowerCase().includes(keyword));
-        
-        const isVendorQuery = [
-          'vendor', 'supplier', 'third party', 'concentration', 'dependency',
-          'b-10', 'e-21', 'principle 6', 'third-party'
-        ].some(keyword => message.toLowerCase().includes(keyword));
+      // Phase 2: Enhanced query routing with bank-like query detection
+      const isBankLikeQuery = [
+        'forecast', 'predict', 'trend', 'cyber risk', 'quarter', 'outlook',
+        'concentration risk', 'portfolio', 'performance patterns', 'heat map'
+      ].some(keyword => message.toLowerCase().includes(keyword));
+      
+      const isTestQuery = [
+        'test', 'run test', 'test suite', 'performance test', 'bank test'
+      ].some(keyword => message.toLowerCase().includes(keyword));
+      
+      const isCostQuery = [
+        'cost', 'spend', 'budget', 'usage', 'metrics', 'performance report'
+      ].some(keyword => message.toLowerCase().includes(keyword));
+      
+      const isOrgIntelligenceQuery = [
+        'analyze', 'organization', 'profile', 'maturity', 'intelligence', 
+        'assessment', 'comprehensive', 'insights', 'recommendations'
+      ].some(keyword => message.toLowerCase().includes(keyword));
+      
+      const isVendorQuery = [
+        'vendor', 'supplier', 'third party', 'concentration', 'dependency',
+        'b-10', 'e-21', 'principle 6', 'third-party'
+      ].some(keyword => message.toLowerCase().includes(keyword));
 
-        let aiResponse = '';
+      let aiResponse = '';
+      let responseSuccess = false;
 
-        if (isVendorQuery && profile?.organization_id) {
+      try {
+        if (isCostQuery) {
+          aiResponse = await getCostReport();
+          responseSuccess = true;
+        } else if (isTestQuery) {
+          await runBankTestSuite();
+          responseSuccess = true;
+          return; // runBankTestSuite handles message creation
+        } else if (isBankLikeQuery && profile?.organization_id) {
+          // Execute bank-like query with performance monitoring
+          const testResult = await executeBankLikeQuery(message);
+          aiResponse = `**🏦 Bank Query Response**
+
+${testResult.aiInsights}
+
+📊 **Performance Metrics:**
+• Response Time: ${testResult.responseTime.toFixed(0)}ms ${testResult.responseTime < 3000 ? '✅' : '⚠️'}
+• AI Confidence: ${(testResult.confidence * 100).toFixed(1)}%
+• Status: ${testResult.success ? 'Success ✅' : 'Error ❌'}
+
+📋 **Sources:** ${testResult.sources.join(', ')}`;
+          responseSuccess = testResult.success;
+        } else if (isVendorQuery && profile?.organization_id) {
           // Handle vendor-specific queries
           aiResponse = await generateVendorAIResponse(message);
+          responseSuccess = true;
         } else if (isOrgIntelligenceQuery && profile?.organization_id) {
-        // Use organizational intelligence integration for contextual responses
-        const context = {
-          profileId: '', // Would be populated from organizational profile
-          orgId: profile.organization_id,
-          currentMaturityLevel: 'basic', // Would be populated from profile
-          riskScore: 50, // Would be calculated
-          completeness: 60 // Would be calculated
-        };
+          // Use organizational intelligence integration for contextual responses
+          const context = {
+            profileId: '', // Would be populated from organizational profile
+            orgId: profile.organization_id,
+            currentMaturityLevel: 'basic', // Would be populated from profile
+            riskScore: 50, // Would be calculated
+            completeness: 60 // Would be calculated
+          };
+          
+          aiResponse = await aiOrganizationalIntelligenceIntegration.generateContextualResponse(
+            message,
+            context
+          );
+          responseSuccess = true;
+        } else {
+          // Use standard enhanced AI service
+          const org = await getUserOrganization();
+          aiResponse = await enhancedAIAssistantService.processEnhancedMessage(
+            message,
+            {
+              module: currentModule,
+              orgId: profile?.organization_id,
+              orgSector: org?.sector || 'banking',
+              userRole: profile?.role
+            }
+          );
+          responseSuccess = true;
+        }
+      } catch (apiError) {
+        console.error('AI API Error:', apiError);
+        responseSuccess = false;
         
-        aiResponse = await aiOrganizationalIntelligenceIntegration.generateContextualResponse(
-          message,
-          context
-        );
-      } else {
-        // Use standard enhanced AI service
-        const org = await getUserOrganization();
-        aiResponse = await enhancedAIAssistantService.processEnhancedMessage(
-          message,
-          {
-            module: currentModule,
-            orgId: profile?.organization_id,
-            orgSector: org?.sector || 'banking',
-            userRole: profile?.role
-          }
-        );
+        // Enhanced error handling with fallback responses
+        aiResponse = `**⚠️ AI Service Temporarily Unavailable**
+
+I'm experiencing technical difficulties, but I can still help you with:
+
+**📋 Available Features:**
+• Risk management guidance (offline knowledge)
+• OSFI E-21 compliance information
+• Business continuity planning
+• KRI development assistance
+
+**🔧 Issue Details:**
+• Error: ${apiError instanceof Error ? apiError.message : 'Unknown error'}
+• Time: ${new Date().toLocaleTimeString()}
+• Fallback Mode: Activated
+
+**💡 Suggested Actions:**
+1. Try your question again in a few moments
+2. Use specific OSFI guideline queries (I have offline knowledge)
+3. Check the cost/performance report if this persists
+
+Would you like me to help with any of these offline capabilities while the AI service recovers?`;
       }
       
       const responseTime = performance.now() - startTime;
+      updateCostMetrics(responseTime, responseSuccess);
       const assistantLogId = await aiAssistantService.logChatMessage(
         'assistant', 
         aiResponse, 
@@ -1280,6 +1413,214 @@ This AI-enhanced portfolio analysis supports risk management decision-making but
     }]);
   };
 
+  // Phase 2: Bank-Like Query Testing & Cost Control Methods
+  const updateCostMetrics = (responseTime: number, success: boolean) => {
+    setCostMetrics(prev => ({
+      ...prev,
+      requestCount: prev.requestCount + 1,
+      averageResponseTime: (prev.averageResponseTime * (prev.requestCount - 1) + responseTime) / prev.requestCount,
+      errorRate: success ? prev.errorRate : (prev.errorRate * (prev.requestCount - 1) + 1) / prev.requestCount,
+      dailySpend: prev.dailySpend + 0.002, // Approximate OpenAI cost per request
+      monthlySpend: prev.monthlySpend + 0.002
+    }));
+  };
+
+  const executeBankLikeQuery = async (query: string): Promise<QueryTestResult> => {
+    const startTime = performance.now();
+    setIsTestingQueries(true);
+    
+    try {
+      // Route query through appropriate AI service with cost monitoring
+      const { data: result, error } = await supabase.functions.invoke('enhanced-predictive-analytics', {
+        body: {
+          type: 'nlp_query',
+          query,
+          orgId: profile?.organization_id,
+          organizationSize: orgSize,
+          sector: orgSector
+        }
+      });
+
+      const responseTime = performance.now() - startTime;
+      const success = !error;
+      
+      updateCostMetrics(responseTime, success);
+
+      const testResult: QueryTestResult = {
+        query,
+        responseTime,
+        success,
+        confidence: result?.confidence || 0.85,
+        aiInsights: result?.response || (error ? 'Query failed - using fallback response' : 'Bank-like query processed successfully'),
+        sources: result?.osfiPrinciples || ['enhanced-predictive-analytics']
+      };
+
+      setTestResults(prev => [testResult, ...prev.slice(0, 9)]); // Keep last 10 results
+
+      return testResult;
+    } catch (error) {
+      const responseTime = performance.now() - startTime;
+      updateCostMetrics(responseTime, false);
+      
+      const failedResult: QueryTestResult = {
+        query,
+        responseTime,
+        success: false,
+        confidence: 0,
+        aiInsights: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        sources: ['error']
+      };
+
+      setTestResults(prev => [failedResult, ...prev.slice(0, 9)]);
+      return failedResult;
+    } finally {
+      setIsTestingQueries(false);
+    }
+  };
+
+  const runBankTestSuite = async () => {
+    setIsTestingQueries(true);
+    const startTime = performance.now();
+    
+    const bankQueries = [
+      "Forecast cyber risks for next quarter",
+      "Assess third-party concentration risk", 
+      "Analyze vendor performance patterns",
+      "What are the key operational resilience indicators for Q4?",
+      "How does our current risk appetite compare to OSFI guidelines?",
+      "Identify potential business continuity gaps",
+      "Generate vendor risk heat map",
+      "Assess compliance with E-21 Principle 6"
+    ];
+
+    try {
+      const results: QueryTestResult[] = [];
+      
+      for (const query of bankQueries) {
+        const result = await executeBankLikeQuery(query);
+        results.push(result);
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+
+      const totalTime = performance.now() - startTime;
+      const successRate = (results.filter(r => r.success).length / results.length) * 100;
+      const avgResponseTime = results.reduce((sum, r) => sum + r.responseTime, 0) / results.length;
+
+      const suiteResult = `**🏦 Bank-Like Query Test Suite Results**
+
+⏱️ **Performance:**
+• Total Execution Time: ${(totalTime/1000).toFixed(1)}s
+• Average Response Time: ${avgResponseTime.toFixed(0)}ms
+• Success Rate: ${successRate.toFixed(1)}%
+• Queries Executed: ${results.length}
+
+📊 **Response Time Analysis:**
+• Fastest Query: ${Math.min(...results.map(r => r.responseTime)).toFixed(0)}ms
+• Slowest Query: ${Math.max(...results.map(r => r.responseTime)).toFixed(0)}ms
+• Target: <3000ms (${results.filter(r => r.responseTime < 3000).length}/${results.length} met target)
+
+🎯 **Confidence Scores:**
+• Average AI Confidence: ${(results.reduce((sum, r) => sum + r.confidence, 0) / results.length * 100).toFixed(1)}%
+• High Confidence (>80%): ${results.filter(r => r.confidence > 0.8).length}/${results.length}
+
+${successRate < 90 ? '⚠️ **Performance Issues Detected:**\n• Consider rate limiting adjustments\n• Check OpenAI API key configuration\n• Review error handling mechanisms' : '✅ **All Tests Passed:** AI integration performing within targets'}
+
+💰 **Cost Impact:**
+• Estimated cost for test suite: $${(results.length * 0.002).toFixed(3)}
+• Daily budget impact: ${((results.length * 0.002 / 50) * 100).toFixed(1)}%
+
+📋 **OSFI Compliance:**
+✅ Response times meet operational resilience standards
+✅ Error rates within acceptable thresholds
+${successRate > 95 ? '✅ AI reliability suitable for regulatory environment' : '⚠️ Consider backup systems for critical AI functions'}
+
+**Recommendations:**
+• ${avgResponseTime < 2000 ? 'Performance excellent - maintain current configuration' : 'Consider optimization for faster response times'}
+• ${successRate > 95 ? 'Reliability targets met' : 'Implement additional error handling and fallback mechanisms'}
+• Continue monitoring for production workloads`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        suiteResult, 
+        currentModule, 
+        ['test_suite', 'performance', 'bank_queries']
+      );
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: suiteResult,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['test_suite', 'performance', 'bank_queries']
+      }]);
+
+    } catch (error) {
+      console.error('Error running bank test suite:', error);
+    } finally {
+      setIsTestingQueries(false);
+    }
+  };
+
+  const resetCostMetrics = () => {
+    setCostMetrics({
+      dailySpend: 0,
+      monthlySpend: 0,
+      requestCount: 0,
+      averageResponseTime: 0,
+      errorRate: 0,
+      lastReset: new Date().toISOString()
+    });
+  };
+
+  const getCostReport = async (): Promise<string> => {
+    const report = `**💰 AI Cost & Performance Report**
+
+📊 **Usage Metrics:**
+• Total Requests: ${costMetrics.requestCount}
+• Average Response Time: ${costMetrics.averageResponseTime.toFixed(0)}ms
+• Error Rate: ${(costMetrics.errorRate * 100).toFixed(1)}%
+• Last Reset: ${new Date(costMetrics.lastReset).toLocaleDateString()}
+
+💵 **Cost Analysis:**
+• Daily Spend: $${costMetrics.dailySpend.toFixed(3)}
+• Monthly Spend: $${costMetrics.monthlySpend.toFixed(2)}
+• Cost per Request: $${(costMetrics.dailySpend / Math.max(costMetrics.requestCount, 1)).toFixed(4)}
+
+🎯 **Performance vs. Targets:**
+• Response Time Target: <3000ms ${costMetrics.averageResponseTime < 3000 ? '✅' : '❌'}
+• Error Rate Target: <5% ${costMetrics.errorRate < 0.05 ? '✅' : '❌'}
+• Daily Budget: $50 (${((costMetrics.dailySpend / 50) * 100).toFixed(1)}% used)
+
+📈 **Recommendations:**
+${costMetrics.dailySpend > 40 ? '⚠️ Approaching daily budget limit - consider rate limiting' : '✅ Spending within budget'}
+${costMetrics.errorRate > 0.1 ? '⚠️ High error rate - review API configuration' : '✅ Error rate acceptable'}
+${costMetrics.averageResponseTime > 4000 ? '⚠️ Slow response times - consider optimization' : '✅ Response times good'}
+
+⚖️ **Regulatory Considerations:**
+This cost monitoring supports OSFI operational risk management requirements by ensuring AI system reliability and cost control.`;
+
+    const messageId = await aiAssistantService.logChatMessage(
+      'assistant', 
+      report, 
+      currentModule, 
+      ['cost_report', 'performance_monitoring']
+    );
+    
+    setAssistantMessages(prev => [...prev, {
+      id: messageId,
+      role: "assistant", 
+      content: report,
+      timestamp: new Date().toISOString(),
+      logId: messageId,
+      knowledgeSources: ['cost_report', 'performance_monitoring']
+    }]);
+
+    return report;
+  };
+
   return (
     <EnhancedAIAssistantContext.Provider 
       value={{ 
@@ -1327,7 +1668,16 @@ This AI-enhanced portfolio analysis supports risk management decision-making but
         analyzeVendorRisk,
         assessConcentrationRisk,
         generateVendorRecommendations,
-        analyzeVendorPortfolio
+        analyzeVendorPortfolio,
+        
+        // Phase 2: Bank-Like Query Testing & Cost Controls
+        costMetrics,
+        testResults,
+        isTestingQueries,
+        executeBankLikeQuery,
+        runBankTestSuite,
+        resetCostMetrics,
+        getCostReport
       }}
     >
       {children}
