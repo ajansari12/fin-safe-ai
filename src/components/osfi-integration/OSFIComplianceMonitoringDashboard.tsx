@@ -18,6 +18,10 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import OSFIErrorBoundary from './OSFIErrorBoundary';
+import OSFILoadingState from './OSFILoadingState';
+import { useOSFIDataConsistency } from '@/hooks/useOSFIDataConsistency';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 interface ComplianceMetric {
   principle: string;
@@ -38,25 +42,18 @@ interface ComplianceAlert {
 }
 
 const OSFIComplianceMonitoringDashboard: React.FC = () => {
-  const { data: complianceMetrics } = useQuery({
-    queryKey: ['osfi-compliance-metrics'],
+  const { profile } = useAuth();
+  const { data: osfiData, validation, isLoading: dataLoading, refetch: refetchData } = useOSFIDataConsistency(profile?.organization_id);
+  
+  const { data: complianceMetrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ['osfi-compliance-metrics', profile?.organization_id],
     queryFn: async () => {
-      // Fetch real compliance data from database
-      const { data: policies, error: policiesError } = await supabase
-        .from('compliance_policies')
-        .select('*')
-        .eq('framework', 'OSFI-E21');
+      // Use consistent data from the data consistency hook
+      const policies = osfiData?.compliance_policies || [];
+      const checks = osfiData?.compliance_checks || [];
+      const controls = osfiData?.controls || [];
 
-      const { data: checks, error: checksError } = await supabase
-        .from('compliance_checks')
-        .select('*');
-
-      const { data: controls, error: controlsError } = await supabase
-        .from('controls')
-        .select('*');
-
-      if (policiesError || checksError || controlsError) {
-        console.error('Error fetching compliance data:', { policiesError, checksError, controlsError });
+      if (!osfiData || (policies.length === 0 && checks.length === 0 && controls.length === 0)) {
         // Return mock data as fallback
         return [
           {
@@ -169,25 +166,17 @@ const OSFIComplianceMonitoringDashboard: React.FC = () => {
           last_assessment: new Date().toISOString().split('T')[0]
         } as ComplianceMetric;
       });
-    }
+    },
+    enabled: !!osfiData
   });
 
-  const { data: complianceAlerts } = useQuery({
-    queryKey: ['osfi-compliance-alerts'],
+  const { data: complianceAlerts, isLoading: alertsLoading } = useQuery({
+    queryKey: ['osfi-compliance-alerts', profile?.organization_id],
     queryFn: async () => {
-      // Fetch real compliance violations and risk alerts
-      const { data: violations, error: violationsError } = await supabase
-        .from('compliance_violations')
-        .select('*')
-        .in('remediation_status', ['open', 'in_progress']);
+      // Use consistent data from the data consistency hook
+      const riskAlerts = osfiData?.risk_alerts || [];
 
-      const { data: riskAlerts, error: alertsError } = await supabase
-        .from('risk_alerts')
-        .select('*')
-        .eq('acknowledged', false);
-
-      if (violationsError || alertsError) {
-        console.error('Error fetching alerts:', { violationsError, alertsError });
+      if (!osfiData || riskAlerts.length === 0) {
         // Return mock data as fallback
         return [
           {
@@ -219,30 +208,8 @@ const OSFIComplianceMonitoringDashboard: React.FC = () => {
 
       const alerts: ComplianceAlert[] = [];
 
-      // Map violations to OSFI principles
-      violations?.forEach(violation => {
-        const principleMap: { [key: string]: string } = {
-          'operational': 'Principle 2',
-          'data': 'Principle 4',
-          'risk': 'Principle 3',
-          'continuity': 'Principle 6',
-          'third_party': 'Principle 7'
-        };
-
-        const principle = principleMap[violation.violation_type] || 'Principle 1';
-        
-        alerts.push({
-          id: violation.id,
-          severity: violation.severity as 'high' | 'medium' | 'low',
-          principle,
-          description: violation.violation_description,
-          due_date: violation.remediation_deadline || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          assigned_to: violation.assigned_to_name || 'Compliance Team'
-        });
-      });
-
       // Map risk alerts to OSFI principles
-      riskAlerts?.forEach(alert => {
+      riskAlerts.forEach(alert => {
         const principleMap: { [key: string]: string } = {
           'operational_risk': 'Principle 2',
           'data_quality': 'Principle 4',
@@ -263,8 +230,15 @@ const OSFIComplianceMonitoringDashboard: React.FC = () => {
       });
 
       return alerts.slice(0, 10); // Limit to 10 most recent alerts
-    }
+    },
+    enabled: !!osfiData
   });
+
+  const isLoading = dataLoading || metricsLoading || alertsLoading;
+
+  if (isLoading) {
+    return <OSFILoadingState type="dashboard" message="Loading OSFI compliance data..." />;
+  }
 
   const overallScore = complianceMetrics 
     ? Math.round(complianceMetrics.reduce((sum, metric) => sum + metric.score, 0) / complianceMetrics.length)
@@ -325,7 +299,35 @@ const OSFIComplianceMonitoringDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <OSFIErrorBoundary>
+      {/* Data validation warnings */}
+      {validation && !validation.isValid && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <span className="text-sm font-medium text-yellow-800">Data Quality Issues Detected</span>
+            </div>
+            {validation.errors.length > 0 && (
+              <ul className="mt-2 text-xs text-yellow-700 list-disc list-inside">
+                {validation.errors.map((error, i) => (
+                  <li key={i}>{error}</li>
+                ))}
+              </ul>
+            )}
+            <Button 
+              onClick={() => refetchData()} 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+            >
+              Refresh Data
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -519,7 +521,8 @@ const OSFIComplianceMonitoringDashboard: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </OSFIErrorBoundary>
   );
 };
 

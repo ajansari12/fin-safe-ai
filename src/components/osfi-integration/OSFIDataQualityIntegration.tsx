@@ -14,6 +14,10 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import OSFIErrorBoundary from './OSFIErrorBoundary';
+import OSFILoadingState from './OSFILoadingState';
+import { useOSFIDataConsistency } from '@/hooks/useOSFIDataConsistency';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 interface DataQualityMetric {
   id: string;
@@ -27,21 +31,17 @@ interface DataQualityMetric {
 }
 
 const OSFIDataQualityIntegration: React.FC = () => {
-  const { data: dataQualityMetrics, refetch } = useQuery({
-    queryKey: ['osfi-data-quality'],
+  const { profile } = useAuth();
+  const { data: osfiData, validation, isLoading: dataLoading } = useOSFIDataConsistency(profile?.organization_id);
+  
+  const { data: dataQualityMetrics, refetch, isLoading: metricsLoading } = useQuery({
+    queryKey: ['osfi-data-quality', profile?.organization_id],
     queryFn: async () => {
-      // Fetch real data quality metrics from database
-      const { data: controls, error: controlsError } = await supabase
-        .from('controls')
-        .select('*')
-        .ilike('title', '%data%');
+      // Use consistent data from the data consistency hook
+      const controls = osfiData?.controls?.filter(c => c.title?.toLowerCase().includes('data')) || [];
+      const checks = osfiData?.compliance_checks || [];
 
-      const { data: checks, error: checksError } = await supabase
-        .from('compliance_checks')
-        .select('*');
-
-      if (controlsError || checksError) {
-        console.error('Error fetching data quality metrics:', { controlsError, checksError });
+      if (!osfiData || (controls.length === 0 && checks.length === 0)) {
         // Return mock data as fallback
         return [
           {
@@ -134,8 +134,15 @@ const OSFIDataQualityIntegration: React.FC = () => {
       });
 
       return metrics;
-    }
+    },
+    enabled: !!osfiData
   });
+
+  const isLoading = dataLoading || metricsLoading;
+
+  if (isLoading) {
+    return <OSFILoadingState type="dashboard" message="Loading OSFI data quality metrics..." />;
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -168,7 +175,8 @@ const OSFIDataQualityIntegration: React.FC = () => {
     : 0;
 
   return (
-    <div className="space-y-6">
+    <OSFIErrorBoundary>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -312,7 +320,8 @@ const OSFIDataQualityIntegration: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </OSFIErrorBoundary>
   );
 };
 
