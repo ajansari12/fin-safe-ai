@@ -48,6 +48,7 @@ const InvitationAcceptance = lazy(() => import('./components/auth/InvitationAcce
 const Debug = lazy(() => import('./pages/Debug'));
 const DataManagement = lazy(() => import('./pages/DataManagement'));
 const RBACTesting = lazy(() => import('./pages/RBACTesting'));
+import DeploymentCheck from './pages/DeploymentCheck';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
@@ -345,8 +346,17 @@ function App() {
                   </RouteErrorBoundary>
                 </EnhancedProtectedRoute>
               } />
-              
-              {/* Admin-only routes */}
+               
+               {/* Deployment Check */}
+               <Route path="/app/deployment-check" element={
+                 <EnhancedProtectedRoute requiredAnyRole={['admin', 'super_admin']}>
+                   <RouteErrorBoundary routeName="Deployment Check" moduleName="Deployment">
+                     <DeploymentCheck />
+                   </RouteErrorBoundary>
+                 </EnhancedProtectedRoute>
+               } />
+               
+               {/* Admin-only routes */}
               <Route 
                 path="/app/debug" 
                 element={
