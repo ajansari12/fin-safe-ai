@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,9 @@ import AppetiteBreachAlerts from "./AppetiteBreachAlerts";
 import BoardReportGenerator from "./BoardReportGenerator";
 import EscalationWorkflow from "./EscalationWorkflow";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface RiskMetric {
   id: string;
@@ -31,71 +34,165 @@ interface RiskMetric {
 }
 
 const UnifiedRiskAppetite: React.FC = () => {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
+  const [riskMetrics, setRiskMetrics] = useState<RiskMetric[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Enhanced mock data with OSFI E-21 categories
-  const mockMetrics: RiskMetric[] = [
-    {
-      id: '1',
-      name: 'Operational Risk Score',
-      current_value: 75,
+  useEffect(() => {
+    if (profile?.organization_id) {
+      loadRiskMetrics();
+    }
+  }, [profile?.organization_id]);
+
+  const loadRiskMetrics = async () => {
+    if (!profile?.organization_id) return;
+
+    try {
+      setLoading(true);
+
+      // Fetch KRI logs with latest values
+      const { data: kriData, error: kriError } = await supabase
+        .from('kri_logs')
+        .select(`
+          *,
+          kri_definitions!inner(
+            id,
+            name,
+            target_value,
+            threshold_warning,
+            threshold_critical,
+            osfi_category,
+            disruption_tolerance,
+            risk_category_id
+          )
+        `)
+        .eq('kri_definitions.org_id', profile.organization_id)
+        .order('measurement_date', { ascending: false });
+
+      if (kriError) throw kriError;
+
+      // Get third-party risk ratings
+      const { data: vendorData } = await supabase
+        .from('third_party_profiles')
+        .select('risk_rating, last_assessment_date')
+        .eq('org_id', profile.organization_id);
+
+      // Get recent incidents for operational risk calculation
+      const { data: incidentData } = await supabase
+        .from('incident_logs')
+        .select('severity, status, created_at')
+        .eq('org_id', profile.organization_id)
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+      // Process KRI data into risk metrics
+      const kriMetrics = processKRIData(kriData || []);
+      const vendorMetric = processVendorData(vendorData || []);
+      const operationalMetric = processIncidentData(incidentData || []);
+
+      const allMetrics = [...kriMetrics, vendorMetric, operationalMetric].filter(Boolean);
+      setRiskMetrics(allMetrics);
+
+    } catch (error) {
+      console.error('Error loading risk metrics:', error);
+      toast.error('Failed to load risk metrics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const processKRIData = (kriData: any[]): RiskMetric[] => {
+    const kriMetricsMap = new Map();
+    
+    kriData.forEach(log => {
+      const kriId = log.kri_definitions.id;
+      if (!kriMetricsMap.has(kriId) || new Date(log.measurement_date) > new Date(kriMetricsMap.get(kriId).last_updated)) {
+        const actual = log.actual_value;
+        const target = log.kri_definitions.target_value;
+        const warning = log.kri_definitions.threshold_warning;
+        const critical = log.kri_definitions.threshold_critical;
+        
+        let status: 'within_appetite' | 'warning' | 'breach';
+        if (actual >= critical) status = 'breach';
+        else if (actual >= warning) status = 'warning';
+        else status = 'within_appetite';
+
+        kriMetricsMap.set(kriId, {
+          id: kriId,
+          name: log.kri_definitions.name,
+          current_value: actual,
+          target_value: target,
+          threshold_warning: warning,
+          threshold_critical: critical,
+          trend: calculateTrend(log.actual_value, log.previous_value),
+          status,
+          last_updated: log.measurement_date,
+          osfi_category: log.kri_definitions.osfi_category || 'Operational',
+          disruption_tolerance: log.kri_definitions.disruption_tolerance || '2 hours',
+          is_forward_looking: true,
+          scenario_based: true
+        });
+      }
+    });
+
+    return Array.from(kriMetricsMap.values());
+  };
+
+  const processVendorData = (vendorData: any[]): RiskMetric | null => {
+    if (vendorData.length === 0) return null;
+
+    const highRiskVendors = vendorData.filter(v => v.risk_rating >= 4).length;
+    const avgRating = vendorData.reduce((sum, v) => sum + (v.risk_rating || 3), 0) / vendorData.length;
+    const riskScore = (avgRating * 20); // Convert to 0-100 scale
+
+    return {
+      id: 'vendor-risk',
+      name: 'Third-Party Risk Rating',
+      current_value: riskScore,
       target_value: 60,
       threshold_warning: 70,
       threshold_critical: 85,
-      trend: 'up',
-      status: 'warning',
-      last_updated: '2024-01-15T10:30:00Z',
-      osfi_category: 'Internal Process Failures',
-      disruption_tolerance: '2 hours',
-      is_forward_looking: true,
-      scenario_based: true
-    },
-    {
-      id: '2',
-      name: 'Cyber Risk Exposure',
-      current_value: 45,
-      target_value: 50,
-      threshold_warning: 60,
-      threshold_critical: 80,
-      trend: 'down',
-      status: 'within_appetite',
-      last_updated: '2024-01-15T09:15:00Z',
-      osfi_category: 'Technology & Cyber',
-      disruption_tolerance: '30 minutes',
-      is_forward_looking: true,
-      scenario_based: true
-    },
-    {
-      id: '3',
-      name: 'Third-Party Risk Rating',
-      current_value: 90,
-      target_value: 70,
-      threshold_warning: 75,
-      threshold_critical: 85,
-      trend: 'up',
-      status: 'breach',
-      last_updated: '2024-01-15T11:45:00Z',
+      trend: riskScore > 70 ? 'up' : riskScore < 60 ? 'down' : 'stable',
+      status: riskScore >= 85 ? 'breach' : riskScore >= 70 ? 'warning' : 'within_appetite',
+      last_updated: new Date().toISOString(),
       osfi_category: 'External Dependencies',
       disruption_tolerance: '4 hours',
       is_forward_looking: false,
       scenario_based: true
-    },
-    {
-      id: '4',
-      name: 'Critical Operations RTO',
-      current_value: 120,
-      target_value: 60,
-      threshold_warning: 90,
-      threshold_critical: 180,
-      trend: 'stable',
-      status: 'warning',
-      last_updated: '2024-01-15T12:00:00Z',
-      osfi_category: 'Business Continuity',
-      disruption_tolerance: '1 hour',
+    };
+  };
+
+  const processIncidentData = (incidentData: any[]): RiskMetric | null => {
+    if (incidentData.length === 0) return null;
+
+    const criticalIncidents = incidentData.filter(i => i.severity === 'critical').length;
+    const openIncidents = incidentData.filter(i => i.status === 'open').length;
+    const riskScore = Math.min(100, (criticalIncidents * 25) + (openIncidents * 10));
+
+    return {
+      id: 'operational-risk',
+      name: 'Operational Risk Score',
+      current_value: riskScore,
+      target_value: 50,
+      threshold_warning: 60,
+      threshold_critical: 80,
+      trend: riskScore > 60 ? 'up' : 'stable',
+      status: riskScore >= 80 ? 'breach' : riskScore >= 60 ? 'warning' : 'within_appetite',
+      last_updated: new Date().toISOString(),
+      osfi_category: 'Internal Process Failures',
+      disruption_tolerance: '2 hours',
       is_forward_looking: true,
       scenario_based: true
-    }
-  ];
+    };
+  };
+
+  const calculateTrend = (current: number, previous: number | null): 'up' | 'down' | 'stable' => {
+    if (!previous) return 'stable';
+    const change = ((current - previous) / previous) * 100;
+    if (change > 5) return 'up';
+    if (change < -5) return 'down';
+    return 'stable';
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -154,7 +251,23 @@ const UnifiedRiskAppetite: React.FC = () => {
 
       {/* Risk Appetite Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {mockMetrics.map(metric => (
+        {loading ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index} className="animate-pulse">
+              <CardHeader className="pb-3">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-2 bg-gray-200 rounded"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          riskMetrics.map(metric => (
           <Card key={metric.id}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -209,11 +322,12 @@ const UnifiedRiskAppetite: React.FC = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Alert Banner for Critical Issues */}
-      {mockMetrics.some(m => m.status === 'breach') && (
+      {riskMetrics.some(m => m.status === 'breach') && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>

@@ -13,6 +13,9 @@ import {
   Zap,
   Bell
 } from "lucide-react";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface MonitoringAlert {
   id: string;
@@ -37,99 +40,150 @@ interface RealTimeMetric {
 }
 
 export default function OSFIRealTimeMonitoring() {
+  const { profile } = useAuth();
   const [alerts, setAlerts] = useState<MonitoringAlert[]>([]);
   const [metrics, setMetrics] = useState<RealTimeMetric[]>([]);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [loading, setLoading] = useState(true);
 
-  // Mock real-time data - in production, this would be WebSocket or polling
   useEffect(() => {
-    const mockAlerts: MonitoringAlert[] = [
-      {
-        id: "1",
-        title: "Operational Risk Threshold Breach",
-        severity: "critical",
-        category: "risk",
-        timestamp: "2024-07-11T10:30:00Z",
-        description: "Critical operations RTO threshold exceeded in payment processing",
-        status: "active",
-        assignedTo: "Chief Risk Officer"
-      },
-      {
-        id: "2", 
-        title: "Board Report Due Soon",
-        severity: "medium",
-        category: "governance",
-        timestamp: "2024-07-11T09:15:00Z",
-        description: "Quarterly operational resilience report due to board in 2 days",
-        status: "acknowledged",
-        assignedTo: "Compliance Manager"
-      },
-      {
-        id: "3",
-        title: "Third-Party Service Degradation",
-        severity: "high",
-        category: "operational",
-        timestamp: "2024-07-11T08:45:00Z",
-        description: "Critical vendor experiencing service degradation affecting core banking",
-        status: "active",
-        assignedTo: "COO"
-      }
-    ];
+    if (profile?.organization_id) {
+      loadRealTimeData();
+      
+      // Set up real-time updates every 30 seconds
+      const interval = setInterval(() => {
+        loadRealTimeData();
+        setLastRefresh(new Date());
+      }, 30000);
 
-    const mockMetrics: RealTimeMetric[] = [
-      {
-        id: "1",
-        name: "System Availability",
-        value: 99.8,
-        unit: "%",
-        threshold: 99.9,
-        status: "warning",
-        trend: "down",
-        lastUpdate: "2024-07-11T10:35:00Z"
-      },
-      {
-        id: "2",
-        name: "Critical Operations RTO",
-        value: 125,
-        unit: "minutes",
-        threshold: 120,
-        status: "critical",
-        trend: "up",
-        lastUpdate: "2024-07-11T10:34:00Z"
-      },
-      {
-        id: "3",
-        name: "Operational Risk Score",
-        value: 7.2,
-        unit: "/10",
-        threshold: 8.0,
-        status: "normal",
-        trend: "stable",
-        lastUpdate: "2024-07-11T10:33:00Z"
-      },
-      {
-        id: "4",
-        name: "Compliance Coverage",
-        value: 94.5,
-        unit: "%",
-        threshold: 95.0,
-        status: "warning",
-        trend: "up",
-        lastUpdate: "2024-07-11T10:32:00Z"
-      }
-    ];
+      return () => clearInterval(interval);
+    }
+  }, [profile?.organization_id]);
 
-    setAlerts(mockAlerts);
-    setMetrics(mockMetrics);
+  const loadRealTimeData = async () => {
+    if (!profile?.organization_id) return;
+
+    try {
+      // Load appetite breach logs as alerts
+      const { data: breachData, error: breachError } = await supabase
+        .from('appetite_breach_logs')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .eq('resolution_status', 'open')
+        .order('breach_date', { ascending: false })
+        .limit(10);
+
+      if (breachError) throw breachError;
+
+      // Load incident logs as operational alerts
+      const { data: incidentData, error: incidentError } = await supabase
+        .from('incident_logs')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .in('status', ['open', 'in_progress'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (incidentError) throw incidentError;
+
+      // Load KRI logs for metrics
+      const { data: kriData, error: kriError } = await supabase
+        .from('kri_logs')
+        .select(`
+          *,
+          kri_definitions!inner(name, target_value, threshold_warning, threshold_critical)
+        `)
+        .eq('kri_definitions.org_id', profile.organization_id)
+        .order('measurement_date', { ascending: false })
+        .limit(50);
+
+      if (kriError) throw kriError;
+
+      // Process breach alerts
+      const breachAlerts: MonitoringAlert[] = (breachData || []).map(breach => ({
+        id: breach.id,
+        title: `Risk Appetite Breach - ${breach.breach_severity}`,
+        severity: mapSeverity(breach.breach_severity),
+        category: 'risk',
+        timestamp: breach.breach_date,
+        description: `Risk threshold breached: actual ${breach.actual_value}, threshold ${breach.threshold_value}`,
+        status: 'active',
+        assignedTo: breach.escalated_to_name || 'Risk Manager'
+      }));
+
+      // Process incident alerts
+      const incidentAlerts: MonitoringAlert[] = (incidentData || []).map(incident => ({
+        id: incident.id,
+        title: `Operational Incident - ${incident.severity}`,
+        severity: mapSeverity(incident.severity),
+        category: 'operational',
+        timestamp: incident.created_at,
+        description: incident.description || 'Operational incident requiring attention',
+        status: incident.status === 'open' ? 'active' : 'acknowledged',
+        assignedTo: incident.assigned_to_name || 'Operations Team'
+      }));
+
+      // Process KRI metrics
+      const processedMetrics = processKRIMetrics(kriData || []);
+
+      setAlerts([...breachAlerts, ...incidentAlerts]);
+      setMetrics(processedMetrics);
+      setLoading(false);
+
+    } catch (error) {
+      console.error('Error loading real-time monitoring data:', error);
+      toast.error('Failed to load monitoring data');
+      setLoading(false);
+    }
+  };
+
+  const mapSeverity = (severity: string): 'critical' | 'high' | 'medium' | 'low' => {
+    switch (severity.toLowerCase()) {
+      case 'critical': return 'critical';
+      case 'high': return 'high';
+      case 'medium': return 'medium';
+      default: return 'low';
+    }
+  };
+
+  const processKRIMetrics = (kriData: any[]): RealTimeMetric[] => {
+    const metricsMap = new Map();
     
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      setLastRefresh(new Date());
-      // In production, this would fetch latest data
-    }, 30000);
+    kriData.forEach(log => {
+      const kriId = log.kri_definitions.id;
+      if (!metricsMap.has(kriId) || new Date(log.measurement_date) > new Date(metricsMap.get(kriId).lastUpdate)) {
+        const actual = log.actual_value;
+        const threshold = log.kri_definitions.threshold_critical;
+        const warning = log.kri_definitions.threshold_warning;
+        
+        let status: 'normal' | 'warning' | 'critical';
+        if (actual >= threshold) status = 'critical';
+        else if (actual >= warning) status = 'warning';
+        else status = 'normal';
 
-    return () => clearInterval(interval);
-  }, []);
+        metricsMap.set(kriId, {
+          id: kriId,
+          name: log.kri_definitions.name,
+          value: actual,
+          unit: log.measurement_unit || '',
+          threshold: threshold,
+          status,
+          trend: calculateTrend(actual, log.previous_value),
+          lastUpdate: log.measurement_date
+        });
+      }
+    });
+
+    return Array.from(metricsMap.values()).slice(0, 4);
+  };
+
+  const calculateTrend = (current: number, previous: number | null): 'up' | 'down' | 'stable' => {
+    if (!previous) return 'stable';
+    const change = ((current - previous) / previous) * 100;
+    if (change > 2) return 'up';
+    if (change < -2) return 'down';
+    return 'stable';
+  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
