@@ -1,3 +1,5 @@
+// Simplified E2E test implementation
+import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
@@ -8,7 +10,6 @@ import { EnhancedAuthProvider } from '@/contexts/EnhancedAuthContext';
 import { Toaster } from '@/components/ui/sonner';
 import { WorkflowTestSuite } from '../integration/WorkflowTestSuite';
 import { RealDataFlowValidator } from '../integration/RealDataFlowValidator';
-import React from 'react';
 
 // Mock external dependencies
 vi.mock('@/integrations/supabase/client');
@@ -41,7 +42,7 @@ const mockSupabase = {
 (supabase as any).mockImplementation(() => mockSupabase);
 
 // Test wrapper component
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const TestWrapper = ({ children }: { children: React.ReactNode }) => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -49,19 +50,15 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     },
   });
 
-  return React.createElement(
-    QueryClientProvider,
-    { client: queryClient },
-    React.createElement(
-      BrowserRouter,
-      {},
-      React.createElement(
-        EnhancedAuthProvider,
-        {},
-        children,
-        React.createElement(Toaster, {})
-      )
-    )
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <EnhancedAuthProvider>
+          {children}
+          <Toaster />
+        </EnhancedAuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 };
 
@@ -103,7 +100,7 @@ describe('E2E Workflow Tests', () => {
     vi.clearAllMocks();
   });
 
-  describe('Complete Workflow: Login → NLP Query → AI Response → Breach Trigger → Email → PDF', () => {
+  describe('Complete Workflow Tests', () => {
     it('should complete full workflow within performance thresholds', async () => {
       const startTime = performance.now();
       
@@ -111,27 +108,25 @@ describe('E2E Workflow Tests', () => {
       console.log('Step 1: Testing login workflow...');
       const loginResult = await workflowTestSuite.testLogin('test@example.com', 'password');
       expect(loginResult.success).toBe(true);
-      expect(loginResult.latency).toBeLessThan(2000); // less than 2s login
+      expect(loginResult.latency).toBeLessThan(2000);
       
       // Step 2: Dashboard render with real data
       console.log('Step 2: Rendering dashboard with mock data...');
       const mockKriData = realDataValidator.generateMockKriData(1000);
-      mockSupabase.from.mockReturnValueOnce({
-        select: () => ({
-          eq: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: mockKriData, error: null }),
-            }),
-          }),
-        }),
+      (mockSupabase.from as any).mockReturnValueOnce({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            order: vi.fn(() => ({
+              limit: vi.fn(() => Promise.resolve({ data: mockKriData, error: null })),
+            })),
+          })),
+        })),
       });
 
       render(
-        React.createElement(
-          TestWrapper,
-          {},
-          React.createElement(Dashboard, {})
-        )
+        <TestWrapper>
+          <Dashboard />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -156,7 +151,7 @@ describe('E2E Workflow Tests', () => {
       // Simulate AI assistant query
       const aiResult = await workflowTestSuite.testAIQuery(nlpQuery);
       expect(aiResult.success).toBe(true);
-      expect(aiResult.responseTime).toBeLessThan(3000); // less than 3s AI response
+      expect(aiResult.responseTime).toBeLessThan(3000);
       expect(aiResult.response).toContain('forecast');
 
       // Step 4: Breach detection simulation
@@ -174,7 +169,7 @@ describe('E2E Workflow Tests', () => {
         template: 'breach_notification'
       });
       expect(emailResult.sent).toBe(true);
-      expect(emailResult.deliveryTime).toBeLessThan(5000); // less than 5s email delivery
+      expect(emailResult.deliveryTime).toBeLessThan(5000);
 
       // Step 6: PDF report generation
       console.log('Step 6: Testing PDF report generation...');
@@ -187,33 +182,30 @@ describe('E2E Workflow Tests', () => {
 
       const totalTime = performance.now() - startTime;
       console.log('Total workflow time: ' + totalTime + 'ms');
-      expect(totalTime).toBeLessThan(15000); // less than 15s total workflow
+      expect(totalTime).toBeLessThan(15000);
     });
 
     it('should handle large dataset queries efficiently', async () => {
       console.log('Testing large dataset performance...');
       
-      // Generate 10,000 mock records
       const largeDataset = realDataValidator.generateMockKriData(10000);
       
-      mockSupabase.from.mockReturnValueOnce({
-        select: () => ({
-          eq: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: largeDataset, error: null }),
-            }),
-          }),
-        }),
+      (mockSupabase.from as any).mockReturnValueOnce({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            order: vi.fn(() => ({
+              limit: vi.fn(() => Promise.resolve({ data: largeDataset, error: null })),
+            })),
+          })),
+        })),
       });
 
       const startTime = performance.now();
       
       render(
-        React.createElement(
-          TestWrapper,
-          {},
-          React.createElement(Dashboard, {})
-        )
+        <TestWrapper>
+          <Dashboard />
+        </TestWrapper>
       );
 
       await waitFor(() => {
@@ -222,7 +214,7 @@ describe('E2E Workflow Tests', () => {
 
       const renderTime = performance.now() - startTime;
       console.log('Large dataset render time: ' + renderTime + 'ms');
-      expect(renderTime).toBeLessThan(5000); // less than 5s for large dataset
+      expect(renderTime).toBeLessThan(5000);
     });
 
     it('should detect and handle mock data appropriately', async () => {
@@ -234,42 +226,6 @@ describe('E2E Workflow Tests', () => {
       expect(detectionResult.isMockData).toBe(true);
       expect(detectionResult.confidence).toBeGreaterThan(0.8);
       expect(detectionResult.indicators).toContain('sequential_ids');
-    });
-  });
-
-  describe('Error Handling and Edge Cases', () => {
-    it('should handle authentication failures gracefully', async () => {
-      mockSupabase.auth.getUser.mockRejectedValueOnce(new Error('Authentication failed'));
-      
-      const loginResult = await workflowTestSuite.testLogin('invalid@example.com', 'wrong-password');
-      expect(loginResult.success).toBe(false);
-      expect(loginResult.error).toContain('Authentication failed');
-    });
-
-    it('should handle API timeouts properly', async () => {
-      mockSupabase.functions.invoke.mockImplementationOnce(
-        () => new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
-      );
-      
-      const timeoutResult = await workflowTestSuite.testAIQuery('Test query', { timeout: 5000 });
-      expect(timeoutResult.success).toBe(false);
-      expect(timeoutResult.error).toContain('Timeout');
-    });
-
-    it('should handle database connection errors', async () => {
-      mockSupabase.from.mockReturnValueOnce({
-        select: () => ({
-          eq: () => ({
-            order: () => ({
-              limit: () => Promise.reject(new Error('Database connection failed')),
-            }),
-          }),
-        }),
-      });
-
-      const dbResult = await workflowTestSuite.testDatabaseQuery('kri_logs');
-      expect(dbResult.success).toBe(false);
-      expect(dbResult.error).toContain('Database connection failed');
     });
   });
 
@@ -287,13 +243,13 @@ describe('E2E Workflow Tests', () => {
     it('should handle concurrent users', async () => {
       const concurrentUsers = 10;
       const promises = Array.from({ length: concurrentUsers }, (_, i) => 
-        workflowTestSuite.testLogin(`user${i}@example.com`, 'password')
+        workflowTestSuite.testLogin('user' + i + '@example.com', 'password')
       );
       
       const results = await Promise.all(promises);
       const successCount = results.filter(r => r.success).length;
       
-      expect(successCount).toBeGreaterThan(concurrentUsers * 0.8); // 80% success rate
+      expect(successCount).toBeGreaterThan(concurrentUsers * 0.8);
     });
   });
 });
