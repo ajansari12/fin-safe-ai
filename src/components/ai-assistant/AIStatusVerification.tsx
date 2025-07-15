@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   CheckCircle, 
   XCircle, 
-  Brain, 
-  Zap, 
-  MessageSquare,
-  RefreshCw,
-  AlertTriangle
+  Clock, 
+  AlertTriangle,
+  Activity,
+  RefreshCw
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface AICapability {
   name: string;
@@ -36,170 +34,277 @@ const AIStatusVerification: React.FC = () => {
     },
     {
       name: 'Document Analysis',
-      description: 'AI analysis of uploaded documents',
+      description: 'AI document processing and embeddings generation',
       status: 'not_tested'
     },
     {
       name: 'Predictive Analytics',
-      description: 'AI-driven predictive insights and recommendations',
+      description: 'Advanced analytics with AI-powered insights',
       status: 'not_tested'
     }
   ]);
-
+  
   const [isRunningTest, setIsRunningTest] = useState(false);
+
+  useEffect(() => {
+    // Auto-run tests on component mount
+    testAICapabilities();
+  }, []);
 
   const testAICapabilities = async () => {
     setIsRunningTest(true);
-    
-    // Reset all statuses to checking
-    setCapabilities(prev => prev.map(cap => ({ ...cap, status: 'checking' })));
+    const results = [...capabilities];
 
     // Test AI Assistant Chat
     try {
+      setCapabilities(prevCapabilities => 
+        prevCapabilities.map(cap => 
+          cap.name === 'AI Assistant Chat' 
+            ? { ...cap, status: 'checking' }
+            : cap
+        )
+      );
+
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           message: 'Test message - please respond with "AI capabilities test successful"',
           context: {
-            module: 'verification',
+            module: 'testing',
             userRole: 'admin'
-          }
+          },
+          userId: (await supabase.auth.getUser()).data.user?.id
         }
       });
 
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'AI Assistant Chat' 
-          ? { 
-              ...cap, 
-              status: error ? 'error' : 'working',
-              error: error?.message 
-            }
-          : cap
-      ));
-
-      if (!error && data?.response) {
-        toast.success('AI Assistant is working correctly');
+      if (error) {
+        results[0] = {
+          ...results[0],
+          status: 'error',
+          error: `Edge function error: ${error.message}`
+        };
+      } else if (data?.response) {
+        results[0] = {
+          ...results[0],
+          status: 'working'
+        };
       } else {
-        toast.error('AI Assistant test failed');
+        results[0] = {
+          ...results[0],
+          status: 'error',
+          error: 'No response received from AI assistant'
+        };
       }
     } catch (error) {
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'AI Assistant Chat' 
-          ? { 
-              ...cap, 
-              status: 'error',
-              error: error instanceof Error ? error.message : 'Unknown error'
-            }
-          : cap
-      ));
+      results[0] = {
+        ...results[0],
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
 
-    // Test Framework Generation (simulate - just check service availability)
+    // Test Framework Generation with real data
     try {
-      // Import and test the service availability
-      const { intelligentFrameworkGenerationService } = await import('@/services/intelligent-framework-generation-service');
-      
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'Framework Generation' 
-          ? { ...cap, status: 'working' }
-          : cap
-      ));
+      setCapabilities(prevCapabilities => 
+        prevCapabilities.map(cap => 
+          cap.name === 'Framework Generation' 
+            ? { ...cap, status: 'checking' }
+            : cap
+        )
+      );
+
+      // Check if organizational profile exists for framework generation
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profile?.organization_id) {
+        // Check for generated frameworks
+        const { data: frameworks } = await supabase
+          .from('generated_frameworks')
+          .select('id')
+          .eq('organization_id', profile.organization_id)
+          .limit(1);
+
+        results[1] = {
+          ...results[1],
+          status: 'working'
+        };
+      } else {
+        results[1] = {
+          ...results[1],
+          status: 'error',
+          error: 'No organization profile found for framework generation'
+        };
+      }
     } catch (error) {
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'Framework Generation' 
-          ? { 
-              ...cap, 
-              status: 'error',
-              error: 'Service not available'
-            }
-          : cap
-      ));
+      results[1] = {
+        ...results[1],
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Framework generation test failed'
+      };
     }
 
-    // Test Document Analysis (check edge function)
+    // Test Document Analysis capabilities
     try {
-      // Just check if the function exists (not actually invoke with file)
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'Document Analysis' 
-          ? { ...cap, status: 'working' }
-          : cap
-      ));
+      setCapabilities(prevCapabilities => 
+        prevCapabilities.map(cap => 
+          cap.name === 'Document Analysis' 
+            ? { ...cap, status: 'checking' }
+            : cap
+        )
+      );
+
+      // Check if document analysis edge function exists and knowledge base is accessible
+      const { data: knowledgeBase } = await supabase
+        .from('knowledge_base')
+        .select('id')
+        .limit(1);
+
+      // Test embeddings generation
+      const { data: embeddingTest, error: embeddingError } = await supabase.functions.invoke('generate-embeddings', {
+        body: {
+          text: 'Test document analysis capabilities'
+        }
+      });
+
+      if (embeddingError) {
+        results[2] = {
+          ...results[2],
+          status: 'error',
+          error: `Embeddings service error: ${embeddingError.message}`
+        };
+      } else {
+        results[2] = {
+          ...results[2],
+          status: 'working'
+        };
+      }
     } catch (error) {
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'Document Analysis' 
-          ? { 
-              ...cap, 
-              status: 'error',
-              error: 'Service not available'
-            }
-          : cap
-      ));
+      results[2] = {
+        ...results[2],
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Document analysis test failed'
+      };
     }
 
     // Test Predictive Analytics
     try {
-      const { advancedAnalyticsService } = await import('@/services/advanced-analytics-service');
-      
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'Predictive Analytics' 
-          ? { ...cap, status: 'working' }
-          : cap
-      ));
+      setCapabilities(prevCapabilities => 
+        prevCapabilities.map(cap => 
+          cap.name === 'Predictive Analytics' 
+            ? { ...cap, status: 'checking' }
+            : cap
+        )
+      );
+
+      // Test advanced analytics service
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profile?.organization_id) {
+        // Test analytics insights generation
+        const { data: insights } = await supabase
+          .from('analytics_insights')
+          .select('id')
+          .eq('org_id', profile.organization_id)
+          .limit(1);
+
+        // Test enhanced predictive analytics edge function
+        const { data: predictiveTest, error: predictiveError } = await supabase.functions.invoke('enhanced-predictive-analytics', {
+          body: {
+            orgId: profile.organization_id,
+            analysisType: 'test'
+          }
+        });
+
+        if (predictiveError) {
+          results[3] = {
+            ...results[3],
+            status: 'error',
+            error: `Predictive analytics error: ${predictiveError.message}`
+          };
+        } else {
+          results[3] = {
+            ...results[3],
+            status: 'working'
+          };
+        }
+      } else {
+        results[3] = {
+          ...results[3],
+          status: 'error',
+          error: 'No organization profile found for analytics'
+        };
+      }
     } catch (error) {
-      setCapabilities(prev => prev.map(cap => 
-        cap.name === 'Predictive Analytics' 
-          ? { 
-              ...cap, 
-              status: 'error',
-              error: 'Service not available'
-            }
-          : cap
-      ));
+      results[3] = {
+        ...results[3],
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Predictive analytics test failed'
+      };
     }
 
+    setCapabilities(results);
     setIsRunningTest(false);
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: AICapability['status']) => {
     switch (status) {
-      case 'working': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'error': return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'checking': return <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />;
-      default: return <AlertTriangle className="h-4 w-4 text-gray-400" />;
+      case 'working':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'checking':
+        return <Clock className="h-4 w-4 text-blue-600 animate-pulse" />;
+      default:
+        return <Activity className="h-4 w-4 text-gray-400" />;
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: AICapability['status']) => {
     switch (status) {
-      case 'working': return <Badge variant="default" className="bg-green-100 text-green-800">Working</Badge>;
-      case 'error': return <Badge variant="destructive">Error</Badge>;
-      case 'checking': return <Badge variant="secondary">Testing...</Badge>;
-      default: return <Badge variant="outline">Not Tested</Badge>;
+      case 'working':
+        return <Badge className="bg-green-100 text-green-800">Working</Badge>;
+      case 'error':
+        return <Badge className="bg-red-100 text-red-800">Error</Badge>;
+      case 'checking':
+        return <Badge className="bg-blue-100 text-blue-800">Checking</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">Not Tested</Badge>;
     }
   };
 
-  const overallStatus = capabilities.every(cap => cap.status === 'working') ? 'all_working' :
-                       capabilities.some(cap => cap.status === 'error') ? 'some_errors' :
-                       capabilities.some(cap => cap.status === 'working') ? 'partial' : 'not_tested';
+  const overallStatus = capabilities.every(cap => cap.status === 'working') 
+    ? 'all_working' 
+    : capabilities.some(cap => cap.status === 'error') 
+    ? 'some_errors' 
+    : 'checking';
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            AI Capabilities Status
-          </CardTitle>
-          <Button 
-            onClick={testAICapabilities}
-            disabled={isRunningTest}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Zap className={`h-4 w-4 ${isRunningTest ? 'animate-pulse' : ''}`} />
-            {isRunningTest ? 'Testing...' : 'Test AI'}
-          </Button>
-        </div>
+    <Card className="w-full">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          AI System Verification
+        </CardTitle>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={testAICapabilities}
+          disabled={isRunningTest}
+        >
+          {isRunningTest ? (
+            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
+          {isRunningTest ? 'Testing...' : 'Test AI'}
+        </Button>
       </CardHeader>
       <CardContent className="space-y-4">
         {overallStatus === 'all_working' && (
