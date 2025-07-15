@@ -34,5 +34,8 @@ enabled = true
 [functions.ai-assistant]
 verify_jwt = true
 
+[functions.ai-vendor-risk-analysis]
+verify_jwt = true
+
 [functions.enrich-organization-data]
 verify_jwt = true

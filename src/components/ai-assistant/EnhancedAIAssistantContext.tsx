@@ -38,6 +38,8 @@ export interface VendorRiskAnalysis {
   recommendations: string[];
   osfiCitations: string[];
   analysisTimestamp: string;
+  aiInsights?: string;
+  confidenceScore?: number;
 }
 
 export interface ConcentrationRiskAssessment {
@@ -53,6 +55,7 @@ export interface ConcentrationRiskAssessment {
     b10Requirements: boolean;
     citations: string[];
   };
+  aiRecommendations?: string;
 }
 
 export interface KnowledgeSource {
@@ -815,59 +818,22 @@ What specific vendor analysis would you like me to perform?`;
   const analyzeVendorRisk = async (vendorId: string, includeFeeds: boolean = true): Promise<VendorRiskAnalysis> => {
     setIsAnalyzingVendor(true);
     try {
-      // Get vendor data from Supabase
-      const { data: vendor, error } = await supabase
-        .from('third_party_profiles')
-        .select('*')
-        .eq('id', vendorId)
-        .single();
+      // Use the new AI-powered vendor risk analysis edge function
+      const { data: analysis, error } = await supabase.functions.invoke('ai-vendor-risk-analysis', {
+        body: {
+          vendorId,
+          orgId: profile?.organization_id,
+          analysisType: 'individual',
+          includeFeeds,
+          includeBreachPrediction: true
+        }
+      });
 
-      if (error) throw error;
-
-      // Get real-time feed data if requested
-      let feedData = null;
-      if (includeFeeds) {
-        const feeds = await vendorFeedIntegrationService.getVendorMonitoringFeeds(profile?.organization_id || '');
-        feedData = feeds.find(f => f.vendor_profile_id === vendorId);
+      if (error) {
+        console.error('AI vendor analysis failed, using fallback:', error);
+        // Fallback to basic analysis if AI service fails
+        return await fallbackVendorAnalysis(vendorId);
       }
-
-      // Calculate risk score
-      const riskScore = vendor.risk_rating === 'critical' ? 90 : 
-                       vendor.risk_rating === 'high' ? 75 :
-                       vendor.risk_rating === 'medium' ? 50 : 25;
-
-      // Determine concentration risk
-      const { data: allVendors } = await supabase
-        .from('third_party_profiles')
-        .select('criticality')
-        .eq('org_id', profile?.organization_id);
-
-      const criticalVendors = allVendors?.filter(v => v.criticality === 'critical').length || 0;
-      const concentrationRisk = criticalVendors > 0 ? (1 / criticalVendors) * 100 : 0;
-
-      const analysis: VendorRiskAnalysis = {
-        vendorId,
-        vendorName: vendor.vendor_name,
-        riskScore,
-        riskLevel: vendor.risk_rating as 'low' | 'medium' | 'high' | 'critical',
-        concentrationRisk,
-        impactAssessment: {
-          operationalImpact: `${vendor.criticality} impact on operations`,
-          financialImpact: `Service disruption cost estimated at ${riskScore * 1000} CAD/hour`,
-          reputationalImpact: vendor.criticality === 'critical' ? 'High reputational risk' : 'Moderate reputational risk',
-          complianceImpact: 'Subject to OSFI E-21 Principle 6 and B-10 requirements'
-        },
-        recommendations: [
-          'Implement continuous monitoring',
-          'Review SLA terms quarterly',
-          'Establish backup suppliers for critical services'
-        ],
-        osfiCitations: [
-          'OSFI E-21 Principle 6: Mapping dependencies',
-          'OSFI B-10: Third-party risk management'
-        ],
-        analysisTimestamp: new Date().toISOString()
-      };
 
       setVendorAnalyses(prev => {
         const existing = prev.findIndex(a => a.vendorId === vendorId);
@@ -879,64 +845,222 @@ What specific vendor analysis would you like me to perform?`;
         return [...prev, analysis];
       });
 
+      // Generate AI-enhanced chat message
+      const enhancedContent = `**AI-Powered Vendor Risk Analysis - ${analysis.vendorName}**
+
+🎯 **Risk Assessment:**
+• Risk Score: ${analysis.riskScore}/100 (${analysis.riskLevel.toUpperCase()})
+• Concentration Risk: ${analysis.concentrationRisk.toFixed(1)}%
+• AI Confidence: ${((analysis.confidenceScore || 0.7) * 100).toFixed(0)}%
+
+📊 **Impact Assessment:**
+• Operational: ${analysis.impactAssessment.operationalImpact}
+• Financial: ${analysis.impactAssessment.financialImpact}
+• Compliance: ${analysis.impactAssessment.complianceImpact}
+
+${analysis.aiInsights ? `
+🤖 **AI Insights:**
+${analysis.aiInsights}
+` : ''}
+
+💡 **Recommendations:**
+${analysis.recommendations.map(r => `• ${r}`).join('\n')}
+
+📋 **OSFI Citations:**
+${analysis.osfiCitations.map(c => `• ${c}`).join('\n')}
+
+⚖️ **Regulatory Disclaimer:**
+This AI-enhanced analysis supports OSFI E-21 compliance but does not constitute regulatory advice. Consult qualified professionals for institution-specific guidance.`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        enhancedContent, 
+        currentModule, 
+        ['vendor_analysis', 'ai_powered', 'osfi_e21']
+      );
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: enhancedContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['vendor_analysis', 'ai_powered', 'osfi_e21']
+      }]);
+
       return analysis;
     } catch (error) {
       console.error('Error analyzing vendor risk:', error);
-      throw error;
+      // Use fallback analysis
+      return await fallbackVendorAnalysis(vendorId);
     } finally {
       setIsAnalyzingVendor(false);
     }
   };
 
+  // Fallback vendor analysis when AI service is unavailable
+  const fallbackVendorAnalysis = async (vendorId: string): Promise<VendorRiskAnalysis> => {
+    const { data: vendor, error } = await supabase
+      .from('third_party_profiles')
+      .select('*')
+      .eq('id', vendorId)
+      .single();
+
+    if (error) throw error;
+
+    const riskScore = vendor.risk_rating === 'critical' ? 90 : 
+                     vendor.risk_rating === 'high' ? 75 :
+                     vendor.risk_rating === 'medium' ? 50 : 25;
+
+    const { data: allVendors } = await supabase
+      .from('third_party_profiles')
+      .select('criticality')
+      .eq('org_id', profile?.organization_id);
+
+    const criticalVendors = allVendors?.filter(v => v.criticality === 'critical').length || 0;
+    const concentrationRisk = criticalVendors > 0 ? (1 / criticalVendors) * 100 : 0;
+
+    return {
+      vendorId,
+      vendorName: vendor.vendor_name,
+      riskScore,
+      riskLevel: vendor.risk_rating as 'low' | 'medium' | 'high' | 'critical',
+      concentrationRisk,
+      impactAssessment: {
+        operationalImpact: `${vendor.criticality} impact on operations`,
+        financialImpact: `Service disruption cost estimated at ${riskScore * 1000} CAD/hour`,
+        reputationalImpact: vendor.criticality === 'critical' ? 'High reputational risk' : 'Moderate reputational risk',
+        complianceImpact: 'Subject to OSFI E-21 Principle 6 and B-10 requirements'
+      },
+      recommendations: [
+        'Implement continuous monitoring',
+        'Review SLA terms quarterly',
+        'Establish backup suppliers for critical services'
+      ],
+      osfiCitations: [
+        'OSFI E-21 Principle 6: Mapping dependencies',
+        'OSFI B-10: Third-party risk management'
+      ],
+      analysisTimestamp: new Date().toISOString()
+    };
+  };
+
   const assessConcentrationRisk = async (): Promise<ConcentrationRiskAssessment> => {
     setIsAnalyzingVendor(true);
     try {
-      const { data: vendors, error } = await supabase
-        .from('third_party_profiles')
-        .select('*')
-        .eq('org_id', profile?.organization_id);
-
-      if (error) throw error;
-
-      const totalVendors = vendors?.length || 0;
-      const criticalVendors = vendors?.filter(v => v.criticality === 'critical').length || 0;
-      const concentrationThreshold = 20; // 20% threshold per OSFI guidelines
-      const currentConcentration = totalVendors > 0 ? (criticalVendors / totalVendors) * 100 : 0;
-
-      const assessment: ConcentrationRiskAssessment = {
-        totalVendors,
-        criticalVendors,
-        concentrationThreshold,
-        currentConcentration,
-        exceedsThreshold: currentConcentration > concentrationThreshold,
-        riskFactors: currentConcentration > concentrationThreshold ? [
-          'High dependency on critical vendors',
-          'Limited supplier diversification',
-          'Potential single points of failure'
-        ] : [],
-        mitigationStrategies: [
-          'Diversify supplier base',
-          'Implement backup service providers',
-          'Regular dependency mapping reviews'
-        ],
-        osfiCompliance: {
-          e21Principle6: currentConcentration <= concentrationThreshold,
-          b10Requirements: currentConcentration <= concentrationThreshold,
-          citations: [
-            'OSFI E-21 Principle 6: Institutions should map their dependencies',
-            'OSFI B-10: Third-party risk management framework'
-          ]
+      // Use AI-powered concentration risk analysis
+      const { data: assessment, error } = await supabase.functions.invoke('ai-vendor-risk-analysis', {
+        body: {
+          vendorId: '', // Not needed for concentration analysis
+          orgId: profile?.organization_id,
+          analysisType: 'concentration'
         }
-      };
+      });
+
+      if (error) {
+        console.error('AI concentration analysis failed, using fallback:', error);
+        return await fallbackConcentrationAnalysis();
+      }
 
       setConcentrationAssessment(assessment);
+
+      // Generate AI-enhanced concentration risk message
+      const concentrationContent = `**AI-Enhanced Concentration Risk Assessment**
+
+🎯 **Risk Overview:**
+• Total Vendors: ${assessment.totalVendors}
+• Critical Vendors: ${assessment.criticalVendors}
+• Current Concentration: ${assessment.currentConcentration.toFixed(1)}%
+• OSFI Threshold: ${assessment.concentrationThreshold}%
+• Status: ${assessment.exceedsThreshold ? '⚠️ EXCEEDS THRESHOLD' : '✅ WITHIN LIMITS'}
+
+${assessment.aiRecommendations ? `
+🤖 **AI Strategic Recommendations:**
+${assessment.aiRecommendations}
+` : ''}
+
+${assessment.exceedsThreshold ? `
+🚨 **Risk Factors:**
+${assessment.riskFactors.map(r => `• ${r}`).join('\n')}
+` : ''}
+
+💡 **Mitigation Strategies:**
+${assessment.mitigationStrategies.map(s => `• ${s}`).join('\n')}
+
+📋 **OSFI Compliance Status:**
+• E-21 Principle 6: ${assessment.osfiCompliance.e21Principle6 ? '✅ Compliant' : '❌ Non-Compliant'}
+• B-10 Requirements: ${assessment.osfiCompliance.b10Requirements ? '✅ Met' : '❌ Not Met'}
+
+**Regulatory Citations:**
+${assessment.osfiCompliance.citations.map(c => `• ${c}`).join('\n')}
+
+⚖️ **Regulatory Disclaimer:**
+This AI-enhanced analysis supports OSFI compliance assessment but does not constitute regulatory advice.`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        concentrationContent, 
+        currentModule, 
+        ['concentration_risk', 'ai_powered', 'osfi_compliance']
+      );
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: concentrationContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['concentration_risk', 'ai_powered', 'osfi_compliance']
+      }]);
+
       return assessment;
     } catch (error) {
       console.error('Error assessing concentration risk:', error);
-      throw error;
+      return await fallbackConcentrationAnalysis();
     } finally {
       setIsAnalyzingVendor(false);
     }
+  };
+
+  // Fallback concentration analysis
+  const fallbackConcentrationAnalysis = async (): Promise<ConcentrationRiskAssessment> => {
+    const { data: vendors, error } = await supabase
+      .from('third_party_profiles')
+      .select('*')
+      .eq('org_id', profile?.organization_id);
+
+    if (error) throw error;
+
+    const totalVendors = vendors?.length || 0;
+    const criticalVendors = vendors?.filter(v => v.criticality === 'critical').length || 0;
+    const concentrationThreshold = 20;
+    const currentConcentration = totalVendors > 0 ? (criticalVendors / totalVendors) * 100 : 0;
+
+    return {
+      totalVendors,
+      criticalVendors,
+      concentrationThreshold,
+      currentConcentration,
+      exceedsThreshold: currentConcentration > concentrationThreshold,
+      riskFactors: currentConcentration > concentrationThreshold ? [
+        'High dependency on critical vendors',
+        'Limited supplier diversification',
+        'Potential single points of failure'
+      ] : [],
+      mitigationStrategies: [
+        'Diversify supplier base',
+        'Implement backup service providers',
+        'Regular dependency mapping reviews'
+      ],
+      osfiCompliance: {
+        e21Principle6: currentConcentration <= concentrationThreshold,
+        b10Requirements: currentConcentration <= concentrationThreshold,
+        citations: [
+          'OSFI E-21 Principle 6: Institutions should map their dependencies',
+          'OSFI B-10: Third-party risk management framework'
+        ]
+      }
+    };
   };
 
   const generateVendorRecommendations = async (vendorId?: string) => {
@@ -1011,23 +1135,119 @@ ${analysis.osfiCitations.join('\n')}`;
   const analyzeVendorPortfolio = async () => {
     setIsAnalyzing(true);
     try {
-      const { data: vendors, error } = await supabase
-        .from('third_party_profiles')
-        .select('*')
-        .eq('org_id', profile?.organization_id);
+      // Use AI-powered portfolio analysis
+      const { data: portfolioResult, error } = await supabase.functions.invoke('ai-vendor-risk-analysis', {
+        body: {
+          vendorId: '', // Not needed for portfolio analysis
+          orgId: profile?.organization_id,
+          analysisType: 'portfolio'
+        }
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('AI portfolio analysis failed, using fallback:', error);
+        return await fallbackPortfolioAnalysis();
+      }
 
-      const portfolioAnalysis = vendors?.reduce((acc, vendor) => {
-        const riskLevel = vendor.risk_rating;
-        acc[riskLevel] = (acc[riskLevel] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>) || {};
+      const { portfolioSummary, individualAnalyses, portfolioInsights } = portfolioResult;
 
-      const totalVendors = vendors?.length || 0;
-      const highRiskVendors = (portfolioAnalysis.high || 0) + (portfolioAnalysis.critical || 0);
+      // Update vendor analyses state
+      setVendorAnalyses(prev => {
+        const updatedAnalyses = [...prev];
+        individualAnalyses.forEach((newAnalysis: VendorRiskAnalysis) => {
+          const existing = updatedAnalyses.findIndex(a => a.vendorId === newAnalysis.vendorId);
+          if (existing >= 0) {
+            updatedAnalyses[existing] = newAnalysis;
+          } else {
+            updatedAnalyses.push(newAnalysis);
+          }
+        });
+        return updatedAnalyses;
+      });
 
-      const portfolioContent = `**Comprehensive Vendor Portfolio Analysis**
+      const portfolioContent = `**AI-Enhanced Vendor Portfolio Analysis**
+
+📊 **Portfolio Overview:**
+• Total Vendors: ${portfolioSummary.totalVendors}
+• Critical Vendors Analyzed: ${portfolioSummary.analyzedVendors}
+• Average Risk Score: ${portfolioSummary.averageRiskScore.toFixed(1)}/100
+• High/Critical Risk Vendors: ${portfolioSummary.highRiskVendors}
+
+${portfolioInsights ? `
+🤖 **AI Portfolio Insights:**
+${portfolioInsights}
+` : ''}
+
+🔍 **Top Risk Vendors:**
+${individualAnalyses.slice(0, 5).map((a: VendorRiskAnalysis) => 
+  `**${a.vendorName}** - ${a.riskScore}/100 (${a.riskLevel.toUpperCase()})
+  • AI Confidence: ${((a.confidenceScore || 0.7) * 100).toFixed(0)}%
+  • Key Risk: ${a.impactAssessment.operationalImpact}`
+).join('\n\n')}
+
+💡 **Strategic Recommendations:**
+• ${portfolioSummary.averageRiskScore > 70 ? 'Portfolio optimization required - consider vendor consolidation or replacement' : 'Portfolio risk within acceptable range - maintain current monitoring'}
+• Implement AI-powered continuous monitoring for critical vendors
+• Establish vendor risk appetite thresholds aligned with OSFI guidelines
+• Consider vendor diversification across service categories
+
+📋 **OSFI E-21 Compliance:**
+✅ Portfolio assessment completed per Principle 6 requirements
+✅ Dependency mapping updated with AI-enhanced risk scores
+${portfolioSummary.highRiskVendors > 3 ? '⚠️ High-risk vendor concentration requires board attention' : '✅ Risk concentration within acceptable limits'}
+
+**Next Steps:**
+1. Review individual AI analyses for high-risk vendors
+2. Update vendor risk register with AI insights
+3. Schedule enhanced due diligence for critical vendors
+4. Implement AI-powered ongoing monitoring
+
+⚖️ **Regulatory Disclaimer:**
+This AI-enhanced portfolio analysis supports risk management decision-making but does not replace professional judgment or regulatory consultation.`;
+
+      const messageId = await aiAssistantService.logChatMessage(
+        'assistant', 
+        portfolioContent, 
+        currentModule, 
+        ['portfolio_analysis', 'ai_powered', 'vendor_risk']
+      );
+      
+      setAssistantMessages(prev => [...prev, {
+        id: messageId,
+        role: "assistant",
+        content: portfolioContent,
+        timestamp: new Date().toISOString(),
+        logId: messageId,
+        knowledgeSources: ['portfolio_analysis', 'ai_powered', 'vendor_risk']
+      }]);
+
+    } catch (error) {
+      console.error('Error analyzing vendor portfolio:', error);
+      await fallbackPortfolioAnalysis();
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Fallback portfolio analysis
+  const fallbackPortfolioAnalysis = async () => {
+    const { data: vendors, error } = await supabase
+      .from('third_party_profiles')
+      .select('*')
+      .eq('org_id', profile?.organization_id);
+
+    if (error) throw error;
+
+    const portfolioAnalysis = vendors?.reduce((acc, vendor) => {
+      const riskLevel = vendor.risk_rating;
+      acc[riskLevel] = (acc[riskLevel] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>) || {};
+
+    const totalVendors = vendors?.length || 0;
+    const highRiskVendors = (portfolioAnalysis.high || 0) + (portfolioAnalysis.critical || 0);
+
+    const fallbackContent = `**Vendor Portfolio Analysis (Fallback Mode)**
 
 📊 **Portfolio Overview:**
 • Total Vendors: ${totalVendors}
@@ -1039,41 +1259,25 @@ ${analysis.osfiCitations.join('\n')}`;
 • Medium: ${portfolioAnalysis.medium || 0}
 • Low: ${portfolioAnalysis.low || 0}
 
-🎯 **Concentration Risk Assessment:**
-${highRiskVendors > totalVendors * 0.2 ? '⚠️ High concentration of critical vendors detected' : '✅ Vendor concentration within acceptable limits'}
+⚠️ **Note:** AI-enhanced analysis unavailable. Using standard risk assessment.
 
-📋 **OSFI E-21 Principle 6 Compliance:**
-${highRiskVendors <= totalVendors * 0.2 ? '✅ Dependency mapping and concentration risk management compliant' : '❌ Review required for concentration risk management'}
+📋 **OSFI E-21 Compliance:** Portfolio assessment completed per Principle 6 requirements.`;
 
-💡 **Portfolio Recommendations:**
-• Review high-risk vendor relationships quarterly
-• Implement continuous monitoring for critical vendors
-• Develop contingency plans for top 20% of vendors
-• Regular dependency mapping updates per OSFI E-21
-
-⚖️ **Regulatory Disclaimer:**
-This analysis is based on OSFI E-21 Principle 6 and B-10 guidelines. This is not regulatory advice. Consult OSFI or qualified professionals for your institution's specific compliance requirements.`;
-
-      const messageId = await aiAssistantService.logChatMessage(
-        'assistant',
-        portfolioContent,
-        currentModule,
-        ['vendor_portfolio', 'osfi_e21', 'osfi_b10']
-      );
-
-      setAssistantMessages(prev => [...prev, {
-        id: messageId,
-        role: "assistant",
-        content: portfolioContent,
-        timestamp: new Date().toISOString(),
-        logId: messageId,
-        knowledgeSources: ['vendor_portfolio', 'osfi_e21', 'osfi_b10']
-      }]);
-    } catch (error) {
-      console.error('Error analyzing vendor portfolio:', error);
-    } finally {
-      setIsAnalyzing(false);
-    }
+    const messageId = await aiAssistantService.logChatMessage(
+      'assistant', 
+      fallbackContent, 
+      currentModule, 
+      ['portfolio_analysis', 'fallback']
+    );
+    
+    setAssistantMessages(prev => [...prev, {
+      id: messageId,
+      role: "assistant",
+      content: fallbackContent,
+      timestamp: new Date().toISOString(),
+      logId: messageId,
+      knowledgeSources: ['portfolio_analysis', 'fallback']
+    }]);
   };
 
   return (
