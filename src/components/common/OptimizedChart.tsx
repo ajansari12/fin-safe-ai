@@ -93,10 +93,10 @@ const OptimizedChart = memo<OptimizedChartProps>(({
   // Clone children with optimized data
   const enhancedChildren = useMemo(() => {
     if (React.isValidElement(children) && processedData.length > 0) {
-      return React.cloneElement(children, {
+      return React.cloneElement(children as React.ReactElement<any>, {
         data: processedData,
-        ...(children.props || {})
-      });
+        ...(children.props && typeof children.props === 'object' ? children.props : {})
+      } as any);
     }
     return children;
   }, [children, processedData]);
