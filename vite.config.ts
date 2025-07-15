@@ -22,20 +22,62 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
+        manualChunks: (id) => {
           // Core vendor bundles
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          charts: ['recharts'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
-          supabase: ['@supabase/supabase-js', '@tanstack/react-query'],
-          // Enhanced analytics chunks
-          analytics: ['@/components/analytics/ExecutiveDashboard', '@/components/analytics/OperationalDashboard'],
-          'vendor-feeds': ['@/services/vendor-feed-integration-service'],
-          auth: ['@/contexts/EnhancedAuthContext', '@/components/auth/EnhancedProtectedRoute', '@/components/auth/InvitationAcceptance'],
-          virtualization: ['react-window'],
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor-react';
+            }
+            if (id.includes('recharts')) {
+              return 'vendor-charts';
+            }
+            if (id.includes('@radix-ui')) {
+              return 'vendor-ui';
+            }
+            if (id.includes('@supabase') || id.includes('@tanstack/react-query')) {
+              return 'vendor-supabase';
+            }
+            if (id.includes('react-window') || id.includes('react-virtualized')) {
+              return 'vendor-virtualization';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            return 'vendor-misc';
+          }
+          
+          // Analytics components
+          if (id.includes('/components/analytics/')) {
+            return 'analytics';
+          }
+          
+          // Auth components
+          if (id.includes('/components/auth/') || id.includes('/contexts/') && id.includes('Auth')) {
+            return 'auth';
+          }
+          
+          // Performance and services
+          if (id.includes('/lib/performance/') || id.includes('/services/')) {
+            return 'performance';
+          }
+          
+          // Dashboard components
+          if (id.includes('/components/dashboard/') || id.includes('/pages/Dashboard')) {
+            return 'dashboard';
+          }
+          
+          return undefined;
         },
       },
     },
-    chunkSizeWarningLimit: 400, // Reduced from 600KB
+    chunkSizeWarningLimit: 300, // Reduced from 400KB
+    target: 'esnext',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
   },
 }));
