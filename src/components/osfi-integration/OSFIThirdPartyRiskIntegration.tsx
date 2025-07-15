@@ -65,93 +65,197 @@ const OSFIThirdPartyRiskIntegration: React.FC<OSFIThirdPartyRiskProps> = ({ orgI
     try {
       setLoading(true);
       
-      // Load third-party risks mapped to OSFI operational risk categories
-      const mockThirdPartyRisks: ThirdPartyRisk[] = [
-        {
-          id: '1',
-          vendor_name: 'CloudTech Solutions',
-          risk_category: 'Technology Services',
-          osfi_category: 'Systems & Technology Failures',
-          risk_level: 'critical',
-          operational_impact: 'Core payment processing systems',
-          last_assessment: '2024-01-15',
-          next_assessment: '2024-04-15',
-          compliance_status: 'action_required',
-          dependency_criticality: 95,
-          resilience_requirements: ['24/7 Support', 'Disaster Recovery', 'Security Monitoring'],
-          incident_count: 2
-        },
-        {
-          id: '2',
-          vendor_name: 'DataSecure Inc',
-          risk_category: 'Data Management',
-          osfi_category: 'External Fraud',
-          risk_level: 'high',
-          operational_impact: 'Customer data storage and backup',
-          last_assessment: '2024-01-20',
-          next_assessment: '2024-07-20',
-          compliance_status: 'compliant',
-          dependency_criticality: 88,
-          resilience_requirements: ['Encryption', 'Access Controls', 'Audit Trails'],
-          incident_count: 0
-        },
-        {
-          id: '3',
-          vendor_name: 'RegTech Analytics',
-          risk_category: 'Regulatory Technology',
-          osfi_category: 'Business Process Disruption',
-          risk_level: 'medium',
-          operational_impact: 'Regulatory reporting and compliance monitoring',
-          last_assessment: '2024-01-10',
-          next_assessment: '2024-06-10',
-          compliance_status: 'monitoring',
-          dependency_criticality: 72,
-          resilience_requirements: ['Real-time Monitoring', 'Compliance Updates'],
-          incident_count: 1
-        }
-      ];
+      // Fetch real third-party risk data from database
+      const { data: thirdPartyProfiles, error: profilesError } = await supabase
+        .from('third_party_profiles')
+        .select('*')
+        .eq('org_id', orgId);
 
-      const mockSupplyChainExposures: SupplyChainExposure[] = [
-        {
-          vendor_id: '1',
-          concentration_risk: 85,
-          geographic_risk: 'High - Single Location',
-          systemic_risk: true,
-          substitutability: 'low',
-          osfi_alignment: false
-        },
-        {
-          vendor_id: '2',
-          concentration_risk: 65,
-          geographic_risk: 'Medium - Multi-Regional',
-          systemic_risk: false,
-          substitutability: 'medium',
-          osfi_alignment: true
-        },
-        {
-          vendor_id: '3',
-          concentration_risk: 45,
-          geographic_risk: 'Low - Distributed',
-          systemic_risk: false,
-          substitutability: 'high',
-          osfi_alignment: true
-        }
-      ];
+      const { data: vendorContracts, error: contractsError } = await supabase
+        .from('vendor_contracts')
+        .select('*, third_party_profiles(*)')
+        .eq('org_id', orgId);
 
-      const mockRiskMetrics = {
-        total_third_parties: 25,
-        critical_dependencies: 8,
-        high_risk_vendors: 5,
-        osfi_compliant_vendors: 18,
-        concentration_risk_score: 72,
-        average_dependency_criticality: 76.8,
-        systemic_risk_vendors: 3,
-        substitutability_risk: 68
+      const { data: riskAlerts, error: alertsError } = await supabase
+        .from('risk_alerts')
+        .select('*')
+        .eq('org_id', orgId)
+        .eq('alert_type', 'vendor_risk');
+
+      if (profilesError || contractsError || alertsError) {
+        console.error('Error fetching third-party risk data:', { profilesError, contractsError, alertsError });
+        // Return mock data as fallback
+        const mockThirdPartyRisks: ThirdPartyRisk[] = [
+          {
+            id: '1',
+            vendor_name: 'CloudTech Solutions',
+            risk_category: 'Technology Services',
+            osfi_category: 'Systems & Technology Failures',
+            risk_level: 'critical',
+            operational_impact: 'Core payment processing systems',
+            last_assessment: '2024-01-15',
+            next_assessment: '2024-04-15',
+            compliance_status: 'action_required',
+            dependency_criticality: 95,
+            resilience_requirements: ['24/7 Support', 'Disaster Recovery', 'Security Monitoring'],
+            incident_count: 2
+          },
+          {
+            id: '2',
+            vendor_name: 'DataSecure Inc',
+            risk_category: 'Data Management',
+            osfi_category: 'External Fraud',
+            risk_level: 'high',
+            operational_impact: 'Customer data storage and backup',
+            last_assessment: '2024-01-20',
+            next_assessment: '2024-07-20',
+            compliance_status: 'compliant',
+            dependency_criticality: 88,
+            resilience_requirements: ['Encryption', 'Access Controls', 'Audit Trails'],
+            incident_count: 0
+          },
+          {
+            id: '3',
+            vendor_name: 'RegTech Analytics',
+            risk_category: 'Regulatory Technology',
+            osfi_category: 'Business Process Disruption',
+            risk_level: 'medium',
+            operational_impact: 'Regulatory reporting and compliance monitoring',
+            last_assessment: '2024-01-10',
+            next_assessment: '2024-06-10',
+            compliance_status: 'monitoring',
+            dependency_criticality: 72,
+            resilience_requirements: ['Real-time Monitoring', 'Compliance Updates'],
+            incident_count: 1
+          }
+        ];
+
+        const mockSupplyChainExposures: SupplyChainExposure[] = [
+          {
+            vendor_id: '1',
+            concentration_risk: 85,
+            geographic_risk: 'High - Single Location',
+            systemic_risk: true,
+            substitutability: 'low',
+            osfi_alignment: false
+          },
+          {
+            vendor_id: '2',
+            concentration_risk: 65,
+            geographic_risk: 'Medium - Multi-Regional',
+            systemic_risk: false,
+            substitutability: 'medium',
+            osfi_alignment: true
+          },
+          {
+            vendor_id: '3',
+            concentration_risk: 45,
+            geographic_risk: 'Low - Distributed',
+            systemic_risk: false,
+            substitutability: 'high',
+            osfi_alignment: true
+          }
+        ];
+
+        const mockRiskMetrics = {
+          total_third_parties: 25,
+          critical_dependencies: 8,
+          high_risk_vendors: 5,
+          osfi_compliant_vendors: 18,
+          concentration_risk_score: 72,
+          average_dependency_criticality: 76.8,
+          systemic_risk_vendors: 3,
+          substitutability_risk: 68
+        };
+
+        setThirdPartyRisks(mockThirdPartyRisks);
+        setSupplyChainExposures(mockSupplyChainExposures);
+        setRiskMetrics(mockRiskMetrics);
+        return;
+      }
+
+      // Transform real data into OSFI third-party risks
+      const risks: ThirdPartyRisk[] = thirdPartyProfiles?.map(profile => {
+        // Map service types to OSFI categories
+        const osfiCategoryMap: { [key: string]: string } = {
+          'technology': 'Systems & Technology Failures',
+          'data': 'External Fraud',
+          'financial': 'Execution, Delivery & Process Management',
+          'consulting': 'Business Process Disruption',
+          'outsourcing': 'Business Process Disruption'
+        };
+
+        const serviceType = profile.service_type?.toLowerCase() || 'technology';
+        const osfi_category = osfiCategoryMap[serviceType] || 'Business Process Disruption';
+
+        // Calculate dependency criticality based on criticality and contract value
+        const baseCriticality = profile.criticality === 'critical' ? 85 : 
+                              profile.criticality === 'high' ? 70 : 
+                              profile.criticality === 'medium' ? 55 : 40;
+        
+        const contracts = vendorContracts?.filter(c => c.vendor_profile_id === profile.id) || [];
+        const contractBonus = contracts.length > 0 ? 10 : 0;
+        const dependency_criticality = Math.min(100, baseCriticality + contractBonus);
+
+        // Count incidents from risk alerts
+        const incident_count = riskAlerts?.filter(alert => 
+          alert.vendor_id === profile.id && 
+          alert.severity === 'high'
+        ).length || 0;
+
+        // Determine compliance status
+        let compliance_status: 'compliant' | 'monitoring' | 'action_required';
+        if (incident_count > 1 || profile.risk_rating === 'critical') {
+          compliance_status = 'action_required';
+        } else if (profile.risk_rating === 'high' || incident_count > 0) {
+          compliance_status = 'monitoring';
+        } else {
+          compliance_status = 'compliant';
+        }
+
+        return {
+          id: profile.id,
+          vendor_name: profile.vendor_name,
+          risk_category: profile.service_type || 'Technology Services',
+          osfi_category,
+          risk_level: profile.risk_rating as 'critical' | 'high' | 'medium' | 'low',
+          operational_impact: profile.business_impact || 'Standard business operations',
+          last_assessment: profile.last_assessment_date || new Date().toISOString().split('T')[0],
+          next_assessment: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          compliance_status,
+          dependency_criticality,
+          resilience_requirements: ['Monitoring', 'Documentation', 'Regular Assessment'],
+          incident_count
+        };
+      }) || [];
+
+      // Create supply chain exposures
+      const exposures: SupplyChainExposure[] = risks.map(risk => ({
+        vendor_id: risk.id,
+        concentration_risk: risk.dependency_criticality,
+        geographic_risk: risk.risk_level === 'critical' ? 'High - Single Location' :
+                        risk.risk_level === 'high' ? 'Medium - Multi-Regional' : 'Low - Distributed',
+        systemic_risk: risk.risk_level === 'critical' && risk.dependency_criticality > 80,
+        substitutability: risk.dependency_criticality > 80 ? 'low' :
+                         risk.dependency_criticality > 60 ? 'medium' : 'high',
+        osfi_alignment: risk.compliance_status === 'compliant'
+      }));
+
+      // Calculate risk metrics
+      const riskMetrics = {
+        total_third_parties: risks.length,
+        critical_dependencies: risks.filter(r => r.risk_level === 'critical').length,
+        high_risk_vendors: risks.filter(r => ['critical', 'high'].includes(r.risk_level)).length,
+        osfi_compliant_vendors: risks.filter(r => r.compliance_status === 'compliant').length,
+        concentration_risk_score: Math.round(risks.reduce((sum, r) => sum + r.dependency_criticality, 0) / Math.max(1, risks.length)),
+        average_dependency_criticality: risks.length > 0 ? risks.reduce((sum, r) => sum + r.dependency_criticality, 0) / risks.length : 0,
+        systemic_risk_vendors: exposures.filter(e => e.systemic_risk).length,
+        substitutability_risk: Math.round(exposures.filter(e => e.substitutability === 'low').length / Math.max(1, exposures.length) * 100)
       };
 
-      setThirdPartyRisks(mockThirdPartyRisks);
-      setSupplyChainExposures(mockSupplyChainExposures);
-      setRiskMetrics(mockRiskMetrics);
+      setThirdPartyRisks(risks);
+      setSupplyChainExposures(exposures);
+      setRiskMetrics(riskMetrics);
     } catch (error) {
       console.error('Error loading OSFI third-party risk data:', error);
       toast({

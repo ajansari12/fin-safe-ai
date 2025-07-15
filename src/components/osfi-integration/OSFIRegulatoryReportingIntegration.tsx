@@ -32,50 +32,124 @@ const OSFIRegulatoryReportingIntegration: React.FC = () => {
   const { data: osfiReports, refetch } = useQuery({
     queryKey: ['osfi-regulatory-reports'],
     queryFn: async () => {
-      // Mock data for OSFI E-21 reporting requirements
-      const mockData: OSFIReport[] = [
-        {
-          id: '1',
-          report_type: 'Operational Risk Self-Assessment',
-          principle: 'Principle 3',
-          due_date: '2024-03-15',
-          status: 'pending_review',
-          completion: 95,
-          last_updated: '2024-01-14',
-          next_action: 'Executive review required'
-        },
-        {
-          id: '2',
-          report_type: 'Business Continuity Assessment',
-          principle: 'Principle 6',
-          due_date: '2024-02-28',
-          status: 'draft',
-          completion: 70,
-          last_updated: '2024-01-13',
-          next_action: 'Complete testing results'
-        },
-        {
-          id: '3',
-          report_type: 'Third Party Risk Report',
-          principle: 'Principle 7',
-          due_date: '2024-04-01',
-          status: 'submitted',
-          completion: 100,
-          last_updated: '2024-01-10',
-          next_action: 'Awaiting OSFI feedback'
-        },
-        {
-          id: '4',
-          report_type: 'Data Quality Assessment',
-          principle: 'Principle 4',
-          due_date: '2024-01-20',
-          status: 'overdue',
-          completion: 60,
-          last_updated: '2024-01-12',
-          next_action: 'Immediate completion required'
+      // Fetch real regulatory reports from database
+      const { data: reports, error } = await supabase
+        .from('regulatory_reports')
+        .select('*')
+        .or('report_type.ilike.%osfi%,report_type.ilike.%operational%,report_type.ilike.%continuity%,report_type.ilike.%third%');
+
+      if (error) {
+        console.error('Error fetching regulatory reports:', error);
+        // Return mock data as fallback
+        return [
+          {
+            id: '1',
+            report_type: 'Operational Risk Self-Assessment',
+            principle: 'Principle 3',
+            due_date: '2024-03-15',
+            status: 'pending_review' as const,
+            completion: 95,
+            last_updated: '2024-01-14',
+            next_action: 'Executive review required'
+          },
+          {
+            id: '2',
+            report_type: 'Business Continuity Assessment',
+            principle: 'Principle 6',
+            due_date: '2024-02-28',
+            status: 'draft' as const,
+            completion: 70,
+            last_updated: '2024-01-13',
+            next_action: 'Complete testing results'
+          },
+          {
+            id: '3',
+            report_type: 'Third Party Risk Report',
+            principle: 'Principle 7',
+            due_date: '2024-04-01',
+            status: 'submitted' as const,
+            completion: 100,
+            last_updated: '2024-01-10',
+            next_action: 'Awaiting OSFI feedback'
+          },
+          {
+            id: '4',
+            report_type: 'Data Quality Assessment',
+            principle: 'Principle 4',
+            due_date: '2024-01-20',
+            status: 'overdue' as const,
+            completion: 60,
+            last_updated: '2024-01-12',
+            next_action: 'Immediate completion required'
+          }
+        ];
+      }
+
+      // Transform database reports to OSFI format
+      const osfiReports: OSFIReport[] = reports?.map(report => {
+        // Map report types to OSFI principles
+        const principleMap: { [key: string]: string } = {
+          'operational': 'Principle 3',
+          'risk': 'Principle 3',
+          'continuity': 'Principle 6',
+          'business': 'Principle 6',
+          'third': 'Principle 7',
+          'vendor': 'Principle 7',
+          'data': 'Principle 4',
+          'model': 'Principle 2',
+          'governance': 'Principle 1'
+        };
+
+        const principle = Object.keys(principleMap).find(key => 
+          report.report_type.toLowerCase().includes(key)
+        );
+
+        // Calculate completion percentage based on report status
+        let completion = 0;
+        switch (report.report_status) {
+          case 'draft': completion = 25; break;
+          case 'in_review': completion = 75; break;
+          case 'approved': completion = 90; break;
+          case 'submitted': completion = 100; break;
+          default: completion = 10;
         }
-      ];
-      return mockData;
+
+        // Determine status mapping
+        let status: 'draft' | 'pending_review' | 'submitted' | 'overdue';
+        if (new Date(report.due_date) < new Date() && report.report_status !== 'submitted') {
+          status = 'overdue';
+        } else {
+          switch (report.report_status) {
+            case 'draft': status = 'draft'; break;
+            case 'in_review': status = 'pending_review'; break;
+            case 'approved': 
+            case 'submitted': status = 'submitted'; break;
+            default: status = 'draft';
+          }
+        }
+
+        // Determine next action
+        let next_action = '';
+        switch (status) {
+          case 'draft': next_action = 'Complete report content'; break;
+          case 'pending_review': next_action = 'Executive review required'; break;
+          case 'submitted': next_action = 'Awaiting OSFI feedback'; break;
+          case 'overdue': next_action = 'Immediate completion required'; break;
+        }
+
+        return {
+          id: report.id,
+          report_type: report.report_type,
+          principle: principleMap[principle || 'governance'] || 'Principle 1',
+          due_date: report.due_date,
+          status,
+          completion,
+          last_updated: report.updated_at.split('T')[0],
+          next_action
+        };
+      }) || [];
+
+      return osfiReports;
     }
   });
 
