@@ -81,7 +81,7 @@ const PerformanceDashboard: React.FC = () => {
           renderTime: performanceData.renderTime,
           memoryUsage: performanceData.memoryUsage,
           queryTime: queryMetrics.averageQueryTime
-        }].slice(-20)); // Keep last 20 data points
+        }].slice(-20); // Keep last 20 data points
         
         return newData;
       });
@@ -256,19 +256,39 @@ const PerformanceDashboard: React.FC = () => {
       </Card>
 
       {/* Performance Trends Chart */}
-      <OptimizedChart
-        data={chartData}
-        title="Performance Trends"
-        xAxisDataKey="time"
-        lines={[
-          { dataKey: 'loadTime', stroke: '#3b82f6', name: 'Load Time (ms)' },
-          { dataKey: 'renderTime', stroke: '#10b981', name: 'Render Time (ms)' },
-          { dataKey: 'queryTime', stroke: '#f59e0b', name: 'Query Time (ms)' }
-        ]}
-        height={300}
-        maxDataPoints={20}
-        enableDataSampling={false}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle>Performance Trends</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] w-full">
+            <div className="text-sm text-muted-foreground mb-4">
+              Real-time performance metrics over time
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {chartData.slice(-5).map((point, index) => (
+                <div key={index} className="p-3 bg-muted rounded">
+                  <div className="text-xs text-muted-foreground">{point.time}</div>
+                  <div className="text-sm">
+                    <div className="flex justify-between">
+                      <span>Load:</span>
+                      <span className="font-medium">{point.loadTime}ms</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Render:</span>
+                      <span className="font-medium">{point.renderTime}ms</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Query:</span>
+                      <span className="font-medium">{point.queryTime?.toFixed(0)}ms</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recommendations */}
       <Card>
