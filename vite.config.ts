@@ -72,12 +72,6 @@ export default defineConfig(({ mode }) => ({
     },
     chunkSizeWarningLimit: 300, // Reduced from 400KB
     target: 'esnext',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    minify: true, // Use default esbuild minifier
   },
 }));
