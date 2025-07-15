@@ -412,16 +412,11 @@ class CollaborationService {
       content,
       category,
       tags,
-      author_id: profile.id,
-      author_name: profile.full_name,
-      status: 'draft',
-      views: 0,
-      rating: 0,
-      rating_count: 0
+      visibility: 'internal'
     };
 
     const { data, error } = await supabase
-      .from('knowledge_articles')
+      .from('knowledge_base')
       .insert(article)
       .select()
       .single();
@@ -435,10 +430,10 @@ class CollaborationService {
     if (!profile?.organization_id) return [];
 
     let queryBuilder = supabase
-      .from('knowledge_articles')
+      .from('knowledge_base')
       .select('*')
       .eq('org_id', profile.organization_id)
-      .eq('status', 'published')
+      .eq('visibility', 'internal')
       .textSearch('title,content', query);
 
     if (category) {
@@ -446,7 +441,7 @@ class CollaborationService {
     }
 
     const { data, error } = await queryBuilder
-      .order('rating', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(20);
 
     if (error) return [];

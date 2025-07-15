@@ -90,19 +90,56 @@ export const AIAssistantProvider: React.FC<{ children: React.ReactNode }> = ({ c
   
   // Load knowledge base data
   useEffect(() => {
-    loadKnowledgeBase();
-  }, []);
+    if (profile?.organization_id) {
+      loadKnowledgeBase();
+    }
+  }, [profile?.organization_id]);
 
   // Function to load knowledge base
   const loadKnowledgeBase = async () => {
     try {
-      // Since the knowledge_base table doesn't exist yet, we'll use the mock data instead
-      // This would be replaced with a real database query once the schema is updated
-      console.log("Using mock knowledge base data");
-      setKnowledgeSources(mockKnowledgeSources);
+      if (!profile?.organization_id) {
+        setKnowledgeSources(mockKnowledgeSources);
+        return;
+      }
+
+      // Load real knowledge base data from Supabase
+      const { data: knowledgeEntries, error } = await supabase
+        .from('knowledge_base')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .eq('visibility', 'internal')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error loading knowledge base:", error);
+        setKnowledgeSources(mockKnowledgeSources);
+        return;
+      }
+
+      // Transform Supabase data to KnowledgeSource format
+      const transformedSources: KnowledgeSource[] = (knowledgeEntries || []).map(entry => ({
+        id: entry.id,
+        title: entry.title,
+        domain: entry.category.includes('E-21') ? 'E-21' : 
+               entry.category.includes('ISO') ? 'ISO-22301' : 
+               entry.category.includes('OSFI') ? 'OSFI' : 'general',
+        sections: [
+          {
+            title: entry.title,
+            content: entry.content
+          }
+        ]
+      }));
+
+      // Combine real data with essential mock data for core guidance
+      const combinedSources = transformedSources.length > 0 
+        ? [...transformedSources, ...mockKnowledgeSources.slice(0, 2)] // Keep core E-21 and ISO guidance
+        : mockKnowledgeSources;
+
+      setKnowledgeSources(combinedSources);
     } catch (error) {
       console.error("Error loading knowledge base:", error);
-      // Fallback to mock data
       setKnowledgeSources(mockKnowledgeSources);
     }
   };

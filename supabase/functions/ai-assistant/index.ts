@@ -34,6 +34,29 @@ interface KnowledgeResult {
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
+// Rate limiting - simple in-memory counter (for production use Redis or similar)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_REQUESTS = 10; // requests per minute
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute in milliseconds
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    // Reset or create new rate limit window
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (userLimit.count >= RATE_LIMIT_REQUESTS) {
+    return false; // Rate limit exceeded
+  }
+  
+  userLimit.count++;
+  return true;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -44,6 +67,20 @@ serve(async (req) => {
     // Get the request data
     const requestData: RequestData = await req.json();
     const { message, context, userId } = requestData;
+
+    // Rate limiting check
+    if (userId && !checkRateLimit(userId)) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Rate limit exceeded. Please wait before making more requests.',
+          type: 'RATE_LIMIT_EXCEEDED' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 429,
+        }
+      );
+    }
 
     // Set up Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
