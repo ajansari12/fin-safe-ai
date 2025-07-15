@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => ({
           // Enhanced analytics chunks
           analytics: ['@/components/analytics/ExecutiveDashboard', '@/components/analytics/OperationalDashboard'],
           'vendor-feeds': ['@/services/vendor-feed-integration-service'],
-          auth: ['@/contexts/EnhancedAuthContext', '@/components/auth'],
+          auth: ['@/contexts/EnhancedAuthContext', '@/components/auth/EnhancedProtectedRoute', '@/components/auth/InvitationAcceptance'],
           virtualization: ['react-window'],
         },
       },
