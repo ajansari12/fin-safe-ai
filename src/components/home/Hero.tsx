@@ -3,41 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Shield, CheckCircle, AlertTriangle, BarChart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { DecorativeBg } from "@/components/ui/decorative-background";
+import { SectionErrorBoundary } from "@/components/error/SectionErrorBoundary";
 
 const Hero = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   
-  // Reduced logging in production to prevent sensitive information exposure
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🎯 Hero component rendering');
-  }
-  
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🎯 Hero useEffect running');
-    }
+    // Faster loading to prevent layout shift
     const timer = setTimeout(() => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🎯 Hero setting isLoaded to true');
-      }
       setIsLoaded(true);
-    }, 100);
+    }, 50);
     
     return () => clearTimeout(timer);
   }, []);
-
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🎯 Hero rendering JSX');
-  }
   
   return (
-    <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
-      {/* Temporarily remove DecorativeBg to test basic rendering */}
-      {/* <DecorativeBg variant="dots" className="opacity-50" /> */}
-      
-      <div className="container mx-auto px-4 pt-16 pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <SectionErrorBoundary onRetry={() => setIsLoaded(false)}>
+      <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
+          <div className="container mx-auto px-4 pt-16 pb-24" style={{ minHeight: '600px' }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div 
               className={`inline-flex items-center px-4 py-2 mb-6 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 transition-all duration-700 ${
@@ -169,10 +153,11 @@ const Hero = () => {
               </div>
             </div>
           </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
+      </SectionErrorBoundary>
+    );
+  };
 
 export default Hero;

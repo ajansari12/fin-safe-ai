@@ -9,12 +9,11 @@ import Testimonials from '@/components/home/Testimonials';
 import Pricing from '@/components/home/Pricing';
 import CTASection from '@/components/home/CTASection';
 import { PublicPageErrorBoundary } from '@/components/error/PublicPageErrorBoundary';
+import { usePerformanceCleanup } from '@/hooks/usePerformanceCleanup';
 
 const Home = () => {
-  // Reduced logging in production to prevent sensitive information exposure
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🏠 Home page rendering');
-  }
+  // Initialize performance monitoring with proper cleanup
+  usePerformanceCleanup();
   
   return (
     <PublicPageErrorBoundary>
