@@ -8,7 +8,10 @@ interface PageLayoutProps {
 }
 
 const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
-  console.log('🏗️ PageLayout rendering');
+  // Reduced logging in production to prevent sensitive information exposure
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🏗️ PageLayout rendering');
+  }
   
   return (
     <div className="flex flex-col min-h-screen">

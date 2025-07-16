@@ -12,7 +12,10 @@ interface AuthButtonsProps {
 const AuthButtons: React.FC<AuthButtonsProps> = ({ className }) => {
   const { isAuthenticated, logout } = useAuth();
   
-  console.log('🔐 AuthButtons rendering, isAuthenticated:', isAuthenticated);
+  // Reduced logging in production to prevent sensitive information exposure
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔐 AuthButtons rendering, isAuthenticated:', isAuthenticated);
+  }
 
   if (isAuthenticated) {
     return (

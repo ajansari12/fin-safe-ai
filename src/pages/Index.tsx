@@ -11,7 +11,10 @@ import CTASection from '@/components/home/CTASection';
 import { PublicPageErrorBoundary } from '@/components/error/PublicPageErrorBoundary';
 
 const Home = () => {
-  console.log('🏠 Home page rendering');
+  // Reduced logging in production to prevent sensitive information exposure
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🏠 Home page rendering');
+  }
   
   return (
     <PublicPageErrorBoundary>

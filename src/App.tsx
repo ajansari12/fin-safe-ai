@@ -81,7 +81,10 @@ if (import.meta.env.DEV) {
 }
 
 function App() {
-  console.log('🚀 App component rendering');
+  // Reduced logging in production to prevent sensitive information exposure
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🚀 App component rendering');
+  }
   
   return (
     <GlobalErrorBoundary>

@@ -8,19 +8,28 @@ import { DecorativeBg } from "@/components/ui/decorative-background";
 const Hero = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   
-  console.log('🎯 Hero component rendering');
+  // Reduced logging in production to prevent sensitive information exposure
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🎯 Hero component rendering');
+  }
   
   useEffect(() => {
-    console.log('🎯 Hero useEffect running');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎯 Hero useEffect running');
+    }
     const timer = setTimeout(() => {
-      console.log('🎯 Hero setting isLoaded to true');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎯 Hero setting isLoaded to true');
+      }
       setIsLoaded(true);
     }, 100);
     
     return () => clearTimeout(timer);
   }, []);
 
-  console.log('🎯 Hero rendering JSX');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🎯 Hero rendering JSX');
+  }
   
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">

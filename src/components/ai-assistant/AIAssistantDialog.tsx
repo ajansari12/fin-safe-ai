@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAIAssistant } from "./AIAssistantContext";
 import { Badge } from "@/components/ui/badge";
+import DOMPurify from "dompurify";
 
 export const AIAssistantDialog = () => {
   const { 
@@ -174,18 +175,26 @@ export const AIAssistantDialog = () => {
     msg => msg.role === "user" || msg.role === "assistant"
   );
 
-  // Format message content with proper markdown
+  // Format message content with proper sanitization
   const formatMessageContent = (content: string) => {
     // Replace URLs with clickable links
     const withLinks = content.replace(
       /(https?:\/\/[^\s]+)/g, 
-      '<a href="$1" target="_blank" class="text-primary underline">$1</a>'
+      '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-primary underline">$1</a>'
     );
     
     // Add paragraph breaks
     const withParagraphs = withLinks.replace(/\n\n/g, '<br/><br/>');
     
-    return <div dangerouslySetInnerHTML={{ __html: withParagraphs }} />;
+    // Sanitize HTML to prevent XSS attacks
+    const sanitizedContent = DOMPurify.sanitize(withParagraphs, {
+      ALLOWED_TAGS: ['a', 'br', 'p', 'span', 'strong', 'em', 'ul', 'ol', 'li'],
+      ALLOWED_ATTR: ['href', 'class', 'target', 'rel'],
+      FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed'],
+      FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover']
+    });
+    
+    return <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />;
   };
 
   return (
