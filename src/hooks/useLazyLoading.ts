@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useIntersectionObserver } from './useIntersectionObserver';
 import { useNetworkStatus } from './useNetworkStatus';
 
@@ -59,11 +59,11 @@ export const useLazyLoading = (options: UseLazyLoadingOptions = {}) => {
   }, [hasLoaded, getLoadingDelay]);
 
   // Trigger loading when element comes into view
-  useState(() => {
+  useEffect(() => {
     if (shouldRender && !hasLoaded && !isLoading) {
       loadContent();
     }
-  });
+  }, [shouldRender, hasLoaded, isLoading, loadContent]);
 
   // Preload next sections for better UX
   const preloadNextSection = useCallback(() => {

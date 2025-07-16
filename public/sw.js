@@ -1,218 +1,181 @@
+// Service Worker for advanced caching and offline support
+const CACHE_NAME = 'app-cache-v1';
+const STATIC_CACHE = 'static-cache-v1';
+const DYNAMIC_CACHE = 'dynamic-cache-v1';
 
-// Service Worker for PWA functionality
-const CACHE_NAME = 'resilientfi-v1';
-const STATIC_CACHE = 'resilientfi-static-v1';
-const DYNAMIC_CACHE = 'resilientfi-dynamic-v1';
-
-// Assets to cache for offline functionality
+// Assets to cache immediately
 const STATIC_ASSETS = [
   '/',
-  '/app/dashboard',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
-  '/offline.html'
+  '/favicon.ico',
+  '/placeholder.svg'
 ];
 
-// API endpoints to cache
-const API_CACHE_PATTERNS = [
-  /\/api\/incidents/,
-  /\/api\/risks/,
-  /\/api\/controls/,
-  /\/api\/governance/
+// Routes to cache for offline access
+const CACHED_ROUTES = [
+  '/',
+  '/auth/login',
+  '/auth/register'
 ];
 
-// Install event - cache static assets
+// Cache strategies
+let cacheStrategy = 'adaptive';
+let networkType = 'unknown';
+
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => {
-        console.log('Service Worker: Caching static assets');
+    Promise.all([
+      caches.open(STATIC_CACHE).then(cache => {
         return cache.addAll(STATIC_ASSETS);
-      })
-      .then(() => self.skipWaiting())
+      }),
+      self.skipWaiting()
+    ])
   );
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating...');
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then(cacheNames => {
         return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-              console.log('Service Worker: Deleting old cache', cacheName);
-              return caches.delete(cacheName);
-            }
-          })
+          cacheNames
+            .filter(cacheName => 
+              cacheName !== CACHE_NAME && 
+              cacheName !== STATIC_CACHE && 
+              cacheName !== DYNAMIC_CACHE
+            )
+            .map(cacheName => caches.delete(cacheName))
         );
-      })
-      .then(() => self.clients.claim())
+      }),
+      self.clients.claim()
+    ])
   );
 });
 
-// Fetch event - implement cache strategies
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CACHE_STRATEGY') {
+    cacheStrategy = event.data.strategy;
+    networkType = event.data.networkType;
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and external URLs
-  if (request.method !== 'GET' || !url.origin.includes(self.location.origin)) {
-    return;
-  }
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
 
-  // Handle API requests with network-first strategy
-  if (API_CACHE_PATTERNS.some(pattern => pattern.test(url.pathname))) {
-    event.respondWith(networkFirstStrategy(request));
-    return;
-  }
+  // Skip external URLs
+  if (url.origin !== location.origin) return;
 
-  // Handle static assets with cache-first strategy
-  if (STATIC_ASSETS.includes(url.pathname) || url.pathname.includes('/static/')) {
-    event.respondWith(cacheFirstStrategy(request));
-    return;
-  }
-
-  // Handle navigation requests with network-first, fallback to offline page
-  if (request.mode === 'navigate') {
-    event.respondWith(navigationStrategy(request));
-    return;
-  }
-
-  // Default strategy for other requests
-  event.respondWith(networkFirstStrategy(request));
+  event.respondWith(handleRequest(request));
 });
 
-// Network-first strategy for API calls
-async function networkFirstStrategy(request) {
-  try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    return networkResponse;
-  } catch (error) {
-    console.log('Network failed, trying cache:', error);
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    throw error;
-  }
-}
-
-// Cache-first strategy for static assets
-async function cacheFirstStrategy(request) {
-  const cachedResponse = await caches.match(request);
-  if (cachedResponse) {
-    return cachedResponse;
+async function handleRequest(request) {
+  const url = new URL(request.url);
+  
+  // Handle different types of requests
+  if (isStaticAsset(url.pathname)) {
+    return handleStaticAsset(request);
+  } else if (isRoute(url.pathname)) {
+    return handleRoute(request);
+  } else if (isAPI(url.pathname)) {
+    return handleAPI(request);
   }
   
+  return fetch(request);
+}
+
+function isStaticAsset(pathname) {
+  return pathname.includes('.') && 
+    (pathname.endsWith('.js') || 
+     pathname.endsWith('.css') || 
+     pathname.endsWith('.png') || 
+     pathname.endsWith('.jpg') || 
+     pathname.endsWith('.svg') || 
+     pathname.endsWith('.ico'));
+}
+
+function isRoute(pathname) {
+  return CACHED_ROUTES.some(route => pathname.startsWith(route));
+}
+
+function isAPI(pathname) {
+  return pathname.startsWith('/api/');
+}
+
+async function handleStaticAsset(request) {
+  // Cache first strategy for static assets
+  const cached = await caches.match(request);
+  if (cached) return cached;
+
   try {
-    const networkResponse = await fetch(request);
-    if (networkResponse.ok) {
+    const response = await fetch(request);
+    if (response.ok) {
       const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, networkResponse.clone());
+      cache.put(request, response.clone());
     }
-    return networkResponse;
+    return response;
   } catch (error) {
-    console.log('Failed to fetch and cache:', error);
-    throw error;
+    return cached || new Response('Asset not available offline', { status: 404 });
   }
 }
 
-// Navigation strategy with offline fallback
-async function navigationStrategy(request) {
+async function handleRoute(request) {
+  // Network first strategy for routes, with cache fallback
   try {
-    const networkResponse = await fetch(request);
-    return networkResponse;
-  } catch (error) {
-    console.log('Navigation failed, showing offline page:', error);
-    return caches.match('/offline.html');
-  }
-}
-
-// Background sync for offline data
-self.addEventListener('sync', (event) => {
-  console.log('Service Worker: Background sync triggered', event.tag);
-  
-  if (event.tag === 'sync-offline-data') {
-    event.waitUntil(syncOfflineData());
-  }
-});
-
-// Push notification handling
-self.addEventListener('push', (event) => {
-  console.log('Service Worker: Push notification received', event);
-  
-  const options = {
-    body: event.data ? event.data.text() : 'New notification from ResilientFI',
-    icon: '/icon-192x192.png',
-    badge: '/icon-72x72.png',
-    vibrate: [200, 100, 200],
-    data: event.data ? JSON.parse(event.data.text()) : {},
-    actions: [
-      {
-        action: 'view',
-        title: 'View',
-        icon: '/icon-view.png'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss',
-        icon: '/icon-dismiss.png'
-      }
-    ]
-  };
-
-  event.waitUntil(
-    self.registration.showNotification('ResilientFI', options)
-  );
-});
-
-// Notification click handling
-self.addEventListener('notificationclick', (event) => {
-  console.log('Service Worker: Notification clicked', event);
-  
-  event.notification.close();
-  
-  if (event.action === 'view') {
-    event.waitUntil(
-      clients.openWindow(event.notification.data.url || '/app/dashboard')
-    );
-  }
-});
-
-// Sync offline data when connection is restored
-async function syncOfflineData() {
-  try {
-    const offlineData = await getOfflineData();
-    if (offlineData.length > 0) {
-      for (const item of offlineData) {
-        await syncDataItem(item);
-      }
-      await clearOfflineData();
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, response.clone());
     }
+    return response;
   } catch (error) {
-    console.error('Failed to sync offline data:', error);
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    
+    // Return offline page for navigation requests
+    if (request.mode === 'navigate') {
+      const offlinePage = await caches.match('/');
+      return offlinePage || new Response('Offline', { status: 503 });
+    }
+    
+    return new Response('Content not available offline', { status: 503 });
   }
 }
 
-async function getOfflineData() {
-  // Implementation would retrieve data from IndexedDB
-  return [];
+async function handleAPI(request) {
+  // Network only for API requests (with potential background sync)
+  try {
+    const response = await fetch(request);
+    
+    // Cache successful GET requests based on strategy
+    if (response.ok && request.method === 'GET' && shouldCacheAPI()) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, response.clone());
+    }
+    
+    return response;
+  } catch (error) {
+    // Return cached API response if available
+    if (request.method === 'GET') {
+      const cached = await caches.match(request);
+      if (cached) return cached;
+    }
+    
+    return new Response(JSON.stringify({ 
+      error: 'API not available offline',
+      offline: true 
+    }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }
 
-async function syncDataItem(item) {
-  // Implementation would sync individual data items
-  console.log('Syncing data item:', item);
-}
-
-async function clearOfflineData() {
-  // Implementation would clear synced data from IndexedDB
-  console.log('Clearing offline data');
+function shouldCacheAPI() {
+  return cacheStrategy === 'aggressive' || 
+    (cacheStrategy === 'adaptive' && networkType === 'slow');
 }

@@ -13,6 +13,9 @@ import { usePerformanceCleanup } from '@/hooks/usePerformanceCleanup';
 import { useProgressiveLoading } from '@/hooks/useProgressiveLoading';
 import { useLazyLoading } from '@/hooks/useLazyLoading';
 import { useAssetPreloading } from '@/hooks/useAssetPreloading';
+import { usePredictiveLoading } from '@/hooks/usePredictiveLoading';
+import { useNetworkAdaptiveLoading } from '@/hooks/useNetworkAdaptiveLoading';
+import { useLoadingMicroInteractions } from '@/hooks/useLoadingMicroInteractions';
 import { 
   HeroSkeleton, 
   FeaturesSkeleton, 
@@ -77,6 +80,25 @@ const Home = () => {
     preloadFonts: true,
     preloadCriticalRoutes: true,
     respectDataSaver: true
+  });
+
+  // Phase 3: Advanced loading experience
+  usePredictiveLoading({
+    enablePredictiveLoading: true,
+    enableServiceWorker: true,
+    cacheStrategy: 'adaptive'
+  });
+
+  const { getLoadingStrategy, getAnimationSettings } = useNetworkAdaptiveLoading({
+    enableAdaptiveQuality: true,
+    adaptiveImageLoading: true,
+    enableOfflineMode: true
+  });
+
+  const { createShimmerEffect, triggerSuccessInteraction } = useLoadingMicroInteractions({
+    enableMicroInteractions: true,
+    enableContentPreviews: true,
+    enableProgressIndicators: true
   });
   
   return (
