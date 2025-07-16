@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/EnhancedAuthContext';
 import { OrgProvider } from './contexts/OrgContext';
@@ -56,6 +56,7 @@ import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedA
 import ErrorMonitor from './components/error/ErrorMonitor';
 import { AuthDebugTrigger } from './components/debug/AuthDebugTrigger';
 import { SecurityMonitor } from './components/security/SecurityMonitor';
+import { ContentSecurityPolicy } from '@/utils/content-security-policy';
 import { quickSchemaCheck } from '@/utils/schema-validation';
 
 const queryClient = new QueryClient({
@@ -81,6 +82,11 @@ if (import.meta.env.DEV) {
 }
 
 function App() {
+  // Apply CSP on app startup for enhanced security
+  useEffect(() => {
+    ContentSecurityPolicy.applyCSP();
+  }, []);
+
   // Reduced logging in production to prevent sensitive information exposure
   if (process.env.NODE_ENV === 'development') {
     console.log('🚀 App component rendering');

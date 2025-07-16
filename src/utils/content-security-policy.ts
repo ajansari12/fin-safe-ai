@@ -96,7 +96,16 @@ export class ContentSecurityPolicy {
       "'self'",
       "https://fonts.googleapis.com",
       "https://cdn.jsdelivr.net"
-    ]
+    ],
+    connectSrc: [
+      "'self'",
+      "https://ooocjyscnvbahsyryzxp.supabase.co", // Supabase API
+      "wss://ooocjyscnvbahsyryzxp.supabase.co", // Supabase WebSocket
+      "https://vitals.vercel-insights.com" // Vercel Analytics
+    ],
+    frameSrc: ["'none'"], // Prevent frame embedding in production
+    childSrc: ["'none'"], // Prevent child frame creation in production
+    reportUri: "/csp-report"
   };
 
   /**
@@ -171,12 +180,26 @@ export class ContentSecurityPolicy {
       errors.push("'unsafe-eval' should not be used in production");
     }
 
+    if (config.styleSrc.includes("'unsafe-inline'") && process.env.NODE_ENV === 'production') {
+      errors.push("'unsafe-inline' for styles should be avoided in production");
+    }
+
     if (config.objectSrc.includes("'self'") || config.objectSrc.includes("https:")) {
       errors.push("object-src should be 'none' for security");
     }
 
     if (!config.connectSrc.some(src => src.includes('supabase.co'))) {
       errors.push("Missing Supabase API endpoint in connect-src");
+    }
+
+    // Check for overly permissive directives
+    if (config.scriptSrc.includes("*") || config.styleSrc.includes("*")) {
+      errors.push("Wildcard (*) directives are not recommended");
+    }
+
+    // Validate frame-src in production
+    if (process.env.NODE_ENV === 'production' && config.frameSrc.some(src => src !== "'none'" && src !== "'self'")) {
+      errors.push("Consider restricting frame-src in production");
     }
 
     return {
