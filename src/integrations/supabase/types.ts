@@ -9085,6 +9085,111 @@ export type Database = {
         }
         Relationships: []
       }
+      security_baseline_config: {
+        Row: {
+          baseline_value: Json
+          compliance_status: string
+          config_category: string
+          config_name: string
+          config_value: Json
+          created_at: string | null
+          id: string
+          last_checked_at: string | null
+          org_id: string
+          remediation_steps: string | null
+          risk_level: string
+          updated_at: string | null
+        }
+        Insert: {
+          baseline_value: Json
+          compliance_status: string
+          config_category: string
+          config_name: string
+          config_value: Json
+          created_at?: string | null
+          id?: string
+          last_checked_at?: string | null
+          org_id: string
+          remediation_steps?: string | null
+          risk_level: string
+          updated_at?: string | null
+        }
+        Update: {
+          baseline_value?: Json
+          compliance_status?: string
+          config_category?: string
+          config_name?: string
+          config_value?: Json
+          created_at?: string | null
+          id?: string
+          last_checked_at?: string | null
+          org_id?: string
+          remediation_steps?: string | null
+          risk_level?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          created_at: string | null
+          detection_rules: string[] | null
+          device_fingerprint: string | null
+          event_category: string
+          event_data: Json
+          event_source: string
+          event_type: string
+          false_positive: boolean | null
+          id: string
+          ip_address: unknown | null
+          location_data: Json | null
+          org_id: string
+          risk_score: number
+          session_id: string | null
+          updated_at: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detection_rules?: string[] | null
+          device_fingerprint?: string | null
+          event_category: string
+          event_data?: Json
+          event_source?: string
+          event_type: string
+          false_positive?: boolean | null
+          id?: string
+          ip_address?: unknown | null
+          location_data?: Json | null
+          org_id: string
+          risk_score?: number
+          session_id?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detection_rules?: string[] | null
+          device_fingerprint?: string | null
+          event_category?: string
+          event_data?: Json
+          event_source?: string
+          event_type?: string
+          false_positive?: boolean | null
+          id?: string
+          ip_address?: unknown | null
+          location_data?: Json | null
+          org_id?: string
+          risk_score?: number
+          session_id?: string | null
+          updated_at?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       security_incidents: {
         Row: {
           affected_systems: Json
@@ -9139,6 +9244,48 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_intelligence: {
+        Row: {
+          confidence_score: number
+          created_at: string | null
+          id: string
+          intel_data: Json
+          intel_source: string
+          intel_type: string
+          is_active: boolean
+          org_id: string
+          severity_level: string
+          updated_at: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          confidence_score: number
+          created_at?: string | null
+          id?: string
+          intel_data: Json
+          intel_source: string
+          intel_type: string
+          is_active?: boolean
+          org_id: string
+          severity_level: string
+          updated_at?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string | null
+          id?: string
+          intel_data?: Json
+          intel_source?: string
+          intel_type?: string
+          is_active?: boolean
+          org_id?: string
+          severity_level?: string
+          updated_at?: string | null
+          valid_until?: string | null
         }
         Relationships: []
       }
@@ -9295,6 +9442,63 @@ export type Database = {
           response_steps?: Json
           trigger_conditions?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_threat_rules: {
+        Row: {
+          accuracy_score: number | null
+          created_at: string | null
+          created_by: string | null
+          detection_logic: string
+          false_positive_rate: number | null
+          id: string
+          is_active: boolean
+          last_triggered_at: string | null
+          org_id: string
+          rule_config: Json
+          rule_name: string
+          rule_type: string
+          severity_level: string
+          trigger_count: number | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          accuracy_score?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          detection_logic: string
+          false_positive_rate?: number | null
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          org_id: string
+          rule_config?: Json
+          rule_name: string
+          rule_type: string
+          severity_level: string
+          trigger_count?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          accuracy_score?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          detection_logic?: string
+          false_positive_rate?: number | null
+          id?: string
+          is_active?: boolean
+          last_triggered_at?: string | null
+          org_id?: string
+          rule_config?: Json
+          rule_name?: string
+          rule_type?: string
+          severity_level?: string
+          trigger_count?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -11169,6 +11373,21 @@ export type Database = {
         }
         Relationships: []
       }
+      security_dashboard_summary: {
+        Row: {
+          affected_sessions: number | null
+          affected_users: number | null
+          avg_risk_score: number | null
+          critical_events: number | null
+          high_events: number | null
+          last_event_at: string | null
+          low_events: number | null
+          medium_events: number | null
+          org_id: string | null
+          total_events: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       binary_quantize: {
@@ -11220,6 +11439,18 @@ export type Database = {
       check_incident_sla_breaches: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      check_security_baseline_compliance: {
+        Args: { p_org_id?: string }
+        Returns: {
+          category: string
+          compliant_count: number
+          non_compliant_count: number
+          compliance_percentage: number
+          critical_issues: number
+          high_issues: number
+          recommendations: string[]
+        }[]
       }
       check_session_timeout: {
         Args: { session_token: string }
@@ -11281,6 +11512,16 @@ export type Database = {
       detect_stagnant_frameworks: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_advanced_security_analytics: {
+        Args: { p_org_id?: string; p_time_range?: unknown }
+        Returns: {
+          metric_name: string
+          metric_value: number
+          metric_trend: string
+          risk_level: string
+          recommendations: string[]
+        }[]
       }
       get_analytics_summary: {
         Args: { org_id_param: string }
