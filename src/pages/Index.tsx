@@ -8,18 +8,23 @@ import AIAssistant from '@/components/home/AIAssistant';
 import Testimonials from '@/components/home/Testimonials';
 import Pricing from '@/components/home/Pricing';
 import CTASection from '@/components/home/CTASection';
+import { PublicPageErrorBoundary } from '@/components/error/PublicPageErrorBoundary';
 
 const Home = () => {
+  console.log('🏠 Home page rendering');
+  
   return (
-    <PageLayout>
-      <Hero />
-      <Features />
-      <RegulatoryCompliance />
-      <AIAssistant />
-      <Testimonials />
-      <Pricing />
-      <CTASection />
-    </PageLayout>
+    <PublicPageErrorBoundary>
+      <PageLayout>
+        <Hero />
+        <Features />
+        <RegulatoryCompliance />
+        <AIAssistant />
+        <Testimonials />
+        <Pricing />
+        <CTASection />
+      </PageLayout>
+    </PublicPageErrorBoundary>
   );
 };
 

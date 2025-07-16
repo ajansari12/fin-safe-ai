@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 // FIXME: Migrated from useEnhancedAuth to useAuth for consistency
 import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
+import { initializeIntegrationService } from "@/services/integration-service";
 
 interface EnhancedProtectedRouteProps {
   children: React.ReactNode;
@@ -30,6 +31,13 @@ const EnhancedProtectedRoute: React.FC<EnhancedProtectedRouteProps> = ({
     hasAnyRole 
   } = useAuth(); // FIXME: Updated from useEnhancedAuth
   const location = useLocation();
+
+  // Initialize integration service for authenticated users
+  useEffect(() => {
+    if (isAuthenticated && userContext?.organizationId) {
+      initializeIntegrationService();
+    }
+  }, [isAuthenticated, userContext?.organizationId]);
 
   if (isLoading) {
     return (

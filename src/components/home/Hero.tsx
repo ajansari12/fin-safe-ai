@@ -9,6 +9,7 @@ const Hero = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   
   useEffect(() => {
+    console.log('🎨 Hero component mounting');
     // Trigger animations after component mounts
     setIsLoaded(true);
   }, []);
@@ -51,10 +52,10 @@ const Hero = () => {
               }`}
             >
               <Button asChild size="lg" className="text-base rounded-xl">
-                <Link to="/register">Get Started</Link>
+                <Link to="/auth/register">Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="text-base rounded-xl">
-                <Link to="/features">Learn More</Link>
+                <Link to="/auth/login">Learn More</Link>
               </Button>
             </div>
 

@@ -99,6 +99,10 @@ function App() {
               {/* Public website homepage */}
               <Route path="/" element={<IndexPage />} />
               
+              {/* Public routes */}
+              <Route path="/register" element={<Navigate to="/auth/register" />} />
+              <Route path="/features" element={<Navigate to="/auth/login" />} />
+              
               {/* Authentication */}
               <Route path="/login" element={<AuthPage />} />
               <Route path="/auth/login" element={<AuthPage />} />

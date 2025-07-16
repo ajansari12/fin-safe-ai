@@ -7,8 +7,7 @@ import "./index.css";
 // Environment validation
 import { validateEnvironment, logEnvironmentStatus } from "./utils/env-validation";
 
-// Import integration service to initialize enhanced features
-import "./services/integration-service";
+// Integration service will be initialized in protected routes only
 
 // Preload critical routes
 import { preloadCriticalRoutes } from "./lib/performance/lazy-loading";
