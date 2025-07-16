@@ -6428,6 +6428,42 @@ export type Database = {
         }
         Relationships: []
       }
+      mfa_security_logs: {
+        Row: {
+          action: string
+          created_at: string
+          device_info: Json | null
+          failure_reason: string | null
+          id: string
+          mfa_method: string
+          org_id: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          device_info?: Json | null
+          failure_reason?: string | null
+          id?: string
+          mfa_method: string
+          org_id: string
+          success: boolean
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          device_info?: Json | null
+          failure_reason?: string | null
+          id?: string
+          mfa_method?: string
+          org_id?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       mfa_verification_attempts: {
         Row: {
           attempt_type: string
@@ -9132,59 +9168,56 @@ export type Database = {
       }
       security_events: {
         Row: {
-          created_at: string | null
-          detection_rules: string[] | null
+          created_at: string
           device_fingerprint: string | null
           event_category: string
-          event_data: Json
-          event_source: string
+          event_details: Json
           event_type: string
-          false_positive: boolean | null
+          geographic_location: Json | null
           id: string
-          ip_address: unknown | null
-          location_data: Json | null
           org_id: string
-          risk_score: number
-          session_id: string | null
-          updated_at: string | null
+          processed_at: string | null
+          risk_score: number | null
+          severity: string
+          source_ip: unknown | null
+          status: string
+          threat_indicators: Json | null
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
-          created_at?: string | null
-          detection_rules?: string[] | null
+          created_at?: string
           device_fingerprint?: string | null
           event_category: string
-          event_data?: Json
-          event_source?: string
+          event_details?: Json
           event_type: string
-          false_positive?: boolean | null
+          geographic_location?: Json | null
           id?: string
-          ip_address?: unknown | null
-          location_data?: Json | null
           org_id: string
-          risk_score?: number
-          session_id?: string | null
-          updated_at?: string | null
+          processed_at?: string | null
+          risk_score?: number | null
+          severity?: string
+          source_ip?: unknown | null
+          status?: string
+          threat_indicators?: Json | null
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
-          created_at?: string | null
-          detection_rules?: string[] | null
+          created_at?: string
           device_fingerprint?: string | null
           event_category?: string
-          event_data?: Json
-          event_source?: string
+          event_details?: Json
           event_type?: string
-          false_positive?: boolean | null
+          geographic_location?: Json | null
           id?: string
-          ip_address?: unknown | null
-          location_data?: Json | null
           org_id?: string
-          risk_score?: number
-          session_id?: string | null
-          updated_at?: string | null
+          processed_at?: string | null
+          risk_score?: number | null
+          severity?: string
+          source_ip?: unknown | null
+          status?: string
+          threat_indicators?: Json | null
           user_agent?: string | null
           user_id?: string | null
         }
@@ -9595,6 +9628,45 @@ export type Database = {
           policy_name?: string
           require_mfa_for_sensitive_actions?: boolean
           updated_at?: string
+        }
+        Relationships: []
+      }
+      session_security_logs: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          device_info: Json | null
+          event_type: string
+          id: string
+          location_info: Json | null
+          org_id: string
+          risk_factors: Json | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          device_info?: Json | null
+          event_type: string
+          id?: string
+          location_info?: Json | null
+          org_id: string
+          risk_factors?: Json | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          device_info?: Json | null
+          event_type?: string
+          id?: string
+          location_info?: Json | null
+          org_id?: string
+          risk_factors?: Json | null
+          session_id?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -11373,21 +11445,6 @@ export type Database = {
         }
         Relationships: []
       }
-      security_dashboard_summary: {
-        Row: {
-          affected_sessions: number | null
-          affected_users: number | null
-          avg_risk_score: number | null
-          critical_events: number | null
-          high_events: number | null
-          last_event_at: string | null
-          low_events: number | null
-          medium_events: number | null
-          org_id: string | null
-          total_events: number | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       binary_quantize: {
@@ -11677,6 +11734,18 @@ export type Database = {
         }
         Returns: string
       }
+      log_security_event: {
+        Args: {
+          p_event_type: string
+          p_event_category: string
+          p_severity?: string
+          p_event_details?: Json
+          p_source_ip?: unknown
+          p_user_agent?: string
+          p_risk_score?: number
+        }
+        Returns: string
+      }
       match_knowledge_base: {
         Args: {
           query_embedding: string
@@ -11750,6 +11819,10 @@ export type Database = {
       validate_password_strength: {
         Args: { password: string; org_id: string }
         Returns: Json
+      }
+      validate_table_access: {
+        Args: { table_name: string; operation: string }
+        Returns: boolean
       }
       validate_user_org_relationship: {
         Args: { user_id: string }
