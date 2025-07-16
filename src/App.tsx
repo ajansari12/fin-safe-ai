@@ -60,6 +60,8 @@ import { ContentSecurityPolicy } from '@/utils/content-security-policy';
 import { SecurityHeaders } from '@/utils/security-headers';
 import { quickSchemaCheck } from '@/utils/schema-validation';
 import { applyProductionSafeLogging } from '@/utils/production-safe-logging';
+import GlobalLoadingBar from './components/ui/global-loading-bar';
+import NetworkStatus from './components/ui/network-status';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -103,6 +105,8 @@ function App() {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />
           <BrowserRouter>
+            <GlobalLoadingBar />
+            <NetworkStatus />
             <AuthProvider>
               <OrgProvider>
                 <PermissionProvider>

@@ -1,33 +1,40 @@
-import { useEffect, useRef } from 'react';
-
-// Global performance service instance
-let performanceService: any = null;
+import { useEffect } from 'react';
+import { performanceMonitor } from '@/utils/performance-monitor';
+import { useSmartPerformanceMonitoring } from './useSmartPerformanceMonitoring';
 
 export const usePerformanceCleanup = () => {
-  const initializedRef = useRef(false);
+  const { monitoringMode, trackLightweightMetrics, shouldMonitor } = useSmartPerformanceMonitoring({
+    enablePublicPageMonitoring: true,
+    enableLightweightMode: true,
+    enableAdaptiveFrequency: true
+  });
 
   useEffect(() => {
-    // Initialize performance service only once
-    if (!initializedRef.current && typeof window !== 'undefined') {
-      import('@/services/enhanced-performance-service').then((module) => {
-        if (!performanceService) {
-          const EnhancedPerformanceService = module.default;
-          performanceService = new EnhancedPerformanceService();
-          performanceService.initializePerformanceMonitoring();
-        }
-        initializedRef.current = true;
-      });
-    }
+    if (!shouldMonitor) return;
 
-    // Cleanup on unmount
+    // Set up performance monitoring for the component
+    const startTime = performance.now();
+    const cleanupMetrics = trackLightweightMetrics('PageComponent');
+    
     return () => {
-      if (performanceService && initializedRef.current) {
-        performanceService.cleanup();
-        performanceService = null;
-        initializedRef.current = false;
+      cleanupMetrics();
+      
+      // Clean up performance monitoring when component unmounts
+      const endTime = performance.now();
+      const duration = endTime - startTime;
+      
+      // Only log in development to avoid performance impact in production
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[${monitoringMode}] Component lifecycle duration: ${duration.toFixed(2)}ms`);
+      }
+      
+      // Generate performance report in development (only for full monitoring)
+      if (process.env.NODE_ENV === 'development' && performanceMonitor && monitoringMode === 'full') {
+        const report = performanceMonitor.getReport();
+        if (report.summary.overallScore < 70) {
+          console.warn('⚠️ Performance issues detected:', report);
+        }
       }
     };
-  }, []);
-
-  return performanceService;
+  }, [monitoringMode, shouldMonitor, trackLightweightMetrics]);
 };

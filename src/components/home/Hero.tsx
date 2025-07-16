@@ -9,12 +9,8 @@ const Hero = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   
   useEffect(() => {
-    // Faster loading to prevent layout shift
-    const timer = setTimeout(() => {
-      setIsLoaded(true);
-    }, 50);
-    
-    return () => clearTimeout(timer);
+    // Immediate loading for better perceived performance
+    setIsLoaded(true);
   }, []);
   
   return (
