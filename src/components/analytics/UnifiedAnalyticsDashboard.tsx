@@ -26,11 +26,12 @@ import { DashboardSkeleton } from './AnalyticsLoadingStates';
 import LoadingFallback from '@/components/common/LoadingFallback';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
-import { useMemoryOptimizer } from './MemoryOptimizer';
+import { useMemoryOptimizer } from '@/hooks/useMemoryOptimizer';
 import OSFIComplianceWidgets from './OSFIComplianceWidgets';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import RealtimeIndicator from '@/components/common/RealtimeIndicator';
 import AllInsightsDialog from '@/components/dialogs/AllInsightsDialog';
+import { DashboardHealthCheck } from './DashboardHealthCheck';
 
 interface AnalyticsInsight {
   id: string;
@@ -41,24 +42,59 @@ interface AnalyticsInsight {
   confidence: number;
 }
 
-// Lazy load heavy dashboard components
+// Lazy load heavy dashboard components with enhanced error handling
 const ExecutiveDashboard = lazy(() => 
-  import('./ExecutiveDashboard').then(module => ({ default: module.default }))
+  import('./ExecutiveDashboard')
+    .then(module => ({ default: module.default }))
+    .catch(error => {
+      console.error('Failed to load ExecutiveDashboard:', error);
+      throw error;
+    })
 );
+
 const OperationalDashboard = lazy(() => 
-  import('./OperationalDashboard').then(module => ({ default: module.default }))
+  import('./OperationalDashboard')
+    .then(module => ({ default: module.default }))
+    .catch(error => {
+      console.error('Failed to load OperationalDashboard:', error);
+      throw error;
+    })
 );
+
 const ControlsDashboard = lazy(() => 
-  import('../controls/ControlsDashboard').then(module => ({ default: module.default }))
+  import('../controls/ControlsDashboard')
+    .then(module => ({ default: module.default }))
+    .catch(error => {
+      console.error('Failed to load ControlsDashboard:', error);
+      throw error;
+    })
 );
+
 const AdvancedAnalyticsDashboard = lazy(() => 
-  import('./AdvancedAnalyticsDashboard').then(module => ({ default: module.default }))
+  import('./AdvancedAnalyticsDashboard')
+    .then(module => ({ default: module.default }))
+    .catch(error => {
+      console.error('Failed to load AdvancedAnalyticsDashboard:', error);
+      throw error;
+    })
 );
+
 const CustomDashboardBuilder = lazy(() => 
-  import('./CustomDashboardBuilder').then(module => ({ default: module.default }))
+  import('./CustomDashboardBuilder')
+    .then(module => ({ default: module.default }))
+    .catch(error => {
+      console.error('Failed to load CustomDashboardBuilder:', error);
+      throw error;
+    })
 );
+
 const PredictiveAnalyticsPanel = lazy(() => 
-  import('./PredictiveAnalyticsPanel').then(module => ({ default: module.default }))
+  import('./PredictiveAnalyticsPanel')
+    .then(module => ({ default: module.default }))
+    .catch(error => {
+      console.error('Failed to load PredictiveAnalyticsPanel:', error);
+      throw error;
+    })
 );
 
 // Enhanced loading fallback with timeout and retry
@@ -69,8 +105,40 @@ const EnhancedLoadingFallback = ({ error, onRetry }: { error?: Error; onRetry?: 
       onRetry={onRetry}
       title="Loading Analytics Dashboard"
       description="Preparing your analytics and business intelligence data..."
-      timeout={15000} // 15 second timeout for heavy dashboard
+      timeout={10000} // Reduced timeout for better UX
     />
+  );
+};
+
+// Component-specific error boundary wrapper
+const ComponentErrorBoundary = ({ 
+  children, 
+  componentName, 
+  onError 
+}: { 
+  children: React.ReactNode; 
+  componentName: string; 
+  onError: (error: Error) => void;
+}) => {
+  return (
+    <ErrorBoundary
+      title={`${componentName} Error`}
+      description={`Unable to load ${componentName.toLowerCase()} dashboard`}
+      onError={onError}
+      fallback={
+        <div className="text-center p-8">
+          <h3 className="text-lg font-medium mb-2">Component Unavailable</h3>
+          <p className="text-muted-foreground mb-4">
+            The {componentName.toLowerCase()} dashboard is temporarily unavailable.
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </div>
+      }
+    >
+      {children}
+    </ErrorBoundary>
   );
 };
 
@@ -91,7 +159,11 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   });
 
   // Memory optimization for heavy dashboard
-  useMemoryOptimizer('UnifiedAnalyticsDashboard');
+  useMemoryOptimizer('UnifiedAnalyticsDashboard', {
+    maxMemoryMB: 180,
+    cleanupInterval: 25000,
+    enableGarbageCollection: true
+  });
 
   useEffect(() => {
     if (profile?.organization_id) {
@@ -203,6 +275,15 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
     setRetryCount(prev => prev + 1);
   };
 
+  // Handle component errors
+  const handleComponentError = (componentName: string, error: Error) => {
+    setComponentErrors(prev => ({
+      ...prev,
+      [componentName]: error
+    }));
+    handleError(error, `${componentName} dashboard`);
+  };
+
   // Show loading state if auth is still loading
   if (authLoading) {
     return <EnhancedLoadingFallback />;
@@ -232,6 +313,11 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             {isGeneratingInsights ? 'Generating...' : 'Refresh Insights'}
           </Button>
         </div>
+      </div>
+
+      {/* Dashboard Health Check */}
+      <div className="flex justify-center">
+        <DashboardHealthCheck />
       </div>
 
       {/* OSFI E-21 Compliance Widgets */}
@@ -411,9 +497,9 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
-          <ErrorBoundary 
-            title="Executive Dashboard Error"
-            description="Unable to load executive dashboard"
+          <ComponentErrorBoundary 
+            componentName="Executive Dashboard"
+            onError={(error) => handleComponentError('executive', error)}
           >
             <Suspense fallback={
               <EnhancedLoadingFallback 
@@ -423,13 +509,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             }>
               <ExecutiveDashboard key={`executive-${retryCount}`} />
             </Suspense>
-          </ErrorBoundary>
+          </ComponentErrorBoundary>
         </TabsContent>
 
         <TabsContent value="operational" className="space-y-6">
-          <ErrorBoundary 
-            title="Operational Dashboard Error"
-            description="Unable to load operational dashboard"
+          <ComponentErrorBoundary 
+            componentName="Operational Dashboard"
+            onError={(error) => handleComponentError('operational', error)}
           >
             <Suspense fallback={
               <EnhancedLoadingFallback 
@@ -439,13 +525,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             }>
               <OperationalDashboard key={`operational-${retryCount}`} />
             </Suspense>
-          </ErrorBoundary>
+          </ComponentErrorBoundary>
         </TabsContent>
 
         <TabsContent value="controls" className="space-y-6">
-          <ErrorBoundary 
-            title="Controls Dashboard Error"
-            description="Unable to load controls dashboard"
+          <ComponentErrorBoundary 
+            componentName="Controls Dashboard"
+            onError={(error) => handleComponentError('controls', error)}
           >
             <Suspense fallback={
               <EnhancedLoadingFallback 
@@ -455,13 +541,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             }>
               <ControlsDashboard key={`controls-${retryCount}`} />
             </Suspense>
-          </ErrorBoundary>
+          </ComponentErrorBoundary>
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-6">
-          <ErrorBoundary 
-            title="Advanced Analytics Error"
-            description="Unable to load advanced analytics dashboard"
+          <ComponentErrorBoundary 
+            componentName="Advanced Analytics"
+            onError={(error) => handleComponentError('advanced', error)}
           >
             <Suspense fallback={
               <EnhancedLoadingFallback 
@@ -471,19 +557,19 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             }>
               <AdvancedAnalyticsDashboard key={`advanced-${retryCount}`} />
             </Suspense>
-          </ErrorBoundary>
+          </ComponentErrorBoundary>
         </TabsContent>
 
         <TabsContent value="predictive" className="space-y-6">
-          <ErrorBoundary 
-            title="AI Status Verification Error"
-            description="Unable to verify AI status"
+          <ComponentErrorBoundary 
+            componentName="AI Status Verification"
+            onError={(error) => handleComponentError('aiStatus', error)}
           >
             <AIStatusVerification key={`aiStatus-${retryCount}`} />
-          </ErrorBoundary>
-          <ErrorBoundary 
-            title="Predictive Analytics Error"
-            description="Unable to load predictive analytics"
+          </ComponentErrorBoundary>
+          <ComponentErrorBoundary 
+            componentName="Predictive Analytics"
+            onError={(error) => handleComponentError('predictive', error)}
           >
             <Suspense fallback={
               <EnhancedLoadingFallback 
@@ -493,13 +579,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             }>
               <PredictiveAnalyticsPanel key={`predictive-${retryCount}`} />
             </Suspense>
-          </ErrorBoundary>
+          </ComponentErrorBoundary>
         </TabsContent>
 
         <TabsContent value="custom" className="space-y-6">
-          <ErrorBoundary 
-            title="Custom Dashboard Builder Error"
-            description="Unable to load custom dashboard builder"
+          <ComponentErrorBoundary 
+            componentName="Custom Dashboard"
+            onError={(error) => handleComponentError('custom', error)}
           >
             <Suspense fallback={
               <EnhancedLoadingFallback 
@@ -509,7 +595,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             }>
               <CustomDashboardBuilder key={`custom-${retryCount}`} />
             </Suspense>
-          </ErrorBoundary>
+          </ComponentErrorBoundary>
         </TabsContent>
       </Tabs>
 
