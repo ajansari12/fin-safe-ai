@@ -165,30 +165,30 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const { resilientSelect } = useResilientQuery();
   const { handleError } = useErrorHandler();
 
-  // Set up real-time monitoring for analytics with stabilization
+  // Emergency stabilization: Disable real-time monitoring
   const { connectionStatus, lastUpdate } = useRealtimeMetrics({
-    enabled: !!profile?.organization_id
+    enabled: false // Disabled for emergency stabilization
   });
 
-  // Phase 5: Connection stability and production optimization
-  const connectionStabilizer = useConnectionStabilizer({
-    maxReconnectAttempts: 15,
-    healthCheckInterval: 20000
-  });
+  // Emergency stabilization: Disable heavy monitoring and optimization
+  // const connectionStabilizer = useConnectionStabilizer({
+  //   maxReconnectAttempts: 15,
+  //   healthCheckInterval: 20000
+  // });
 
-  const productionOptimizer = useProductionOptimizer({
-    enableImageOptimization: true,
-    enableLayoutOptimization: true,
-    enableMemoryManagement: true,
-    enableBundleAnalysis: true
-  });
+  // const productionOptimizer = useProductionOptimizer({
+  //   enableImageOptimization: true,
+  //   enableLayoutOptimization: true,
+  //   enableMemoryManagement: true,
+  //   enableBundleAnalysis: true
+  // });
 
-  // Memory optimization for heavy dashboard
-  useMemoryOptimizer('UnifiedAnalyticsDashboard', {
-    maxMemoryMB: 180,
-    cleanupInterval: 25000,
-    enableGarbageCollection: true
-  });
+  // Memory optimization temporarily disabled for stability
+  // useMemoryOptimizer('UnifiedAnalyticsDashboard', {
+  //   maxMemoryMB: 180,
+  //   cleanupInterval: 25000,
+  //   enableGarbageCollection: true
+  // });
 
   useEffect(() => {
     if (profile?.organization_id) {
@@ -361,35 +361,15 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Connection Diagnostics */}
-      <div className="flex justify-center">
-        <ConnectionDiagnostics />
-      </div>
-
-      {/* Phase 4: Dashboard Optimizer */}
-      <div className="flex justify-center">
-        <DashboardOptimizer />
-      </div>
-
-      {/* Phase 4: Dashboard Personalization */}
-      <div className="flex justify-center">
-        <DashboardPersonalization />
-      </div>
-
-      {/* Phase 4 Complete: Recovery Summary */}
-      <div className="flex justify-center">
-        <DashboardRecoveryComplete />
-      </div>
-
-      {/* Phase 5: Production Readiness Monitor */}
-      <div className="flex justify-center">
-        <ProductionReadinessMonitor />
-      </div>
-
-      {/* Final Summary: All Phases Complete */}
-      <div className="flex justify-center">
-        <FinalDashboardSummary />
-      </div>
+      {/* Emergency stabilization: All diagnostics and monitoring components temporarily disabled */}
+      {process.env.NODE_ENV === 'development' && (
+        <>
+          {/* Connection Diagnostics - Dev Only */}
+          <div className="flex justify-center">
+            <ConnectionDiagnostics />
+          </div>
+        </>
+      )}
 
       {/* OSFI E-21 Compliance Widgets */}
       <ErrorBoundary 
