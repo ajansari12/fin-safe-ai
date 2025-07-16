@@ -1,25 +1,13 @@
 import React, { Suspense, lazy } from 'react';
-// TODO: Migrated from AuthContext to EnhancedAuthContext
 import { useAuth } from '@/contexts/EnhancedAuthContext';
 import AuthenticatedLayout from '@/components/layout/AuthenticatedLayout';
-import { performanceMonitor, logBundleMetrics } from '@/lib/performance-utils';
 import { DashboardSkeleton } from '@/components/common/SkeletonLoaders';
 
-// Lazy load the heavy analytics dashboard
+// Lazy load the simplified analytics dashboard
 const UnifiedAnalyticsDashboard = lazy(() => import('@/components/analytics/UnifiedAnalyticsDashboard'));
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
-
-  // Monitor dashboard performance
-  React.useEffect(() => {
-    const endTiming = performanceMonitor.startTiming('dashboard_load');
-    logBundleMetrics();
-    
-    return () => {
-      endTiming();
-    };
-  }, []);
 
   return (
     <AuthenticatedLayout>

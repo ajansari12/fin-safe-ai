@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAdaptiveLoading } from '@/hooks/useAdaptiveLoading';
 
 interface GlobalLoadingBarProps {
   className?: string;
@@ -10,19 +9,6 @@ const GlobalLoadingBar: React.FC<GlobalLoadingBarProps> = ({ className }) => {
   const location = useLocation();
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(0);
-  
-  const { isLoading, progress: adaptiveProgress } = useAdaptiveLoading(
-    async () => {
-      // Simulate route loading time
-      await new Promise(resolve => setTimeout(resolve, 200));
-    },
-    {
-      initialTimeout: 3000,
-      progressUpdateInterval: 50,
-      enableProgressTracking: true,
-      adaptiveTimeout: true
-    }
-  );
 
   useEffect(() => {
     // Show loading bar on route change
@@ -52,7 +38,7 @@ const GlobalLoadingBar: React.FC<GlobalLoadingBarProps> = ({ className }) => {
       <div 
         className="h-full bg-primary transition-all duration-200 ease-out"
         style={{ 
-          width: `${Math.max(progress, adaptiveProgress)}%`,
+          width: `${progress}%`,
           boxShadow: '0 0 10px hsl(var(--primary) / 0.6)'
         }}
       />

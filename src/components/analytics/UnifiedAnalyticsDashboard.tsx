@@ -9,40 +9,22 @@ import {
   TrendingUp, 
   AlertTriangle, 
   Target, 
-  Users, 
-  Settings,
   Brain,
+  Shield,
+  Settings,
   Zap,
-  Eye,
-  Shield
+  Eye
 } from 'lucide-react';
-// TODO: Migrated from AuthContext to EnhancedAuthContext
 import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { DashboardSkeleton } from './AnalyticsLoadingStates';
 import LoadingFallback from '@/components/common/LoadingFallback';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
-import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
-import { useMemoryOptimizer } from '@/hooks/useMemoryOptimizer';
 import OSFIComplianceWidgets from './OSFIComplianceWidgets';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
-import RealtimeIndicator from '@/components/common/RealtimeIndicator';
 import AllInsightsDialog from '@/components/dialogs/AllInsightsDialog';
-import { DashboardHealthCheck } from './DashboardHealthCheck';
-import { ConnectionDiagnostics } from '@/components/diagnostics/ConnectionDiagnostics';
-import { useResilientQuery } from '@/hooks/useResilientQuery';
-import { DashboardPersonalization } from '@/components/dashboard/DashboardPersonalization';
-import { DashboardOptimizer } from '@/components/dashboard/DashboardOptimizer';
-import { DashboardRecoveryComplete } from '@/components/dashboard/DashboardRecoveryComplete';
-import { ProductionReadinessMonitor } from '@/components/monitoring/ProductionReadinessMonitor';
-import { FinalDashboardSummary } from '@/components/dashboard/FinalDashboardSummary';
-import { useAutoRecovery } from '@/hooks/useAutoRecovery';
-import { useAdaptiveLoading } from '@/hooks/useAdaptiveLoading';
-import { useConnectionStabilizer } from '@/hooks/useConnectionStabilizer';
-import { useProductionOptimizer } from '@/hooks/useProductionOptimizer';
 
 interface AnalyticsInsight {
   id: string;
@@ -53,104 +35,14 @@ interface AnalyticsInsight {
   confidence: number;
 }
 
-// Lazy load heavy dashboard components with enhanced error handling
-const ExecutiveDashboard = lazy(() => 
-  import('./ExecutiveDashboard')
-    .then(module => ({ default: module.default }))
-    .catch(error => {
-      console.error('Failed to load ExecutiveDashboard:', error);
-      throw error;
-    })
-);
+// Simplified dashboard components for core functionality
+const ExecutiveDashboard = lazy(() => import('./ExecutiveDashboard'));
+const OperationalDashboard = lazy(() => import('./OperationalDashboard'));
+const ControlsDashboard = lazy(() => import('../controls/ControlsDashboard'));
 
-const OperationalDashboard = lazy(() => 
-  import('./OperationalDashboard')
-    .then(module => ({ default: module.default }))
-    .catch(error => {
-      console.error('Failed to load OperationalDashboard:', error);
-      throw error;
-    })
-);
-
-const ControlsDashboard = lazy(() => 
-  import('../controls/ControlsDashboard')
-    .then(module => ({ default: module.default }))
-    .catch(error => {
-      console.error('Failed to load ControlsDashboard:', error);
-      throw error;
-    })
-);
-
-const AdvancedAnalyticsDashboard = lazy(() => 
-  import('./AdvancedAnalyticsDashboard')
-    .then(module => ({ default: module.default }))
-    .catch(error => {
-      console.error('Failed to load AdvancedAnalyticsDashboard:', error);
-      throw error;
-    })
-);
-
-const CustomDashboardBuilder = lazy(() => 
-  import('./CustomDashboardBuilder')
-    .then(module => ({ default: module.default }))
-    .catch(error => {
-      console.error('Failed to load CustomDashboardBuilder:', error);
-      throw error;
-    })
-);
-
-const PredictiveAnalyticsPanel = lazy(() => 
-  import('./PredictiveAnalyticsPanel')
-    .then(module => ({ default: module.default }))
-    .catch(error => {
-      console.error('Failed to load PredictiveAnalyticsPanel:', error);
-      throw error;
-    })
-);
-
-// Enhanced loading fallback with timeout and retry
-const EnhancedLoadingFallback = ({ error, onRetry }: { error?: Error; onRetry?: () => void }) => {
-  return (
-    <LoadingFallback 
-      error={error}
-      onRetry={onRetry}
-      title="Loading Analytics Dashboard"
-      description="Preparing your analytics and business intelligence data..."
-      timeout={10000} // Reduced timeout for better UX
-    />
-  );
-};
-
-// Component-specific error boundary wrapper
-const ComponentErrorBoundary = ({ 
-  children, 
-  componentName, 
-  onError 
-}: { 
-  children: React.ReactNode; 
-  componentName: string; 
-  onError: (error: Error) => void;
-}) => {
-  return (
-    <ErrorBoundary
-      title={`${componentName} Error`}
-      description={`Unable to load ${componentName.toLowerCase()} dashboard`}
-      onError={onError}
-      fallback={
-        <div className="text-center p-8">
-          <h3 className="text-lg font-medium mb-2">Component Unavailable</h3>
-          <p className="text-muted-foreground mb-4">
-            The {componentName.toLowerCase()} dashboard is temporarily unavailable.
-          </p>
-          <Button onClick={() => window.location.reload()}>
-            Refresh Page
-          </Button>
-        </div>
-      }
-    >
-      {children}
-    </ErrorBoundary>
-  );
+// Simple loading fallback
+const SimpleLoadingFallback = () => {
+  return <DashboardSkeleton />;
 };
 
 const UnifiedAnalyticsDashboard: React.FC = () => {
@@ -160,35 +52,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [dataError, setDataError] = useState<Error | null>(null);
   const [showAllInsights, setShowAllInsights] = useState(false);
-  const [componentErrors, setComponentErrors] = useState<Record<string, Error>>({});
-  const [retryCount, setRetryCount] = useState(0);
-  const { resilientSelect } = useResilientQuery();
   const { handleError } = useErrorHandler();
-
-  // Emergency stabilization: Disable real-time monitoring
-  const { connectionStatus, lastUpdate } = useRealtimeMetrics({
-    enabled: false // Disabled for emergency stabilization
-  });
-
-  // Emergency stabilization: Disable heavy monitoring and optimization
-  // const connectionStabilizer = useConnectionStabilizer({
-  //   maxReconnectAttempts: 15,
-  //   healthCheckInterval: 20000
-  // });
-
-  // const productionOptimizer = useProductionOptimizer({
-  //   enableImageOptimization: true,
-  //   enableLayoutOptimization: true,
-  //   enableMemoryManagement: true,
-  //   enableBundleAnalysis: true
-  // });
-
-  // Memory optimization temporarily disabled for stability
-  // useMemoryOptimizer('UnifiedAnalyticsDashboard', {
-  //   maxMemoryMB: 180,
-  //   cleanupInterval: 25000,
-  //   enableGarbageCollection: true
-  // });
 
   useEffect(() => {
     if (profile?.organization_id) {
@@ -196,33 +60,19 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
     }
   }, [profile?.organization_id]);
 
-  const loadAutomatedInsights = async (retryCount = 0) => {
+  const loadAutomatedInsights = async () => {
     if (!profile?.organization_id) return;
 
     setIsGeneratingInsights(true);
     setDataError(null);
     
     try {
-      // Use resilient query with caching and retry logic
-      const { data: insightsData, error, fromCache } = await resilientSelect<any>(
-        'analytics_insights',
-        '*',
-        {
-          eq: { org_id: profile.organization_id },
-          order: { column: 'generated_at', ascending: false },
-          limit: 10
-        },
-        {
-          cacheKey: `insights-${profile.organization_id}`,
-          cacheTTL: 300000, // 5 minutes
-          enableOfflineMode: true,
-          retryConfig: {
-            maxRetries: 3,
-            initialDelay: 1000,
-            exponentialBase: 2
-          }
-        }
-      );
+      const { data: insightsData, error } = await supabase
+        .from('analytics_insights')
+        .select('*')
+        .eq('org_id', profile.organization_id)
+        .order('generated_at', { ascending: false })
+        .limit(10);
 
       if (error) throw error;
 
@@ -236,26 +86,11 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       }));
 
       setInsights(transformedInsights);
-      
-      // Show cache indicator if data came from cache
-      if (fromCache) {
-        console.log('Loaded insights from cache');
-      }
-      
-      // Reset error state on successful load
       setDataError(null);
     } catch (error) {
       const appError = handleError(error, 'loading automated insights');
       setDataError(appError as Error);
-      
-      // Show different messages based on error type
-      if (error instanceof Error && error.message.includes('permission')) {
-        toast.error('Permission denied - please check your access rights');
-      } else if (error instanceof Error && error.message.includes('network')) {
-        toast.error('Network error - using cached data if available');
-      } else {
-        toast.error('Failed to load automated insights');
-      }
+      toast.error('Failed to load automated insights');
     } finally {
       setIsGeneratingInsights(false);
     }
@@ -299,33 +134,9 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
     setActiveTab(getDashboardByRole());
   }, [profile?.role]);
 
-  // Clear component errors when tab changes
-  useEffect(() => {
-    setComponentErrors({});
-  }, [activeTab]);
-
-  // Retry handler for component failures
-  const handleComponentRetry = (componentName: string) => {
-    setComponentErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors[componentName];
-      return newErrors;
-    });
-    setRetryCount(prev => prev + 1);
-  };
-
-  // Handle component errors
-  const handleComponentError = (componentName: string, error: Error) => {
-    setComponentErrors(prev => ({
-      ...prev,
-      [componentName]: error
-    }));
-    handleError(error, `${componentName} dashboard`);
-  };
-
   // Show loading state if auth is still loading
   if (authLoading) {
-    return <EnhancedLoadingFallback />;
+    return <SimpleLoadingFallback />;
   }
 
   return (
@@ -339,10 +150,6 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <NotificationCenter />
-          <RealtimeIndicator 
-            connectionStatus={connectionStatus}
-            lastUpdate={lastUpdate}
-          />
           <Button 
             onClick={() => loadAutomatedInsights()}
             disabled={isGeneratingInsights}
@@ -354,22 +161,6 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Dashboard Health Check - Admin Only */}
-      {(profile?.role === 'admin' || profile?.role === 'super_admin') && (
-        <div className="flex justify-center">
-          <DashboardHealthCheck />
-        </div>
-      )}
-
-      {/* Emergency stabilization: All diagnostics and monitoring components temporarily disabled */}
-      {process.env.NODE_ENV === 'development' && (
-        <>
-          {/* Connection Diagnostics - Dev Only */}
-          <div className="flex justify-center">
-            <ConnectionDiagnostics />
-          </div>
-        </>
-      )}
 
       {/* OSFI E-21 Compliance Widgets */}
       <ErrorBoundary 
@@ -490,163 +281,61 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       </ErrorBoundary>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
+        <TabsList className="grid w-full grid-cols-3 gap-1">
           <TabsTrigger 
             value="executive" 
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
-            aria-label="Executive dashboard with high-level metrics"
+            className="flex items-center gap-2"
           >
-            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Executive</span>
-            <span className="sm:hidden">Exec</span>
+            <BarChart3 className="h-4 w-4" />
+            Executive
           </TabsTrigger>
           <TabsTrigger 
             value="operational" 
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
-            aria-label="Operational dashboard with detailed metrics"
+            className="flex items-center gap-2"
           >
-            <Target className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Operational</span>
-            <span className="sm:hidden">Ops</span>
+            <Target className="h-4 w-4" />
+            Operational
           </TabsTrigger>
           <TabsTrigger 
             value="controls" 
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
-            aria-label="Controls dashboard showing security and compliance"
+            className="flex items-center gap-2"
           >
-            <Shield className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Controls</span>
-            <span className="sm:hidden">Ctrl</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="advanced" 
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
-            aria-label="Advanced analytics with AI insights"
-          >
-            <Brain className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Advanced</span>
-            <span className="sm:hidden">AI</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="predictive" 
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
-            aria-label="Predictive analytics and forecasting"
-          >
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Predictive</span>
-            <span className="sm:hidden">Pred</span>
-          </TabsTrigger>
-          <TabsTrigger 
-            value="custom" 
-            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
-            aria-label="Custom dashboard builder"
-          >
-            <Settings className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Custom</span>
-            <span className="sm:hidden">Edit</span>
+            <Shield className="h-4 w-4" />
+            Controls
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
-          <ComponentErrorBoundary 
-            componentName="Executive Dashboard"
-            onError={(error) => handleComponentError('executive', error)}
+          <ErrorBoundary
+            title="Executive Dashboard Error"
+            description="Unable to load executive dashboard"
           >
-            <Suspense fallback={
-              <EnhancedLoadingFallback 
-                error={componentErrors.executive}
-                onRetry={() => handleComponentRetry('executive')}
-              />
-            }>
-              <ExecutiveDashboard key={`executive-${retryCount}`} />
+            <Suspense fallback={<SimpleLoadingFallback />}>
+              <ExecutiveDashboard />
             </Suspense>
-          </ComponentErrorBoundary>
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="operational" className="space-y-6">
-          <ComponentErrorBoundary 
-            componentName="Operational Dashboard"
-            onError={(error) => handleComponentError('operational', error)}
+          <ErrorBoundary
+            title="Operational Dashboard Error"
+            description="Unable to load operational dashboard"
           >
-            <Suspense fallback={
-              <EnhancedLoadingFallback 
-                error={componentErrors.operational}
-                onRetry={() => handleComponentRetry('operational')}
-              />
-            }>
-              <OperationalDashboard key={`operational-${retryCount}`} />
+            <Suspense fallback={<SimpleLoadingFallback />}>
+              <OperationalDashboard />
             </Suspense>
-          </ComponentErrorBoundary>
+          </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="controls" className="space-y-6">
-          <ComponentErrorBoundary 
-            componentName="Controls Dashboard"
-            onError={(error) => handleComponentError('controls', error)}
+          <ErrorBoundary
+            title="Controls Dashboard Error"
+            description="Unable to load controls dashboard"
           >
-            <Suspense fallback={
-              <EnhancedLoadingFallback 
-                error={componentErrors.controls}
-                onRetry={() => handleComponentRetry('controls')}
-              />
-            }>
-              <ControlsDashboard key={`controls-${retryCount}`} />
+            <Suspense fallback={<SimpleLoadingFallback />}>
+              <ControlsDashboard />
             </Suspense>
-          </ComponentErrorBoundary>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="space-y-6">
-          <ComponentErrorBoundary 
-            componentName="Advanced Analytics"
-            onError={(error) => handleComponentError('advanced', error)}
-          >
-            <Suspense fallback={
-              <EnhancedLoadingFallback 
-                error={componentErrors.advanced}
-                onRetry={() => handleComponentRetry('advanced')}
-              />
-            }>
-              <AdvancedAnalyticsDashboard key={`advanced-${retryCount}`} />
-            </Suspense>
-          </ComponentErrorBoundary>
-        </TabsContent>
-
-        <TabsContent value="predictive" className="space-y-6">
-          <ComponentErrorBoundary 
-            componentName="AI Status Verification"
-            onError={(error) => handleComponentError('aiStatus', error)}
-          >
-            <AIStatusVerification key={`aiStatus-${retryCount}`} />
-          </ComponentErrorBoundary>
-          <ComponentErrorBoundary 
-            componentName="Predictive Analytics"
-            onError={(error) => handleComponentError('predictive', error)}
-          >
-            <Suspense fallback={
-              <EnhancedLoadingFallback 
-                error={componentErrors.predictive}
-                onRetry={() => handleComponentRetry('predictive')}
-              />
-            }>
-              <PredictiveAnalyticsPanel key={`predictive-${retryCount}`} />
-            </Suspense>
-          </ComponentErrorBoundary>
-        </TabsContent>
-
-        <TabsContent value="custom" className="space-y-6">
-          <ComponentErrorBoundary 
-            componentName="Custom Dashboard"
-            onError={(error) => handleComponentError('custom', error)}
-          >
-            <Suspense fallback={
-              <EnhancedLoadingFallback 
-                error={componentErrors.custom}
-                onRetry={() => handleComponentRetry('custom')}
-              />
-            }>
-              <CustomDashboardBuilder key={`custom-${retryCount}`} />
-            </Suspense>
-          </ComponentErrorBoundary>
+          </ErrorBoundary>
         </TabsContent>
       </Tabs>
 
