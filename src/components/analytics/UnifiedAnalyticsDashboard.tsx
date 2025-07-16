@@ -23,8 +23,10 @@ import { toast } from 'sonner';
 import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { DashboardSkeleton } from './AnalyticsLoadingStates';
+import LoadingFallback from '@/components/common/LoadingFallback';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
+import { useMemoryOptimizer } from './MemoryOptimizer';
 import OSFIComplianceWidgets from './OSFIComplianceWidgets';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import RealtimeIndicator from '@/components/common/RealtimeIndicator';
@@ -59,24 +61,37 @@ const PredictiveAnalyticsPanel = lazy(() =>
   import('./PredictiveAnalyticsPanel').then(module => ({ default: module.default }))
 );
 
-// Enhanced loading skeleton component with better UX
-const EnhancedDashboardSkeleton = () => (
-  <DashboardSkeleton />
-);
+// Enhanced loading fallback with timeout and retry
+const EnhancedLoadingFallback = ({ error, onRetry }: { error?: Error; onRetry?: () => void }) => {
+  return (
+    <LoadingFallback 
+      error={error}
+      onRetry={onRetry}
+      title="Loading Analytics Dashboard"
+      description="Preparing your analytics and business intelligence data..."
+      timeout={15000} // 15 second timeout for heavy dashboard
+    />
+  );
+};
 
 const UnifiedAnalyticsDashboard: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('executive');
   const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
   const [dataError, setDataError] = useState<Error | null>(null);
   const [showAllInsights, setShowAllInsights] = useState(false);
+  const [componentErrors, setComponentErrors] = useState<Record<string, Error>>({});
+  const [retryCount, setRetryCount] = useState(0);
   const { handleError } = useErrorHandler();
 
   // Set up real-time monitoring for analytics
   const { connectionStatus, lastUpdate } = useRealtimeMetrics({
     enabled: !!profile?.organization_id
   });
+
+  // Memory optimization for heavy dashboard
+  useMemoryOptimizer('UnifiedAnalyticsDashboard');
 
   useEffect(() => {
     if (profile?.organization_id) {
@@ -172,6 +187,26 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   useEffect(() => {
     setActiveTab(getDashboardByRole());
   }, [profile?.role]);
+
+  // Clear component errors when tab changes
+  useEffect(() => {
+    setComponentErrors({});
+  }, [activeTab]);
+
+  // Retry handler for component failures
+  const handleComponentRetry = (componentName: string) => {
+    setComponentErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[componentName];
+      return newErrors;
+    });
+    setRetryCount(prev => prev + 1);
+  };
+
+  // Show loading state if auth is still loading
+  if (authLoading) {
+    return <EnhancedLoadingFallback />;
+  }
 
   return (
     <div className="space-y-6">
@@ -380,8 +415,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             title="Executive Dashboard Error"
             description="Unable to load executive dashboard"
           >
-            <Suspense fallback={<EnhancedDashboardSkeleton />}>
-              <ExecutiveDashboard />
+            <Suspense fallback={
+              <EnhancedLoadingFallback 
+                error={componentErrors.executive}
+                onRetry={() => handleComponentRetry('executive')}
+              />
+            }>
+              <ExecutiveDashboard key={`executive-${retryCount}`} />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
@@ -391,8 +431,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             title="Operational Dashboard Error"
             description="Unable to load operational dashboard"
           >
-            <Suspense fallback={<EnhancedDashboardSkeleton />}>
-              <OperationalDashboard />
+            <Suspense fallback={
+              <EnhancedLoadingFallback 
+                error={componentErrors.operational}
+                onRetry={() => handleComponentRetry('operational')}
+              />
+            }>
+              <OperationalDashboard key={`operational-${retryCount}`} />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
@@ -402,8 +447,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             title="Controls Dashboard Error"
             description="Unable to load controls dashboard"
           >
-            <Suspense fallback={<EnhancedDashboardSkeleton />}>
-              <ControlsDashboard />
+            <Suspense fallback={
+              <EnhancedLoadingFallback 
+                error={componentErrors.controls}
+                onRetry={() => handleComponentRetry('controls')}
+              />
+            }>
+              <ControlsDashboard key={`controls-${retryCount}`} />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
@@ -413,8 +463,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             title="Advanced Analytics Error"
             description="Unable to load advanced analytics dashboard"
           >
-            <Suspense fallback={<EnhancedDashboardSkeleton />}>
-              <AdvancedAnalyticsDashboard />
+            <Suspense fallback={
+              <EnhancedLoadingFallback 
+                error={componentErrors.advanced}
+                onRetry={() => handleComponentRetry('advanced')}
+              />
+            }>
+              <AdvancedAnalyticsDashboard key={`advanced-${retryCount}`} />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
@@ -424,14 +479,19 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             title="AI Status Verification Error"
             description="Unable to verify AI status"
           >
-            <AIStatusVerification />
+            <AIStatusVerification key={`aiStatus-${retryCount}`} />
           </ErrorBoundary>
           <ErrorBoundary 
             title="Predictive Analytics Error"
             description="Unable to load predictive analytics"
           >
-            <Suspense fallback={<EnhancedDashboardSkeleton />}>
-              <PredictiveAnalyticsPanel />
+            <Suspense fallback={
+              <EnhancedLoadingFallback 
+                error={componentErrors.predictive}
+                onRetry={() => handleComponentRetry('predictive')}
+              />
+            }>
+              <PredictiveAnalyticsPanel key={`predictive-${retryCount}`} />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
@@ -441,8 +501,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
             title="Custom Dashboard Builder Error"
             description="Unable to load custom dashboard builder"
           >
-            <Suspense fallback={<EnhancedDashboardSkeleton />}>
-              <CustomDashboardBuilder />
+            <Suspense fallback={
+              <EnhancedLoadingFallback 
+                error={componentErrors.custom}
+                onRetry={() => handleComponentRetry('custom')}
+              />
+            }>
+              <CustomDashboardBuilder key={`custom-${retryCount}`} />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
