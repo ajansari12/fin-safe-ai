@@ -16,6 +16,10 @@ import { useAssetPreloading } from '@/hooks/useAssetPreloading';
 import { usePredictiveLoading } from '@/hooks/usePredictiveLoading';
 import { useNetworkAdaptiveLoading } from '@/hooks/useNetworkAdaptiveLoading';
 import { useLoadingMicroInteractions } from '@/hooks/useLoadingMicroInteractions';
+import { usePerformanceBudget } from '@/hooks/usePerformanceBudget';
+import { useIntelligentCache } from '@/hooks/useIntelligentCache';
+import { useResourceHints } from '@/hooks/useResourceHints';
+import { useMemoryOptimization } from '@/hooks/useMemoryOptimization';
 import { 
   HeroSkeleton, 
   FeaturesSkeleton, 
@@ -100,6 +104,49 @@ const Home = () => {
     enableContentPreviews: true,
     enableProgressIndicators: true
   });
+
+  // Phase 4: Performance optimization and resource management
+  const { isCompliant, violations } = usePerformanceBudget({
+    enableBudgetMonitoring: true,
+    enableAutoOptimization: true,
+    alertOnBreach: true
+  });
+
+  const cache = useIntelligentCache({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    strategy: 'lru',
+    enableCompression: true,
+    enablePersistence: true
+  });
+
+  useResourceHints({
+    enableDnsPrefetch: true,
+    enablePreconnect: true,
+    enablePreload: true,
+    enablePrefetch: true,
+    criticalResources: ['/placeholder.svg'],
+    externalDomains: ['fonts.googleapis.com', 'fonts.gstatic.com']
+  });
+
+  const { getMemoryStats, performOptimization } = useMemoryOptimization({
+    enableAutoCleanup: true,
+    cleanupThreshold: 80,
+    enableImageOptimization: true,
+    enableDOMCleanup: true
+  });
+
+  // Performance monitoring in development
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const memoryStats = getMemoryStats();
+      console.log('Performance Status:', {
+        budgetCompliant: isCompliant,
+        violations,
+        memoryUsage: `${memoryStats.usagePercentage.toFixed(2)}%`,
+        cacheInfo: cache.getCacheInfo()
+      });
+    }
+  }, [isCompliant, violations]);
   
   return (
     <PublicPageErrorBoundary>
