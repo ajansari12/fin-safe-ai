@@ -354,10 +354,12 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Dashboard Health Check */}
-      <div className="flex justify-center">
-        <DashboardHealthCheck />
-      </div>
+      {/* Dashboard Health Check - Admin Only */}
+      {(profile?.role === 'admin' || profile?.role === 'super_admin') && (
+        <div className="flex justify-center">
+          <DashboardHealthCheck />
+        </div>
+      )}
 
       {/* Connection Diagnostics */}
       <div className="flex justify-center">
