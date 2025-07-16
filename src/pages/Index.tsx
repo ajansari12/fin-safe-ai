@@ -16,13 +16,15 @@ const Home = () => {
   return (
     <PublicPageErrorBoundary>
       <PageLayout>
-        <Hero />
-        <Features />
-        <RegulatoryCompliance />
-        <AIAssistant />
-        <Testimonials />
-        <Pricing />
-        <CTASection />
+        <div className="min-h-screen">
+          <Hero />
+          <Features />
+          <RegulatoryCompliance />
+          <AIAssistant />
+          <Testimonials />
+          <Pricing />
+          <CTASection />
+        </div>
       </PageLayout>
     </PublicPageErrorBoundary>
   );

@@ -81,6 +81,8 @@ if (import.meta.env.DEV) {
 }
 
 function App() {
+  console.log('🚀 App component rendering');
+  
   return (
     <GlobalErrorBoundary>
       <ErrorMonitor />

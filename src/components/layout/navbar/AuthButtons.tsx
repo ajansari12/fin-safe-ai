@@ -11,6 +11,8 @@ interface AuthButtonsProps {
 
 const AuthButtons: React.FC<AuthButtonsProps> = ({ className }) => {
   const { isAuthenticated, logout } = useAuth();
+  
+  console.log('🔐 AuthButtons rendering, isAuthenticated:', isAuthenticated);
 
   if (isAuthenticated) {
     return (
@@ -31,10 +33,10 @@ const AuthButtons: React.FC<AuthButtonsProps> = ({ className }) => {
     <div className={className}>
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost">
-          <Link to="/login">Login</Link>
+          <Link to="/auth/login">Login</Link>
         </Button>
         <Button asChild>
-          <Link to="/register">Get Started</Link>
+          <Link to="/auth/register">Get Started</Link>
         </Button>
       </div>
     </div>

@@ -8,15 +8,24 @@ import { DecorativeBg } from "@/components/ui/decorative-background";
 const Hero = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   
+  console.log('🎯 Hero component rendering');
+  
   useEffect(() => {
-    console.log('🎨 Hero component mounting');
-    // Trigger animations after component mounts
-    setIsLoaded(true);
+    console.log('🎯 Hero useEffect running');
+    const timer = setTimeout(() => {
+      console.log('🎯 Hero setting isLoaded to true');
+      setIsLoaded(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
+  console.log('🎯 Hero rendering JSX');
+  
   return (
     <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
-      <DecorativeBg variant="dots" className="opacity-50" />
+      {/* Temporarily remove DecorativeBg to test basic rendering */}
+      {/* <DecorativeBg variant="dots" className="opacity-50" /> */}
       
       <div className="container mx-auto px-4 pt-16 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
