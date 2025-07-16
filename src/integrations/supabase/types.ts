@@ -11307,6 +11307,24 @@ export type Database = {
           last_incident_date: string
         }[]
       }
+      get_secure_analytics_summary: {
+        Args: { org_id: string }
+        Returns: {
+          total_incidents: number
+          critical_findings: number
+          compliance_score: number
+          high_risk_vendors: number
+        }[]
+      }
+      get_secure_audit_summary: {
+        Args: { org_id: string }
+        Returns: {
+          total_schedules: number
+          completed_audits: number
+          pending_findings: number
+          high_priority_tasks: number
+        }[]
+      }
       get_user_org_id: {
         Args: Record<PropertyKey, never>
         Returns: string
