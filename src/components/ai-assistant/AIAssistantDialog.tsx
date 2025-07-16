@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAIAssistant } from "./AIAssistantContext";
 import { Badge } from "@/components/ui/badge";
-import DOMPurify from "dompurify";
+
 
 export const AIAssistantDialog = () => {
   const { 
