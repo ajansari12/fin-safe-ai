@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 // TODO: Migrated from AuthContext to EnhancedAuthContext
@@ -21,8 +21,13 @@ interface RealtimeMetricsOptions {
 
 export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
   const { profile } = useAuth();
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('disconnected');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [isHealthy, setIsHealthy] = useState(true);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const channelRef = useRef<any>(null);
+  const maxReconnectAttempts = 5;
 
   const {
     onControlUpdate,
@@ -84,14 +89,19 @@ export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
     }
   }, [onControlUpdate, onKRIUpdate, onBreachAlert, onIncidentUpdate]);
 
-  useEffect(() => {
-    if (!enabled || !profile?.organization_id) {
+  const connectToRealtime = useCallback(() => {
+    if (!profile?.organization_id) {
       return;
     }
 
     setConnectionStatus('connecting');
+    
+    // Clean up existing connection
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
 
-    // Create a single channel for all organization updates
+    // Create a new channel with connection recovery
     const channel = supabase
       .channel(`org-metrics-${profile.organization_id}`)
       .on(
@@ -163,24 +173,91 @@ export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
         }
       )
       .subscribe((status) => {
+        console.log('Real-time connection status:', status);
+        
         if (status === 'SUBSCRIBED') {
           setConnectionStatus('connected');
+          setReconnectAttempts(0);
+          setIsHealthy(true);
           console.log('✅ Real-time metrics connected');
         } else if (status === 'CHANNEL_ERROR') {
           setConnectionStatus('disconnected');
+          setIsHealthy(false);
           console.error('❌ Real-time metrics connection failed');
+          
+          // Attempt to reconnect with exponential backoff
+          if (reconnectAttempts < maxReconnectAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+            
+            setConnectionStatus('reconnecting');
+            setReconnectAttempts(prev => prev + 1);
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              connectToRealtime();
+            }, delay);
+          } else {
+            console.error('Max reconnection attempts reached');
+            toast.error('Real-time connection failed. Some features may be limited.');
+          }
+        } else if (status === 'CLOSED') {
+          setConnectionStatus('disconnected');
+          setIsHealthy(false);
+          console.warn('Real-time connection closed');
         }
       });
 
+    channelRef.current = channel;
+  }, [profile?.organization_id, handleMetricUpdate, reconnectAttempts, maxReconnectAttempts]);
+
+  // Force reconnection function
+  const forceReconnect = useCallback(() => {
+    setReconnectAttempts(0);
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    connectToRealtime();
+  }, [connectToRealtime]);
+
+  useEffect(() => {
+    if (!enabled || !profile?.organization_id) {
+      return;
+    }
+
+    connectToRealtime();
+
+    // Health check interval
+    const healthCheckInterval = setInterval(() => {
+      if (connectionStatus === 'connected') {
+        // Send a ping to check if connection is still alive
+        const timeSinceLastUpdate = lastUpdate ? Date.now() - lastUpdate.getTime() : Infinity;
+        
+        // If no updates for more than 5 minutes, consider connection stale
+        if (timeSinceLastUpdate > 300000) {
+          console.warn('Real-time connection appears stale, attempting reconnection');
+          forceReconnect();
+        }
+      }
+    }, 60000); // Check every minute
+
     return () => {
       setConnectionStatus('disconnected');
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      clearInterval(healthCheckInterval);
     };
-  }, [enabled, profile?.organization_id, handleMetricUpdate]);
+  }, [enabled, profile?.organization_id, connectToRealtime, connectionStatus, lastUpdate, forceReconnect]);
 
   return {
     connectionStatus,
     lastUpdate,
-    isConnected: connectionStatus === 'connected'
+    isConnected: connectionStatus === 'connected',
+    isHealthy,
+    reconnectAttempts,
+    forceReconnect
   };
 };

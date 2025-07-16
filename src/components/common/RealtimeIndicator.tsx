@@ -4,7 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Wifi, WifiOff, Clock } from 'lucide-react';
 
 interface RealtimeIndicatorProps {
-  connectionStatus: 'connecting' | 'connected' | 'disconnected';
+  connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
   lastUpdate?: Date | null;
   className?: string;
 }
@@ -29,6 +29,13 @@ const RealtimeIndicator = memo<RealtimeIndicatorProps>(({
           text: 'Connecting',
           variant: 'secondary' as const,
           className: 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        };
+      case 'reconnecting':
+        return {
+          icon: <Clock className="h-3 w-3 animate-spin" />,
+          text: 'Reconnecting',
+          variant: 'secondary' as const,
+          className: 'bg-orange-100 text-orange-800 border-orange-200'
         };
       case 'disconnected':
         return {

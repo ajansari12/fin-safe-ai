@@ -32,6 +32,8 @@ import NotificationCenter from '@/components/notifications/NotificationCenter';
 import RealtimeIndicator from '@/components/common/RealtimeIndicator';
 import AllInsightsDialog from '@/components/dialogs/AllInsightsDialog';
 import { DashboardHealthCheck } from './DashboardHealthCheck';
+import { ConnectionDiagnostics } from '@/components/diagnostics/ConnectionDiagnostics';
+import { useResilientQuery } from '@/hooks/useResilientQuery';
 
 interface AnalyticsInsight {
   id: string;
@@ -151,6 +153,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const [showAllInsights, setShowAllInsights] = useState(false);
   const [componentErrors, setComponentErrors] = useState<Record<string, Error>>({});
   const [retryCount, setRetryCount] = useState(0);
+  const { resilientSelect } = useResilientQuery();
   const { handleError } = useErrorHandler();
 
   // Set up real-time monitoring for analytics
@@ -178,17 +181,30 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
     setDataError(null);
     
     try {
-      // Load analytics insights from Supabase with retry logic
-      const { data: insightsData, error } = await supabase
-        .from('analytics_insights')
-        .select('*')
-        .eq('org_id', profile.organization_id)
-        .order('generated_at', { ascending: false })
-        .limit(10);
+      // Use resilient query with caching and retry logic
+      const { data: insightsData, error, fromCache } = await resilientSelect<any>(
+        'analytics_insights',
+        '*',
+        {
+          eq: { org_id: profile.organization_id },
+          order: { column: 'generated_at', ascending: false },
+          limit: 10
+        },
+        {
+          cacheKey: `insights-${profile.organization_id}`,
+          cacheTTL: 300000, // 5 minutes
+          enableOfflineMode: true,
+          retryConfig: {
+            maxRetries: 3,
+            initialDelay: 1000,
+            exponentialBase: 2
+          }
+        }
+      );
 
       if (error) throw error;
 
-      const transformedInsights: AnalyticsInsight[] = (insightsData || []).map(insight => ({
+      const transformedInsights: AnalyticsInsight[] = (insightsData || []).map((insight: any) => ({
         id: insight.id,
         type: insight.insight_type,
         title: insight.insight_data?.title || 'Analytics Insight',
@@ -199,21 +215,22 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
 
       setInsights(transformedInsights);
       
+      // Show cache indicator if data came from cache
+      if (fromCache) {
+        console.log('Loaded insights from cache');
+      }
+      
       // Reset error state on successful load
       setDataError(null);
     } catch (error) {
       const appError = handleError(error, 'loading automated insights');
       setDataError(appError as Error);
       
-      // Retry logic for network errors
-      if (retryCount < 2 && error instanceof Error && error.message.includes('network')) {
-        setTimeout(() => loadAutomatedInsights(retryCount + 1), 2000 * (retryCount + 1));
-        return;
-      }
-      
       // Show different messages based on error type
       if (error instanceof Error && error.message.includes('permission')) {
         toast.error('Permission denied - please check your access rights');
+      } else if (error instanceof Error && error.message.includes('network')) {
+        toast.error('Network error - using cached data if available');
       } else {
         toast.error('Failed to load automated insights');
       }
@@ -318,6 +335,11 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       {/* Dashboard Health Check */}
       <div className="flex justify-center">
         <DashboardHealthCheck />
+      </div>
+
+      {/* Connection Diagnostics */}
+      <div className="flex justify-center">
+        <ConnectionDiagnostics />
       </div>
 
       {/* OSFI E-21 Compliance Widgets */}

@@ -80,6 +80,9 @@ const ControlsDashboard = memo(() => {
     enabled: !isLoading
   });
 
+  // Map reconnecting status to connecting for display
+  const displayConnectionStatus = connectionStatus === 'reconnecting' ? 'connecting' : connectionStatus;
+
   // Enable realtime updates for critical data
   useRealtimeSubscription({
     table: 'controls',
@@ -130,7 +133,7 @@ const ControlsDashboard = memo(() => {
             <p className="text-muted-foreground">Real-time monitoring of controls and KRIs</p>
           </div>
           <RealtimeIndicator 
-            connectionStatus={connectionStatus}
+            connectionStatus={displayConnectionStatus}
             lastUpdate={lastUpdate}
           />
         </div>
