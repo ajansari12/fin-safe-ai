@@ -2,31 +2,39 @@
 import { generatePDF, createHTMLContent } from './pdf-export-service';
 import { ScenarioTest } from './scenario-testing-service';
 import { format } from 'date-fns';
+import DOMPurify from 'dompurify';
 
 export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
+  // HTML escape function to prevent XSS
+  const escapeHtml = (text: string) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
   const getStatusBadge = (status: string) => {
     const badgeClass = status === 'completed' ? 'badge-success' : 
                       status === 'in_progress' ? 'badge-warning' : 'badge-info';
-    return `<span class="badge ${badgeClass}">${status.replace('_', ' ').toUpperCase()}</span>`;
+    return `<span class="badge ${badgeClass}">${escapeHtml(status.replace('_', ' ').toUpperCase())}</span>`;
   };
 
   const getSeverityBadge = (severity: string) => {
     const badgeClass = severity === 'critical' || severity === 'high' ? 'badge-error' : 
                       severity === 'medium' ? 'badge-warning' : 'badge-info';
-    return `<span class="badge ${badgeClass}">${severity.toUpperCase()}</span>`;
+    return `<span class="badge ${badgeClass}">${escapeHtml(severity.toUpperCase())}</span>`;
   };
 
   const getOutcomeBadge = (outcome?: string) => {
     if (!outcome) return 'N/A';
     const badgeClass = outcome === 'successful' ? 'badge-success' : 
                       outcome === 'partial' ? 'badge-warning' : 'badge-error';
-    return `<span class="badge ${badgeClass}">${outcome.toUpperCase()}</span>`;
+    return `<span class="badge ${badgeClass}">${escapeHtml(outcome.toUpperCase())}</span>`;
   };
 
   const htmlContent = `
     <div class="header">
       <h1>Scenario Test Report</h1>
-      <div class="subtitle">${scenario.title}</div>
+      <div class="subtitle">${escapeHtml(scenario.title)}</div>
     </div>
 
     <div class="section">
@@ -34,7 +42,7 @@ export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
       <div class="grid">
         <div class="card">
           <strong>Test ID:</strong><br>
-          ${scenario.id}
+          ${escapeHtml(scenario.id)}
         </div>
         <div class="card">
           <strong>Status:</strong><br>
@@ -42,7 +50,7 @@ export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
         </div>
         <div class="card">
           <strong>Disruption Type:</strong><br>
-          <span class="badge badge-info">${scenario.disruption_type}</span>
+          <span class="badge badge-info">${escapeHtml(scenario.disruption_type)}</span>
         </div>
         <div class="card">
           <strong>Severity Level:</strong><br>
@@ -73,7 +81,7 @@ export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
     <div class="section">
       <h2>Test Description</h2>
       <div class="card">
-        ${scenario.description.replace(/\n/g, '<br>')}
+        ${escapeHtml(scenario.description).replace(/\n/g, '<br>')}
       </div>
     </div>
     ` : ''}
@@ -82,7 +90,7 @@ export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
     <div class="section">
       <h2>Response Plan</h2>
       <div class="card">
-        ${scenario.response_plan.replace(/\n/g, '<br>')}
+        ${escapeHtml(scenario.response_plan).replace(/\n/g, '<br>')}
       </div>
     </div>
     ` : ''}
@@ -91,7 +99,7 @@ export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
     <div class="section">
       <h2>Post-Mortem Analysis</h2>
       <div class="card">
-        ${scenario.post_mortem.replace(/\n/g, '<br>')}
+        ${escapeHtml(scenario.post_mortem).replace(/\n/g, '<br>')}
       </div>
     </div>
     ` : ''}
@@ -100,7 +108,7 @@ export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
     <div class="section">
       <h2>Lessons Learned</h2>
       <div class="card">
-        ${scenario.lessons_learned.replace(/\n/g, '<br>')}
+        ${escapeHtml(scenario.lessons_learned).replace(/\n/g, '<br>')}
       </div>
     </div>
     ` : ''}
@@ -109,17 +117,25 @@ export const generateScenarioTestPDF = async (scenario: ScenarioTest) => {
     <div class="section">
       <h2>Improvements Identified</h2>
       <div class="card">
-        ${scenario.improvements_identified.replace(/\n/g, '<br>')}
+        ${escapeHtml(scenario.improvements_identified).replace(/\n/g, '<br>')}
       </div>
     </div>
     ` : ''}
   `;
 
   const element = document.createElement('div');
-  element.innerHTML = createHTMLContent(`Scenario Test Report - ${scenario.title}`, htmlContent);
+  // Sanitize HTML content to prevent XSS attacks
+  const sanitizedTitle = DOMPurify.sanitize(scenario.title);
+  const sanitizedHtmlContent = DOMPurify.sanitize(htmlContent, {
+    ALLOWED_TAGS: ['div', 'h1', 'h2', 'h3', 'p', 'span', 'strong', 'em', 'br', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+    ALLOWED_ATTR: ['class', 'id'],
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link'],
+    FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'href', 'src']
+  });
+  element.innerHTML = createHTMLContent(`Scenario Test Report - ${sanitizedTitle}`, sanitizedHtmlContent);
   document.body.appendChild(element);
 
-  const filename = `scenario-test-${scenario.title.replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+  const filename = `scenario-test-${escapeHtml(scenario.title).replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
   const result = await generatePDF(element, { filename });
   
   document.body.removeChild(element);

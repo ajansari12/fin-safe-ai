@@ -58,6 +58,7 @@ import { AuthDebugTrigger } from './components/debug/AuthDebugTrigger';
 import { SecurityMonitor } from './components/security/SecurityMonitor';
 import { ContentSecurityPolicy } from '@/utils/content-security-policy';
 import { quickSchemaCheck } from '@/utils/schema-validation';
+import { applyProductionSafeLogging } from '@/utils/production-safe-logging';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,9 +83,10 @@ if (import.meta.env.DEV) {
 }
 
 function App() {
-  // Apply CSP on app startup for enhanced security
+  // Apply security configurations on app startup
   useEffect(() => {
     ContentSecurityPolicy.applyCSP();
+    applyProductionSafeLogging();
   }, []);
 
   // Reduced logging in production to prevent sensitive information exposure

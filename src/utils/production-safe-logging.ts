@@ -193,3 +193,49 @@ export const logDebug = (message: string, data?: any, context?: string) => logge
 export const logSecurityEvent = (event: string, data?: any, severity?: 'low' | 'medium' | 'high') => logger.logSecurityEvent(event, data, severity);
 export const logAuthenticationEvent = (event: string, userId?: string, success?: boolean) => logger.logAuthenticationEvent(event, userId, success);
 export const logDataAccess = (resource: string, action: string, userId?: string) => logger.logDataAccess(resource, action, userId);
+
+// Apply production-safe logging configurations
+export const applyProductionSafeLogging = () => {
+  // Override console methods in production to use our safe logger
+  if (process.env.NODE_ENV === 'production') {
+    // Override console.log to use our safe logger
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    
+    console.log = (...args: any[]) => {
+      // Only log in production if it's an error or warning
+      if (args.length > 0 && (args[0]?.toString().includes('[ERROR]') || args[0]?.toString().includes('[WARN]'))) {
+        originalConsoleLog.apply(console, args);
+      }
+    };
+    
+    console.error = (...args: any[]) => {
+      // Always log errors but sanitize them
+      const sanitizedArgs = args.map(arg => {
+        if (typeof arg === 'object' && arg !== null) {
+          return logger['sanitizeData'](arg);
+        }
+        return arg;
+      });
+      originalConsoleError.apply(console, sanitizedArgs);
+    };
+    
+    console.warn = (...args: any[]) => {
+      // Always log warnings but sanitize them
+      const sanitizedArgs = args.map(arg => {
+        if (typeof arg === 'object' && arg !== null) {
+          return logger['sanitizeData'](arg);
+        }
+        return arg;
+      });
+      originalConsoleWarn.apply(console, sanitizedArgs);
+    };
+  }
+  
+  // Log application startup
+  logger.info('Application security logging initialized', {
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+};

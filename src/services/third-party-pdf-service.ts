@@ -2,18 +2,26 @@
 import { generatePDF, createHTMLContent } from './pdf-export-service';
 import { VendorProfile } from './third-party-service';
 import { format } from 'date-fns';
+import DOMPurify from 'dompurify';
 
 export const generateThirdPartyReviewPDF = async (vendors: VendorProfile[]) => {
+  // HTML escape function to prevent XSS
+  const escapeHtml = (text: string) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
   const getRiskBadge = (risk: string) => {
     const badgeClass = risk === 'high' || risk === 'critical' ? 'badge-error' : 
                       risk === 'medium' ? 'badge-warning' : 'badge-success';
-    return `<span class="badge ${badgeClass}">${risk.toUpperCase()}</span>`;
+    return `<span class="badge ${badgeClass}">${escapeHtml(risk.toUpperCase())}</span>`;
   };
 
   const getStatusBadge = (status: string) => {
     const badgeClass = status === 'active' ? 'badge-success' : 
                       status === 'under_review' ? 'badge-warning' : 'badge-error';
-    return `<span class="badge ${badgeClass}">${status.replace('_', ' ').toUpperCase()}</span>`;
+    return `<span class="badge ${badgeClass}">${escapeHtml(status.replace('_', ' ').toUpperCase())}</span>`;
   };
 
   const vendorsTable = vendors.length > 0 ? `
@@ -31,8 +39,8 @@ export const generateThirdPartyReviewPDF = async (vendors: VendorProfile[]) => {
       <tbody>
         ${vendors.map(vendor => `
           <tr>
-            <td><strong>${vendor.vendor_name}</strong></td>
-            <td>${vendor.service_provided || 'N/A'}</td>
+            <td><strong>${escapeHtml(vendor.vendor_name)}</strong></td>
+            <td>${escapeHtml(vendor.service_provided || 'N/A')}</td>
             <td>${vendor.risk_rating ? getRiskBadge(vendor.risk_rating) : 'N/A'}</td>
             <td>${getStatusBadge(vendor.status)}</td>
             <td>${vendor.contract_end_date ? format(new Date(vendor.contract_end_date), 'MMM dd, yyyy') : 'N/A'}</td>
@@ -114,7 +122,7 @@ export const generateThirdPartyReviewPDF = async (vendors: VendorProfile[]) => {
             const daysUntilExpiry = Math.ceil((new Date(vendor.contract_end_date!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
             return `
               <tr>
-                <td><strong>${vendor.vendor_name}</strong></td>
+                <td><strong>${escapeHtml(vendor.vendor_name)}</strong></td>
                 <td>${format(new Date(vendor.contract_end_date!), 'MMM dd, yyyy')}</td>
                 <td>${vendor.risk_rating ? getRiskBadge(vendor.risk_rating) : 'N/A'}</td>
                 <td>${daysUntilExpiry} days</td>
@@ -147,7 +155,14 @@ export const generateThirdPartyReviewPDF = async (vendors: VendorProfile[]) => {
   `;
 
   const element = document.createElement('div');
-  element.innerHTML = createHTMLContent(`Third-Party Risk Review Summary`, htmlContent);
+  // Sanitize HTML content to prevent XSS attacks
+  const sanitizedHtmlContent = DOMPurify.sanitize(htmlContent, {
+    ALLOWED_TAGS: ['div', 'h1', 'h2', 'h3', 'p', 'span', 'strong', 'em', 'br', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+    ALLOWED_ATTR: ['class', 'id'],
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link'],
+    FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'href', 'src']
+  });
+  element.innerHTML = createHTMLContent(`Third-Party Risk Review Summary`, sanitizedHtmlContent);
   document.body.appendChild(element);
 
   const filename = `third-party-review-summary-${format(new Date(), 'yyyy-MM-dd')}.pdf`;

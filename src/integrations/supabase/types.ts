@@ -11183,6 +11183,14 @@ export type Database = {
         }
         Returns: string
       }
+      calculate_kri_appetite_variance_enhanced: {
+        Args: {
+          p_kri_id: string
+          p_actual_value: number
+          p_measurement_date: string
+        }
+        Returns: string
+      }
       calculate_session_risk_score: {
         Args: {
           user_id: string
