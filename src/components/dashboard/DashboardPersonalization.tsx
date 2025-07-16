@@ -1,325 +1,329 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Settings, 
+  Eye, 
+  EyeOff, 
+  Star, 
+  Layout, 
+  Palette,
+  RefreshCw
+} from 'lucide-react';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Layout, Palette, Bell, BarChart, X, Plus } from "lucide-react";
-
-interface DashboardPersonalizationProps {
-  userRole: string;
-  settings: any;
-  onSettingsChange: (settings: any) => void;
-  onClose: () => void;
+interface DashboardPreferences {
+  defaultTab: string;
+  enableAutoRefresh: boolean;
+  autoRefreshInterval: number;
+  visibleWidgets: string[];
+  compactMode: boolean;
+  theme: 'light' | 'dark' | 'auto';
 }
 
-const DashboardPersonalization: React.FC<DashboardPersonalizationProps> = ({
+interface WidgetConfig {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  priority: number;
+}
+
+const DEFAULT_PREFERENCES: DashboardPreferences = {
+  defaultTab: 'executive',
+  enableAutoRefresh: true,
+  autoRefreshInterval: 30000,
+  visibleWidgets: ['health-check', 'insights', 'compliance'],
+  compactMode: false,
+  theme: 'auto'
+};
+
+const AVAILABLE_WIDGETS: WidgetConfig[] = [
+  {
+    id: 'health-check',
+    name: 'Health Check',
+    description: 'System health monitoring',
+    category: 'monitoring',
+    enabled: true,
+    priority: 1
+  },
+  {
+    id: 'insights',
+    name: 'AI Insights',
+    description: 'AI-generated analytics insights',
+    category: 'analytics',
+    enabled: true,
+    priority: 2
+  },
+  {
+    id: 'compliance',
+    name: 'OSFI Compliance',
+    description: 'Regulatory compliance status',
+    category: 'compliance',
+    enabled: true,
+    priority: 3
+  },
+  {
+    id: 'connection-diagnostics',
+    name: 'Connection Diagnostics',
+    description: 'Network connectivity monitoring',
+    category: 'monitoring',
+    enabled: false,
+    priority: 4
+  },
+  {
+    id: 'performance-metrics',
+    name: 'Performance Metrics',
+    description: 'System performance indicators',
+    category: 'monitoring',
+    enabled: false,
+    priority: 5
+  }
+];
+
+interface DashboardPersonalizationProps {
+  userRole?: string;
+  settings?: any;
+  onSettingsChange?: (settings: any) => void;
+  onClose?: () => void;
+}
+
+export const DashboardPersonalization: React.FC<DashboardPersonalizationProps> = ({
   userRole,
-  settings,
+  settings: externalSettings,
   onSettingsChange,
   onClose
 }) => {
-  const [localSettings, setLocalSettings] = useState(settings);
+  const { profile } = useAuth();
+  const [preferences, setPreferences] = useState<DashboardPreferences>(DEFAULT_PREFERENCES);
+  const [widgets, setWidgets] = useState<WidgetConfig[]>(AVAILABLE_WIDGETS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const availableWidgets = {
-    executive: [
-      { id: "exec-scorecard", name: "Executive Scorecard", category: "Analytics" },
-      { id: "risk-heatmap", name: "Risk Heat Map", category: "Visualization" },
-      { id: "predictive-insights", name: "AI Insights", category: "Analytics" },
-      { id: "exec-summary", name: "Executive Summary", category: "Reports" }
-    ],
-    manager: [
-      { id: "risk-register", name: "Risk Register", category: "Management" },
-      { id: "pending-actions", name: "Action Items", category: "Tasks" },
-      { id: "recent-activities", name: "Recent Activities", category: "Updates" },
-      { id: "control-effectiveness", name: "Control Tests", category: "Controls" }
-    ],
-    analyst: [
-      { id: "my-tasks", name: "My Tasks", category: "Personal" },
-      { id: "recent-alerts", name: "Alerts", category: "Notifications" },
-      { id: "quick-actions", name: "Quick Actions", category: "Tools" },
-      { id: "personal-stats", name: "Performance", category: "Personal" }
-    ],
-    auditor: [
-      { id: "active-audits", name: "Active Audits", category: "Audits" },
-      { id: "compliance-status", name: "Compliance Status", category: "Compliance" },
-      { id: "upcoming-deadlines", name: "Deadlines", category: "Schedule" },
-      { id: "audit-trail", name: "Audit Trail", category: "Tracking" }
-    ]
-  };
+  useEffect(() => {
+    loadUserPreferences();
+  }, [profile?.id]);
 
-  const chartTypes = [
-    { value: "line", label: "Line Chart" },
-    { value: "bar", label: "Bar Chart" },
-    { value: "pie", label: "Pie Chart" },
-    { value: "heatmap", label: "Heat Map" },
-    { value: "gauge", label: "Gauge" }
-  ];
+  const loadUserPreferences = async () => {
+    if (!profile?.id) return;
 
-  const refreshIntervals = [
-    { value: 15000, label: "15 seconds" },
-    { value: 30000, label: "30 seconds" },
-    { value: 60000, label: "1 minute" },
-    { value: 300000, label: "5 minutes" },
-    { value: 900000, label: "15 minutes" }
-  ];
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('preferences')
+        .eq('user_id', profile.id)
+        .eq('preference_type', 'dashboard')
+        .single();
 
-  const roleWidgets = availableWidgets[userRole as keyof typeof availableWidgets] || [];
-
-  const handleSave = () => {
-    onSettingsChange(localSettings);
-    onClose();
-  };
-
-  const updateSetting = (path: string, value: any) => {
-    const pathArray = path.split('.');
-    const newSettings = { ...localSettings };
-    let current = newSettings;
-    
-    for (let i = 0; i < pathArray.length - 1; i++) {
-      if (!current[pathArray[i]]) {
-        current[pathArray[i]] = {};
+      if (error && error.code !== 'PGRST116') {
+        throw error;
       }
-      current = current[pathArray[i]];
+
+      if (data?.preferences) {
+        setPreferences({ ...DEFAULT_PREFERENCES, ...data.preferences });
+      }
+    } catch (error) {
+      console.error('Failed to load user preferences:', error);
+      toast.error('Failed to load dashboard preferences');
+    } finally {
+      setIsLoading(false);
     }
-    
-    current[pathArray[pathArray.length - 1]] = value;
-    setLocalSettings(newSettings);
   };
+
+  const savePreferences = async () => {
+    if (!profile?.id) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: profile.id,
+          preference_type: 'dashboard',
+          preferences: preferences
+        });
+
+      if (error) throw error;
+
+      toast.success('Dashboard preferences saved');
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      toast.error('Failed to save dashboard preferences');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleWidget = (widgetId: string) => {
+    setWidgets(prev => 
+      prev.map(widget => 
+        widget.id === widgetId 
+          ? { ...widget, enabled: !widget.enabled }
+          : widget
+      )
+    );
+
+    setPreferences(prev => ({
+      ...prev,
+      visibleWidgets: widgets
+        .map(w => w.id === widgetId ? { ...w, enabled: !w.enabled } : w)
+        .filter(w => w.enabled)
+        .map(w => w.id)
+    }));
+  };
+
+  const resetToDefaults = () => {
+    setPreferences(DEFAULT_PREFERENCES);
+    setWidgets(AVAILABLE_WIDGETS);
+    toast.info('Dashboard preferences reset to defaults');
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+            Loading preferences...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Layout className="h-5 w-5" />
-              Dashboard Personalization
-            </CardTitle>
-            <CardDescription>
-              Customize your dashboard layout, widgets, and preferences
-            </CardDescription>
-          </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          Dashboard Personalization
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="layout" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="layout">Layout</TabsTrigger>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="widgets">Widgets</TabsTrigger>
-            <TabsTrigger value="charts">Charts</TabsTrigger>
-            <TabsTrigger value="notifications">Alerts</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="layout" className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Layout Preferences</h3>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="theme">Theme</Label>
-                  <Select
-                    value={localSettings.preferences?.theme || "system"}
-                    onValueChange={(value) => updateSetting("preferences.theme", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="layout-density">Layout Density</Label>
-                  <Select
-                    value={localSettings.layout || "default"}
-                    onValueChange={(value) => updateSetting("layout", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="compact">Compact</SelectItem>
-                      <SelectItem value="default">Default</SelectItem>
-                      <SelectItem value="comfortable">Comfortable</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Dashboard Columns</Label>
-                <Slider
-                  value={[localSettings.columns || 3]}
-                  onValueChange={([value]) => updateSetting("columns", value)}
-                  max={4}
-                  min={1}
-                  step={1}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>1 Column</span>
-                  <span>4 Columns</span>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="widgets" className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Available Widgets</h3>
-              <p className="text-sm text-muted-foreground">
-                Select which widgets to display on your dashboard
-              </p>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                {roleWidgets.map((widget) => (
-                  <div key={widget.id} className="flex items-center justify-between p-3 border rounded">
-                    <div>
-                      <h4 className="font-medium">{widget.name}</h4>
-                      <Badge variant="secondary" className="text-xs">
-                        {widget.category}
-                      </Badge>
-                    </div>
-                    <Switch
-                      checked={localSettings.widgets?.includes(widget.id) || false}
-                      onCheckedChange={(checked) => {
-                        const currentWidgets = localSettings.widgets || [];
-                        if (checked) {
-                          updateSetting("widgets", [...currentWidgets, widget.id]);
-                        } else {
-                          updateSetting("widgets", currentWidgets.filter((w: string) => w !== widget.id));
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="charts" className="space-y-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Chart Preferences</h3>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Default Chart Type</Label>
-                  <Select
-                    value={localSettings.chartType || "line"}
-                    onValueChange={(value) => updateSetting("chartType", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {chartTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label>Refresh Interval</Label>
-                  <Select
-                    value={String(localSettings.preferences?.refreshInterval || 30000)}
-                    onValueChange={(value) => updateSetting("preferences.refreshInterval", Number(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {refreshIntervals.map((interval) => (
-                        <SelectItem key={interval.value} value={String(interval.value)}>
-                          {interval.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
+
+          <TabsContent value="general" className="space-y-4">
+            <div className="grid gap-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="auto-refresh">Auto-refresh dashboard</Label>
                 <Switch
-                  id="animations"
-                  checked={localSettings.preferences?.animations !== false}
-                  onCheckedChange={(checked) => updateSetting("preferences.animations", checked)}
+                  id="auto-refresh"
+                  checked={preferences.enableAutoRefresh}
+                  onCheckedChange={(checked) =>
+                    setPreferences(prev => ({ ...prev, enableAutoRefresh: checked }))
+                  }
                 />
-                <Label htmlFor="animations">Enable animations</Label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="compact-mode">Compact mode</Label>
+                <Switch
+                  id="compact-mode"
+                  checked={preferences.compactMode}
+                  onCheckedChange={(checked) =>
+                    setPreferences(prev => ({ ...prev, compactMode: checked }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Default dashboard tab</Label>
+                <div className="flex gap-2">
+                  {['executive', 'operational', 'controls', 'advanced'].map((tab) => (
+                    <Button
+                      key={tab}
+                      variant={preferences.defaultTab === tab ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPreferences(prev => ({ ...prev, defaultTab: tab }))}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
           </TabsContent>
-          
-          <TabsContent value="notifications" className="space-y-6">
+
+          <TabsContent value="widgets" className="space-y-4">
+            <div className="grid gap-3">
+              {widgets.map((widget) => (
+                <div key={widget.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleWidget(widget.id)}
+                    >
+                      {widget.enabled ? (
+                        <Eye className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-gray-400" />
+                      )}
+                    </Button>
+                    <div>
+                      <p className="font-medium">{widget.name}</p>
+                      <p className="text-sm text-muted-foreground">{widget.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">{widget.category}</Badge>
+                    <Badge variant="outline">Priority {widget.priority}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="appearance" className="space-y-4">
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Notification Preferences</h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="notifications">Enable notifications</Label>
-                  <Switch
-                    id="notifications"
-                    checked={localSettings.preferences?.notifications !== false}
-                    onCheckedChange={(checked) => updateSetting("preferences.notifications", checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="risk-alerts">Risk threshold alerts</Label>
-                  <Switch
-                    id="risk-alerts"
-                    checked={localSettings.preferences?.riskAlerts !== false}
-                    onCheckedChange={(checked) => updateSetting("preferences.riskAlerts", checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="task-reminders">Task reminders</Label>
-                  <Switch
-                    id="task-reminders"
-                    checked={localSettings.preferences?.taskReminders !== false}
-                    onCheckedChange={(checked) => updateSetting("preferences.taskReminders", checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="audit-updates">Audit updates</Label>
-                  <Switch
-                    id="audit-updates"
-                    checked={localSettings.preferences?.auditUpdates !== false}
-                    onCheckedChange={(checked) => updateSetting("preferences.auditUpdates", checked)}
-                  />
+              <div className="space-y-2">
+                <Label>Theme preference</Label>
+                <div className="flex gap-2">
+                  {['light', 'dark', 'auto'].map((theme) => (
+                    <Button
+                      key={theme}
+                      variant={preferences.theme === theme ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setPreferences(prev => ({ ...prev, theme: theme as any }))}
+                    >
+                      <Palette className="h-4 w-4 mr-2" />
+                      {theme.charAt(0).toUpperCase() + theme.slice(1)}
+                    </Button>
+                  ))}
                 </div>
               </div>
             </div>
           </TabsContent>
         </Tabs>
-        
-        <div className="flex justify-end gap-2 mt-6 pt-6 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
+
+        <div className="flex justify-between mt-6 pt-4 border-t">
+          <Button variant="outline" onClick={resetToDefaults}>
+            Reset to Defaults
           </Button>
-          <Button onClick={handleSave}>
-            Save Changes
+          <Button onClick={savePreferences} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              'Save Preferences'
+            )}
           </Button>
         </div>
       </CardContent>
     </Card>
   );
 };
-
-export default DashboardPersonalization;

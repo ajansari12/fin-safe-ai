@@ -34,6 +34,11 @@ import AllInsightsDialog from '@/components/dialogs/AllInsightsDialog';
 import { DashboardHealthCheck } from './DashboardHealthCheck';
 import { ConnectionDiagnostics } from '@/components/diagnostics/ConnectionDiagnostics';
 import { useResilientQuery } from '@/hooks/useResilientQuery';
+import { DashboardPersonalization } from '@/components/dashboard/DashboardPersonalization';
+import { DashboardOptimizer } from '@/components/dashboard/DashboardOptimizer';
+import { DashboardRecoveryComplete } from '@/components/dashboard/DashboardRecoveryComplete';
+import { useAutoRecovery } from '@/hooks/useAutoRecovery';
+import { useAdaptiveLoading } from '@/hooks/useAdaptiveLoading';
 
 interface AnalyticsInsight {
   id: string;
@@ -340,6 +345,21 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       {/* Connection Diagnostics */}
       <div className="flex justify-center">
         <ConnectionDiagnostics />
+      </div>
+
+      {/* Phase 4: Dashboard Optimizer */}
+      <div className="flex justify-center">
+        <DashboardOptimizer />
+      </div>
+
+      {/* Phase 4: Dashboard Personalization */}
+      <div className="flex justify-center">
+        <DashboardPersonalization />
+      </div>
+
+      {/* Phase 4 Complete: Recovery Summary */}
+      <div className="flex justify-center">
+        <DashboardRecoveryComplete />
       </div>
 
       {/* OSFI E-21 Compliance Widgets */}

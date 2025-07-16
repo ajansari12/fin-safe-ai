@@ -11,7 +11,7 @@ import ExecutiveDashboard from "@/components/dashboard/ExecutiveDashboard";
 import RiskManagerDashboard from "@/components/dashboard/RiskManagerDashboard";
 import OperationalStaffDashboard from "@/components/dashboard/OperationalStaffDashboard";
 import AuditorDashboard from "@/components/dashboard/AuditorDashboard";
-import DashboardPersonalization from "@/components/dashboard/DashboardPersonalization";
+import { DashboardPersonalization } from "@/components/dashboard/DashboardPersonalization";
 import CollaborationPanel from "@/components/dashboard/CollaborationPanel";
 import MobileDashboardLayout from "@/components/dashboard/MobileDashboardLayout";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
