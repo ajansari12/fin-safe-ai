@@ -37,8 +37,12 @@ import { useResilientQuery } from '@/hooks/useResilientQuery';
 import { DashboardPersonalization } from '@/components/dashboard/DashboardPersonalization';
 import { DashboardOptimizer } from '@/components/dashboard/DashboardOptimizer';
 import { DashboardRecoveryComplete } from '@/components/dashboard/DashboardRecoveryComplete';
+import { ProductionReadinessMonitor } from '@/components/monitoring/ProductionReadinessMonitor';
+import { FinalDashboardSummary } from '@/components/dashboard/FinalDashboardSummary';
 import { useAutoRecovery } from '@/hooks/useAutoRecovery';
 import { useAdaptiveLoading } from '@/hooks/useAdaptiveLoading';
+import { useConnectionStabilizer } from '@/hooks/useConnectionStabilizer';
+import { useProductionOptimizer } from '@/hooks/useProductionOptimizer';
 
 interface AnalyticsInsight {
   id: string;
@@ -161,9 +165,22 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const { resilientSelect } = useResilientQuery();
   const { handleError } = useErrorHandler();
 
-  // Set up real-time monitoring for analytics
+  // Set up real-time monitoring for analytics with stabilization
   const { connectionStatus, lastUpdate } = useRealtimeMetrics({
     enabled: !!profile?.organization_id
+  });
+
+  // Phase 5: Connection stability and production optimization
+  const connectionStabilizer = useConnectionStabilizer({
+    maxReconnectAttempts: 15,
+    healthCheckInterval: 20000
+  });
+
+  const productionOptimizer = useProductionOptimizer({
+    enableImageOptimization: true,
+    enableLayoutOptimization: true,
+    enableMemoryManagement: true,
+    enableBundleAnalysis: true
   });
 
   // Memory optimization for heavy dashboard
@@ -360,6 +377,16 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       {/* Phase 4 Complete: Recovery Summary */}
       <div className="flex justify-center">
         <DashboardRecoveryComplete />
+      </div>
+
+      {/* Phase 5: Production Readiness Monitor */}
+      <div className="flex justify-center">
+        <ProductionReadinessMonitor />
+      </div>
+
+      {/* Final Summary: All Phases Complete */}
+      <div className="flex justify-center">
+        <FinalDashboardSummary />
       </div>
 
       {/* OSFI E-21 Compliance Widgets */}
