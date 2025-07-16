@@ -11,6 +11,7 @@ import CTASection from '@/components/home/CTASection';
 import { PublicPageErrorBoundary } from '@/components/error/PublicPageErrorBoundary';
 import { usePerformanceCleanup } from '@/hooks/usePerformanceCleanup';
 import { useProgressiveLoading } from '@/hooks/useProgressiveLoading';
+import { useLazyLoading } from '@/hooks/useLazyLoading';
 import { useAssetPreloading } from '@/hooks/useAssetPreloading';
 import { 
   HeroSkeleton, 
@@ -20,7 +21,7 @@ import {
   CTASkeleton 
 } from '@/components/loading/section-skeletons';
 
-// Progressive loading wrapper component
+// Progressive loading wrapper for above-the-fold content
 const ProgressiveSection: React.FC<{ 
   children: React.ReactNode; 
   skeleton: React.ReactNode; 
@@ -34,6 +35,33 @@ const ProgressiveSection: React.FC<{
   return (
     <div ref={elementRef}>
       {isLoaded ? children : skeleton}
+    </div>
+  );
+};
+
+// Lazy loading wrapper for below-the-fold content
+const LazySection: React.FC<{
+  children: React.ReactNode;
+  skeleton: React.ReactNode;
+  priority?: 'high' | 'medium' | 'low';
+  preloadNext?: boolean;
+}> = ({ children, skeleton, priority = 'medium', preloadNext = true }) => {
+  const { elementRef, shouldRender, isLoading, preloadNextSection } = useLazyLoading({
+    priority,
+    preloadNext,
+    enableNetworkAdaptation: true
+  });
+
+  // Trigger preload when this section starts loading
+  React.useEffect(() => {
+    if (shouldRender && preloadNext) {
+      preloadNextSection();
+    }
+  }, [shouldRender, preloadNext, preloadNextSection]);
+
+  return (
+    <div ref={elementRef} data-lazy-next={preloadNext}>
+      {shouldRender ? children : isLoading ? skeleton : skeleton}
     </div>
   );
 };
@@ -55,38 +83,54 @@ const Home = () => {
     <PublicPageErrorBoundary>
       <PageLayout>
         <div className="min-h-screen">
-          {/* Hero loads immediately - no progressive loading */}
+          {/* Hero loads immediately - critical above-the-fold */}
           <Hero />
           
-          {/* Features loads with minimal delay */}
-          <ProgressiveSection skeleton={<FeaturesSkeleton />} delay={100}>
+          {/* Features loads with minimal delay - still above-the-fold */}
+          <ProgressiveSection skeleton={<FeaturesSkeleton />} delay={50}>
             <Features />
           </ProgressiveSection>
           
-          {/* Regulatory Compliance loads immediately after Features */}
-          <ProgressiveSection skeleton={<div className="py-16 bg-muted/20"><div className="container mx-auto px-4"><div className="w-full h-64 bg-muted rounded animate-pulse" /></div></div>} delay={200}>
+          {/* Regulatory Compliance - above-the-fold on most screens */}
+          <ProgressiveSection skeleton={<div className="py-16 bg-muted/20"><div className="container mx-auto px-4"><div className="w-full h-64 bg-muted rounded animate-pulse" /></div></div>} delay={100}>
             <RegulatoryCompliance />
           </ProgressiveSection>
           
-          {/* AI Assistant loads with slight delay */}
-          <ProgressiveSection skeleton={<div className="py-16 bg-background"><div className="container mx-auto px-4"><div className="w-full h-64 bg-muted rounded animate-pulse" /></div></div>} delay={300}>
+          {/* AI Assistant - typically below-the-fold, lazy load */}
+          <LazySection 
+            skeleton={<div className="py-16 bg-background"><div className="container mx-auto px-4"><div className="w-full h-64 bg-muted rounded animate-pulse" /></div></div>}
+            priority="high"
+            preloadNext={true}
+          >
             <AIAssistant />
-          </ProgressiveSection>
+          </LazySection>
           
-          {/* Testimonials loads progressively */}
-          <ProgressiveSection skeleton={<TestimonialsSkeleton />} delay={400}>
+          {/* Testimonials - lazy load with medium priority */}
+          <LazySection 
+            skeleton={<TestimonialsSkeleton />}
+            priority="medium"
+            preloadNext={true}
+          >
             <Testimonials />
-          </ProgressiveSection>
+          </LazySection>
           
-          {/* Pricing loads progressively */}
-          <ProgressiveSection skeleton={<PricingSkeleton />} delay={500}>
+          {/* Pricing - lazy load with high priority (conversion critical) */}
+          <LazySection 
+            skeleton={<PricingSkeleton />}
+            priority="high"
+            preloadNext={true}
+          >
             <Pricing />
-          </ProgressiveSection>
+          </LazySection>
           
-          {/* CTA loads last */}
-          <ProgressiveSection skeleton={<CTASkeleton />} delay={600}>
+          {/* CTA - lazy load, lowest priority but still important */}
+          <LazySection 
+            skeleton={<CTASkeleton />}
+            priority="medium"
+            preloadNext={false}
+          >
             <CTASection />
-          </ProgressiveSection>
+          </LazySection>
         </div>
       </PageLayout>
     </PublicPageErrorBoundary>

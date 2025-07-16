@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNetworkStatus } from './useNetworkStatus';
+import { useBundleOptimization } from './useBundleOptimization';
 
 interface AssetPreloadingConfig {
   enablePreloading?: boolean;
@@ -21,6 +22,7 @@ export const useAssetPreloading = (
   } = config;
 
   const { connectionType, saveData } = useNetworkStatus();
+  const { optimizationLevel, shouldPreload: shouldPreloadByStrategy } = useBundleOptimization();
   const [preloadingStatus, setPreloadingStatus] = useState<'idle' | 'loading' | 'complete'>('idle');
   const [preloadedAssets, setPreloadedAssets] = useState<string[]>([]);
 
@@ -43,8 +45,8 @@ export const useAssetPreloading = (
   const shouldPreload = () => {
     if (!enablePreloading) return false;
     if (respectDataSaver && saveData) return false;
-    if (connectionType === 'slow') return false;
-    return true;
+    if (connectionType === 'slow' && optimizationLevel === 'aggressive') return false;
+    return shouldPreloadByStrategy('medium');
   };
 
   // Preload fonts
