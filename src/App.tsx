@@ -57,6 +57,7 @@ import ErrorMonitor from './components/error/ErrorMonitor';
 import { AuthDebugTrigger } from './components/debug/AuthDebugTrigger';
 import { SecurityMonitor } from './components/security/SecurityMonitor';
 import { ContentSecurityPolicy } from '@/utils/content-security-policy';
+import { SecurityHeaders } from '@/utils/security-headers';
 import { quickSchemaCheck } from '@/utils/schema-validation';
 import { applyProductionSafeLogging } from '@/utils/production-safe-logging';
 
@@ -86,6 +87,7 @@ function App() {
   // Apply security configurations on app startup
   useEffect(() => {
     ContentSecurityPolicy.applyCSP();
+    SecurityHeaders.apply();
     applyProductionSafeLogging();
   }, []);
 
