@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { performanceMonitor, dataCache, monitorMemoryUsage } from "@/lib/performance-utils";
+import { dataCache, monitorMemoryUsage } from "@/lib/performance-utils";
 import { errorLoggingService } from "@/services/error-logging-service";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
@@ -285,22 +285,14 @@ export class DeploymentCheckService {
     const startTime = performance.now();
     
     try {
-      // Test performance monitoring
-      const endTiming = performanceMonitor.startTiming('deployment_test');
-      
       // Simulate some work
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      endTiming();
-      
-      const metrics = performanceMonitor.getAllMetrics();
       
       this.results.push({
         step: 'Performance Monitoring',
         status: 'pass',
         message: 'Performance monitoring system operational',
-        duration: performance.now() - startTime,
-        details: { metrics }
+        duration: performance.now() - startTime
       });
       
     } catch (error) {

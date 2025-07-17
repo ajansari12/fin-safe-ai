@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { cachedFetch, performanceMonitor } from "@/lib/performance-utils";
+import { cachedFetch } from "@/lib/performance-utils";
 
 export interface AnalyticsInsight {
   id: string;
@@ -70,8 +70,6 @@ class EnhancedAnalyticsService {
   // Enhanced Predictive Modeling
   async generateAdvancedPredictions(orgId: string): Promise<PredictiveMetric[]> {
     return cachedFetch(`advanced_predictions_${orgId}`, async () => {
-      const endTiming = performanceMonitor.startTiming('advanced_predictions');
-      
       try {
         const metrics: PredictiveMetric[] = [];
 
@@ -95,8 +93,6 @@ class EnhancedAnalyticsService {
       } catch (error) {
         console.error('Error generating advanced predictions:', error);
         return [];
-      } finally {
-        endTiming();
       }
     }, 10 * 60 * 1000);
   }
@@ -1318,8 +1314,6 @@ class AdvancedAnalyticsService {
 
   async generateAutomatedInsights(orgId: string): Promise<AnalyticsInsight[]> {
     return cachedFetch(`insights_${orgId}`, async () => {
-      const endTiming = performanceMonitor.startTiming('generate_insights');
-      
       try {
         // Get existing insights from database
         const { data: existingInsights } = await supabase
@@ -1366,8 +1360,6 @@ class AdvancedAnalyticsService {
       } catch (error) {
         console.error('Error generating insights:', error);
         return this.getFallbackInsights();
-      } finally {
-        endTiming();
       }
     }, 10 * 60 * 1000);
   }
