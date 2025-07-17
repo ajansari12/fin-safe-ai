@@ -1,7 +1,7 @@
 
 import React, { useEffect } from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
-import EnhancedAnalyticsHub from "@/components/analytics/EnhancedAnalyticsHub";
+import AnalyticsHub from "@/components/analytics/AnalyticsHub";
 import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 const AnalyticsPage = () => {
@@ -13,7 +13,7 @@ const AnalyticsPage = () => {
 
   return (
     <AuthenticatedLayout>
-      <EnhancedAnalyticsHub />
+      <AnalyticsHub />
     </AuthenticatedLayout>
   );
 };

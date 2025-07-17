@@ -1,13 +1,9 @@
 import React from "react";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
-import CustomDashboardBuilder from "@/components/analytics/CustomDashboardBuilder";
+import SimpleDashboard from "./SimpleDashboard";
 
 const CustomDashboard: React.FC = () => {
-  return (
-    <AuthenticatedLayout>
-      <CustomDashboardBuilder />
-    </AuthenticatedLayout>
-  );
+  return <SimpleDashboard />;
 };
 
 export default CustomDashboard;
