@@ -47,6 +47,7 @@ function App() {
             </Router>
             <Toaster />
           </QueryClientProvider>
+        </EnhancedAIAssistantProvider>
         </PermissionProvider>
       </OrgProvider>
     </EnhancedAuthProvider>
