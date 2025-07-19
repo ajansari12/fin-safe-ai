@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -12,9 +13,11 @@ interface Profile {
 }
 
 interface UserContext {
+  userId?: string;
   roles?: string[];
   permissions?: string[];
   organizationId?: string;
+  profile?: Profile;
 }
 
 interface AuthContextType {
@@ -25,8 +28,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  refreshUserContext: () => Promise<void>;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
@@ -53,6 +60,7 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -72,6 +80,7 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -87,6 +96,7 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -99,15 +109,34 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
       
       if (data) {
+        console.log('Profile fetched:', data);
         setProfile(data);
         setUserContext({
+          userId: userId,
           roles: ['user'], // Default role, can be expanded
           permissions: ['dashboard:view', 'risks:read', 'controls:read'],
-          organizationId: data.organization_id
+          organizationId: data.organization_id,
+          profile: data
+        });
+      } else {
+        // If no profile exists, create a basic user context
+        console.log('No profile found, creating basic context');
+        setUserContext({
+          userId: userId,
+          roles: ['user'],
+          permissions: ['dashboard:view', 'risks:read', 'controls:read'],
+          organizationId: undefined,
+          profile: undefined
         });
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const refreshUserContext = async () => {
+    if (user?.id) {
+      await fetchUserProfile(user.id);
     }
   };
 
@@ -127,6 +156,34 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       toast.success('Successfully logged in!');
     } catch (error) {
       console.error('Login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (email: string, password: string, fullName?: string) => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: `${window.location.origin}/`,
+        },
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        throw error;
+      }
+      
+      toast.success('Registration successful! Please check your email to verify your account.');
+    } catch (error) {
+      console.error('Registration error:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -155,7 +212,7 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: `${window.location.origin}/auth/update-password`,
       });
       
       if (error) {
@@ -166,6 +223,52 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       toast.success('Password reset email sent!');
     } catch (error) {
       console.error('Reset password error:', error);
+      throw error;
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        throw error;
+      }
+      
+      toast.success('Password updated successfully!');
+    } catch (error) {
+      console.error('Update password error:', error);
+      throw error;
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    try {
+      if (!user?.id) {
+        throw new Error('No user logged in');
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        });
+      
+      if (error) {
+        toast.error(error.message);
+        throw error;
+      }
+      
+      // Refresh the profile data
+      await fetchUserProfile(user.id);
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      console.error('Update profile error:', error);
       throw error;
     }
   };
@@ -190,8 +293,12 @@ export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     isAuthenticated: !!user,
     isLoading,
     login,
+    register,
     logout,
     resetPassword,
+    updatePassword,
+    updateProfile,
+    refreshUserContext,
     hasRole,
     hasPermission,
     hasAnyRole,
