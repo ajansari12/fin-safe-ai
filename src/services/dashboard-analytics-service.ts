@@ -26,3 +26,16 @@ export {
   getMostSensitiveCBFs,
   type SensitiveCBF
 } from './business-function-analytics-service';
+
+// Mock getDashboardMetrics for backward compatibility
+export const getDashboardMetrics = async (orgId: string) => {
+  return {
+    total_incidents: 0,
+    high_severity_incidents: 0,
+    active_controls: 0,
+    total_controls: 0,
+    total_kris: 0,
+    total_vendors: 0,
+    high_risk_vendors: 0
+  };
+};

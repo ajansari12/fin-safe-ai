@@ -241,7 +241,7 @@ const RiskAppetiteDetailView: React.FC = () => {
                     <div>
                       <h4 className="font-medium mb-2">Risk Appetite Statement</h4>
                       <p className="text-sm text-muted-foreground">
-                        {threshold.appetite_statement || 'No statement defined'}
+                        {'No statement defined'}
                       </p>
                     </div>
                     <div>
