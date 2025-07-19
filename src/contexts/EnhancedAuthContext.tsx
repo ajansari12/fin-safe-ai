@@ -3,13 +3,13 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 interface Profile {
   id: string;
   full_name?: string;
   role?: string;
   organization_id?: string;
+  onboarding_status?: string;
 }
 
 interface UserContext {
