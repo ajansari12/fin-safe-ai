@@ -49,7 +49,7 @@ export const useAuth = () => {
   return context;
 };
 
-export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userContext, setUserContext] = useState<UserContext | null>(null);
