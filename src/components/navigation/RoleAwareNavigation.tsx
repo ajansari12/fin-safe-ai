@@ -1,179 +1,164 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LucideIcon } from "lucide-react";
-import { RoleAwareComponent } from "@/components/ui/RoleAwareComponent";
-import { usePermissions } from "@/contexts/PermissionContext";
-import { ROUTE_PERMISSIONS, getRoutePermissions } from "@/config/permissions";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface NavigationItem {
   title: string;
   url: string;
-  icon?: LucideIcon;
+  icon?: React.ComponentType<{ className?: string }>;
   items?: NavigationItem[];
-  requiredRole?: string;
-  requiredAnyRole?: string[];
-  requiredPermission?: string;
-  requiredAnyPermission?: string[];
-  adminOnly?: boolean;
 }
 
 interface RoleAwareNavigationProps {
   items: NavigationItem[];
-  className?: string;
+  isCollapsed?: boolean;
   onItemClick?: () => void;
 }
 
-export const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
+const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
   items,
-  className = "",
+  isCollapsed = false,
   onItemClick
 }) => {
   const location = useLocation();
-  const { hasPermission, hasRole, hasAnyRole, isOrgAdmin } = usePermissions();
+  const [openGroups, setOpenGroups] = React.useState<Set<string>>(new Set());
 
-  // TODO: LOGGER_MIGRATION - Remove excessive debug logging in navigation
-  // FIXME: Replace with logger.debug in development only
-  const permissionFunctionsReady = typeof hasPermission === 'function' && 
-                                  typeof hasRole === 'function' && 
-                                  typeof hasAnyRole === 'function' && 
-                                  typeof isOrgAdmin === 'function';
-
-  // Development debugging removed - now using structured logger where needed
-
-  const isItemAccessible = (item: NavigationItem): boolean => {
-    // EMERGENCY FALLBACK: If permission system is not ready, show basic navigation items
-    if (!permissionFunctionsReady) {
-      // TODO: LOGGER_MIGRATION - Replace with logger.warn
-      // Show essential navigation items when permissions aren't loaded
-      const basicAccessibleRoutes = [
-        '/app/dashboard', 
-        '/app/risk-appetite', 
-        '/app/governance', 
-        '/app/incident-log', 
-        '/app/analytics',
-        '/app/settings'
-      ];
-      return basicAccessibleRoutes.includes(item.url);
-    }
-
-    // Check route-specific permissions first
-    const routePermissions = getRoutePermissions(item.url);
-    if (routePermissions) {
-      // Admin only check
-      if (routePermissions.adminOnly && !isOrgAdmin()) {
-        return false;
+  // Keep groups open if they contain the active route
+  React.useEffect(() => {
+    const activeGroups = new Set<string>();
+    items.forEach(item => {
+      if (item.items) {
+        const hasActiveChild = item.items.some(child => 
+          location.pathname === child.url || location.pathname.startsWith(child.url + '/')
+        );
+        if (hasActiveChild || location.pathname === item.url) {
+          activeGroups.add(item.url);
+        }
       }
-      
-      // Role requirements
-      if (routePermissions.requiredRole && !hasRole(routePermissions.requiredRole)) {
-        return false;
-      }
-      
-      if (routePermissions.requiredAnyRole && !hasAnyRole(routePermissions.requiredAnyRole)) {
-        return false;
-      }
-      
-      // Permission requirements
-      if (routePermissions.requiredPermission && !hasPermission(routePermissions.requiredPermission)) {
-        return false;
-      }
-      
-      if (routePermissions.requiredAnyPermission && 
-          !routePermissions.requiredAnyPermission.some(permission => hasPermission(permission))) {
-        return false;
-      }
-    }
+    });
+    setOpenGroups(activeGroups);
+  }, [location.pathname, items]);
 
-    // Check item-specific permissions (fallback)
-    if (item.adminOnly && !isOrgAdmin()) {
-      return false;
-    }
-    
-    if (item.requiredRole && !hasRole(item.requiredRole)) {
-      return false;
-    }
-    
-    if (item.requiredAnyRole && !hasAnyRole(item.requiredAnyRole)) {
-      return false;
-    }
-    
-    if (item.requiredPermission && !hasPermission(item.requiredPermission)) {
-      return false;
-    }
-    
-    if (item.requiredAnyPermission && 
-        !item.requiredAnyPermission.some(permission => hasPermission(permission))) {
-      return false;
-    }
+  const toggleGroup = (groupUrl: string) => {
+    setOpenGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupUrl)) {
+        newSet.delete(groupUrl);
+      } else {
+        newSet.add(groupUrl);
+      }
+      return newSet;
+    });
+  };
 
-    return true;
+  const isActiveUrl = (url: string) => {
+    return location.pathname === url || location.pathname.startsWith(url + '/');
   };
 
   const renderNavigationItem = (item: NavigationItem) => {
-    const accessible = isItemAccessible(item);
-    
-    if (!accessible) {
-      return null;
+    const Icon = item.icon;
+    const isActive = isActiveUrl(item.url);
+    const hasChildren = item.items && item.items.length > 0;
+    const isGroupOpen = openGroups.has(item.url);
+
+    if (isCollapsed) {
+      // Collapsed state - show only icons with tooltips
+      return (
+        <Tooltip key={item.url}>
+          <TooltipTrigger asChild>
+            <Link
+              to={item.url}
+              onClick={onItemClick}
+              className={`flex items-center justify-center w-12 h-12 rounded-md transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              {Icon && <Icon className="h-5 w-5" />}
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-medium">
+            {item.title}
+          </TooltipContent>
+        </Tooltip>
+      );
     }
 
-    const isActive = location.pathname === item.url;
-    const hasAccessibleSubItems = item.items?.some(subItem => isItemAccessible(subItem));
-
-    // If item has subitems but none are accessible, don't render
-    if (item.items && !hasAccessibleSubItems) {
-      return null;
-    }
-
-    return (
-      <div key={item.url}>
-        <Link
-          to={item.url}
-          onClick={onItemClick}
-          className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors group min-h-[44px] ${
-            isActive
-              ? "bg-primary/10 text-primary"
-              : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-          } truncate`}
+    if (hasChildren) {
+      // Parent item with children
+      return (
+        <Collapsible
+          key={item.url}
+          open={isGroupOpen}
+          onOpenChange={() => toggleGroup(item.url)}
         >
-          {item.icon && <item.icon className="mr-2 h-4 w-4 flex-shrink-0" />}
+          <CollapsibleTrigger asChild>
+            <button
+              className={`flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] ${
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+              }`}
+            >
+              <div className="flex items-center min-w-0">
+                {Icon && <Icon className="h-5 w-5 mr-3 flex-shrink-0" />}
+                <span className="truncate">{item.title}</span>
+              </div>
+              {isGroupOpen ? (
+                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 flex-shrink-0" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="ml-8 mt-1 space-y-1">
+              {item.items?.map(subItem => (
+                <Link
+                  key={subItem.url}
+                  to={subItem.url}
+                  onClick={onItemClick}
+                  className={`flex items-center px-3 py-2 text-sm rounded-md transition-colors min-h-[36px] ${
+                    isActiveUrl(subItem.url)
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                  }`}
+                >
+                  <span className="truncate">{subItem.title}</span>
+                </Link>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      );
+    }
+
+    // Single item without children
+    return (
+      <Link
+        key={item.url}
+        to={item.url}
+        onClick={onItemClick}
+        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] ${
+          isActive
+            ? "bg-primary/10 text-primary"
+            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+        }`}
+      >
+        <div className="flex items-center min-w-0">
+          {Icon && <Icon className="h-5 w-5 mr-3 flex-shrink-0" />}
           <span className="truncate">{item.title}</span>
-        </Link>
-        
-        {item.items && hasAccessibleSubItems && (
-          <div className="ml-4 mt-1 space-y-1">
-            {item.items.map(subItem => renderNavigationItem(subItem))}
-          </div>
-        )}
-      </div>
+        </div>
+      </Link>
     );
   };
 
-  const renderedItems = items.map(item => renderNavigationItem(item)).filter(Boolean);
-
   return (
-    <nav className={`space-y-1 ${className}`}>
-      {renderedItems.length > 0 ? (
-        renderedItems
-      ) : (
-        <div className="p-4 text-sm text-muted-foreground">
-          <p className="mb-2">
-            {!permissionFunctionsReady ? 'Loading permissions...' : 'No accessible items found'}
-          </p>
-          <p className="text-xs">
-            {!permissionFunctionsReady 
-              ? 'Initializing role-based navigation...' 
-              : 'Your role may have limited access. Contact admin if this seems wrong.'
-            }
-          </p>
-          {/* Emergency navigation fallback */}
-          {!permissionFunctionsReady && (
-            <div className="mt-3 space-y-1">
-              <Link to="/app/dashboard" className="block text-xs hover:text-primary">→ Dashboard</Link>
-              <Link to="/app/settings" className="block text-xs hover:text-primary">→ Settings</Link>
-            </div>
-          )}
-        </div>
-      )}
+    <nav className="space-y-1">
+      {items.map(renderNavigationItem)}
     </nav>
   );
 };

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/EnhancedAuthContext";
@@ -13,14 +14,60 @@ interface AuthenticatedLayoutProps {
   children: React.ReactNode;
 }
 
-const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) => {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
-  const { user, profile, logout } = useAuth();
-  const location = useLocation();
+// Sidebar state management
+const useSidebarState = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      
+      // On mobile, sidebar should be closed by default
+      if (mobile && isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+      
+      // On desktop, restore sidebar state from localStorage
+      if (!mobile) {
+        const savedState = localStorage.getItem('sidebar-collapsed');
+        if (savedState !== null) {
+          setIsCollapsed(JSON.parse(savedState));
+        }
+        setIsSidebarOpen(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [isSidebarOpen]);
 
   const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen);
+    if (isMobile) {
+      setIsSidebarOpen(!isSidebarOpen);
+    } else {
+      const newCollapsed = !isCollapsed;
+      setIsCollapsed(newCollapsed);
+      localStorage.setItem('sidebar-collapsed', JSON.stringify(newCollapsed));
+    }
   };
+
+  return {
+    isSidebarOpen,
+    isCollapsed,
+    isMobile,
+    toggleSidebar,
+    setIsSidebarOpen
+  };
+};
+
+const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) => {
+  const { user, profile, logout } = useAuth();
+  const location = useLocation();
+  const { isSidebarOpen, isCollapsed, isMobile, toggleSidebar, setIsSidebarOpen } = useSidebarState();
 
   // Convert nav items to navigation format
   const navigationItems = navItems.map(item => ({
@@ -39,36 +86,59 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
     { path: "/support", label: "Support" },
   ];
 
+  // Calculate sidebar width classes
+  const getSidebarClasses = () => {
+    if (isMobile) {
+      return isSidebarOpen 
+        ? "w-80 translate-x-0" 
+        : "w-80 -translate-x-full";
+    }
+    
+    if (isCollapsed) {
+      return "w-16";
+    }
+    
+    return "w-64 xl:w-72 2xl:w-80";
+  };
+
   return (
     <AIAssistantProvider>
       <TooltipProvider>
-        <div className="flex h-screen bg-gray-100 dark:bg-slate-900">
+        <div className="grid grid-cols-[auto_1fr] min-h-screen w-full bg-gray-100 dark:bg-slate-900">
           {/* Mobile overlay */}
-          {isSidebarOpen && (
+          {isMobile && isSidebarOpen && (
             <div 
-              className="fixed inset-0 z-20 bg-black/50 lg:hidden"
-              onClick={toggleSidebar}
+              className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+              onClick={() => setIsSidebarOpen(false)}
             />
           )}
 
           {/* Sidebar */}
           <aside 
-            className={`fixed inset-y-0 left-0 z-30 flex flex-col bg-white dark:bg-slate-800 shadow-lg transition-all duration-300 ease-in-out lg:static lg:inset-0 ${
-              isSidebarOpen 
-                ? 'w-[280px] sm:w-[320px] lg:w-64 xl:w-72 2xl:w-80 translate-x-0' 
-                : 'w-0 lg:w-0 -translate-x-full lg:-translate-x-full'
-            }`}
+            className={`${getSidebarClasses()} ${
+              isMobile ? 'fixed inset-y-0 left-0 z-50' : 'relative'
+            } flex flex-col bg-white dark:bg-slate-800 shadow-lg transition-all duration-300 ease-in-out`}
           >
-            {/* Sidebar header - simplified without close button */}
-            <div className="flex items-center px-4 h-16 border-b flex-shrink-0">
+            {/* Sidebar header */}
+            <div className="flex items-center justify-between px-4 h-16 border-b flex-shrink-0">
               <Link to="/app/dashboard" className="flex items-center min-w-0">
                 <Shield className="h-6 w-6 text-primary flex-shrink-0" />
-                {isSidebarOpen && (
+                {!isCollapsed && (
                   <span className="ml-2 text-xl font-bold truncate">
                     ResilientFI
                   </span>
                 )}
               </Link>
+              
+              {/* Toggle button - only show on desktop when not collapsed */}
+              {!isMobile && !isCollapsed && (
+                <button
+                  onClick={toggleSidebar}
+                  className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             {/* Sidebar content */}
@@ -77,9 +147,10 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                 <div className="px-2 py-4">
                   <RoleAwareNavigation 
                     items={navigationItems}
+                    isCollapsed={isCollapsed && !isMobile}
                     onItemClick={() => {
-                      if (window.innerWidth < 1024) {
-                        setSidebarOpen(false);
+                      if (isMobile) {
+                        setIsSidebarOpen(false);
                       }
                     }}
                   />
@@ -96,19 +167,22 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                         key={link.path}
                         to={link.path}
                         onClick={() => {
-                          if (window.innerWidth < 1024) {
-                            setSidebarOpen(false);
+                          if (isMobile) {
+                            setIsSidebarOpen(false);
                           }
                         }}
                         className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] ${
                           isActive
                             ? "bg-primary/10 text-primary"
                             : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-                        } truncate`}
+                        } ${isCollapsed && !isMobile ? 'justify-center' : ''}`}
+                        title={isCollapsed && !isMobile ? link.label : undefined}
                       >
-                        <span className="truncate">
-                          {link.label}
-                        </span>
+                        {!isCollapsed || isMobile ? (
+                          <span className="truncate">{link.label}</span>
+                        ) : (
+                          <span className="text-xs">{link.label.charAt(0)}</span>
+                        )}
                       </Link>
                     );
                   })}
@@ -117,25 +191,28 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             </div>
           </aside>
 
-          {/* Main content */}
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-            {/* Navbar */}
+          {/* Main content area */}
+          <div className="flex flex-col min-w-0 overflow-hidden">
+            {/* Header */}
             <header className="bg-white dark:bg-slate-800 shadow-sm z-10 flex-shrink-0">
               <div className="flex items-center justify-between h-16 px-4">
-                <div className={`flex items-center gap-6 ${!isSidebarOpen ? 'ml-3 sm:ml-4 md:ml-6 lg:ml-8' : ''}`}>
-                  {/* Enhanced menu toggle button with dynamic icon */}
+                <div className="flex items-center gap-4">
+                  {/* Menu toggle button */}
                   <button
                     onClick={toggleSidebar}
                     className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+                    aria-label={isMobile ? (isSidebarOpen ? 'Close menu' : 'Open menu') : (isCollapsed ? 'Expand sidebar' : 'Collapse sidebar')}
                   >
-                    {isSidebarOpen ? (
-                      <X className="h-5 w-5" />
-                    ) : (
+                    {isMobile ? (
                       <Menu className="h-5 w-5" />
+                    ) : isCollapsed ? (
+                      <Menu className="h-5 w-5" />
+                    ) : (
+                      <X className="h-5 w-5" />
                     )}
                   </button>
                   
-                  {/* Breadcrumb or page title - with responsive spacing */}
+                  {/* Page title */}
                   <div className="hidden sm:block text-sm text-muted-foreground">
                     {navItems.find(item => item.url === location.pathname)?.title || 
                      navItems.flatMap(item => item.items || [])
@@ -143,6 +220,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
                   </div>
                 </div>
 
+                {/* User section */}
                 <div className="flex items-center">
                   {user && (
                     <div className="flex items-center space-x-3 sm:space-x-4">
