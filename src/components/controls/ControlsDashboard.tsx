@@ -72,35 +72,32 @@ const ControlsDashboard = memo(() => {
     refetch?.();
   }, [addNotification, refetch]);
 
-  // Emergency stabilization: Disable real-time monitoring
+  // Set up real-time monitoring
   const { connectionStatus, lastUpdate, isConnected } = useRealtimeMetrics({
     onControlUpdate: handleControlUpdate,
     onKRIUpdate: handleKRIUpdate,
     onBreachAlert: handleBreachAlert,
-    enabled: false // Disabled for emergency stabilization
+    enabled: !isLoading
   });
 
-  // Map reconnecting status to connecting for display
-  const displayConnectionStatus = connectionStatus === 'reconnecting' ? 'connecting' : connectionStatus;
-
-  // Emergency stabilization: Disable realtime subscriptions
+  // Enable realtime updates for critical data
   useRealtimeSubscription({
     table: 'controls',
     onUpdate: () => refetch?.(),
     onInsert: () => refetch?.(),
-    enabled: false // Disabled for emergency stabilization
+    enabled: !isLoading
   });
 
   useRealtimeSubscription({
     table: 'kri_logs',
     onInsert: () => refetch?.(),
-    enabled: false // Disabled for emergency stabilization
+    enabled: !isLoading
   });
 
   useRealtimeSubscription({
     table: 'appetite_breach_logs',
     onInsert: () => refetch?.(),
-    enabled: false // Disabled for emergency stabilization
+    enabled: !isLoading
   });
 
   // Memoize chart data to prevent unnecessary recalculations
@@ -133,7 +130,7 @@ const ControlsDashboard = memo(() => {
             <p className="text-muted-foreground">Real-time monitoring of controls and KRIs</p>
           </div>
           <RealtimeIndicator 
-            connectionStatus={displayConnectionStatus}
+            connectionStatus={connectionStatus}
             lastUpdate={lastUpdate}
           />
         </div>

@@ -1,9 +1,9 @@
 
 import React from "react";
-import LightweightAnalyticsHub from "./LightweightAnalyticsHub";
+import EnhancedAnalyticsHub from "./EnhancedAnalyticsHub";
 
 const AnalyticsHub: React.FC = () => {
-  return <LightweightAnalyticsHub />;
+  return <EnhancedAnalyticsHub />;
 };
 
 export default AnalyticsHub;

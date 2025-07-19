@@ -3,21 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Shield, CheckCircle, AlertTriangle, BarChart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { SectionErrorBoundary } from "@/components/error/SectionErrorBoundary";
+import { DecorativeBg } from "@/components/ui/decorative-background";
 
 const Hero = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   
   useEffect(() => {
-    // Immediate loading for better perceived performance
+    // Trigger animations after component mounts
     setIsLoaded(true);
   }, []);
-  
+
   return (
-    <SectionErrorBoundary onRetry={() => setIsLoaded(false)}>
-      <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
-          <div className="container mx-auto px-4 pt-16 pb-24" style={{ minHeight: '600px' }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <div className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-slate-900 dark:to-slate-800">
+      <DecorativeBg variant="dots" className="opacity-50" />
+      
+      <div className="container mx-auto px-4 pt-16 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div 
               className={`inline-flex items-center px-4 py-2 mb-6 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 transition-all duration-700 ${
@@ -50,10 +51,10 @@ const Hero = () => {
               }`}
             >
               <Button asChild size="lg" className="text-base rounded-xl">
-                <Link to="/auth/register">Get Started</Link>
+                <Link to="/register">Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="text-base rounded-xl">
-                <Link to="/auth/login">Learn More</Link>
+                <Link to="/features">Learn More</Link>
               </Button>
             </div>
 
@@ -149,11 +150,10 @@ const Hero = () => {
               </div>
             </div>
           </div>
-            </div>
-          </div>
         </div>
-      </SectionErrorBoundary>
-    );
-  };
+      </div>
+    </div>
+  );
+};
 
 export default Hero;

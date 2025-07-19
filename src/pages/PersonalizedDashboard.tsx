@@ -11,7 +11,7 @@ import ExecutiveDashboard from "@/components/dashboard/ExecutiveDashboard";
 import RiskManagerDashboard from "@/components/dashboard/RiskManagerDashboard";
 import OperationalStaffDashboard from "@/components/dashboard/OperationalStaffDashboard";
 import AuditorDashboard from "@/components/dashboard/AuditorDashboard";
-
+import DashboardPersonalization from "@/components/dashboard/DashboardPersonalization";
 import CollaborationPanel from "@/components/dashboard/CollaborationPanel";
 import MobileDashboardLayout from "@/components/dashboard/MobileDashboardLayout";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
@@ -124,19 +124,12 @@ const PersonalizedDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dashboard Settings</CardTitle>
-                <CardDescription>
-                  Personalization features are temporarily disabled during optimization.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={() => setActiveView("main")}>
-                  Back to Dashboard
-                </Button>
-              </CardContent>
-            </Card>
+            <DashboardPersonalization
+              userRole={userRole}
+              settings={dashboardSettings}
+              onSettingsChange={setDashboardSettings}
+              onClose={() => setActiveView("main")}
+            />
           </TabsContent>
 
           <TabsContent value="collaborate" className="space-y-6">

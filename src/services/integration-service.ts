@@ -554,16 +554,9 @@ class IntegrationService {
 
 export const integrationService = new IntegrationService();
 
-// Initialize only when explicitly called and not on public pages
-export const initializeIntegrationService = () => {
-  if (typeof window !== 'undefined') {
-    const currentPath = window.location.pathname;
-    const isPublicPage = currentPath === '/' || currentPath.startsWith('/auth');
-    
-    if (!isPublicPage) {
-      setTimeout(() => {
-        integrationService.initializeResilientFI();
-      }, 2000);
-    }
-  }
-};
+// Auto-initialize when the service is imported
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    integrationService.initializeResilientFI();
+  }, 2000);
+}

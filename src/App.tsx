@@ -1,5 +1,5 @@
 
-import React, { Suspense, lazy, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/EnhancedAuthContext';
 import { OrgProvider } from './contexts/OrgContext';
@@ -48,7 +48,6 @@ const InvitationAcceptance = lazy(() => import('./components/auth/InvitationAcce
 const Debug = lazy(() => import('./pages/Debug'));
 const DataManagement = lazy(() => import('./pages/DataManagement'));
 const RBACTesting = lazy(() => import('./pages/RBACTesting'));
-import DeploymentCheck from './pages/DeploymentCheck';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from 'next-themes';
@@ -56,12 +55,7 @@ import { EnhancedAIAssistantProvider } from './components/ai-assistant/EnhancedA
 import ErrorMonitor from './components/error/ErrorMonitor';
 import { AuthDebugTrigger } from './components/debug/AuthDebugTrigger';
 import { SecurityMonitor } from './components/security/SecurityMonitor';
-import { ContentSecurityPolicy } from '@/utils/content-security-policy';
-import { SecurityHeaders } from '@/utils/security-headers';
 import { quickSchemaCheck } from '@/utils/schema-validation';
-import { applyProductionSafeLogging } from '@/utils/production-safe-logging';
-import GlobalLoadingBar from './components/ui/global-loading-bar';
-import NetworkStatus from './components/ui/network-status';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,18 +80,6 @@ if (import.meta.env.DEV) {
 }
 
 function App() {
-  // Apply security configurations on app startup
-  useEffect(() => {
-    ContentSecurityPolicy.applyCSP();
-    SecurityHeaders.apply();
-    applyProductionSafeLogging();
-  }, []);
-
-  // Reduced logging in production to prevent sensitive information exposure
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🚀 App component rendering');
-  }
-  
   return (
     <GlobalErrorBoundary>
       <ErrorMonitor />
@@ -105,8 +87,6 @@ function App() {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />
           <BrowserRouter>
-            <GlobalLoadingBar />
-            <NetworkStatus />
             <AuthProvider>
               <OrgProvider>
                 <PermissionProvider>
@@ -117,10 +97,6 @@ function App() {
             <Routes>
               {/* Public website homepage */}
               <Route path="/" element={<IndexPage />} />
-              
-              {/* Public routes */}
-              <Route path="/register" element={<Navigate to="/auth/register" />} />
-              <Route path="/features" element={<Navigate to="/auth/login" />} />
               
               {/* Authentication */}
               <Route path="/login" element={<AuthPage />} />
@@ -369,17 +345,8 @@ function App() {
                   </RouteErrorBoundary>
                 </EnhancedProtectedRoute>
               } />
-               
-               {/* Deployment Check */}
-               <Route path="/app/deployment-check" element={
-                 <EnhancedProtectedRoute requiredAnyRole={['admin', 'super_admin']}>
-                   <RouteErrorBoundary routeName="Deployment Check" moduleName="Deployment">
-                     <DeploymentCheck />
-                   </RouteErrorBoundary>
-                 </EnhancedProtectedRoute>
-               } />
-               
-               {/* Admin-only routes */}
+              
+              {/* Admin-only routes */}
               <Route 
                 path="/app/debug" 
                 element={

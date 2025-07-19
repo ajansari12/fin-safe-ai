@@ -7,7 +7,8 @@ export const LazyChartComponents = {
   ExecutiveDashboard: lazy(() => import('@/components/analytics/ExecutiveDashboard')),
   OperationalDashboard: lazy(() => import('@/components/analytics/OperationalDashboard')),
   AnalyticsHub: lazy(() => import('@/components/analytics/AnalyticsHub')),
-  LightweightAnalyticsHub: lazy(() => import('@/components/analytics/LightweightAnalyticsHub')),
+  EnhancedAnalyticsHub: lazy(() => import('@/components/analytics/EnhancedAnalyticsHub')),
+  PredictiveAnalyticsPanel: lazy(() => import('@/components/analytics/PredictiveAnalyticsPanel')),
 };
 
 // Admin/Settings components - low priority

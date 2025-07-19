@@ -24,25 +24,18 @@ interface PerformanceAlert {
 
 class EnhancedPerformanceService {
   private performanceObserver: PerformanceObserver | null = null;
-  private observers: PerformanceObserver[] = [];
-  private intervals: NodeJS.Timeout[] = [];
   private metricsBuffer: PerformanceData[] = [];
-  private isInitialized = false;
   private alertThresholds = {
     page_load_time: 3000, // 3 seconds
-    memory_usage: 150, // 150 MB (increased from 100MB)
+    memory_usage: 100, // 100 MB
     error_rate: 0.05, // 5%
     cpu_usage: 80 // 80%
   };
 
   // Initialize comprehensive performance monitoring
   async initializePerformanceMonitoring(): Promise<void> {
-    if (this.isInitialized || typeof window === 'undefined') return;
-    
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Initializing enhanced performance monitoring...');
-      }
+      console.log('Initializing enhanced performance monitoring...');
 
       // Initialize browser performance monitoring
       this.initializeBrowserMonitoring();
@@ -56,35 +49,10 @@ class EnhancedPerformanceService {
       // Setup performance alerts
       this.setupPerformanceAlerts();
 
-      this.isInitialized = true;
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Enhanced performance monitoring initialized');
-      }
+      console.log('Enhanced performance monitoring initialized');
     } catch (error) {
       console.error('Failed to initialize performance monitoring:', error);
     }
-  }
-
-  // Clean up resources
-  cleanup(): void {
-    if (typeof window === 'undefined') return;
-    
-    // Clear all intervals
-    this.intervals.forEach(interval => clearInterval(interval));
-    this.intervals = [];
-    
-    // Disconnect all observers
-    this.observers.forEach(observer => observer.disconnect());
-    this.observers = [];
-    
-    if (this.performanceObserver) {
-      this.performanceObserver.disconnect();
-      this.performanceObserver = null;
-    }
-    
-    // Clear metrics buffer
-    this.metricsBuffer = [];
-    this.isInitialized = false;
   }
 
   // Initialize browser performance monitoring
@@ -147,7 +115,7 @@ class EnhancedPerformanceService {
       });
 
       observer.observe({ entryTypes: ['resource'] });
-      this.observers.push(observer);
+      this.performanceObserver = observer;
     } catch (error) {
       console.error('Error observing resource timing:', error);
     }
@@ -165,7 +133,6 @@ class EnhancedPerformanceService {
       });
 
       observer.observe({ entryTypes: ['paint'] });
-      this.observers.push(observer);
     } catch (error) {
       console.error('Error observing paint timing:', error);
     }
@@ -187,7 +154,6 @@ class EnhancedPerformanceService {
       });
 
       observer.observe({ entryTypes: ['largest-contentful-paint'] });
-      this.observers.push(observer);
     } catch (error) {
       console.error('Error observing LCP:', error);
     }
@@ -215,7 +181,6 @@ class EnhancedPerformanceService {
       });
 
       observer.observe({ entryTypes: ['layout-shift'] });
-      this.observers.push(observer);
     } catch (error) {
       console.error('Error observing CLS:', error);
     }
@@ -243,7 +208,6 @@ class EnhancedPerformanceService {
       });
 
       observer.observe({ entryTypes: ['first-input'] });
-      this.observers.push(observer);
     } catch (error) {
       console.error('Error observing FID:', error);
     }
@@ -251,17 +215,15 @@ class EnhancedPerformanceService {
 
   // Setup real-time metrics collection
   private setupMetricsCollection(): void {
-    // Collect metrics every 60 seconds (reduced frequency)
-    const metricsInterval = setInterval(() => {
+    // Collect metrics every 30 seconds
+    setInterval(() => {
       this.collectSystemMetrics();
-    }, 60000);
-    this.intervals.push(metricsInterval);
+    }, 30000);
 
-    // Flush metrics buffer every 10 minutes (reduced frequency)
-    const flushInterval = setInterval(() => {
+    // Flush metrics buffer every 5 minutes
+    setInterval(() => {
       this.flushMetricsBuffer();
-    }, 600000);
-    this.intervals.push(flushInterval);
+    }, 300000);
   }
 
   private collectSystemMetrics(): void {
@@ -274,18 +236,12 @@ class EnhancedPerformanceService {
         const memoryUsage = memoryInfo.usedJSHeapSize / (1024 * 1024); // Convert to MB
         this.recordMetric('memory_usage', memoryUsage);
         
-        // Only log memory info, don't trigger alerts constantly
-        if (process.env.NODE_ENV === 'development') {
-          console.info('Memory Usage:', {
-            usedJSHeapSize: memoryInfo.usedJSHeapSize,
-            totalJSHeapSize: memoryInfo.totalJSHeapSize,
-            jsHeapSizeLimit: memoryInfo.jsHeapSizeLimit,
-            usagePercentage: (memoryInfo.usedJSHeapSize / memoryInfo.jsHeapSizeLimit) * 100
-          });
+        if (memoryUsage > this.alertThresholds.memory_usage) {
+          this.triggerAlert('high_memory', 'warning', `Memory usage: ${memoryUsage.toFixed(1)}MB`);
         }
       }
 
-      // Connection information (less frequently)
+      // Connection information
       const connection = (navigator as any).connection;
       if (connection) {
         this.recordMetric('network_speed', connection.downlink);
@@ -295,10 +251,11 @@ class EnhancedPerformanceService {
       // Document visibility
       this.recordMetric('page_visibility', document.hidden ? 0 : 1);
 
+      // Error rate tracking
+      this.trackErrorRate();
+
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error collecting system metrics:', error);
-      }
+      console.error('Error collecting system metrics:', error);
     }
   }
 
@@ -361,11 +318,10 @@ class EnhancedPerformanceService {
 
   // Setup performance alerts
   private setupPerformanceAlerts(): void {
-    // Monitor for performance degradation every 5 minutes (reduced frequency)
-    const alertInterval = setInterval(() => {
+    // Monitor for performance degradation
+    setInterval(() => {
       this.analyzePerformanceTrends();
-    }, 300000);
-    this.intervals.push(alertInterval);
+    }, 60000); // Every minute
   }
 
   private analyzePerformanceTrends(): void {
@@ -401,9 +357,9 @@ class EnhancedPerformanceService {
 
     this.metricsBuffer.push(metric);
 
-    // Keep buffer size much smaller to prevent memory issues
-    if (this.metricsBuffer.length > 20) {
-      this.metricsBuffer = this.metricsBuffer.slice(-10);
+    // Keep buffer size manageable
+    if (this.metricsBuffer.length > 100) {
+      this.metricsBuffer = this.metricsBuffer.slice(-50);
     }
   }
 
@@ -455,18 +411,8 @@ class EnhancedPerformanceService {
     };
   }
 
-  // Trigger performance alerts (reduced frequency)
+  // Trigger performance alerts
   private async triggerAlert(type: string, severity: string, message: string): Promise<void> {
-    // Reduce alert frequency - only log in development
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(`Performance Alert [${severity.toUpperCase()}]: ${message}`);
-    }
-
-    // Don't store alerts for memory warnings to prevent excessive DB writes
-    if (type === 'high_memory') {
-      return;
-    }
-
     const alert: PerformanceAlert = {
       id: Math.random().toString(36).substr(2, 9),
       alert_type: type,
@@ -477,7 +423,9 @@ class EnhancedPerformanceService {
       created_at: new Date().toISOString()
     };
 
-    // Store alert in database (only for non-memory alerts)
+    console.warn(`Performance Alert [${severity.toUpperCase()}]: ${message}`);
+
+    // Store alert in database
     try {
       const profile = await getCurrentUserProfile();
       if (profile?.organization_id) {
@@ -493,9 +441,7 @@ class EnhancedPerformanceService {
           });
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Error storing performance alert:', error);
-      }
+      console.error('Error storing performance alert:', error);
     }
   }
 
@@ -638,7 +584,13 @@ class EnhancedPerformanceService {
     return suggestions;
   }
 
+  // Cleanup method
+  cleanup(): void {
+    if (this.performanceObserver) {
+      this.performanceObserver.disconnect();
+      this.performanceObserver = null;
+    }
+  }
 }
 
-export default EnhancedPerformanceService;
 export const enhancedPerformanceService = new EnhancedPerformanceService();

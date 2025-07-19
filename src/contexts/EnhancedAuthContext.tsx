@@ -255,8 +255,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
     
-    const maxRetries = 2; // Reduced from 3
-    const retryDelay = Math.min(Math.pow(2, retryCount) * 1000, 5000); // Cap at 5 seconds
+    const maxRetries = 3;
+    const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff
     
     try {
       logger.debug('Fetching enhanced user data', { 
@@ -410,7 +410,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         metadata: { retryCount, maxRetries }
       }, error);
       
-      // Retry mechanism with exponential backoff (reduced retries)
+      // Retry mechanism with exponential backoff
       if (retryCount < maxRetries) {
         logger.info('Retrying fetchEnhancedUserData', { 
           component: 'EnhancedAuthContext',
@@ -418,12 +418,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userId,
           metadata: { retryDelay, attempt: retryCount + 1, maxRetries }
         });
-        // Use requestAnimationFrame for better performance
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            fetchEnhancedUserData(userId, retryCount + 1);
-          }, retryDelay);
-        });
+        setTimeout(() => {
+          fetchEnhancedUserData(userId, retryCount + 1);
+        }, retryDelay);
         return;
       }
       

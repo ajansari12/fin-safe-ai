@@ -2,7 +2,6 @@
 import { generatePDF, createHTMLContent } from './pdf-export-service';
 import { GovernancePolicy, GovernanceFramework } from '../pages/governance/types';
 import { format } from 'date-fns';
-import DOMPurify from 'dompurify';
 
 interface PolicyWithFramework extends GovernancePolicy {
   framework?: GovernanceFramework;
@@ -101,14 +100,7 @@ export const generateGovernancePolicyListPDF = async (
   `;
 
   const element = document.createElement('div');
-  // Sanitize HTML content to prevent XSS vulnerabilities
-  const sanitizedContent = DOMPurify.sanitize(createHTMLContent(`Governance Policy Report`, htmlContent), {
-    ALLOWED_TAGS: ['html', 'head', 'body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'br', 'hr'],
-    ALLOWED_ATTR: ['class', 'id', 'style'],
-    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link'],
-    FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'href', 'src']
-  });
-  element.innerHTML = sanitizedContent;
+  element.innerHTML = createHTMLContent(`Governance Policy Report`, htmlContent);
   document.body.appendChild(element);
 
   const filename = `governance-policies-${frameworkTitle ? frameworkTitle.replace(/\s+/g, '-').toLowerCase() : 'all'}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;

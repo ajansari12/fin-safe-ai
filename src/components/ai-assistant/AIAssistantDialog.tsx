@@ -14,7 +14,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAIAssistant } from "./AIAssistantContext";
 import { Badge } from "@/components/ui/badge";
 
-
 export const AIAssistantDialog = () => {
   const { 
     isAssistantOpen, 
@@ -175,40 +174,18 @@ export const AIAssistantDialog = () => {
     msg => msg.role === "user" || msg.role === "assistant"
   );
 
-  // Format message content with proper sanitization
+  // Format message content with proper markdown
   const formatMessageContent = (content: string) => {
-    // Split content into paragraphs
-    const paragraphs = content.split('\n\n');
-    
-    return (
-      <div className="space-y-2">
-        {paragraphs.map((paragraph, index) => {
-          // Handle URLs in each paragraph
-          const parts = paragraph.split(/(https?:\/\/[^\s]+)/g);
-          
-          return (
-            <p key={index} className="whitespace-pre-wrap">
-              {parts.map((part, partIndex) => {
-                if (part.match(/^https?:\/\/[^\s]+$/)) {
-                  return (
-                    <a
-                      key={partIndex}
-                      href={part}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary underline hover:text-primary/80"
-                    >
-                      {part}
-                    </a>
-                  );
-                }
-                return part;
-              })}
-            </p>
-          );
-        })}
-      </div>
+    // Replace URLs with clickable links
+    const withLinks = content.replace(
+      /(https?:\/\/[^\s]+)/g, 
+      '<a href="$1" target="_blank" class="text-primary underline">$1</a>'
     );
+    
+    // Add paragraph breaks
+    const withParagraphs = withLinks.replace(/\n\n/g, '<br/><br/>');
+    
+    return <div dangerouslySetInnerHTML={{ __html: withParagraphs }} />;
   };
 
   return (

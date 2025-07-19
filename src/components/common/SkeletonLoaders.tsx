@@ -61,43 +61,53 @@ export const TableSkeleton = ({ rows = 5 }: { rows?: number }) => (
   </Card>
 );
 
-export const DashboardSkeleton = () => {
-  return (
-    <div className="space-y-6 min-h-[800px]">
-      {/* Header - Fixed height to prevent CLS */}
-      <div className="flex items-center justify-between h-16">
-        <div className="space-y-2 flex-1">
-          <div className="h-8 bg-gray-200 rounded w-64 animate-pulse"></div>
-          <div className="h-4 bg-gray-200 rounded w-96 animate-pulse"></div>
-        </div>
-        <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+export const DashboardSkeleton = () => (
+  <div className="space-y-6 min-h-screen">
+    {/* Header skeleton */}
+    <div className="flex items-center justify-between min-h-[80px]">
+      <div className="space-y-2">
+        <div className="h-8 bg-muted rounded w-48 animate-pulse"></div>
+        <div className="h-4 bg-muted rounded w-64 animate-pulse"></div>
       </div>
-
-      {/* Stats Grid - Fixed height grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 h-32">
-        {[1, 2, 3, 4].map((i) => (
-          <StatCardSkeleton key={i} />
-        ))}
+      <div className="h-10 bg-muted rounded w-32 animate-pulse"></div>
+    </div>
+    
+    {/* Stats grid skeleton - Fixed height to prevent CLS */}
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 min-h-[140px]">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <StatCardSkeleton key={i} />
+      ))}
+    </div>
+    
+    {/* Main charts section - Fixed height containers */}
+    <div className="grid gap-6 md:grid-cols-2 min-h-[400px]">
+      <ChartSkeleton height="h-96" />
+      <ChartSkeleton height="h-96" />
+    </div>
+    
+    {/* Bottom section - Recent activity and alerts */}
+    <div className="grid gap-6 lg:grid-cols-3 min-h-[300px]">
+      <div className="lg:col-span-2">
+        <TableSkeleton rows={6} />
       </div>
-
-      {/* Charts Row - Fixed height */}
-      <div className="grid gap-6 md:grid-cols-2 h-80">
-        <ChartSkeleton />
-        <ChartSkeleton />
-      </div>
-
-      {/* Large Chart - Fixed height */}
-      <div className="h-96">
-        <ChartSkeleton height="h-96" />
-      </div>
-
-      {/* Table - Fixed height */}
-      <div className="h-64">
-        <TableSkeleton />
+      <div className="space-y-4">
+        <Card className="min-h-[280px]">
+          <CardHeader>
+            <div className="h-6 bg-muted rounded w-24 animate-pulse"></div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center space-x-3">
+                <div className="h-3 w-3 bg-muted rounded-full animate-pulse"></div>
+                <div className="h-4 bg-muted rounded flex-1 animate-pulse"></div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export const ListSkeleton = ({ items = 5 }: { items?: number }) => (
   <div className="space-y-3 min-h-[300px]">

@@ -1,6 +1,5 @@
 import { generatePDF, createHTMLContent } from './pdf-export-service';
 import { format } from 'date-fns';
-import DOMPurify from 'dompurify';
 
 export interface ExecutiveSummaryData {
   overallScore: number;
@@ -184,14 +183,7 @@ class PDFGenerationService {
     
     // Create temporary element for PDF generation
     const tempDiv = document.createElement('div');
-    // Sanitize HTML content to prevent XSS vulnerabilities
-    const sanitizedContent = DOMPurify.sanitize(htmlContent, {
-      ALLOWED_TAGS: ['html', 'head', 'body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'br', 'hr'],
-      ALLOWED_ATTR: ['class', 'id', 'style'],
-      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link'],
-      FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'href', 'src']
-    });
-    tempDiv.innerHTML = sanitizedContent;
+    tempDiv.innerHTML = htmlContent;
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     document.body.appendChild(tempDiv);
@@ -212,14 +204,7 @@ class PDFGenerationService {
 
   private async generatePDFFromHTML(htmlContent: string, baseFilename: string): Promise<Blob> {
     const tempDiv = document.createElement('div');
-    // Sanitize HTML content to prevent XSS vulnerabilities
-    const sanitizedContent = DOMPurify.sanitize(htmlContent, {
-      ALLOWED_TAGS: ['html', 'head', 'body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'br', 'hr'],
-      ALLOWED_ATTR: ['class', 'id', 'style'],
-      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link'],
-      FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'href', 'src']
-    });
-    tempDiv.innerHTML = sanitizedContent;
+    tempDiv.innerHTML = htmlContent;
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '-9999px';
     document.body.appendChild(tempDiv);

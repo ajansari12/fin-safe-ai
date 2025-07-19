@@ -8,22 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Clock, Key, AlertTriangle, CheckCircle, Settings, FileText, BarChart3, Lock } from "lucide-react";
+import { Shield, Clock, Key, AlertTriangle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { authSettingsService, AuthSettings } from "@/services/security/auth-settings-service";
 import { securityLoggingService } from "@/services/security/security-logging-service";
 import MFASetup from "./MFASetup";
-import { SecurityDashboard } from "./SecurityDashboard";
-import { PasswordPolicyManager } from "./PasswordPolicyManager";
-import SecurityAuditLog from "./SecurityAuditLog";
 
 const SecuritySettings: React.FC = () => {
   const [settings, setSettings] = useState<AuthSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showMFASetup, setShowMFASetup] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
 
   useEffect(() => {

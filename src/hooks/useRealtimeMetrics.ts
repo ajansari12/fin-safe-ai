@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 // TODO: Migrated from AuthContext to EnhancedAuthContext
@@ -21,20 +21,15 @@ interface RealtimeMetricsOptions {
 
 export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
   const { profile } = useAuth();
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'reconnecting'>('connected'); // Start as connected for immediate load
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(new Date()); // Set initial time
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  const [isHealthy, setIsHealthy] = useState(true);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const channelRef = useRef<any>(null);
-  const maxReconnectAttempts = 3; // Reduced attempts
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   const {
     onControlUpdate,
     onKRIUpdate,
     onBreachAlert,
     onIncidentUpdate,
-    enabled = false // Disabled by default for emergency stabilization
+    enabled = true
   } = options;
 
   const handleMetricUpdate = useCallback((update: MetricUpdate) => {
@@ -89,21 +84,14 @@ export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
     }
   }, [onControlUpdate, onKRIUpdate, onBreachAlert, onIncidentUpdate]);
 
-  const connectToRealtime = useCallback(() => {
-    if (!profile?.organization_id || !enabled) {
-      // For emergency stabilization - don't try to connect
-      setConnectionStatus('connected'); // Fake connected status
+  useEffect(() => {
+    if (!enabled || !profile?.organization_id) {
       return;
     }
 
     setConnectionStatus('connecting');
-    
-    // Clean up existing connection
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
 
-    // Create a new channel with connection recovery
+    // Create a single channel for all organization updates
     const channel = supabase
       .channel(`org-metrics-${profile.organization_id}`)
       .on(
@@ -175,81 +163,24 @@ export const useRealtimeMetrics = (options: RealtimeMetricsOptions = {}) => {
         }
       )
       .subscribe((status) => {
-        console.log('Real-time connection status:', status);
-        
         if (status === 'SUBSCRIBED') {
           setConnectionStatus('connected');
-          setReconnectAttempts(0);
-          setIsHealthy(true);
           console.log('✅ Real-time metrics connected');
         } else if (status === 'CHANNEL_ERROR') {
-          setConnectionStatus('connected'); // For emergency stabilization - fake success
-          setIsHealthy(true);
-          console.warn('Real-time connection failed, running in fallback mode');
-          
-          // Don't attempt reconnection during emergency stabilization
-          // Just log the error silently
-          if (reconnectAttempts === 0) {
-            console.log('Real-time features disabled for stability');
-          }
-        } else if (status === 'CLOSED') {
           setConnectionStatus('disconnected');
-          setIsHealthy(false);
-          console.warn('Real-time connection closed');
+          console.error('❌ Real-time metrics connection failed');
         }
       });
 
-    channelRef.current = channel;
-  }, [profile?.organization_id, handleMetricUpdate, reconnectAttempts, maxReconnectAttempts]);
-
-  // Force reconnection function
-  const forceReconnect = useCallback(() => {
-    setReconnectAttempts(0);
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-    connectToRealtime();
-  }, [connectToRealtime]);
-
-  useEffect(() => {
-    if (!enabled || !profile?.organization_id) {
-      return;
-    }
-
-    connectToRealtime();
-
-    // Health check interval
-    const healthCheckInterval = setInterval(() => {
-      if (connectionStatus === 'connected') {
-        // Send a ping to check if connection is still alive
-        const timeSinceLastUpdate = lastUpdate ? Date.now() - lastUpdate.getTime() : Infinity;
-        
-        // If no updates for more than 5 minutes, consider connection stale
-        if (timeSinceLastUpdate > 300000) {
-          console.warn('Real-time connection appears stale, attempting reconnection');
-          forceReconnect();
-        }
-      }
-    }, 60000); // Check every minute
-
     return () => {
       setConnectionStatus('disconnected');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-      }
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      clearInterval(healthCheckInterval);
+      supabase.removeChannel(channel);
     };
-  }, [enabled, profile?.organization_id, connectToRealtime, connectionStatus, lastUpdate, forceReconnect]);
+  }, [enabled, profile?.organization_id, handleMetricUpdate]);
 
   return {
     connectionStatus,
     lastUpdate,
-    isConnected: connectionStatus === 'connected',
-    isHealthy,
-    reconnectAttempts,
-    forceReconnect
+    isConnected: connectionStatus === 'connected'
   };
 };

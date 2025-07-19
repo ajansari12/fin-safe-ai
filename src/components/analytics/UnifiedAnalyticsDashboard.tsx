@@ -9,21 +9,25 @@ import {
   TrendingUp, 
   AlertTriangle, 
   Target, 
-  Brain,
-  Shield,
+  Users, 
   Settings,
+  Brain,
   Zap,
-  Eye
+  Eye,
+  Shield
 } from 'lucide-react';
+// TODO: Migrated from AuthContext to EnhancedAuthContext
 import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import AIStatusVerification from '@/components/ai-assistant/AIStatusVerification';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { DashboardSkeleton } from './AnalyticsLoadingStates';
-import LoadingFallback from '@/components/common/LoadingFallback';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { useRealtimeMetrics } from '@/hooks/useRealtimeMetrics';
 import OSFIComplianceWidgets from './OSFIComplianceWidgets';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import RealtimeIndicator from '@/components/common/RealtimeIndicator';
 import AllInsightsDialog from '@/components/dialogs/AllInsightsDialog';
 
 interface AnalyticsInsight {
@@ -35,18 +39,33 @@ interface AnalyticsInsight {
   confidence: number;
 }
 
-// Simplified dashboard components for core functionality
-const ExecutiveDashboard = lazy(() => import('./ExecutiveDashboard'));
-const OperationalDashboard = lazy(() => import('./OperationalDashboard'));
-const ControlsDashboard = lazy(() => import('../controls/ControlsDashboard'));
+// Lazy load heavy dashboard components
+const ExecutiveDashboard = lazy(() => 
+  import('./ExecutiveDashboard').then(module => ({ default: module.default }))
+);
+const OperationalDashboard = lazy(() => 
+  import('./OperationalDashboard').then(module => ({ default: module.default }))
+);
+const ControlsDashboard = lazy(() => 
+  import('../controls/ControlsDashboard').then(module => ({ default: module.default }))
+);
+const AdvancedAnalyticsDashboard = lazy(() => 
+  import('./AdvancedAnalyticsDashboard').then(module => ({ default: module.default }))
+);
+const CustomDashboardBuilder = lazy(() => 
+  import('./CustomDashboardBuilder').then(module => ({ default: module.default }))
+);
+const PredictiveAnalyticsPanel = lazy(() => 
+  import('./PredictiveAnalyticsPanel').then(module => ({ default: module.default }))
+);
 
-// Simple loading fallback
-const SimpleLoadingFallback = () => {
-  return <DashboardSkeleton />;
-};
+// Enhanced loading skeleton component with better UX
+const EnhancedDashboardSkeleton = () => (
+  <DashboardSkeleton />
+);
 
 const UnifiedAnalyticsDashboard: React.FC = () => {
-  const { profile, isLoading: authLoading } = useAuth();
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('executive');
   const [insights, setInsights] = useState<AnalyticsInsight[]>([]);
   const [isGeneratingInsights, setIsGeneratingInsights] = useState(false);
@@ -54,19 +73,25 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
   const [showAllInsights, setShowAllInsights] = useState(false);
   const { handleError } = useErrorHandler();
 
+  // Set up real-time monitoring for analytics
+  const { connectionStatus, lastUpdate } = useRealtimeMetrics({
+    enabled: !!profile?.organization_id
+  });
+
   useEffect(() => {
     if (profile?.organization_id) {
       loadAutomatedInsights();
     }
   }, [profile?.organization_id]);
 
-  const loadAutomatedInsights = async () => {
+  const loadAutomatedInsights = async (retryCount = 0) => {
     if (!profile?.organization_id) return;
 
     setIsGeneratingInsights(true);
     setDataError(null);
     
     try {
+      // Load analytics insights from Supabase with retry logic
       const { data: insightsData, error } = await supabase
         .from('analytics_insights')
         .select('*')
@@ -76,7 +101,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
 
       if (error) throw error;
 
-      const transformedInsights: AnalyticsInsight[] = (insightsData || []).map((insight: any) => ({
+      const transformedInsights: AnalyticsInsight[] = (insightsData || []).map(insight => ({
         id: insight.id,
         type: insight.insight_type,
         title: insight.insight_data?.title || 'Analytics Insight',
@@ -86,11 +111,25 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       }));
 
       setInsights(transformedInsights);
+      
+      // Reset error state on successful load
       setDataError(null);
     } catch (error) {
       const appError = handleError(error, 'loading automated insights');
       setDataError(appError as Error);
-      toast.error('Failed to load automated insights');
+      
+      // Retry logic for network errors
+      if (retryCount < 2 && error instanceof Error && error.message.includes('network')) {
+        setTimeout(() => loadAutomatedInsights(retryCount + 1), 2000 * (retryCount + 1));
+        return;
+      }
+      
+      // Show different messages based on error type
+      if (error instanceof Error && error.message.includes('permission')) {
+        toast.error('Permission denied - please check your access rights');
+      } else {
+        toast.error('Failed to load automated insights');
+      }
     } finally {
       setIsGeneratingInsights(false);
     }
@@ -134,11 +173,6 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
     setActiveTab(getDashboardByRole());
   }, [profile?.role]);
 
-  // Show loading state if auth is still loading
-  if (authLoading) {
-    return <SimpleLoadingFallback />;
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -150,6 +184,10 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
         </div>
         <div className="flex items-center gap-3">
           <NotificationCenter />
+          <RealtimeIndicator 
+            connectionStatus={connectionStatus}
+            lastUpdate={lastUpdate}
+          />
           <Button 
             onClick={() => loadAutomatedInsights()}
             disabled={isGeneratingInsights}
@@ -160,7 +198,6 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
           </Button>
         </div>
       </div>
-
 
       {/* OSFI E-21 Compliance Widgets */}
       <ErrorBoundary 
@@ -281,59 +318,131 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
       </ErrorBoundary>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 gap-1">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1">
           <TabsTrigger 
             value="executive" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Executive dashboard with high-level metrics"
           >
-            <BarChart3 className="h-4 w-4" />
-            Executive
+            <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Executive</span>
+            <span className="sm:hidden">Exec</span>
           </TabsTrigger>
           <TabsTrigger 
             value="operational" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Operational dashboard with detailed metrics"
           >
-            <Target className="h-4 w-4" />
-            Operational
+            <Target className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Operational</span>
+            <span className="sm:hidden">Ops</span>
           </TabsTrigger>
           <TabsTrigger 
             value="controls" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Controls dashboard showing security and compliance"
           >
-            <Shield className="h-4 w-4" />
-            Controls
+            <Shield className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Controls</span>
+            <span className="sm:hidden">Ctrl</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="advanced" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Advanced analytics with AI insights"
+          >
+            <Brain className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Advanced</span>
+            <span className="sm:hidden">AI</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="predictive" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Predictive analytics and forecasting"
+          >
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Predictive</span>
+            <span className="sm:hidden">Pred</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="custom" 
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm min-h-[44px] px-2 sm:px-3"
+            aria-label="Custom dashboard builder"
+          >
+            <Settings className="h-3 w-3 sm:h-4 sm:w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Custom</span>
+            <span className="sm:hidden">Edit</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="executive" className="space-y-6">
-          <ErrorBoundary
+          <ErrorBoundary 
             title="Executive Dashboard Error"
             description="Unable to load executive dashboard"
           >
-            <Suspense fallback={<SimpleLoadingFallback />}>
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <ExecutiveDashboard />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="operational" className="space-y-6">
-          <ErrorBoundary
+          <ErrorBoundary 
             title="Operational Dashboard Error"
             description="Unable to load operational dashboard"
           >
-            <Suspense fallback={<SimpleLoadingFallback />}>
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <OperationalDashboard />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>
 
         <TabsContent value="controls" className="space-y-6">
-          <ErrorBoundary
+          <ErrorBoundary 
             title="Controls Dashboard Error"
             description="Unable to load controls dashboard"
           >
-            <Suspense fallback={<SimpleLoadingFallback />}>
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
               <ControlsDashboard />
+            </Suspense>
+          </ErrorBoundary>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-6">
+          <ErrorBoundary 
+            title="Advanced Analytics Error"
+            description="Unable to load advanced analytics dashboard"
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <AdvancedAnalyticsDashboard />
+            </Suspense>
+          </ErrorBoundary>
+        </TabsContent>
+
+        <TabsContent value="predictive" className="space-y-6">
+          <ErrorBoundary 
+            title="AI Status Verification Error"
+            description="Unable to verify AI status"
+          >
+            <AIStatusVerification />
+          </ErrorBoundary>
+          <ErrorBoundary 
+            title="Predictive Analytics Error"
+            description="Unable to load predictive analytics"
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <PredictiveAnalyticsPanel />
+            </Suspense>
+          </ErrorBoundary>
+        </TabsContent>
+
+        <TabsContent value="custom" className="space-y-6">
+          <ErrorBoundary 
+            title="Custom Dashboard Builder Error"
+            description="Unable to load custom dashboard builder"
+          >
+            <Suspense fallback={<EnhancedDashboardSkeleton />}>
+              <CustomDashboardBuilder />
             </Suspense>
           </ErrorBoundary>
         </TabsContent>

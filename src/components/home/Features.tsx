@@ -1,7 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Activity, Database, Network, Clock, FileCheck, AlertCircle, Workflow } from "lucide-react";
-import { SectionErrorBoundary } from "@/components/error/SectionErrorBoundary";
 
 const features = [
   {
@@ -56,10 +55,9 @@ const features = [
 
 const Features = () => {
   return (
-    <SectionErrorBoundary>
-      <section className="bg-white dark:bg-slate-950 py-24">
-          <div className="section-container">
-            <div className="text-center mb-16">
+    <section className="bg-white dark:bg-slate-950 py-24">
+      <div className="section-container">
+        <div className="text-center mb-16">
           <h2 className="text-3xl font-bold tracking-tight mb-4">
             Comprehensive Operational Risk Management
           </h2>
@@ -82,11 +80,10 @@ const Features = () => {
               </CardContent>
             </Card>
           ))}
-            </div>
-          </div>
-        </section>
-      </SectionErrorBoundary>
-    );
-  };
+        </div>
+      </div>
+    </section>
+  );
+};
 
 export default Features;

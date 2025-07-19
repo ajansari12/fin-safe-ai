@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { cachedFetch } from "@/lib/performance-utils";
+import { cachedFetch, performanceMonitor } from "@/lib/performance-utils";
 import { logger } from "@/lib/logger";
 
 export interface AnalyticsInsight {
@@ -51,6 +51,8 @@ export interface QueryResult {
 class AdvancedAnalyticsService {
   async generateAutomatedInsights(orgId: string): Promise<AnalyticsInsight[]> {
     return cachedFetch(`insights_${orgId}`, async () => {
+      const endTiming = performanceMonitor.startTiming('generate_insights');
+      
       try {
         // Get existing insights from database
         const { data: existingInsights } = await supabase
@@ -97,6 +99,8 @@ class AdvancedAnalyticsService {
       } catch (error) {
         console.error('Error generating insights:', error);
         return this.getFallbackInsights();
+      } finally {
+        endTiming();
       }
     }, 10 * 60 * 1000); // Cache for 10 minutes
   }

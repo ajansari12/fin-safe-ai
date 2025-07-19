@@ -6428,42 +6428,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mfa_security_logs: {
-        Row: {
-          action: string
-          created_at: string
-          device_info: Json | null
-          failure_reason: string | null
-          id: string
-          mfa_method: string
-          org_id: string
-          success: boolean
-          user_id: string
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          device_info?: Json | null
-          failure_reason?: string | null
-          id?: string
-          mfa_method: string
-          org_id: string
-          success: boolean
-          user_id: string
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          device_info?: Json | null
-          failure_reason?: string | null
-          id?: string
-          mfa_method?: string
-          org_id?: string
-          success?: boolean
-          user_id?: string
-        }
-        Relationships: []
-      }
       mfa_verification_attempts: {
         Row: {
           attempt_type: string
@@ -9121,108 +9085,6 @@ export type Database = {
         }
         Relationships: []
       }
-      security_baseline_config: {
-        Row: {
-          baseline_value: Json
-          compliance_status: string
-          config_category: string
-          config_name: string
-          config_value: Json
-          created_at: string | null
-          id: string
-          last_checked_at: string | null
-          org_id: string
-          remediation_steps: string | null
-          risk_level: string
-          updated_at: string | null
-        }
-        Insert: {
-          baseline_value: Json
-          compliance_status: string
-          config_category: string
-          config_name: string
-          config_value: Json
-          created_at?: string | null
-          id?: string
-          last_checked_at?: string | null
-          org_id: string
-          remediation_steps?: string | null
-          risk_level: string
-          updated_at?: string | null
-        }
-        Update: {
-          baseline_value?: Json
-          compliance_status?: string
-          config_category?: string
-          config_name?: string
-          config_value?: Json
-          created_at?: string | null
-          id?: string
-          last_checked_at?: string | null
-          org_id?: string
-          remediation_steps?: string | null
-          risk_level?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      security_events: {
-        Row: {
-          created_at: string
-          device_fingerprint: string | null
-          event_category: string
-          event_details: Json
-          event_type: string
-          geographic_location: Json | null
-          id: string
-          org_id: string
-          processed_at: string | null
-          risk_score: number | null
-          severity: string
-          source_ip: unknown | null
-          status: string
-          threat_indicators: Json | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          device_fingerprint?: string | null
-          event_category: string
-          event_details?: Json
-          event_type: string
-          geographic_location?: Json | null
-          id?: string
-          org_id: string
-          processed_at?: string | null
-          risk_score?: number | null
-          severity?: string
-          source_ip?: unknown | null
-          status?: string
-          threat_indicators?: Json | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          device_fingerprint?: string | null
-          event_category?: string
-          event_details?: Json
-          event_type?: string
-          geographic_location?: Json | null
-          id?: string
-          org_id?: string
-          processed_at?: string | null
-          risk_score?: number | null
-          severity?: string
-          source_ip?: unknown | null
-          status?: string
-          threat_indicators?: Json | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       security_incidents: {
         Row: {
           affected_systems: Json
@@ -9277,48 +9139,6 @@ export type Database = {
           status?: string
           title?: string
           updated_at?: string
-        }
-        Relationships: []
-      }
-      security_intelligence: {
-        Row: {
-          confidence_score: number
-          created_at: string | null
-          id: string
-          intel_data: Json
-          intel_source: string
-          intel_type: string
-          is_active: boolean
-          org_id: string
-          severity_level: string
-          updated_at: string | null
-          valid_until: string | null
-        }
-        Insert: {
-          confidence_score: number
-          created_at?: string | null
-          id?: string
-          intel_data: Json
-          intel_source: string
-          intel_type: string
-          is_active?: boolean
-          org_id: string
-          severity_level: string
-          updated_at?: string | null
-          valid_until?: string | null
-        }
-        Update: {
-          confidence_score?: number
-          created_at?: string | null
-          id?: string
-          intel_data?: Json
-          intel_source?: string
-          intel_type?: string
-          is_active?: boolean
-          org_id?: string
-          severity_level?: string
-          updated_at?: string | null
-          valid_until?: string | null
         }
         Relationships: []
       }
@@ -9478,63 +9298,6 @@ export type Database = {
         }
         Relationships: []
       }
-      security_threat_rules: {
-        Row: {
-          accuracy_score: number | null
-          created_at: string | null
-          created_by: string | null
-          detection_logic: string
-          false_positive_rate: number | null
-          id: string
-          is_active: boolean
-          last_triggered_at: string | null
-          org_id: string
-          rule_config: Json
-          rule_name: string
-          rule_type: string
-          severity_level: string
-          trigger_count: number | null
-          updated_at: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          accuracy_score?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          detection_logic: string
-          false_positive_rate?: number | null
-          id?: string
-          is_active?: boolean
-          last_triggered_at?: string | null
-          org_id: string
-          rule_config?: Json
-          rule_name: string
-          rule_type: string
-          severity_level: string
-          trigger_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          accuracy_score?: number | null
-          created_at?: string | null
-          created_by?: string | null
-          detection_logic?: string
-          false_positive_rate?: number | null
-          id?: string
-          is_active?: boolean
-          last_triggered_at?: string | null
-          org_id?: string
-          rule_config?: Json
-          rule_name?: string
-          rule_type?: string
-          severity_level?: string
-          trigger_count?: number | null
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       security_threats: {
         Row: {
           affected_resources: Json
@@ -9628,45 +9391,6 @@ export type Database = {
           policy_name?: string
           require_mfa_for_sensitive_actions?: boolean
           updated_at?: string
-        }
-        Relationships: []
-      }
-      session_security_logs: {
-        Row: {
-          action_taken: string | null
-          created_at: string
-          device_info: Json | null
-          event_type: string
-          id: string
-          location_info: Json | null
-          org_id: string
-          risk_factors: Json | null
-          session_id: string
-          user_id: string
-        }
-        Insert: {
-          action_taken?: string | null
-          created_at?: string
-          device_info?: Json | null
-          event_type: string
-          id?: string
-          location_info?: Json | null
-          org_id: string
-          risk_factors?: Json | null
-          session_id: string
-          user_id: string
-        }
-        Update: {
-          action_taken?: string | null
-          created_at?: string
-          device_info?: Json | null
-          event_type?: string
-          id?: string
-          location_info?: Json | null
-          org_id?: string
-          risk_factors?: Json | null
-          session_id?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -11459,14 +11183,6 @@ export type Database = {
         }
         Returns: string
       }
-      calculate_kri_appetite_variance_enhanced: {
-        Args: {
-          p_kri_id: string
-          p_actual_value: number
-          p_measurement_date: string
-        }
-        Returns: string
-      }
       calculate_session_risk_score: {
         Args: {
           user_id: string
@@ -11496,18 +11212,6 @@ export type Database = {
       check_incident_sla_breaches: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      check_security_baseline_compliance: {
-        Args: { p_org_id?: string }
-        Returns: {
-          category: string
-          compliant_count: number
-          non_compliant_count: number
-          compliance_percentage: number
-          critical_issues: number
-          high_issues: number
-          recommendations: string[]
-        }[]
       }
       check_session_timeout: {
         Args: { session_token: string }
@@ -11570,16 +11274,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      get_advanced_security_analytics: {
-        Args: { p_org_id?: string; p_time_range?: unknown }
-        Returns: {
-          metric_name: string
-          metric_value: number
-          metric_trend: string
-          risk_level: string
-          recommendations: string[]
-        }[]
-      }
       get_analytics_summary: {
         Args: { org_id_param: string }
         Returns: Json
@@ -11603,24 +11297,6 @@ export type Database = {
           total_vendors: number
           high_risk_vendors: number
           last_incident_date: string
-        }[]
-      }
-      get_secure_analytics_summary: {
-        Args: { org_id: string }
-        Returns: {
-          total_incidents: number
-          critical_findings: number
-          compliance_score: number
-          high_risk_vendors: number
-        }[]
-      }
-      get_secure_audit_summary: {
-        Args: { org_id: string }
-        Returns: {
-          total_schedules: number
-          completed_audits: number
-          pending_findings: number
-          high_priority_tasks: number
         }[]
       }
       get_user_org_id: {
@@ -11734,18 +11410,6 @@ export type Database = {
         }
         Returns: string
       }
-      log_security_event: {
-        Args: {
-          p_event_type: string
-          p_event_category: string
-          p_severity?: string
-          p_event_details?: Json
-          p_source_ip?: unknown
-          p_user_agent?: string
-          p_risk_score?: number
-        }
-        Returns: string
-      }
       match_knowledge_base: {
         Args: {
           query_embedding: string
@@ -11819,10 +11483,6 @@ export type Database = {
       validate_password_strength: {
         Args: { password: string; org_id: string }
         Returns: Json
-      }
-      validate_table_access: {
-        Args: { table_name: string; operation: string }
-        Returns: boolean
       }
       validate_user_org_relationship: {
         Args: { user_id: string }

@@ -7,7 +7,6 @@ import EnhancedSecurityDashboard from "../../components/security/EnhancedSecurit
 import SecuritySettings from "../../components/security/SecuritySettings";
 import SecurityAuditLog from "../../components/security/SecurityAuditLog";
 import EncryptionPolicyManager from "../../components/security/EncryptionPolicyManager";
-import SecurityTestSuite from "../../components/security/SecurityTestSuite";
 
 const EnterpriseSecurityCenter: React.FC = () => {
   return (
@@ -20,7 +19,7 @@ const EnterpriseSecurityCenter: React.FC = () => {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Dashboard
@@ -48,10 +47,6 @@ const EnterpriseSecurityCenter: React.FC = () => {
           <TabsTrigger value="audit" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Audit Log
-          </TabsTrigger>
-          <TabsTrigger value="testing" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Security Tests
           </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
@@ -100,10 +95,6 @@ const EnterpriseSecurityCenter: React.FC = () => {
 
         <TabsContent value="audit" className="space-y-6">
           <SecurityAuditLog />
-        </TabsContent>
-
-        <TabsContent value="testing" className="space-y-6">
-          <SecurityTestSuite />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">

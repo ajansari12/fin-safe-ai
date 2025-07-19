@@ -2,7 +2,6 @@
 import { generatePDF, createHTMLContent } from './pdf-export-service';
 import { Incident, IncidentResponse } from './incident-service';
 import { format } from 'date-fns';
-import DOMPurify from 'dompurify';
 
 export const generateIncidentReportPDF = async (
   incident: Incident,
@@ -104,14 +103,7 @@ export const generateIncidentReportPDF = async (
   `;
 
   const element = document.createElement('div');
-  // Sanitize HTML content to prevent XSS vulnerabilities
-  const sanitizedContent = DOMPurify.sanitize(createHTMLContent(`Incident Report - ${incident.title}`, htmlContent), {
-    ALLOWED_TAGS: ['html', 'head', 'body', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'br', 'hr'],
-    ALLOWED_ATTR: ['class', 'id', 'style'],
-    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'link'],
-    FORBID_ATTR: ['onclick', 'onload', 'onerror', 'onmouseover', 'href', 'src']
-  });
-  element.innerHTML = sanitizedContent;
+  element.innerHTML = createHTMLContent(`Incident Report - ${incident.title}`, htmlContent);
   document.body.appendChild(element);
 
   const filename = `incident-report-${incident.id}-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
