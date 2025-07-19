@@ -20,6 +20,7 @@ import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetai
 import { EnhancedAuthProvider } from "@/contexts/EnhancedAuthContext";
 import { OrgProvider } from "@/contexts/OrgContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
+import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,8 @@ function App() {
     <EnhancedAuthProvider>
       <OrgProvider>
         <PermissionProvider>
-          <QueryClientProvider client={queryClient}>
+          <EnhancedAIAssistantProvider>
+            <QueryClientProvider client={queryClient}>
             <Router>
               <Routes>
                 <Route path="/" element={<Home />} />
