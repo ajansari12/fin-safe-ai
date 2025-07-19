@@ -54,6 +54,11 @@ const RiskAppetiteOverview = ({ statements, onViewStatement, onCreateNew, isLoad
   const activeStatements = statements.filter(s => s.status === 'active');
   const draftStatements = statements.filter(s => s.status === 'draft');
 
+  const handleViewDetails = (id: string) => {
+    // Use the new detailed view route
+    window.location.href = `/app/risk-appetite/detail/${id}`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Active Statements */}
@@ -88,14 +93,23 @@ const RiskAppetiteOverview = ({ statements, onViewStatement, onCreateNew, isLoad
                         Last updated {format(new Date(statement.updated_at), 'MMM d, yyyy')}
                       </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => onViewStatement(statement.id)}
-                    >
-                      View Details
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    <div className="flex space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewDetails(statement.id)}
+                      >
+                        View Details
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => onViewStatement(statement.id)}
+                      >
+                        Edit
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

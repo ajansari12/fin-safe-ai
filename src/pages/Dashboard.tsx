@@ -1,41 +1,213 @@
-import React, { Suspense, lazy } from 'react';
-// TODO: Migrated from AuthContext to EnhancedAuthContext
-import { useAuth } from '@/contexts/EnhancedAuthContext';
-import AuthenticatedLayout from '@/components/layout/AuthenticatedLayout';
-import { performanceMonitor, logBundleMetrics } from '@/lib/performance-utils';
-import { DashboardSkeleton } from '@/components/common/SkeletonLoaders';
-
-// Lazy load the heavy analytics dashboard
-const UnifiedAnalyticsDashboard = lazy(() => import('@/components/analytics/UnifiedAnalyticsDashboard'));
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
+import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Shield, TrendingUp, Users, BarChart3 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { getDashboardMetrics } from "@/services/dashboard-analytics-service";
+import IncidentTrendsChart from "@/components/dashboard/IncidentTrendsChart";
+import KRIBreachesChart from "@/components/dashboard/KRIBreachesChart";
+import RecentIncidents from "@/components/dashboard/RecentIncidents";
+import ComplianceScoreCard from "@/components/dashboard/ComplianceScoreCard";
+import KRICard from "@/components/dashboard/KRICard";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
 
-  // Monitor dashboard performance
-  React.useEffect(() => {
-    const endTiming = performanceMonitor.startTiming('dashboard_load');
-    logBundleMetrics();
-    
-    return () => {
-      endTiming();
-    };
-  }, []);
+  const { data: metrics, isLoading } = useQuery({
+    queryKey: ['dashboardMetrics', profile?.organization_id],
+    queryFn: () => getDashboardMetrics(profile?.organization_id || ''),
+    enabled: !!profile?.organization_id
+  });
 
   return (
     <AuthenticatedLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-muted-foreground">
-              Welcome back, {profile?.full_name || user?.email}
+              Overview of your operational risk management
             </p>
           </div>
+          <Button onClick={() => navigate('/app/analytics')}>
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Advanced Analytics
+          </Button>
         </div>
-        
-        <Suspense fallback={<DashboardSkeleton />}>
-          <UnifiedAnalyticsDashboard />
-        </Suspense>
+
+        {/* Key Metrics */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {metrics && (
+            <>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Incidents</CardTitle>
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{metrics.total_incidents}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {metrics.high_severity_incidents} high severity
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Controls</CardTitle>
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{metrics.active_controls}</div>
+                  <p className="text-xs text-muted-foreground">
+                    of {metrics.total_controls} total
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">KRIs Monitored</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{metrics.total_kris}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Key risk indicators
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">High Risk Vendors</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{metrics.high_risk_vendors}</div>
+                  <p className="text-xs text-muted-foreground">
+                    of {metrics.total_vendors} vendors
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+
+        {/* Enhanced Compliance Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Compliance Overview</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ComplianceScoreCard
+              title="OSFI E-21"
+              score={78}
+              totalRequirements={45}
+              compliantCount={35}
+              trend="up"
+              complianceType="OSFI E-21"
+              lastAssessment="2024-06-15"
+            />
+            <ComplianceScoreCard
+              title="Basel III"
+              score={85}
+              totalRequirements={32}
+              compliantCount={27}
+              trend="stable"
+              complianceType="Basel III"
+              lastAssessment="2024-05-20"
+            />
+            <ComplianceScoreCard
+              title="PIPEDA"
+              score={92}
+              totalRequirements={18}
+              compliantCount={16}
+              trend="up"
+              complianceType="PIPEDA"
+              lastAssessment="2024-06-01"
+            />
+          </div>
+        </div>
+
+        {/* Enhanced KRI Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Key Risk Indicators</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <KRICard
+              name="System Availability"
+              currentValue={99.2}
+              threshold={99.5}
+              status="warning"
+              trend="decreasing"
+              unit="%"
+              lastUpdated="2 hours ago"
+            />
+            <KRICard
+              name="Processing Errors"
+              currentValue={15}
+              threshold={20}
+              status="normal"
+              trend="stable"
+              unit=" per day"
+              lastUpdated="1 hour ago"
+            />
+            <KRICard
+              name="Third-Party SLA Breaches"
+              currentValue={3}
+              threshold={5}
+              status="normal"
+              trend="increasing"
+              unit=" this month"
+              lastUpdated="30 minutes ago"
+            />
+            <KRICard
+              name="Data Quality Score"
+              currentValue={87}
+              threshold={90}
+              status="warning"
+              trend="stable"
+              unit="%"
+              lastUpdated="4 hours ago"
+            />
+            <KRICard
+              name="Cyber Security Events"
+              currentValue={12}
+              threshold={10}
+              status="critical"
+              trend="increasing"
+              unit=" this week"
+              lastUpdated="15 minutes ago"
+            />
+            <KRICard
+              name="Regulatory Changes"
+              currentValue={2}
+              threshold={5}
+              status="normal"
+              trend="stable"
+              unit=" pending"
+              lastUpdated="1 day ago"
+            />
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <IncidentTrendsChart />
+          <KRIBreachesChart />
+        </div>
+
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RecentIncidents />
+          </CardContent>
+        </Card>
       </div>
     </AuthenticatedLayout>
   );
