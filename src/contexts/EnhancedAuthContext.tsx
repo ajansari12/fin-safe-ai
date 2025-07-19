@@ -49,49 +49,118 @@ export const useAuth = () => {
   return context;
 };
 
+// Error boundary for auth context
+class AuthErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Auth Context Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Authentication Error</h2>
+            <p className="text-muted-foreground mb-4">
+              There was an error initializing the authentication system.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }) => {
+  // Wrap all useState calls in error handling
   const [user, setUser] = React.useState<User | null>(null);
   const [profile, setProfile] = React.useState<Profile | null>(null);
   const [userContext, setUserContext] = React.useState<UserContext | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [initError, setInitError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
-        setSession(session);
-        setUser(session?.user ?? null);
+    let isMounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        console.log('Initializing auth context...');
         
-        if (session?.user) {
-          // Defer profile fetching to avoid blocking auth state updates
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-          setUserContext(null);
+        // Set up auth state listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            if (!isMounted) return;
+            
+            console.log('Auth state change:', event, session?.user?.id);
+            setSession(session);
+            setUser(session?.user ?? null);
+            
+            if (session?.user) {
+              // Defer profile fetching to avoid blocking auth state updates
+              setTimeout(() => {
+                if (isMounted) {
+                  fetchUserProfile(session.user.id);
+                }
+              }, 0);
+            } else {
+              setProfile(null);
+              setUserContext(null);
+            }
+            
+            setIsLoading(false);
+          }
+        );
+
+        // Check for existing session
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        
+        console.log('Initial session:', existingSession?.user?.id);
+        setSession(existingSession);
+        setUser(existingSession?.user ?? null);
+        
+        if (existingSession?.user) {
+          await fetchUserProfile(existingSession.user.id);
         }
         
         setIsLoading(false);
+        
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setInitError(error instanceof Error ? error.message : 'Unknown auth error');
+        setIsLoading(false);
       }
-    );
+    };
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session:', session?.user?.id);
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      }
-      
-      setIsLoading(false);
-    });
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
@@ -285,6 +354,24 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
     return roles.some(role => hasRole(role));
   };
 
+  // Show error state if initialization failed
+  if (initError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">Authentication Error</h2>
+          <p className="text-muted-foreground mb-4">{initError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const value: AuthContextType = {
     user,
     profile,
@@ -305,8 +392,10 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
   };
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+    <AuthErrorBoundary>
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
+    </AuthErrorBoundary>
   );
 };
