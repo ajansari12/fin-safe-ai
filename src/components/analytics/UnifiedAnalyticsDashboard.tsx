@@ -19,7 +19,6 @@ import PredictiveInsightsCard from './PredictiveInsightsCard';
 import { EnhancedAIInsights } from './EnhancedAIInsights';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
-import { useAnalyticsQueries } from '@/hooks/useAnalyticsQueries';
 
 const UnifiedAnalyticsDashboard: React.FC = () => {
   const { profile } = useAuth();
@@ -88,7 +87,7 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {dataAvailabilityLoading ? '...' : `${dataAvailability?.dataScore || 0}%`}
+                  {dataAvailabilityLoading ? '...' : `${dataAvailability?.totalDataScore || 0}%`}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {dataAvailability?.readyForPredictive ? 'Predictive ready' : 'Building baseline'}
@@ -154,7 +153,14 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
 
         <TabsContent value="predictive" className="space-y-6">
           <PredictiveInsightsCard 
-            insights={predictiveMetrics || []} 
+            insights={predictiveMetrics?.map(metric => ({
+              type: 'recommendation' as const,
+              title: metric.metric,
+              description: `Predicted ${metric.predicted_value} (from ${metric.current_value})`,
+              confidence: metric.accuracy_score || 0.7,
+              timeframe: metric.prediction_date,
+              impact: metric.trend === 'increasing' ? 'high' : 'medium' as const
+            })) || []} 
             isLoading={predictiveLoading}
           />
           
@@ -166,13 +172,13 @@ const UnifiedAnalyticsDashboard: React.FC = () => {
                   <div>
                     <h3 className="text-lg font-medium">Building Predictive Capabilities</h3>
                     <p className="text-muted-foreground">
-                      Data Score: {dataAvailability.dataScore}% | Need 75% for predictions
+                      Data Score: {dataAvailability.totalDataScore}% | Need 75% for predictions
                     </p>
                   </div>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    {dataAvailability.issues?.map((issue, index) => (
-                      <p key={index}>• {issue}</p>
-                    ))}
+                    <p>• Complete data setup to enable predictions</p>
+                    <p>• Add more historical incident data</p>
+                    <p>• Configure KRI measurements</p>
                   </div>
                 </div>
               </CardContent>

@@ -26,7 +26,15 @@ export const useDataAvailability = () => {
         }, error as Error);
         handleError(error, 'checking data availability');
         // Return default value instead of throwing to prevent error boundary trigger
-        return { readyForPredictive: false, dataScore: 0, issues: ['Service unavailable'] };
+        return { 
+          incidents: { count: 0, hasData: false },
+          kris: { count: 0, hasData: false, withMeasurements: 0 },
+          vendors: { count: 0, hasData: false, riskAssessed: 0 },
+          controls: { count: 0, hasData: false, tested: 0 },
+          businessFunctions: { count: 0, hasData: false },
+          totalDataScore: 0,
+          readyForPredictive: false
+        };
       }
     },
     enabled: !!profile?.organization_id,
@@ -157,7 +165,7 @@ export const useGenerateInsights = () => {
       } catch (error) {
         logger.error('Error generating insights', { 
           component: 'useAnalyticsQueries',
-          function: 'generateInsights' 
+          module: 'generateInsights' 
         }, error as Error);
         toast.error('Failed to generate insights. Please try again.');
         throw error;

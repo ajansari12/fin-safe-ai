@@ -43,7 +43,7 @@ class AIInsightsService {
       logger.info('Generating contextual insights', { 
         component: 'AIInsightsService',
         organizationId: request.organizationId,
-        analysisType: request.analysisType 
+        metadata: { analysisType: request.analysisType }
       });
 
       // Get organization data for context
@@ -65,7 +65,7 @@ class AIInsightsService {
       if (error) {
         logger.error('AI insight generation failed', { 
           component: 'AIInsightsService',
-          error: error.message 
+          metadata: { errorMessage: error.message }
         });
         throw new Error(`Failed to generate insights: ${error.message}`);
       }
@@ -298,7 +298,10 @@ Provide a comprehensive analysis covering compliance, risk trends, control effec
         .insert(insightsToStore);
 
       if (error) {
-        logger.error('Error storing insights', { component: 'AIInsightsService', error: error.message });
+        logger.error('Error storing insights', { 
+          component: 'AIInsightsService',
+          metadata: { errorMessage: error.message }
+        });
       }
     } catch (error) {
       logger.error('Error storing insights', { component: 'AIInsightsService' }, error as Error);
@@ -316,7 +319,10 @@ Provide a comprehensive analysis covering compliance, risk trends, control effec
         .limit(limit);
 
       if (error) {
-        logger.error('Error fetching stored insights', { component: 'AIInsightsService', error: error.message });
+        logger.error('Error fetching stored insights', { 
+          component: 'AIInsightsService',
+          metadata: { errorMessage: error.message }
+        });
         return [];
       }
 
