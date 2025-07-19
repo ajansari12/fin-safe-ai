@@ -13,6 +13,7 @@ import RiskManagementRiskAppetite from "./pages/risk-management/RiskAppetite";
 import OSFICompliance from "./pages/OSFICompliance";
 import ThirdPartyRisk from "./pages/ThirdPartyRisk";
 import BusinessContinuity from "./pages/BusinessContinuity";
+import Home from "./pages/Index";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetailView";
@@ -30,6 +31,7 @@ function App() {
           <QueryClientProvider client={queryClient}>
             <Router>
               <Routes>
+                <Route path="/" element={<Home />} />
                 <Route path="/app/dashboard" element={<Dashboard />} />
                 <Route path="/app/settings" element={<Settings />} />
                 <Route path="/app/analytics" element={<Analytics />} />
@@ -39,7 +41,6 @@ function App() {
                 <Route path="/app/risk-appetite" element={<RiskAppetite />} />
                 <Route path="/app/risk-appetite/detail/:id" element={<RiskAppetiteDetailView />} />
                 <Route path="/app/risk-management/risk-appetite" element={<RiskManagementRiskAppetite />} />
-                <Route path="/" element={<Dashboard />} />
               </Routes>
             </Router>
             <Toaster />
