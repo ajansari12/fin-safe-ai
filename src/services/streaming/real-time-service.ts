@@ -32,12 +32,12 @@ class RealTimeService {
     const channel = supabase
       .channel(`realtime-${id}`)
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event,
           schema,
           table
-        },
+        } as any,
         (payload) => {
           console.log(`Real-time update for ${table}:`, payload);
           callback(payload);

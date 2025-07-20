@@ -138,12 +138,12 @@ const AdvancedTable: React.FC<AdvancedTableProps> = ({
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      active: 'default',
-      warning: 'secondary',
-      critical: 'destructive',
-      inactive: 'outline'
+      active: 'default' as const,
+      warning: 'secondary' as const,
+      critical: 'destructive' as const,
+      inactive: 'outline' as const
     };
-    return <Badge variant={variants[status as keyof typeof variants]}>{status}</Badge>;
+    return <Badge variant={variants[status as keyof typeof variants] || 'default'}>{status}</Badge>;
   };
 
   const getTrendIcon = (trend: string) => {

@@ -136,7 +136,7 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
       
       default: // line chart
         return (
-          <LineChart {...chartProps} domain={zoomDomain}>
+          <LineChart {...chartProps}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" domain={zoomDomain ? zoomDomain : ['dataMin', 'dataMax']} />
             <YAxis />
@@ -172,7 +172,7 @@ const InteractiveChart: React.FC<InteractiveChartProps> = ({
             </div>
           )}
           
-          <Select value={chartType} onValueChange={setChartType}>
+          <Select value={chartType} onValueChange={(value) => setChartType(value as typeof chartType)}>
             <SelectTrigger className="w-20 h-8">
               <SelectValue />
             </SelectTrigger>
