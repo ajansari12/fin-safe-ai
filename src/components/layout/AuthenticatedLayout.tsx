@@ -6,7 +6,9 @@ import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AIAssistantProvider, AIAssistantButton, AIAssistantDialog } from "@/components/ai-assistant";
+import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
+import { EnhancedAIAssistantButton } from "@/components/ai-assistant/EnhancedAIAssistantButton";
+import { EnhancedAIAssistantWithVoice } from "@/components/ai-assistant/EnhancedAIAssistantWithVoice";
 import { navItems } from "@/nav-items";
 import RoleAwareNavigation from "@/components/navigation/RoleAwareNavigation";
 
@@ -102,7 +104,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
   };
 
   return (
-    <AIAssistantProvider>
+    <EnhancedAIAssistantProvider>
       <TooltipProvider>
         <div className="grid grid-cols-[auto_1fr] min-h-screen w-full bg-gray-100 dark:bg-slate-900">
           {/* Mobile overlay */}
@@ -251,10 +253,10 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
             </main>
           </div>
         </div>
-        <AIAssistantButton />
-        <AIAssistantDialog />
+        <EnhancedAIAssistantButton />
+        <EnhancedAIAssistantWithVoice />
       </TooltipProvider>
-    </AIAssistantProvider>
+    </EnhancedAIAssistantProvider>
   );
 };
 
