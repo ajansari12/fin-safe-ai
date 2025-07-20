@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,16 +25,24 @@ import TrendChart from './TrendChart';
 import RiskPostureHeatmap from './RiskPostureHeatmap';
 import EscalationWorkflow from './EscalationWorkflow';
 import BoardReportGenerator from './BoardReportGenerator';
+import RiskAppetiteDetailModal from './RiskAppetiteDetailModal';
 
 const UnifiedRiskAppetite = () => {
   const { profile } = useAuth();
   const { statements, isLoading, createStatement } = useRiskAppetite();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedStatement, setSelectedStatement] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const handleCreateStatement = async (data: any) => {
     await createStatement(data);
     setIsCreateModalOpen(false);
+  };
+
+  const handleViewDetails = (statement: any) => {
+    setSelectedStatement(statement);
+    setIsDetailModalOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -49,23 +56,23 @@ const UnifiedRiskAppetite = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 max-w-full">
+      {/* Header - Improved responsive design */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Risk Appetite Management</h2>
           <p className="text-muted-foreground">
             Comprehensive risk appetite framework with automated monitoring and OSFI E-21 compliance
           </p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="shrink-0">
           <PlusCircle className="mr-2 h-4 w-4" />
           Create Statement
         </Button>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Quick Stats - Improved responsive grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Statements</CardTitle>
@@ -123,34 +130,36 @@ const UnifiedRiskAppetite = () => {
         </Card>
       </div>
 
-      {/* Main Content Tabs */}
+      {/* Main Content Tabs - Improved responsive design */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="statements" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Statements
-          </TabsTrigger>
-          <TabsTrigger value="trends" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Trends
-          </TabsTrigger>
-          <TabsTrigger value="alerts" className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Alerts
-          </TabsTrigger>
-          <TabsTrigger value="escalation" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Escalation
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Reports
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-6 min-w-[600px] lg:min-w-0">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2 text-xs sm:text-sm">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="statements" className="flex items-center gap-2 text-xs sm:text-sm">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Statements</span>
+            </TabsTrigger>
+            <TabsTrigger value="trends" className="flex items-center gap-2 text-xs sm:text-sm">
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Trends</span>
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center gap-2 text-xs sm:text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="hidden sm:inline">Alerts</span>
+            </TabsTrigger>
+            <TabsTrigger value="escalation" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Escalation</span>
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2 text-xs sm:text-sm">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Reports</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="dashboard" className="space-y-6">
           <RiskAppetiteDashboard />
@@ -161,26 +170,30 @@ const UnifiedRiskAppetite = () => {
             {statements.map((statement) => (
               <Card key={statement.id}>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex-1">
                       <CardTitle className="text-lg">{statement.statement_name}</CardTitle>
                       <CardDescription>
                         Effective: {new Date(statement.effective_date).toLocaleDateString()} - 
                         Review: {new Date(statement.review_date).toLocaleDateString()}
                       </CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <Badge className={getStatusColor(statement.approval_status)}>
                         {statement.approval_status.replace('_', ' ')}
                       </Badge>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewDetails(statement)}
+                      >
                         View Details
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm font-medium">Risk Categories</p>
                       <p className="text-2xl font-bold">4</p>
@@ -249,6 +262,13 @@ const UnifiedRiskAppetite = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreateStatement}
+      />
+
+      {/* Detail Modal */}
+      <RiskAppetiteDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        statement={selectedStatement}
       />
     </div>
   );
