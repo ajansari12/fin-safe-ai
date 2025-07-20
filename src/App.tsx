@@ -1,16 +1,36 @@
 import React from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+} from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
+import Analytics from "./pages/Analytics";
+import RiskAppetite from "./pages/RiskAppetite";
+import RiskManagementRiskAppetite from "./pages/risk-management/RiskAppetite";
+import OSFICompliance from "./pages/OSFICompliance";
+import ThirdPartyRisk from "./pages/ThirdPartyRisk";
+import BusinessContinuity from "./pages/BusinessContinuity";
+import Home from "./pages/Index";
+import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetailView";
 
 function App() {
-  console.log('App rendering, React available:', !!React, typeof React);
-  console.log('React.useState available:', !!React?.useState);
-  console.log('React.useEffect available:', !!React?.useEffect);
-  
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>Minimal App Test</h1>
-      <p>React is working: {React ? 'Yes' : 'No'}</p>
-      <p>Current time: {new Date().toLocaleTimeString()}</p>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/app/dashboard" element={<Dashboard />} />
+        <Route path="/app/settings" element={<Settings />} />
+        <Route path="/app/analytics" element={<Analytics />} />
+        <Route path="/app/osfi-compliance" element={<OSFICompliance />} />
+        <Route path="/app/third-party-risk" element={<ThirdPartyRisk />} />
+        <Route path="/app/business-continuity" element={<BusinessContinuity />} />
+        <Route path="/app/risk-appetite" element={<RiskAppetite />} />
+        <Route path="/app/risk-appetite/detail/:id" element={<RiskAppetiteDetailView />} />
+        <Route path="/app/risk-management/risk-appetite" element={<RiskManagementRiskAppetite />} />
+      </Routes>
+    </Router>
   );
 }
 
