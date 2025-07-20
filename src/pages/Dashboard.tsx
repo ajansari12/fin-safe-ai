@@ -15,11 +15,14 @@ import ComplianceScoreCard from "@/components/dashboard/ComplianceScoreCard";
 import KRICard from "@/components/dashboard/KRICard";
 import { EnhancedAIInsights } from "@/components/analytics/EnhancedAIInsights";
 import { EnhancedAIAssistant } from "@/components/ai/EnhancedAIAssistant";
+import { useDetailModal } from "@/hooks/useDetailModal";
+import DetailViewRouter from "@/components/common/DetailViewRouter";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [showAIInsights, setShowAIInsights] = useState(false);
+  const { modalState, openModal, closeModal } = useDetailModal();
 
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['dashboardMetrics', profile?.organization_id],
@@ -228,9 +231,12 @@ const Dashboard = () => {
             <CardTitle>Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <RecentIncidents />
+            <RecentIncidents onViewDetails={openModal} />
           </CardContent>
         </Card>
+
+        {/* Detail View Router */}
+        <DetailViewRouter modalState={modalState} onClose={closeModal} />
       </div>
     </AuthenticatedLayout>
   );

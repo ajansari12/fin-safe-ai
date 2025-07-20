@@ -1,5 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
 const mockIncidents = [
@@ -54,7 +56,11 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const RecentIncidents = () => {
+interface RecentIncidentsProps {
+  onViewDetails?: (entityType: string, entityId: string, data: any) => void;
+}
+
+const RecentIncidents: React.FC<RecentIncidentsProps> = ({ onViewDetails }) => {
   return (
     <div className="space-y-4">
       {mockIncidents.map((incident) => (
@@ -65,13 +71,22 @@ const RecentIncidents = () => {
               {format(new Date(incident.reported_at), 'MMM d, yyyy HH:mm')}
             </p>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex items-center space-x-2">
             <Badge variant={getSeverityColor(incident.severity)} className="text-xs">
               {incident.severity}
             </Badge>
             <Badge variant={getStatusColor(incident.status)} className="text-xs">
               {incident.status}
             </Badge>
+            {onViewDetails && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => onViewDetails('incident', incident.id, incident)}
+              >
+                <Eye className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </div>
       ))}
