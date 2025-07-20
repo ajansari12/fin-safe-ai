@@ -63,6 +63,11 @@ export const navItems: NavigationItem[] = [
     icon: Cog,
   },
   {
+    title: "Technology & Cyber Risk",
+    url: "/app/technology-cyber-risk",
+    icon: Shield,
+  },
+  {
     title: "Governance",
     url: "/app/governance",
     icon: Building2,

@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -28,6 +27,7 @@ import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetai
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { EnhancedAuthProvider } from "@/contexts/EnhancedAuthContext";
 import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
+import TechnologyCyberRisk from "./pages/TechnologyCyberRisk";
 
 // Create a stable QueryClient instance
 const queryClient = new QueryClient({
@@ -83,6 +83,11 @@ function App() {
             <Route path="/app/third-party-risk" element={
               <ProtectedRoute>
                 <ThirdPartyRisk />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/technology-cyber-risk" element={
+              <ProtectedRoute>
+                <TechnologyCyberRisk />
               </ProtectedRoute>
             } />
             <Route path="/app/business-continuity" element={
