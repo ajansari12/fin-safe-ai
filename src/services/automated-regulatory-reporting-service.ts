@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { reportingService, ReportInstance } from '@/services/regulatory-reporting/reporting-service';
 
 export interface AutomatedReportConfig {
   id: string;
@@ -272,7 +273,7 @@ class AutomatedRegulatoryReportingService {
 
       // Step 7: Update report instance status
       await reportingService.updateReportInstance(reportInstance.id, {
-        status: submissionResults.length > 0 ? 'submitted' : 'generated',
+        status: submissionResults.length > 0 ? 'submitted' : 'approved',
         generation_date: new Date().toISOString(),
         validation_results: validationResults,
       });
