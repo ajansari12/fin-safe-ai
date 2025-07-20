@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -39,10 +39,10 @@ interface AuthContextType {
   hasAnyRole: (roles: string[]) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -92,15 +92,17 @@ class AuthErrorBoundary extends React.Component<
 }
 
 export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }) => {
-  // Wrap all useState calls in error handling
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [userContext, setUserContext] = useState<UserContext | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [initError, setInitError] = useState<string | null>(null);
+  console.log('EnhancedAuthProvider rendering...', { useState: typeof React.useState });
+  
+  // Wrap all useState calls in error handling using React.useState directly
+  const [user, setUser] = React.useState<User | null>(null);
+  const [profile, setProfile] = React.useState<Profile | null>(null);
+  const [userContext, setUserContext] = React.useState<UserContext | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [initError, setInitError] = React.useState<string | null>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     let isMounted = true;
 
     const initializeAuth = async () => {
