@@ -2,17 +2,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-// TODO: Remove AuthContext.tsx once all files migrated to EnhancedAuthContext
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/SimpleAuthContext";
 
 interface AuthButtonsProps {
   className?: string;
 }
 
 const AuthButtons: React.FC<AuthButtonsProps> = ({ className }) => {
-  const { isAuthenticated, logout } = useAuth();
+  const { user, logout } = useAuth();
 
-  if (isAuthenticated) {
+  if (user) {
     return (
       <div className={className}>
         <div className="flex items-center gap-2">
