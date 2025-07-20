@@ -1,9 +1,8 @@
 
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Shield } from "lucide-react";
-// TODO: Migrated from AuthContext to EnhancedAuthContext
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/SimpleAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +15,15 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { register } = useAuth();
+  const { signup, user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/app/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +45,18 @@ const Register = () => {
     
     try {
       setIsSubmitting(true);
-      await register(email, password, fullName);
+      const { error } = await signup(email, password);
+      
+      if (error) {
+        toast.error(error.message || "Registration failed");
+        return;
+      }
+      
+      toast.success("Registration successful! Please check your email to verify your account.");
+      navigate('/auth/verify');
     } catch (error) {
       console.error("Registration error:", error);
-      // Toast is handled in the AuthContext
+      toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }

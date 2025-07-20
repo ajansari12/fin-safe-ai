@@ -1,9 +1,8 @@
 
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Shield } from "lucide-react";
-// TODO: Migrated from AuthContext to EnhancedAuthContext
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/SimpleAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +13,17 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      const from = location.state?.from?.pathname || '/app/dashboard';
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,10 +35,18 @@ const Login = () => {
     
     try {
       setIsSubmitting(true);
-      await login(email, password);
+      const { error } = await login(email, password);
+      
+      if (error) {
+        toast.error(error.message || "Login failed");
+        return;
+      }
+      
+      // Navigation will be handled by the useEffect above when user state changes
+      toast.success("Login successful!");
     } catch (error) {
       console.error("Login error:", error);
-      // Toast is handled in the AuthContext
+      toast.error("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
