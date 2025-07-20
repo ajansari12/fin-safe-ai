@@ -1,9 +1,7 @@
 
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-// FIXME: Already using EnhancedAuthContext - this is correct
-import { useAuth } from "@/contexts/EnhancedAuthContext";
-import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
+import { useAuth } from "@/contexts/SimpleAuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -14,7 +12,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRole 
 }) => {
-  const { isAuthenticated, isLoading, profile } = useAuth();
+  const { user, isLoading, profile } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -25,7 +23,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!isAuthenticated) {
+  if (!user) {
     // Redirect to login if not authenticated
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
@@ -35,12 +33,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/app/dashboard" replace />;
   }
 
-  // Wrap children with OnboardingGuard to check onboarding status
-  return (
-    <OnboardingGuard>
-      {children}
-    </OnboardingGuard>
-  );
+  return children;
 };
 
 export default ProtectedRoute;
