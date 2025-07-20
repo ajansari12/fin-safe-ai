@@ -18,6 +18,7 @@ import {
   Shield,
   Target,
   Cog,
+  Brain,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -156,6 +157,11 @@ export const navItems: NavigationItem[] = [
         url: "/app/organizational-intelligence",
       },
     ],
+  },
+  {
+    title: "AI Intelligence",
+    url: "/app/ai-intelligence",
+    icon: Brain,
   },
   {
     title: "Enterprise",
