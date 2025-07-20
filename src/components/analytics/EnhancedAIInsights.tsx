@@ -102,7 +102,7 @@ export const EnhancedAIInsights: React.FC<EnhancedAIInsightsProps> = ({ classNam
 
   const filteredInsights = insights.filter(insight => {
     if (activeTab === 'all') return true;
-    return insight.insight_type === activeTab;
+    return insight.type === activeTab;
   });
 
   const executeRecommendation = (recommendation: any) => {
@@ -196,50 +196,36 @@ export const EnhancedAIInsights: React.FC<EnhancedAIInsightsProps> = ({ classNam
                 {filteredInsights.map((insight) => (
                   <Card key={insight.id} className="border-l-4 border-l-blue-500">
                     <CardContent className="pt-4">
-                      <div className="flex items-start gap-3">
-                        {getInsightIcon(insight.insight_type)}
+                       <div className="flex items-start gap-3">
+                        {getInsightIcon(insight.type)}
                         <div className="flex-1 space-y-3">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-semibold">{insight.insight_data.title}</h4>
+                            <h4 className="font-semibold">{insight.title}</h4>
                             <div className="flex items-center gap-2">
-                              <Badge className={getSeverityColor(insight.insight_data.severity)}>
-                                {insight.insight_data.severity}
+                              <Badge className={getSeverityColor(insight.severity)}>
+                                {insight.severity}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
-                                {Math.round(insight.insight_data.confidence_score * 100)}% confidence
+                                {Math.round(insight.confidence)}% confidence
                               </Badge>
                             </div>
                           </div>
                           
                           <p className="text-sm text-muted-foreground">
-                            {insight.insight_data.description}
+                            {insight.description}
                           </p>
                           
-                          {insight.insight_data.actionable_items && insight.insight_data.actionable_items.length > 0 && (
-                            <div className="space-y-2">
-                              <h5 className="text-sm font-medium">Key Actions:</h5>
-                              <ul className="text-sm space-y-1">
-                                {insight.insight_data.actionable_items.map((item, index) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <CheckCircle className="h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          
-                          {insight.insight_data.recommendations && insight.insight_data.recommendations.length > 0 && (
+                          {insight.recommendations && insight.recommendations.length > 0 && (
                             <div className="space-y-2">
                               <h5 className="text-sm font-medium">Recommendations:</h5>
                               <div className="space-y-2">
-                                {insight.insight_data.recommendations.map((rec, index) => (
+                                {insight.recommendations.map((rec, index) => (
                                   <Alert key={index} className="py-2">
                                     <AlertDescription className="flex items-center justify-between">
                                       <div className="flex-1">
                                         <p className="font-medium text-sm">{rec.action}</p>
                                         <p className="text-xs text-muted-foreground">
-                                          Priority: {rec.priority} | Timeline: {rec.timeline}
+                                          Priority: {rec.priority} | Timeline: {rec.timeframe}
                                         </p>
                                       </div>
                                       <Button
@@ -262,9 +248,9 @@ export const EnhancedAIInsights: React.FC<EnhancedAIInsightsProps> = ({ classNam
                               Generated: {new Date(insight.generated_at).toLocaleDateString()}
                             </div>
                             <div className="flex gap-1">
-                              {insight.tags.map((tag, index) => (
+                              {insight.data_sources.map((source, index) => (
                                 <Badge key={index} variant="secondary" className="text-xs">
-                                  {tag.replace('_', ' ')}
+                                  {source.replace('_', ' ')}
                                 </Badge>
                               ))}
                             </div>
