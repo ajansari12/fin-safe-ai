@@ -70,12 +70,8 @@ class DataSyncService {
 
       if (error) throw error;
 
-      await integrationService.logIntegrationEvent(
-        config.integrationId,
-        'sync_config_created',
-        { syncType: config.syncType, conflictResolution: config.conflictResolution },
-        'success'
-      );
+      // TODO: Implement integration event logging
+      console.log('Sync config created for integration:', config.integrationId);
     } catch (error) {
       console.error('Error creating sync configuration:', error);
       throw error;
@@ -217,13 +213,8 @@ class DataSyncService {
   }
 
   private async logSyncResult(integrationId: string, result: SyncResult): Promise<void> {
-    await integrationService.logIntegrationEvent(
-      integrationId,
-      'data_sync_completed',
-      result,
-      result.status === 'failed' ? 'error' : result.status === 'partial' ? 'warning' : 'success',
-      result.errors.join('; ') || undefined
-    );
+    // TODO: Implement integration event logging
+    console.log('Sync result logged for integration:', integrationId, result);
   }
 }
 

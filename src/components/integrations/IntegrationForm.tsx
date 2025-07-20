@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, TestTube } from "lucide-react";
-import { integrationService, Integration } from "@/services/integration-service";
+import { integrationCoreService, Integration } from "@/services/integrations/integration-core-service";
 import { getCurrentUserProfile } from "@/lib/supabase-utils";
 
 interface IntegrationFormProps {
@@ -30,7 +30,7 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({ integrationId, onClos
   const [testing, setTesting] = useState(false);
   const { toast } = useToast();
 
-  const integrationTypes = integrationService.getIntegrationTypes();
+  const integrationTypes = integrationCoreService.getIntegrationTypes();
 
   useEffect(() => {
     if (integrationId) {
@@ -41,7 +41,7 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({ integrationId, onClos
   const loadIntegration = async () => {
     try {
       setLoading(true);
-      const integrations = await integrationService.getIntegrations();
+      const integrations = await integrationCoreService.getIntegrations();
       const found = integrations.find(i => i.id === integrationId);
       if (found) {
         setIntegration(found);
@@ -77,17 +77,18 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({ integrationId, onClos
 
     setTesting(true);
     try {
-      const success = await integrationService.testWebhook(
-        integration.webhook_url,
-        { test: true, timestamp: new Date().toISOString() }
-      );
+      // Simple test request to webhook URL
+      const response = await fetch(integration.webhook_url!, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test: true, timestamp: new Date().toISOString() }),
+        mode: 'no-cors'
+      });
 
       toast({
-        title: success ? "Test Successful" : "Test Failed",
-        description: success 
-          ? "Integration endpoint responded successfully" 
-          : "Failed to reach endpoint - check URL and configuration",
-        variant: success ? "default" : "destructive"
+        title: "Test Sent",
+        description: "Test request sent to webhook endpoint. Check your service logs for details.",
+        variant: "default"
       });
     } catch (error) {
       console.error('Error testing integration:', error);
@@ -119,13 +120,13 @@ const IntegrationForm: React.FC<IntegrationFormProps> = ({ integrationId, onClos
       }
 
       if (integrationId) {
-        await integrationService.updateIntegration(integrationId, integration);
+        await integrationCoreService.updateIntegration(integrationId, integration);
         toast({
           title: "Success",
           description: "Integration updated successfully",
         });
       } else {
-        await integrationService.createIntegration({
+        await integrationCoreService.createIntegration({
           ...integration,
           org_id: profile.organization_id,
           created_by: profile.id,

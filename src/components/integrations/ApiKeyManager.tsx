@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Key, Plus, Eye, EyeOff, Copy, Trash2 } from "lucide-react";
-import { integrationService, ApiKey } from "@/services/integration-service";
+import { apiKeyService, ApiKey } from "@/services/integrations/api-key-service";
 
 const ApiKeyManager: React.FC = () => {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -30,7 +30,7 @@ const ApiKeyManager: React.FC = () => {
 
   const loadApiKeys = async () => {
     try {
-      const data = await integrationService.getApiKeys();
+      const data = await apiKeyService.getApiKeys();
       setApiKeys(data);
     } catch (error) {
       console.error("Failed to load API keys:", error);
@@ -48,7 +48,7 @@ const ApiKeyManager: React.FC = () => {
     if (!newKey.name || !newKey.type) return;
 
     try {
-      await integrationService.generateApiKey(
+      await apiKeyService.generateApiKey(
         newKey.name, 
         newKey.type, 
         newKey.description || undefined
@@ -74,7 +74,7 @@ const ApiKeyManager: React.FC = () => {
 
   const handleDeactivateKey = async (keyId: string) => {
     try {
-      await integrationService.deactivateApiKey(keyId);
+      await apiKeyService.deactivateApiKey(keyId);
       await loadApiKeys();
       
       toast({
@@ -97,7 +97,7 @@ const ApiKeyManager: React.FC = () => {
     }
 
     try {
-      await integrationService.deleteApiKey(keyId);
+      await apiKeyService.deleteApiKey(keyId);
       await loadApiKeys();
       
       toast({
@@ -130,7 +130,7 @@ const ApiKeyManager: React.FC = () => {
     return key.substring(0, 12) + "..." + key.substring(key.length - 8);
   };
 
-  const keyTypes = integrationService.getApiKeyTypes();
+  const keyTypes = apiKeyService.getApiKeyTypes();
 
   if (loading) {
     return <div>Loading API keys...</div>;

@@ -8,7 +8,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Search, Download, RefreshCw } from "lucide-react";
-import { integrationService, IntegrationLog } from "@/services/integration-service";
+import { integrationService } from "@/services/integration-service";
+
+// Define IntegrationLog interface locally since it's not in the core service
+interface IntegrationLog {
+  id: string;
+  integration_id: string;
+  event_type: string;
+  status: string;
+  message: string;
+  metadata: any;
+  created_at: string;
+  error_message?: string;
+  response_time_ms?: number;
+  event_data?: any;
+}
 
 const IntegrationAuditLogs: React.FC = () => {
   const [logs, setLogs] = useState<IntegrationLog[]>([]);
@@ -25,7 +39,8 @@ const IntegrationAuditLogs: React.FC = () => {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const data = await integrationService.getIntegrationLogs();
+      // TODO: Implement integration logs service
+      const data: IntegrationLog[] = [];
       setLogs(data);
     } catch (error) {
       console.error('Error loading integration logs:', error);
