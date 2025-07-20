@@ -6,6 +6,10 @@ import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import FrameworksList from "@/components/governance/FrameworksList";
 import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
 import MobileGovernance from "@/components/governance/MobileGovernance";
+import ThreeLinesDefense from "@/components/governance/ThreeLinesDefense";
+import BoardOversight from "@/components/governance/BoardOversight";
+import AccountabilityMatrix from "@/components/governance/AccountabilityMatrix";
+import PolicyManagement from "@/components/governance/PolicyManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAIAssistant } from "@/components/ai-assistant";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -38,6 +42,10 @@ const GovernanceFrameworkContent = () => {
         <TabsList>
           <TabsTrigger value="frameworks">Frameworks</TabsTrigger>
           <TabsTrigger value="compliance">Compliance Dashboard</TabsTrigger>
+          <TabsTrigger value="three-lines">Three Lines of Defense</TabsTrigger>
+          <TabsTrigger value="board">Board Oversight</TabsTrigger>
+          <TabsTrigger value="accountability">Accountability Matrix</TabsTrigger>
+          <TabsTrigger value="policies">Policy Management</TabsTrigger>
         </TabsList>
         
         <TabsContent value="frameworks" className="space-y-6">
@@ -46,6 +54,22 @@ const GovernanceFrameworkContent = () => {
         
         <TabsContent value="compliance">
           <ComplianceDashboard />
+        </TabsContent>
+        
+        <TabsContent value="three-lines">
+          <ThreeLinesDefense />
+        </TabsContent>
+        
+        <TabsContent value="board">
+          <BoardOversight />
+        </TabsContent>
+        
+        <TabsContent value="accountability">
+          <AccountabilityMatrix />
+        </TabsContent>
+        
+        <TabsContent value="policies">
+          <PolicyManagement />
         </TabsContent>
       </Tabs>
     </div>
