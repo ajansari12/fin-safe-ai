@@ -19,6 +19,7 @@ import {
   Target,
   Cog,
   Brain,
+  Workflow,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -162,6 +163,11 @@ export const navItems: NavigationItem[] = [
     title: "AI Intelligence",
     url: "/app/ai-intelligence",
     icon: Brain,
+  },
+  {
+    title: "Workflow Automation",
+    url: "/app/workflow-automation", 
+    icon: Workflow,
   },
   {
     title: "Enterprise",

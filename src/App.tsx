@@ -30,6 +30,7 @@ import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedA
 import TechnologyCyberRisk from "./pages/TechnologyCyberRisk";
 import ScenarioTesting from "./pages/ScenarioTesting";
 import AIIntelligence from "./pages/AIIntelligence";
+import WorkflowAutomation from "./pages/WorkflowAutomation";
 
 // Create a stable QueryClient instance
 const queryClient = new QueryClient({
@@ -135,6 +136,11 @@ function App() {
             <Route path="/app/ai-intelligence" element={
               <ProtectedRoute>
                 <AIIntelligence />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/workflow-automation" element={
+              <ProtectedRoute>
+                <WorkflowAutomation />
               </ProtectedRoute>
             } />
           </Routes>
