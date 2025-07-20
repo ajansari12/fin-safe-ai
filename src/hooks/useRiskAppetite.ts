@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/EnhancedAuthContext';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 import { toast } from 'sonner';
 
 export interface RiskAppetiteStatement {
