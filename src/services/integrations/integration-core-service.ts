@@ -84,14 +84,12 @@ class IntegrationCoreService {
 
   getIntegrationTypes() {
     return [
-      { value: 'webhook', label: 'Webhook', description: 'Send data to external webhooks' },
-      { value: 'slack', label: 'Slack', description: 'Slack workspace integration' },
-      { value: 'teams', label: 'Microsoft Teams', description: 'Teams channel integration' },
-      { value: 'email', label: 'Email Notifications', description: 'SMTP email integration' },
-      { value: 'crm', label: 'CRM Integration', description: 'Customer relationship management' },
-      { value: 'dms', label: 'Document Management', description: 'Document management system' },
-      { value: 'siem', label: 'SIEM Integration', description: 'Security information and event management' },
-      { value: 'api', label: 'REST API', description: 'Custom REST API integration' }
+      { value: 'core_banking', label: 'Core Banking', description: 'Core banking system integration' },
+      { value: 'trading', label: 'Trading Platform', description: 'Trading and market data systems' },
+      { value: 'hr', label: 'HR System', description: 'Human resources management system' },
+      { value: 'vendor_mgmt', label: 'Vendor Management', description: 'Third-party vendor management' },
+      { value: 'regulatory', label: 'Regulatory Portal', description: 'Regulatory reporting and compliance' },
+      { value: 'third_party', label: 'Third Party API', description: 'General third-party API integration' }
     ];
   }
 }

@@ -32,6 +32,7 @@ import ScenarioTesting from "./pages/ScenarioTesting";
 import AIIntelligence from "./pages/AIIntelligence";
 import WorkflowAutomation from "./pages/WorkflowAutomation";
 import OrganizationalIntelligence from "./pages/OrganizationalIntelligence";
+import IntegrationsHub from "./pages/IntegrationsHub";
 
 // Create a stable QueryClient instance
 const queryClient = new QueryClient({
@@ -147,6 +148,11 @@ function App() {
             <Route path="/app/organizational-intelligence" element={
               <ProtectedRoute>
                 <OrganizationalIntelligence />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/integrations" element={
+              <ProtectedRoute>
+                <IntegrationsHub />
               </ProtectedRoute>
             } />
           </Routes>

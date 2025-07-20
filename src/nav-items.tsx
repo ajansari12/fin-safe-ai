@@ -20,6 +20,7 @@ import {
   Cog,
   Brain,
   Workflow,
+  Globe,
 } from "lucide-react";
 
 interface NavigationItem {
