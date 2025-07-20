@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/SimpleAuthContext";
 import { aiAssistantService, WorkflowAnalysis, RiskSummary, SectorThreshold } from "@/services/ai-assistant-service";
 import { enhancedAIAssistantService } from "@/services/enhanced-ai-assistant-service";
 import { aiOrganizationalIntelligenceIntegration } from "@/services/ai-organizational-intelligence-integration";
