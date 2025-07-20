@@ -1,8 +1,10 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 interface NavigationItem {
   title: string;
@@ -31,7 +33,9 @@ const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
     items.forEach(item => {
       if (item.items) {
         const hasActiveChild = item.items.some(child => 
-          location.pathname === child.url || location.pathname.startsWith(child.url + '/')
+          location.pathname === child.url || 
+          location.pathname.startsWith(child.url + '/') ||
+          (child.url.includes('?') && location.pathname === child.url.split('?')[0])
         );
         if (hasActiveChild || location.pathname === item.url) {
           activeGroups.add(item.url);
@@ -54,6 +58,11 @@ const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
   };
 
   const isActiveUrl = (url: string) => {
+    if (url.includes('?')) {
+      // Handle URLs with query parameters
+      const baseUrl = url.split('?')[0];
+      return location.pathname === baseUrl;
+    }
     return location.pathname === url || location.pathname.startsWith(url + '/');
   };
 
@@ -71,11 +80,12 @@ const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
             <Link
               to={item.url}
               onClick={onItemClick}
-              className={`flex items-center justify-center w-12 h-12 rounded-md transition-colors ${
+              className={cn(
+                "flex items-center justify-center w-12 h-12 rounded-md transition-colors",
                 isActive
                   ? "bg-primary text-primary-foreground"
-                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-              }`}
+                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
             >
               {Icon && <Icon className="h-5 w-5" />}
             </Link>
@@ -97,11 +107,12 @@ const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
         >
           <CollapsibleTrigger asChild>
             <button
-              className={`flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] ${
+              className={cn(
+                "flex items-center justify-between w-full px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px]",
                 isActive
-                  ? "bg-primary/10 text-primary"
-                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-              }`}
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
+              )}
             >
               <div className="flex items-center min-w-0">
                 {Icon && <Icon className="h-5 w-5 mr-3 flex-shrink-0" />}
@@ -121,11 +132,12 @@ const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
                   key={subItem.url}
                   to={subItem.url}
                   onClick={onItemClick}
-                  className={`flex items-center px-3 py-2 text-sm rounded-md transition-colors min-h-[36px] ${
+                  className={cn(
+                    "flex items-center px-3 py-2 text-sm rounded-md transition-colors min-h-[36px]",
                     isActiveUrl(subItem.url)
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
-                  }`}
+                      ? "bg-primary text-primary-foreground font-medium"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  )}
                 >
                   <span className="truncate">{subItem.title}</span>
                 </Link>
@@ -142,11 +154,12 @@ const RoleAwareNavigation: React.FC<RoleAwareNavigationProps> = ({
         key={item.url}
         to={item.url}
         onClick={onItemClick}
-        className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px] ${
+        className={cn(
+          "flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors min-h-[44px]",
           isActive
-            ? "bg-primary/10 text-primary"
-            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700"
-        }`}
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground hover:bg-accent hover:text-accent-foreground"
+        )}
       >
         <div className="flex items-center min-w-0">
           {Icon && <Icon className="h-5 w-5 mr-3 flex-shrink-0" />}
