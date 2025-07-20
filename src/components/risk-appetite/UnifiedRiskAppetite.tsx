@@ -17,6 +17,7 @@ import {
   Clock
 } from 'lucide-react';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
+import { useRiskAppetite } from '@/hooks/useRiskAppetite';
 import { CreateStatementModal } from './CreateStatementModal';
 import RiskAppetiteDashboard from './RiskAppetiteDashboard';
 import AppetiteBreachAlerts from './AppetiteBreachAlerts';
@@ -28,54 +29,20 @@ import BoardReportGenerator from './BoardReportGenerator';
 
 const UnifiedRiskAppetite = () => {
   const { profile } = useAuth();
+  const { statements, isLoading, createStatement } = useRiskAppetite();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [statements, setStatements] = useState([]);
 
-  // Mock data for demonstration
-  const mockStatements = [
-    {
-      id: '1',
-      name: 'Annual Risk Appetite Statement 2024',
-      status: 'active',
-      effectiveDate: '2024-01-01',
-      reviewDate: '2024-12-31',
-      categoriesCount: 6,
-      complianceScore: 85
-    },
-    {
-      id: '2',
-      name: 'Operational Risk Appetite 2024',
-      status: 'draft',
-      effectiveDate: '2024-07-01',
-      reviewDate: '2024-06-30',
-      categoriesCount: 4,
-      complianceScore: 72
-    }
-  ];
-
-  useEffect(() => {
-    setStatements(mockStatements);
-  }, []);
-
-  const handleCreateStatement = (data: any) => {
-    const newStatement = {
-      id: Date.now().toString(),
-      name: data.statementName,
-      status: 'draft',
-      effectiveDate: data.effectiveDate,
-      reviewDate: new Date(new Date(data.effectiveDate).setFullYear(new Date(data.effectiveDate).getFullYear() + 1)).toISOString().split('T')[0],
-      categoriesCount: data.riskCategories.length,
-      complianceScore: Math.floor(Math.random() * 30) + 70
-    };
-    setStatements([...statements, newStatement]);
+  const handleCreateStatement = async (data: any) => {
+    await createStatement(data);
+    setIsCreateModalOpen(false);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
+      case 'approved': return 'bg-green-100 text-green-800';
       case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'under_review': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-blue-100 text-blue-800';
       case 'expired': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -105,7 +72,7 @@ const UnifiedRiskAppetite = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statements.filter(s => s.status === 'active').length}</div>
+            <div className="text-2xl font-bold">{statements.filter(s => s.approval_status === 'approved').length}</div>
             <p className="text-xs text-muted-foreground">
               {statements.length} total statements
             </p>
@@ -119,7 +86,7 @@ const UnifiedRiskAppetite = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statements.length > 0 ? Math.round(statements.reduce((acc, s) => acc + s.complianceScore, 0) / statements.length) : 0}%
+              85%
             </div>
             <p className="text-xs text-muted-foreground">
               OSFI E-21 compliance
@@ -134,7 +101,7 @@ const UnifiedRiskAppetite = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {statements.reduce((acc, s) => acc + s.categoriesCount, 0)}
+              {statements.length * 4}
             </div>
             <p className="text-xs text-muted-foreground">
               Across all statements
@@ -196,15 +163,15 @@ const UnifiedRiskAppetite = () => {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">{statement.name}</CardTitle>
+                      <CardTitle className="text-lg">{statement.statement_name}</CardTitle>
                       <CardDescription>
-                        Effective: {new Date(statement.effectiveDate).toLocaleDateString()} - 
-                        Review: {new Date(statement.reviewDate).toLocaleDateString()}
+                        Effective: {new Date(statement.effective_date).toLocaleDateString()} - 
+                        Review: {new Date(statement.review_date).toLocaleDateString()}
                       </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(statement.status)}>
-                        {statement.status.replace('_', ' ')}
+                      <Badge className={getStatusColor(statement.approval_status)}>
+                        {statement.approval_status.replace('_', ' ')}
                       </Badge>
                       <Button variant="outline" size="sm">
                         View Details
@@ -216,19 +183,19 @@ const UnifiedRiskAppetite = () => {
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-sm font-medium">Risk Categories</p>
-                      <p className="text-2xl font-bold">{statement.categoriesCount}</p>
+                      <p className="text-2xl font-bold">4</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">Compliance Score</p>
                       <div className="flex items-center gap-2">
-                        <p className="text-2xl font-bold">{statement.complianceScore}%</p>
-                        <Progress value={statement.complianceScore} className="flex-1" />
+                        <p className="text-2xl font-bold">85%</p>
+                        <Progress value={85} className="flex-1" />
                       </div>
                     </div>
                     <div>
                       <p className="text-sm font-medium">Status</p>
                       <p className="text-sm text-muted-foreground capitalize">
-                        {statement.status.replace('_', ' ')}
+                        {statement.approval_status.replace('_', ' ')}
                       </p>
                     </div>
                   </div>

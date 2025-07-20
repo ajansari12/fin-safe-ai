@@ -18,7 +18,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
-import { aiInsightsService, type GeneratedInsight } from '@/services/ai-insights-service';
+import { enhancedAIInsightsService, type GeneratedInsight } from '@/services/enhanced-ai-insights-service';
 import { toast } from 'sonner';
 
 interface EnhancedAIInsightsProps {
@@ -43,7 +43,7 @@ export const EnhancedAIInsights: React.FC<EnhancedAIInsightsProps> = ({ classNam
     
     setIsLoading(true);
     try {
-      const existingInsights = await aiInsightsService.getStoredInsights(profile.organization_id);
+      const existingInsights = await enhancedAIInsightsService.getStoredInsights(profile.organization_id);
       setInsights(existingInsights);
     } catch (error) {
       console.error('Error loading insights:', error);
@@ -60,7 +60,7 @@ export const EnhancedAIInsights: React.FC<EnhancedAIInsightsProps> = ({ classNam
 
     setIsGenerating(true);
     try {
-      const newInsights = await aiInsightsService.generateContextualInsights({
+      const newInsights = await enhancedAIInsightsService.generateContextualInsights({
         organizationId: profile.organization_id,
         analysisType,
         timeRange: {
