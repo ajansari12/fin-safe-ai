@@ -14,6 +14,7 @@ import RecentIncidents from "@/components/dashboard/RecentIncidents";
 import ComplianceScoreCard from "@/components/dashboard/ComplianceScoreCard";
 import KRICard from "@/components/dashboard/KRICard";
 import { EnhancedAIInsights } from "@/components/analytics/EnhancedAIInsights";
+import { EnhancedAIAssistant } from "@/components/ai/EnhancedAIAssistant";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
@@ -212,10 +213,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts Section */}
-        <div className="grid gap-6 md:grid-cols-2">
+        {/* Charts and AI Assistant Section */}
+        <div className="grid gap-6 lg:grid-cols-3">
           <IncidentTrendsChart />
           <KRIBreachesChart />
+          <div className="lg:col-span-1">
+            <EnhancedAIAssistant />
+          </div>
         </div>
 
         {/* Recent Activity */}
