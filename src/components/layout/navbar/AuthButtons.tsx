@@ -2,14 +2,14 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/SimpleAuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 
 interface AuthButtonsProps {
   className?: string;
 }
 
 const AuthButtons: React.FC<AuthButtonsProps> = ({ className }) => {
-  const { user, logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -17,7 +17,7 @@ const AuthButtons: React.FC<AuthButtonsProps> = ({ className }) => {
     navigate('/');
   };
 
-  if (user) {
+  if (isAuthenticated) {
     return (
       <div className={className}>
         <div className="flex items-center gap-2">
