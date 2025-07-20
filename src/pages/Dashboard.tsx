@@ -1,10 +1,11 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/EnhancedAuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Shield, TrendingUp, Users, BarChart3 } from "lucide-react";
+import { AlertTriangle, Shield, TrendingUp, Users, BarChart3, Brain } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getDashboardMetrics } from "@/services/dashboard-analytics-service";
 import IncidentTrendsChart from "@/components/dashboard/IncidentTrendsChart";
@@ -12,10 +13,12 @@ import KRIBreachesChart from "@/components/dashboard/KRIBreachesChart";
 import RecentIncidents from "@/components/dashboard/RecentIncidents";
 import ComplianceScoreCard from "@/components/dashboard/ComplianceScoreCard";
 import KRICard from "@/components/dashboard/KRICard";
+import { EnhancedAIInsights } from "@/components/analytics/EnhancedAIInsights";
 
 const Dashboard = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [showAIInsights, setShowAIInsights] = useState(false);
 
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['dashboardMetrics', profile?.organization_id],
@@ -33,11 +36,27 @@ const Dashboard = () => {
               Overview of your operational risk management
             </p>
           </div>
-          <Button onClick={() => navigate('/app/analytics')}>
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Advanced Analytics
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setShowAIInsights(!showAIInsights)}
+              variant={showAIInsights ? "default" : "outline"}
+            >
+              <Brain className="mr-2 h-4 w-4" />
+              {showAIInsights ? 'Hide AI Insights' : 'Generate Insights'}
+            </Button>
+            <Button onClick={() => navigate('/app/analytics')}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Advanced Analytics
+            </Button>
+          </div>
         </div>
+
+        {/* AI Insights Section */}
+        {showAIInsights && (
+          <div className="mb-6">
+            <EnhancedAIInsights />
+          </div>
+        )}
 
         {/* Key Metrics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
