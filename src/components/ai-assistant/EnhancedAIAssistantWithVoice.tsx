@@ -250,7 +250,7 @@ export const EnhancedAIAssistantWithVoice = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => provideFeedback(msg.id, 1)}
+                              onClick={() => provideFeedback({ messageId: msg.id, rating: 1 })}
                               className="h-6 w-6 p-0"
                             >
                               <ThumbsUp className="h-3 w-3" />
@@ -258,7 +258,7 @@ export const EnhancedAIAssistantWithVoice = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => provideFeedback(msg.id, -1)}
+                              onClick={() => provideFeedback({ messageId: msg.id, rating: -1 })}
                               className="h-6 w-6 p-0"
                             >
                               <ThumbsDown className="h-3 w-3" />

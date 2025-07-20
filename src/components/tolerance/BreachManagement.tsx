@@ -262,15 +262,7 @@ const BreachManagement = () => {
       // Use the enhanced AI assistant for comprehensive analysis
       const { analyzeToleranceBreach } = useEnhancedAIAssistant();
       
-      await analyzeToleranceBreach(
-        breach.id,
-        breach.operationName,
-        breach.breachType,
-        100, // actual value - would be calculated from real data
-        80,  // threshold value - would be fetched from tolerance definitions
-        variance,
-        breach.status
-      );
+      await analyzeToleranceBreach(breach);
       
       // Update the breach with AI analysis results
       setActiveBreaches(prev => prev.map(b => 
@@ -331,11 +323,7 @@ const BreachManagement = () => {
     try {
       const { assessBreachImpact } = useEnhancedAIAssistant();
       
-      await assessBreachImpact(
-        breach.id,
-        breach.estimatedDuration,
-        240 // threshold - would be fetched from actual tolerance definitions
-      );
+      await assessBreachImpact(breach);
 
       toast({
         title: "Impact Assessment Complete",

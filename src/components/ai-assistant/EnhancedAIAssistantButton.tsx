@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bot, BarChart3, AlertTriangle } from "lucide-react";
-import { useEnhancedAIAssistant } from "./EnhancedAIAssistantContext";
+import { useEnhancedAIAssistant, ModuleType } from "./EnhancedAIAssistantContext";
 import { EnhancedAIAssistantDialog } from "./EnhancedAIAssistantDialog";
 
 export function EnhancedAIAssistantButton() {
@@ -32,7 +32,7 @@ export function EnhancedAIAssistantButton() {
     
     const module = Object.entries(moduleMap).find(([route]) => path.startsWith(route))?.[1];
     if (module) {
-      setCurrentModule(module);
+      setCurrentModule(module as ModuleType);
     }
   }, [setCurrentModule]);
 

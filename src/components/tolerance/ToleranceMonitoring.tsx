@@ -344,15 +344,7 @@ const ToleranceMonitoring = () => {
         // Trigger AI analysis for the breach if it's critical or high severity
         if (severity === 'critical' || severity === 'high') {
           try {
-            await analyzeToleranceBreach(
-              breachId,
-              breachEvent.operationName,
-              breachEvent.breachType,
-              breachEvent.actualValue,
-              breachEvent.thresholdValue,
-              breachEvent.variance,
-              'active'
-            );
+            await analyzeToleranceBreach(breachEvent);
           } catch (aiError) {
             logger.error('Failed to trigger AI analysis for breach', {
               component: 'ToleranceMonitoring',
