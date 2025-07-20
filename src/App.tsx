@@ -23,7 +23,7 @@ import ForgotPassword from "./pages/auth/ForgotPassword";
 import Verify from "./pages/auth/Verify";
 import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetailView";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { SimpleAuthProvider } from "@/contexts/SimpleAuthContext";
+import { EnhancedAuthProvider } from "@/contexts/EnhancedAuthContext";
 import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 // Create a stable QueryClient instance
@@ -39,7 +39,7 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SimpleAuthProvider>
+      <EnhancedAuthProvider>
         <EnhancedAIAssistantProvider>
           <Router>
           <Routes>
@@ -106,7 +106,7 @@ function App() {
           </Router>
           <Toaster />
         </EnhancedAIAssistantProvider>
-      </SimpleAuthProvider>
+      </EnhancedAuthProvider>
     </QueryClientProvider>
   );
 }
