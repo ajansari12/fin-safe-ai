@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/SimpleAuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,7 +12,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRole 
 }) => {
-  const { user, isLoading, profile } = useAuth();
+  const { isAuthenticated, isLoading, userContext } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -23,13 +23,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     // Redirect to login if not authenticated
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   // Check role requirement if specified
-  if (requiredRole && profile?.role !== requiredRole) {
+  if (requiredRole && userContext?.roles && !userContext.roles.includes(requiredRole)) {
     return <Navigate to="/app/dashboard" replace />;
   }
 
