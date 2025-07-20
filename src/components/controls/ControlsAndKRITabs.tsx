@@ -2,7 +2,7 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, BarChart3, Link } from "lucide-react";
+import { Plus, BarChart3, Link, Activity } from "lucide-react";
 import { Control } from "@/services/controls";
 import { KRIDefinition } from "@/services/kri-definitions";
 import { ControlTest } from "@/services/control-tests";
@@ -28,6 +28,8 @@ interface ControlsAndKRITabsProps {
   onViewKRILogs: (kriId: string) => void;
   onLinkKRIToAppetite?: (kri: KRIDefinition) => void;
   onShowControlEffectiveness?: () => void;
+  onShowKRIDashboard?: () => void;
+  onViewKRIDetail?: (kriId: string) => void;
 }
 
 const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
@@ -48,6 +50,8 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
   onViewKRILogs,
   onLinkKRIToAppetite,
   onShowControlEffectiveness,
+  onShowKRIDashboard,
+  onViewKRIDetail,
 }) => {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-6">
@@ -67,6 +71,17 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
             >
               <BarChart3 className="h-4 w-4" />
               Control Effectiveness
+            </Button>
+          )}
+
+          {onShowKRIDashboard && activeTab === "kris" && (
+            <Button
+              variant="outline"
+              onClick={onShowKRIDashboard}
+              className="flex items-center gap-2"
+            >
+              <Activity className="h-4 w-4" />
+              Advanced KRI Dashboard
             </Button>
           )}
           
@@ -110,6 +125,7 @@ const ControlsAndKRITabs: React.FC<ControlsAndKRITabsProps> = ({
           onDelete={onDeleteKRI}
           onViewLogs={onViewKRILogs}
           onLinkToAppetite={onLinkKRIToAppetite}
+          onViewDetail={onViewKRIDetail}
         />
       </TabsContent>
     </Tabs>

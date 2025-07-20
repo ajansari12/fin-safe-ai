@@ -1,161 +1,196 @@
 
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle, Clock } from "lucide-react";
-import { enhancedKRIService, KRIBreachNotification } from "@/services/kri/enhanced-kri-service";
-import { useToast } from "@/hooks/use-toast";
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle, Bell, X, Eye, TrendingUp } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
+
+interface KRIBreach {
+  id: string;
+  kri_id: string;
+  breach_date: string;
+  breach_level: 'warning' | 'critical';
+  breach_value: number;
+  threshold_value: number;
+  root_cause?: string;
+  impact_assessment?: string;
+  status: 'open' | 'investigating' | 'resolved' | 'closed';
+  assigned_to?: string;
+  resolved_date?: string;
+}
 
 const KRIBreachNotifications: React.FC = () => {
-  const [notifications, setNotifications] = useState<KRIBreachNotification[]>([]);
+  const { profile } = useAuth();
+  const [breaches, setBreaches] = useState<KRIBreach[]>([]);
+  const [dismissedBreaches, setDismissedBreaches] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
+  // Load breaches on component mount
   useEffect(() => {
-    loadNotifications();
-  }, []);
+    if (profile?.organization_id) {
+      loadBreaches();
+    }
+  }, [profile?.organization_id]);
 
-  const loadNotifications = async () => {
+  const loadBreaches = async () => {
     try {
-      setIsLoading(true);
-      const data = await enhancedKRIService.getKRIBreachNotifications();
-      setNotifications(data);
+      const { data, error } = await supabase
+        .from('appetite_breach_logs')
+        .select('*')
+        .eq('org_id', profile?.organization_id)
+        .eq('resolution_status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      
+      // Transform the data to match our interface
+      const transformedBreaches: KRIBreach[] = (data || []).map(breach => ({
+        id: breach.id,
+        kri_id: breach.threshold_id || '',
+        breach_date: breach.breach_date,
+        breach_level: breach.breach_severity === 'critical' ? 'critical' : 'warning',
+        breach_value: Number(breach.actual_value),
+        threshold_value: Number(breach.threshold_value),
+        root_cause: breach.remediation_actions,
+        impact_assessment: breach.business_impact,
+        status: breach.resolution_status === 'open' ? 'open' : 'investigating',
+        assigned_to: breach.escalated_to_name,
+        resolved_date: breach.resolution_date,
+      }));
+
+      setBreaches(transformedBreaches);
     } catch (error) {
-      console.error('Error loading breach notifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load breach notifications",
-        variant: "destructive",
-      });
+      console.error('Error loading KRI breaches:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAcknowledge = async (notificationId: string) => {
+  const handleDismissBreach = (breachId: string) => {
+    setDismissedBreaches(prev => [...prev, breachId]);
+  };
+
+  const handleAcknowledgeBreach = async (breachId: string) => {
     try {
-      await enhancedKRIService.acknowledgeBreachNotification(notificationId);
-      toast({
-        title: "Success",
-        description: "Breach notification acknowledged",
-      });
-      loadNotifications();
+      const { error } = await supabase
+        .from('appetite_breach_logs')
+        .update({ 
+          resolution_status: 'investigating',
+          escalated_at: new Date().toISOString()
+        })
+        .eq('id', breachId);
+
+      if (error) throw error;
+      
+      setDismissedBreaches(prev => [...prev, breachId]);
+      await loadBreaches(); // Refresh the list
     } catch (error) {
-      console.error('Error acknowledging notification:', error);
-      toast({
-        title: "Error",
-        description: "Failed to acknowledge notification",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getBadgeVariant = (breachType: string) => {
-    switch (breachType) {
-      case 'critical':
-        return 'destructive';
-      case 'breach':
-        return 'destructive';
-      case 'warning':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
-
-  const getIcon = (breachType: string) => {
-    switch (breachType) {
-      case 'critical':
-      case 'breach':
-        return <AlertTriangle className="h-4 w-4" />;
-      case 'warning':
-        return <Clock className="h-4 w-4" />;
-      default:
-        return <CheckCircle className="h-4 w-4" />;
+      console.error('Error acknowledging breach:', error);
     }
   };
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>KRI Breach Notifications</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse">
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 bg-gray-200 rounded"></div>
-              ))}
-            </div>
-          </div>
+        <CardContent className="flex justify-center items-center h-24">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
         </CardContent>
       </Card>
     );
   }
 
+  const openBreaches = breaches.filter(breach => 
+    breach.status === 'open' && !dismissedBreaches.includes(breach.id)
+  );
+
+  if (openBreaches.length === 0) {
+    return null;
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>KRI Breach Notifications</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {notifications.length === 0 ? (
-          <div className="text-center py-8">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-            <p className="text-muted-foreground">No breach notifications</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="border rounded-lg p-4 space-y-3"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    {getIcon(notification.breach_type)}
-                    <div>
-                      <p className="font-medium">KRI Threshold Breach</p>
-                      <p className="text-sm text-muted-foreground">
-                        Actual: {notification.actual_value} | Threshold: {notification.threshold_value}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant={getBadgeVariant(notification.breach_type)}>
-                    {notification.breach_type.toUpperCase()}
-                  </Badge>
-                </div>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Bell className="h-5 w-5 text-orange-600" />
+        <h3 className="text-lg font-semibold">Active Risk Appetite Breaches ({openBreaches.length})</h3>
+      </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Variance: {notification.variance_percentage.toFixed(1)}%
-                    <span className="ml-2">
-                      {new Date(notification.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {!notification.acknowledged_at ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleAcknowledge(notification.id)}
-                    >
-                      Acknowledge
-                    </Button>
-                  ) : (
-                    <Badge variant="default">
-                      Acknowledged
-                    </Badge>
-                  )}
-                </div>
+      {openBreaches.map((breach) => (
+        <Alert key={breach.id} className="border-orange-200 bg-orange-50">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="flex items-center justify-between w-full">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-medium">Risk Appetite Threshold Breach</span>
+                <Badge 
+                  variant="outline" 
+                  className={
+                    breach.breach_level === 'critical' 
+                      ? 'border-red-500 text-red-700' 
+                      : 'border-orange-500 text-orange-700'
+                  }
+                >
+                  {breach.breach_level}
+                </Badge>
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <div className="text-sm space-y-1">
+                <p>
+                  <strong>Actual Value:</strong> {breach.breach_value} 
+                  <span className="text-muted-foreground"> (Threshold: {breach.threshold_value})</span>
+                </p>
+                <p>
+                  <strong>Breach Date:</strong> {new Date(breach.breach_date).toLocaleDateString()}
+                </p>
+                <p>
+                  <strong>Variance:</strong> 
+                  <span className="font-semibold text-red-600 ml-1">
+                    +{Math.round(((breach.breach_value - breach.threshold_value) / breach.threshold_value) * 100)}%
+                  </span>
+                </p>
+                {breach.impact_assessment && (
+                  <p><strong>Impact:</strong> {breach.impact_assessment}</p>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 ml-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAcknowledgeBreach(breach.id)}
+                className="flex items-center gap-1"
+              >
+                <Eye className="h-3 w-3" />
+                Investigate
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDismissBreach(breach.id)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      ))}
+
+      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-blue-600" />
+          <span className="text-sm text-blue-700">
+            Monitor your risk appetite breaches in real-time and ensure timely remediation.
+          </span>
+        </div>
+        <Button variant="outline" size="sm" onClick={loadBreaches}>
+          Refresh
+        </Button>
+      </div>
+    </div>
   );
 };
 

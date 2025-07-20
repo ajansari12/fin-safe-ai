@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 // TODO: Migrated from AuthContext to EnhancedAuthContext
 import { useAuth } from "@/contexts/EnhancedAuthContext";
@@ -18,6 +19,8 @@ import ControlTestsList from "@/components/controls/ControlTestsList";
 import ControlEffectivenessDashboard from "@/components/controls/ControlEffectivenessDashboard";
 import KRIAppetiteLinkForm from "@/components/controls/KRIAppetiteLinkForm";
 import KRIBreachNotifications from "@/components/controls/KRIBreachNotifications";
+import { KRIDashboard } from "@/components/kri/KRIDashboard";
+import { KRIDetailView } from "@/components/kri/KRIDetailView";
 
 const ControlsAndKri = () => {
   const { user } = useAuth();
@@ -68,6 +71,8 @@ const ControlsAndKri = () => {
   const [showControlTests, setShowControlTests] = useState(false);
   const [showKRIAppetiteLinkForm, setShowKRIAppetiteLinkForm] = useState(false);
   const [showControlEffectivenessDashboard, setShowControlEffectivenessDashboard] = useState(false);
+  const [showKRIDashboard, setShowKRIDashboard] = useState(false);
+  const [selectedKRIId, setSelectedKRIId] = useState<string | null>(null);
   const [editingControl, setEditingControl] = useState<Control | undefined>();
   const [editingKRI, setEditingKRI] = useState<KRIDefinition | undefined>();
   const [selectedKRI, setSelectedKRI] = useState<{ id: string; name: string } | undefined>();
@@ -208,6 +213,15 @@ const ControlsAndKri = () => {
     }
   };
 
+  // Enhanced KRI handlers
+  const handleShowKRIDashboard = () => {
+    setShowKRIDashboard(true);
+  };
+
+  const handleViewKRIDetail = (kriId: string) => {
+    setSelectedKRIId(kriId);
+  };
+
   // KRI appetite link handlers
   const handleLinkKRIToAppetite = (kri: KRIDefinition) => {
     setSelectedKRI({ id: kri.id, name: kri.name });
@@ -234,6 +248,8 @@ const ControlsAndKri = () => {
     setShowControlTests(false);
     setShowKRIAppetiteLinkForm(false);
     setShowControlEffectivenessDashboard(false);
+    setShowKRIDashboard(false);
+    setSelectedKRIId(null);
     setEditingControl(undefined);
     setEditingKRI(undefined);
     setSelectedKRI(undefined);
@@ -243,6 +259,48 @@ const ControlsAndKri = () => {
 
   // Show navigation components if any form is active
   const showNavigation = showControlForm || showKRIForm || showKRILogForm || showKRILogs;
+
+  // Show KRI Dashboard
+  if (showKRIDashboard) {
+    return (
+      <AuthenticatedLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              onClick={handleCancelForm}
+            >
+              ← Back to Controls & KRIs
+            </Button>
+          </div>
+          <KRIDashboard />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
+  // Show KRI Detail View
+  if (selectedKRIId) {
+    return (
+      <AuthenticatedLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              onClick={handleCancelForm}
+            >
+              ← Back to Controls & KRIs
+            </Button>
+          </div>
+          <KRIDetailView
+            kriId={selectedKRIId}
+            open={!!selectedKRIId}
+            onOpenChange={(open) => !open && setSelectedKRIId(null)}
+          />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   // Show control effectiveness dashboard
   if (showControlEffectivenessDashboard) {
@@ -371,6 +429,8 @@ const ControlsAndKri = () => {
           onViewKRILogs={handleViewKRILogs}
           onLinkKRIToAppetite={handleLinkKRIToAppetite}
           onShowControlEffectiveness={handleShowControlEffectiveness}
+          onShowKRIDashboard={handleShowKRIDashboard}
+          onViewKRIDetail={handleViewKRIDetail}
         />
       </div>
     </AuthenticatedLayout>
