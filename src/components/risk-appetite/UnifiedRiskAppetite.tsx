@@ -16,7 +16,7 @@ import {
   Shield,
   Clock
 } from 'lucide-react';
-import { useAuth } from '@/contexts/EnhancedAuthContext';
+import { useAuth } from '@/contexts/SimpleAuthContext';
 import { useRiskAppetite } from '@/hooks/useRiskAppetite';
 import { CreateStatementModal } from './CreateStatementModal';
 import RiskAppetiteDashboard from './RiskAppetiteDashboard';
