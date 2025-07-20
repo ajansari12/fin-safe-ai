@@ -14,7 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/SimpleAuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 const riskAppetiteSchema = z.object({
   statementName: z.string().min(1, 'Statement name is required'),
