@@ -27,6 +27,9 @@ import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { getVendorProfiles } from '@/services/third-party-service';
 import VendorAssessmentsList from './VendorAssessmentsList';
 import VendorAssessmentChart from './VendorAssessmentChart';
+import VendorOnboarding from './VendorOnboarding';
+import SLAMonitoring from './SLAMonitoring';
+import RegulatoryCompliance from './RegulatoryCompliance';
 import { toast } from 'sonner';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { vendorFeedIntegrationService, VendorFeedData, VendorRiskAlert } from '@/services/third-party/vendor-feed-integration-service';
@@ -365,12 +368,14 @@ const VendorRiskDashboard: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="critical-ops">Critical Operations</TabsTrigger>
           <TabsTrigger value="assessments">Assessments</TabsTrigger>
+          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+          <TabsTrigger value="sla">SLA Monitoring</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
           <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
-          <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -588,6 +593,18 @@ const VendorRiskDashboard: React.FC = () => {
             <VendorAssessmentChart riskDistribution={dashboardData.risk_distribution} />
           )}
           <VendorAssessmentsList />
+        </TabsContent>
+
+        <TabsContent value="onboarding" className="space-y-6">
+          <VendorOnboarding />
+        </TabsContent>
+
+        <TabsContent value="sla" className="space-y-6">
+          <SLAMonitoring />
+        </TabsContent>
+
+        <TabsContent value="compliance" className="space-y-6">
+          <RegulatoryCompliance />
         </TabsContent>
 
         <TabsContent value="monitoring" className="space-y-6">
