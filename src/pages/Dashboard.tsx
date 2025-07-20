@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/SimpleAuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
