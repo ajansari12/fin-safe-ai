@@ -14,6 +14,8 @@ import RecentIncidents from "@/components/dashboard/RecentIncidents";
 import ComplianceScoreCard from "@/components/dashboard/ComplianceScoreCard";
 import KRICard from "@/components/dashboard/KRICard";
 import { EnhancedAIInsights } from "@/components/analytics/EnhancedAIInsights";
+import { RealTimeAIInsights } from "@/components/analytics/RealTimeAIInsights";
+import { EnhancedAIAnalyticsDashboard } from "@/components/analytics/EnhancedAIAnalyticsDashboard";
 import { useDetailModal } from "@/hooks/useDetailModal";
 import DetailViewRouter from "@/components/common/DetailViewRouter";
 
@@ -21,6 +23,7 @@ const Dashboard = () => {
   const { user, userContext } = useAuth();
   const navigate = useNavigate();
   const [showAIInsights, setShowAIInsights] = useState(false);
+  const [showAdvancedAnalytics, setShowAdvancedAnalytics] = useState(false);
   const { modalState, openModal, closeModal } = useDetailModal();
 
   const { data: metrics, isLoading } = useQuery({
@@ -36,7 +39,7 @@ const Dashboard = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             <p className="text-muted-foreground">
-              Overview of your operational risk management
+              Overview of your operational risk management with AI-powered insights
             </p>
           </div>
           <div className="flex gap-2">
@@ -45,11 +48,18 @@ const Dashboard = () => {
               variant={showAIInsights ? "default" : "outline"}
             >
               <Brain className="mr-2 h-4 w-4" />
-              {showAIInsights ? 'Hide AI Insights' : 'Generate Insights'}
+              {showAIInsights ? 'Hide AI Insights' : 'AI Insights'}
+            </Button>
+            <Button 
+              onClick={() => setShowAdvancedAnalytics(!showAdvancedAnalytics)}
+              variant={showAdvancedAnalytics ? "default" : "outline"}
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              {showAdvancedAnalytics ? 'Hide Analytics' : 'Advanced Analytics'}
             </Button>
             <Button onClick={() => navigate('/app/analytics')}>
               <BarChart3 className="mr-2 h-4 w-4" />
-              Advanced Analytics
+              Full Analytics
             </Button>
           </div>
         </div>
@@ -61,63 +71,83 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Key Metrics */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {metrics && (
-            <>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Incidents</CardTitle>
-                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{metrics.total_incidents}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {metrics.high_severity_incidents} high severity
-                  </p>
-                </CardContent>
-              </Card>
+        {/* Advanced Analytics Section */}
+        {showAdvancedAnalytics && (
+          <div className="mb-6">
+            <EnhancedAIAnalyticsDashboard />
+          </div>
+        )}
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Controls</CardTitle>
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{metrics.active_controls}</div>
-                  <p className="text-xs text-muted-foreground">
-                    of {metrics.total_controls} total
-                  </p>
-                </CardContent>
-              </Card>
+        {/* Real-time AI Insights - Always visible but compact */}
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="md:col-span-2">
+            {/* Key Metrics */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+              {metrics && (
+                <>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Incidents</CardTitle>
+                      <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{metrics.total_incidents}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {metrics.high_severity_incidents} high severity
+                      </p>
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">KRIs Monitored</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{metrics.total_kris}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Key risk indicators
-                  </p>
-                </CardContent>
-              </Card>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Active Controls</CardTitle>
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{metrics.active_controls}</div>
+                      <p className="text-xs text-muted-foreground">
+                        of {metrics.total_controls} total
+                      </p>
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">High Risk Vendors</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{metrics.high_risk_vendors}</div>
-                  <p className="text-xs text-muted-foreground">
-                    of {metrics.total_vendors} vendors
-                  </p>
-                </CardContent>
-              </Card>
-            </>
-          )}
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">KRIs Monitored</CardTitle>
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{metrics.total_kris}</div>
+                      <p className="text-xs text-muted-foreground">
+                        Key risk indicators
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">High Risk Vendors</CardTitle>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{metrics.high_risk_vendors}</div>
+                      <p className="text-xs text-muted-foreground">
+                        of {metrics.total_vendors} vendors
+                      </p>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Real-time AI Insights Panel */}
+          <div>
+            <RealTimeAIInsights 
+              maxInsights={3}
+              autoRefresh={true}
+            />
+          </div>
         </div>
 
         {/* Enhanced Compliance Section */}
