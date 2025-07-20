@@ -29,6 +29,7 @@ import { EnhancedAuthProvider } from "@/contexts/EnhancedAuthContext";
 import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 import TechnologyCyberRisk from "./pages/TechnologyCyberRisk";
 import ScenarioTesting from "./pages/ScenarioTesting";
+import AIIntelligence from "./pages/AIIntelligence";
 
 // Create a stable QueryClient instance
 const queryClient = new QueryClient({
@@ -129,6 +130,11 @@ function App() {
             <Route path="/app/scenario-testing" element={
               <ProtectedRoute>
                 <ScenarioTesting />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/ai-intelligence" element={
+              <ProtectedRoute>
+                <AIIntelligence />
               </ProtectedRoute>
             } />
           </Routes>
