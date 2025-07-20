@@ -1,222 +1,159 @@
-import React, { useEffect } from "react";
-import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, TrendingUp, Settings, Users, Target, Zap, Activity, TestTube, BarChart3, FileText, Shield, Network, BookOpen, Layers } from "lucide-react";
-import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { RealTimeDashboard } from '@/components/organizational-intelligence/RealTimeDashboard';
+import { PredictiveModeling } from '@/components/organizational-intelligence/PredictiveModeling';
+import { IntelligentReporting } from '@/components/organizational-intelligence/IntelligentReporting';
+import { DataVisualization } from '@/components/organizational-intelligence/DataVisualization';
+import { PerformanceInsights } from '@/components/organizational-intelligence/PerformanceInsights';
+import { TrendAnalysis } from '@/components/organizational-intelligence/TrendAnalysis';
+import { Brain, TrendingUp, BarChart3, Activity, Target, Zap } from 'lucide-react';
 
-// Import existing components
-import AdvancedIntelligenceDashboard from "@/components/organizational-intelligence/AdvancedIntelligenceDashboard";
-import AdaptiveQuestionnaire from "@/components/organizational-intelligence/AdaptiveQuestionnaire";
-import ProfileInsightsPanel from "@/components/organizational-intelligence/ProfileInsightsPanel";
-import IntelligentAutomationPanel from "@/components/organizational-intelligence/IntelligentAutomationPanel";
-import RiskFrameworkGenerator from "@/components/organizational-intelligence/RiskFrameworkGenerator";
+const OrganizationalIntelligence = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
 
-// Import Phase 3 components
-import WorkflowOrchestrationPanel from "@/components/organizational-intelligence/WorkflowOrchestrationPanel";
-import RealTimeIntelligenceHub from "@/components/organizational-intelligence/RealTimeIntelligenceHub";
-
-// Import Phase 4 components
-import PerformanceMonitor from "@/components/organizational-intelligence/PerformanceMonitor";
-import TestingDashboard from "@/components/organizational-intelligence/TestingDashboard";
-import SystemHealth from "@/components/organizational-intelligence/SystemHealth";
-
-// Import Phase 5 components
-import AdvancedAnalyticsHub from "@/components/organizational-intelligence/AdvancedAnalyticsHub";
-import ExecutiveReporting from "@/components/organizational-intelligence/ExecutiveReporting";
-
-// Import Phase 6, 7, 8 components
-import ComplianceMonitoringDashboard from "@/components/organizational-intelligence/ComplianceMonitoringDashboard";
-import IndustryScenarioGenerator from "@/components/organizational-intelligence/IndustryScenarioGenerator";
-import UnifiedFrameworkDashboard from "@/components/organizational-intelligence/UnifiedFrameworkDashboard";
-
-// Import Template Library components
-import TemplateLibraryDashboard from "@/components/organizational-intelligence/TemplateLibraryDashboard";
-import KnowledgeBaseHub from "@/components/organizational-intelligence/KnowledgeBaseHub";
-import TemplateCustomizationEngine from "@/components/organizational-intelligence/TemplateCustomizationEngine";
-
-import RegulatoryComplianceIntegrationDashboard from "@/components/organizational-intelligence/RegulatoryComplianceIntegrationDashboard";
-import ImplementationGuideSystem from "@/components/organizational-intelligence/ImplementationGuideSystem";
-
-const OrganizationalIntelligencePage = () => {
-  const { setCurrentModule } = useEnhancedAIAssistant();
-  
-  useEffect(() => {
-    setCurrentModule("organizational-intelligence");
-  }, [setCurrentModule]);
-
-  // Mock organization ID - in a real app, this would come from auth context
-  const orgId = "mock-org-id";
-  const profileId = "mock-profile-id";
+  const intelligenceMetrics = [
+    {
+      title: "Intelligence Score",
+      value: "94/100",
+      change: "+12%",
+      trend: "up",
+      description: "Overall organizational intelligence rating"
+    },
+    {
+      title: "Predictive Accuracy",
+      value: "87.3%",
+      change: "+5.2%",
+      trend: "up",
+      description: "Model prediction accuracy rate"
+    },
+    {
+      title: "Data Quality Index",
+      value: "92.1%",
+      change: "+3.1%",
+      trend: "up",
+      description: "Data completeness and accuracy"
+    },
+    {
+      title: "Insights Generated",
+      value: "2,847",
+      change: "+23%",
+      trend: "up",
+      description: "AI-generated insights this month"
+    }
+  ];
 
   return (
-    <AuthenticatedLayout>
-      <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight">Organizational Intelligence</h1>
-          <p className="text-muted-foreground mt-2">
-            Advanced AI-powered organizational analysis, insights, automation, and template library
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Brain className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">Organizational Intelligence</h1>
+                <p className="text-muted-foreground">Advanced analytics and business intelligence platform</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-300">
+                <Activity className="w-3 h-3 mr-1" />
+                Live Data
+              </Badge>
+              <Button variant="outline" size="sm">
+                <Zap className="w-4 h-4 mr-2" />
+                Export Report
+              </Button>
+            </div>
+          </div>
+
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {intelligenceMetrics.map((metric, index) => (
+              <Card key={index} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    {metric.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl font-bold text-foreground">{metric.value}</div>
+                    <Badge 
+                      variant={metric.trend === 'up' ? 'default' : 'destructive'}
+                      className="text-xs"
+                    >
+                      {metric.change}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{metric.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
 
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-19">
-            <TabsTrigger value="dashboard" className="flex items-center gap-1">
-              <Brain className="h-4 w-4" />
-              Dashboard
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+              <Activity className="w-4 h-4" />
+              <span>Real-Time</span>
             </TabsTrigger>
-            <TabsTrigger value="questionnaire" className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              Assessment
+            <TabsTrigger value="predictive" className="flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4" />
+              <span>Predictive</span>
             </TabsTrigger>
-            <TabsTrigger value="insights" className="flex items-center gap-1">
-              <TrendingUp className="h-4 w-4" />
-              Insights
+            <TabsTrigger value="reporting" className="flex items-center space-x-2">
+              <BarChart3 className="w-4 h-4" />
+              <span>Reporting</span>
             </TabsTrigger>
-            <TabsTrigger value="automation" className="flex items-center gap-1">
-              <Zap className="h-4 w-4" />
-              Automation
+            <TabsTrigger value="visualization" className="flex items-center space-x-2">
+              <Target className="w-4 h-4" />
+              <span>Visualization</span>
             </TabsTrigger>
-            <TabsTrigger value="framework" className="flex items-center gap-1">
-              <Target className="h-4 w-4" />
-              Framework
+            <TabsTrigger value="insights" className="flex items-center space-x-2">
+              <Brain className="w-4 h-4" />
+              <span>Insights</span>
             </TabsTrigger>
-            <TabsTrigger value="workflows" className="flex items-center gap-1">
-              <Settings className="h-4 w-4" />
-              Workflows
-            </TabsTrigger>
-            <TabsTrigger value="realtime" className="flex items-center gap-1">
-              <Activity className="h-4 w-4" />
-              Real-time
-            </TabsTrigger>
-            <TabsTrigger value="performance" className="flex items-center gap-1">
-              <Activity className="h-4 w-4" />
-              Performance
-            </TabsTrigger>
-            <TabsTrigger value="testing" className="flex items-center gap-1">
-              <TestTube className="h-4 w-4" />
-              Testing
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-1">
-              <BarChart3 className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="reporting" className="flex items-center gap-1">
-              <FileText className="h-4 w-4" />
-              Reporting
-            </TabsTrigger>
-            <TabsTrigger value="compliance" className="flex items-center gap-1">
-              <Shield className="h-4 w-4" />
-              Compliance
-            </TabsTrigger>
-            <TabsTrigger value="scenarios" className="flex items-center gap-1">
-              <TestTube className="h-4 w-4" />
-              Scenarios
-            </TabsTrigger>
-            <TabsTrigger value="unified" className="flex items-center gap-1">
-              <Network className="h-4 w-4" />
-              Unified
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="flex items-center gap-1">
-              <Layers className="h-4 w-4" />
-              Templates
-            </TabsTrigger>
-            <TabsTrigger value="knowledge" className="flex items-center gap-1">
-              <BookOpen className="h-4 w-4" />
-              Knowledge
-            </TabsTrigger>
-            <TabsTrigger value="customization" className="flex items-center gap-1">
-              <Settings className="h-4 w-4" />
-              Customization
-            </TabsTrigger>
-            <TabsTrigger value="regulatory" className="flex items-center gap-1">
-              <Shield className="h-4 w-4" />
-              Regulatory
-            </TabsTrigger>
-            <TabsTrigger value="implementation" className="flex items-center gap-1">
-              <BookOpen className="h-4 w-4" />
-              Guides
+            <TabsTrigger value="trends" className="flex items-center space-x-2">
+              <TrendingUp className="w-4 h-4" />
+              <span>Trends</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
-            <AdvancedIntelligenceDashboard orgId={orgId} />
+            <RealTimeDashboard />
           </TabsContent>
 
-          <TabsContent value="questionnaire" className="space-y-6">
-            <AdaptiveQuestionnaire orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="insights" className="space-y-6">
-            <ProfileInsightsPanel orgId={orgId} profileId={profileId} />
-          </TabsContent>
-
-          <TabsContent value="automation" className="space-y-6">
-            <IntelligentAutomationPanel orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="framework" className="space-y-6">
-            <RiskFrameworkGenerator orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="workflows" className="space-y-6">
-            <WorkflowOrchestrationPanel orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="realtime" className="space-y-6">
-            <RealTimeIntelligenceHub orgId={orgId} profileId={profileId} />
-          </TabsContent>
-
-          <TabsContent value="performance" className="space-y-6">
-            <PerformanceMonitor orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="testing" className="space-y-6">
-            <TestingDashboard orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <AdvancedAnalyticsHub orgId={orgId} />
+          <TabsContent value="predictive" className="space-y-6">
+            <PredictiveModeling />
           </TabsContent>
 
           <TabsContent value="reporting" className="space-y-6">
-            <ExecutiveReporting orgId={orgId} />
+            <IntelligentReporting />
           </TabsContent>
 
-          <TabsContent value="compliance" className="space-y-6">
-            <ComplianceMonitoringDashboard orgId={orgId} />
+          <TabsContent value="visualization" className="space-y-6">
+            <DataVisualization />
           </TabsContent>
 
-          <TabsContent value="scenarios" className="space-y-6">
-            <IndustryScenarioGenerator orgId={orgId} />
+          <TabsContent value="insights" className="space-y-6">
+            <PerformanceInsights />
           </TabsContent>
 
-          <TabsContent value="unified" className="space-y-6">
-            <UnifiedFrameworkDashboard orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="templates" className="space-y-6">
-            <TemplateLibraryDashboard orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="knowledge" className="space-y-6">
-            <KnowledgeBaseHub orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="customization" className="space-y-6">
-            <TemplateCustomizationEngine orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="regulatory" className="space-y-6">
-            <RegulatoryComplianceIntegrationDashboard orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="implementation" className="space-y-6">
-            <ImplementationGuideSystem orgId={orgId} />
+          <TabsContent value="trends" className="space-y-6">
+            <TrendAnalysis />
           </TabsContent>
         </Tabs>
       </div>
-    </AuthenticatedLayout>
+    </div>
   );
 };
 
-export default OrganizationalIntelligencePage;
+export default OrganizationalIntelligence;

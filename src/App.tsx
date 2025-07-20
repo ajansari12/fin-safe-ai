@@ -31,6 +31,7 @@ import TechnologyCyberRisk from "./pages/TechnologyCyberRisk";
 import ScenarioTesting from "./pages/ScenarioTesting";
 import AIIntelligence from "./pages/AIIntelligence";
 import WorkflowAutomation from "./pages/WorkflowAutomation";
+import OrganizationalIntelligence from "./pages/OrganizationalIntelligence";
 
 // Create a stable QueryClient instance
 const queryClient = new QueryClient({
@@ -141,6 +142,11 @@ function App() {
             <Route path="/app/workflow-automation" element={
               <ProtectedRoute>
                 <WorkflowAutomation />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/organizational-intelligence" element={
+              <ProtectedRoute>
+                <OrganizationalIntelligence />
               </ProtectedRoute>
             } />
           </Routes>
