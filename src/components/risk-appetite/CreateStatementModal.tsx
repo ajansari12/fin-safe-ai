@@ -107,11 +107,23 @@ export const CreateStatementModal: React.FC<CreateStatementModalProps> = ({
   const onSubmit = async (data: RiskAppetiteFormData) => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const formattedData = {
+        statement_name: data.statementName,
+        description: data.description,
+        effective_date: data.effectiveDate,
+        review_date: data.effectiveDate, // Same as effective for now
+        riskCategories: selectedCategories.map(cat => ({
+          category_name: cat.category,
+          category_type: 'operational' as const, // Default type
+          appetite_level: cat.appetiteLevel,
+          description: cat.description,
+          rationale: `Threshold set at ${cat.threshold}%`
+        })),
+        quantitativeLimits: [],
+        qualitativeStatements: []
+      };
       
-      toast.success('Risk appetite statement created successfully');
-      onSave?.(data);
+      onSave?.(formattedData);
       handleClose();
     } catch (error) {
       toast.error('Failed to create risk appetite statement');

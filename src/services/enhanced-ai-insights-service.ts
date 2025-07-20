@@ -45,16 +45,16 @@ class EnhancedAIInsightsService {
 
   async generateContextualInsights(request: InsightGenerationRequest): Promise<GeneratedInsight[]> {
     try {
-      // Gather organizational data
-      const orgData = await this.gatherOrganizationalData(request.organizationId, request.timeRange);
-      
-      // Generate insights using OpenAI
-      const insights = await this.generateInsightsFromData(orgData, request);
-      
-      // Store insights in database
-      const storedInsights = await this.storeInsights(insights, request.organizationId);
-      
-      return storedInsights;
+      // Call the edge function to generate insights
+      const { data, error } = await supabase.functions.invoke('generate-insights', {
+        body: request
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data.insights || [];
     } catch (error) {
       console.error('Error generating contextual insights:', error);
       throw new Error('Failed to generate insights');
