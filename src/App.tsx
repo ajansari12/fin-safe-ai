@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -17,40 +16,37 @@ import Home from "./pages/Index";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetailView";
-import { SimpleAuthProvider } from "@/contexts/SimpleAuthContext";
-import { OrgProvider } from "@/contexts/OrgContext";
-import { PermissionProvider } from "@/contexts/PermissionContext";
-import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function App() {
+  console.log('App rendering, React:', typeof React, typeof React.useState);
+  
   return (
-    <SimpleAuthProvider>
-      <OrgProvider>
-        <PermissionProvider>
-          <EnhancedAIAssistantProvider>
-            <QueryClientProvider client={queryClient}>
-            <Router>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/app/dashboard" element={<Dashboard />} />
-                <Route path="/app/settings" element={<Settings />} />
-                <Route path="/app/analytics" element={<Analytics />} />
-                <Route path="/app/osfi-compliance" element={<OSFICompliance />} />
-                <Route path="/app/third-party-risk" element={<ThirdPartyRisk />} />
-                <Route path="/app/business-continuity" element={<BusinessContinuity />} />
-                <Route path="/app/risk-appetite" element={<RiskAppetite />} />
-                <Route path="/app/risk-appetite/detail/:id" element={<RiskAppetiteDetailView />} />
-                <Route path="/app/risk-management/risk-appetite" element={<RiskManagementRiskAppetite />} />
-              </Routes>
-            </Router>
-            <Toaster />
-          </QueryClientProvider>
-          </EnhancedAIAssistantProvider>
-        </PermissionProvider>
-      </OrgProvider>
-    </SimpleAuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/app/dashboard" element={<Dashboard />} />
+          <Route path="/app/settings" element={<Settings />} />
+          <Route path="/app/analytics" element={<Analytics />} />
+          <Route path="/app/osfi-compliance" element={<OSFICompliance />} />
+          <Route path="/app/third-party-risk" element={<ThirdPartyRisk />} />
+          <Route path="/app/business-continuity" element={<BusinessContinuity />} />
+          <Route path="/app/risk-appetite" element={<RiskAppetite />} />
+          <Route path="/app/risk-appetite/detail/:id" element={<RiskAppetiteDetailView />} />
+          <Route path="/app/risk-management/risk-appetite" element={<RiskManagementRiskAppetite />} />
+        </Routes>
+      </Router>
+      <Toaster />
+    </QueryClientProvider>
   );
 }
 
