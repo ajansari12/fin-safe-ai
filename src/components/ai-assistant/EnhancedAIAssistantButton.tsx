@@ -1,13 +1,14 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bot, BarChart3, AlertTriangle } from "lucide-react";
 import { useEnhancedAIAssistant } from "./EnhancedAIAssistantContext";
+import { EnhancedAIAssistantDialog } from "./EnhancedAIAssistantDialog";
 
 export function EnhancedAIAssistantButton() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { 
-    setIsAssistantOpen, 
     workflowAnalysis, 
     riskSummary,
     currentModule,
@@ -44,37 +45,45 @@ export function EnhancedAIAssistantButton() {
   ).length;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <Button
-        onClick={() => setIsAssistantOpen(true)}
-        size="lg"
-        className="rounded-full shadow-lg hover:shadow-xl transition-all duration-200 group relative"
-      >
-        <Bot className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-        AI Assistant
+    <>
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={() => setIsDialogOpen(true)}
+          size="lg"
+          className="rounded-full shadow-lg hover:shadow-xl transition-all duration-200 group relative"
+        >
+          <Bot className="w-5 h-5 mr-2 group-hover:animate-pulse" />
+          AI Assistant
+          
+          {/* Notification badges */}
+          <div className="absolute -top-2 -right-2 flex gap-1">
+            {hasHighRisks && (
+              <Badge variant="destructive" className="w-5 h-5 p-0 flex items-center justify-center">
+                <AlertTriangle className="w-3 h-3" />
+              </Badge>
+            )}
+            {incompleteWorkflows > 0 && (
+              <Badge variant="secondary" className="w-5 h-5 p-0 flex items-center justify-center text-xs">
+                {incompleteWorkflows}
+              </Badge>
+            )}
+          </div>
+        </Button>
         
-        {/* Notification badges */}
-        <div className="absolute -top-2 -right-2 flex gap-1">
-          {hasHighRisks && (
-            <Badge variant="destructive" className="w-5 h-5 p-0 flex items-center justify-center">
-              <AlertTriangle className="w-3 h-3" />
+        {currentModule && (
+          <div className="mt-2 text-center">
+            <Badge variant="outline" className="text-xs">
+              {currentModule.replace('-', ' ')}
             </Badge>
-          )}
-          {incompleteWorkflows > 0 && (
-            <Badge variant="secondary" className="w-5 h-5 p-0 flex items-center justify-center text-xs">
-              {incompleteWorkflows}
-            </Badge>
-          )}
-        </div>
-      </Button>
-      
-      {currentModule && (
-        <div className="mt-2 text-center">
-          <Badge variant="outline" className="text-xs">
-            {currentModule.replace('-', ' ')}
-          </Badge>
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </div>
+
+      {/* AI Assistant Dialog */}
+      <EnhancedAIAssistantDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+      />
+    </>
   );
 }

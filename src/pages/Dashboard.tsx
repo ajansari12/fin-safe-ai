@@ -14,7 +14,6 @@ import RecentIncidents from "@/components/dashboard/RecentIncidents";
 import ComplianceScoreCard from "@/components/dashboard/ComplianceScoreCard";
 import KRICard from "@/components/dashboard/KRICard";
 import { EnhancedAIInsights } from "@/components/analytics/EnhancedAIInsights";
-import { EnhancedAIAssistant } from "@/components/ai/EnhancedAIAssistant";
 import { useDetailModal } from "@/hooks/useDetailModal";
 import DetailViewRouter from "@/components/common/DetailViewRouter";
 
@@ -216,13 +215,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Charts and AI Assistant Section */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        {/* Charts Section - Now using full width */}
+        <div className="grid gap-6 lg:grid-cols-2">
           <IncidentTrendsChart />
           <KRIBreachesChart />
-          <div className="lg:col-span-1">
-            <EnhancedAIAssistant />
-          </div>
         </div>
 
         {/* Recent Activity */}

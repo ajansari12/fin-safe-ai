@@ -151,7 +151,7 @@ export const EnhancedAIAssistant: React.FC = () => {
           conversationType,
           userId: profile.id,
           orgId: profile.organization_id,
-          conversationHistory: messages.slice(-10) // Last 10 messages for context
+          conversationHistory: messages.slice(-10)
         }
       });
 
@@ -202,142 +202,138 @@ export const EnhancedAIAssistant: React.FC = () => {
   const Icon = currentConfig.icon;
 
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Brain className="h-6 w-6 text-primary" />
-            <CardTitle className="text-lg">OSFI E-21 AI Assistant</CardTitle>
-            <Sparkles className="h-4 w-4 text-yellow-500" />
-          </div>
-          <Badge className={currentConfig.color}>
-            <Icon className="h-3 w-3 mr-1" />
-            {currentConfig.name}
-          </Badge>
-        </div>
-        
-        <div className="flex items-center space-x-2 pt-2">
-          <Select value={conversationType} onValueChange={setConversationType}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select conversation type" />
-            </SelectTrigger>
-            <SelectContent>
-              {conversationTypes.map((type) => {
-                const TypeIcon = type.icon;
-                return (
-                  <SelectItem key={type.id} value={type.id}>
-                    <div className="flex items-center space-x-2">
-                      <TypeIcon className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">{type.name}</div>
-                        <div className="text-xs text-muted-foreground">{type.description}</div>
-                      </div>
+    <div className="h-full flex flex-col">
+      {/* Conversation Type Selector */}
+      <div className="mb-4">
+        <Select value={conversationType} onValueChange={setConversationType}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select conversation type" />
+          </SelectTrigger>
+          <SelectContent>
+            {conversationTypes.map((type) => {
+              const TypeIcon = type.icon;
+              return (
+                <SelectItem key={type.id} value={type.id}>
+                  <div className="flex items-center space-x-2">
+                    <TypeIcon className="h-4 w-4" />
+                    <div>
+                      <div className="font-medium">{type.name}</div>
+                      <div className="text-xs text-muted-foreground">{type.description}</div>
                     </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-      </CardHeader>
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
 
-      <CardContent className="flex-1 flex flex-col space-y-4 p-4">
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
-            {messages.length === 0 && (
-              <div className="text-center py-8">
-                <Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">OSFI E-21 Expert Assistant</h3>
-                <p className="text-muted-foreground mb-4">
-                  Get specialized guidance on operational risk management compliance
-                </p>
-                <Badge className={currentConfig.color}>
-                  {currentConfig.description}
-                </Badge>
-              </div>
-            )}
+      {/* Current Context Badge */}
+      <div className="mb-4 flex items-center justify-center">
+        <Badge className={currentConfig.color}>
+          <Icon className="h-3 w-3 mr-1" />
+          {currentConfig.name}
+        </Badge>
+      </div>
 
-            {messages.map((message) => (
+      {/* Messages Area */}
+      <ScrollArea className="flex-1 pr-4 mb-4">
+        <div className="space-y-4">
+          {messages.length === 0 && (
+            <div className="text-center py-8">
+              <Icon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium mb-2">OSFI E-21 Expert Assistant</h3>
+              <p className="text-muted-foreground mb-4">
+                Get specialized guidance on operational risk management compliance
+              </p>
+              <Badge className={currentConfig.color}>
+                {currentConfig.description}
+              </Badge>
+            </div>
+          )}
+
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex items-start space-x-3 ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              {message.role === 'assistant' && (
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+              )}
+              
               <div
-                key={message.id}
-                className={`flex items-start space-x-3 ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                  message.role === 'user'
+                    ? 'bg-primary text-white'
+                    : 'bg-muted text-foreground'
                 }`}
               >
-                {message.role === 'assistant' && (
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                      <Bot className="h-4 w-4 text-white" />
-                    </div>
-                  </div>
-                )}
-                
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-primary text-white'
-                      : 'bg-muted text-foreground'
-                  }`}
-                >
-                  <div className="whitespace-pre-wrap text-sm">{message.content}</div>
-                  <div className={`text-xs mt-1 ${
-                    message.role === 'user' ? 'text-white/70' : 'text-muted-foreground'
-                  }`}>
-                    {message.timestamp.toLocaleTimeString()}
+                <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                <div className={`text-xs mt-1 ${
+                  message.role === 'user' ? 'text-white/70' : 'text-muted-foreground'
+                }`}>
+                  {message.timestamp.toLocaleTimeString()}
+                </div>
+              </div>
+
+              {message.role === 'user' && (
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
+              )}
+            </div>
+          ))}
 
-                {message.role === 'user' && (
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                )}
+          {isLoading && (
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <Loader2 className="h-4 w-4 text-white animate-spin" />
               </div>
+              <div className="bg-muted rounded-lg px-4 py-2">
+                <div className="text-sm text-muted-foreground">
+                  Analyzing your organization's context and generating response...
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
+
+      {/* Suggested Questions */}
+      {showSuggestions && messages.length === 0 && (
+        <div className="space-y-2 mb-4">
+          <div className="text-sm font-medium text-muted-foreground flex items-center">
+            <BookOpen className="h-4 w-4 mr-1" />
+            Suggested questions for {currentConfig.name}:
+          </div>
+          <div className="grid gap-2">
+            {suggestedQuestions[conversationType]?.map((suggestion, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                className="text-left justify-start h-auto p-2 text-wrap"
+                onClick={() => handleSuggestionClick(suggestion)}
+              >
+                {suggestion}
+              </Button>
             ))}
-
-            {isLoading && (
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <Loader2 className="h-4 w-4 text-white animate-spin" />
-                </div>
-                <div className="bg-muted rounded-lg px-4 py-2">
-                  <div className="text-sm text-muted-foreground">
-                    Analyzing your organization's context and generating response...
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
           </div>
-        </ScrollArea>
+        </div>
+      )}
 
-        {/* Suggested Questions */}
-        {showSuggestions && messages.length === 0 && (
-          <div className="space-y-2">
-            <div className="text-sm font-medium text-muted-foreground flex items-center">
-              <BookOpen className="h-4 w-4 mr-1" />
-              Suggested questions for {currentConfig.name}:
-            </div>
-            <div className="grid gap-2">
-              {suggestedQuestions[conversationType]?.map((suggestion, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="text-left justify-start h-auto p-2 text-wrap"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Input Area */}
+      {/* Input Area */}
+      <div className="space-y-2">
         <div className="flex items-center space-x-2">
           <div className="flex-1 relative">
             <Input
@@ -365,7 +361,7 @@ export const EnhancedAIAssistant: React.FC = () => {
         <div className="text-xs text-muted-foreground text-center">
           Responses are tailored to your organization's current risk profile and OSFI E-21 requirements
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
