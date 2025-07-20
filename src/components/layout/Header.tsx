@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
-import { useAuth } from '@/contexts/SimpleAuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface HeaderProps {

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Shield } from "lucide-react";
-import { useAuth } from "@/contexts/SimpleAuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,18 +34,13 @@ const Login = () => {
     
     try {
       setIsSubmitting(true);
-      const { error } = await login(email, password);
-      
-      if (error) {
-        toast.error(error.message || "Login failed");
-        return;
-      }
+      await login(email, password);
       
       // Navigation will be handled by the useEffect above when user state changes
       toast.success("Login successful!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      toast.error("An unexpected error occurred");
+      toast.error(error.message || "Login failed");
     } finally {
       setIsSubmitting(false);
     }

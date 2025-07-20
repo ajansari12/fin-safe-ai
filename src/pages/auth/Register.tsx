@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Shield } from "lucide-react";
-import { useAuth } from "@/contexts/SimpleAuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +14,7 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { signup, user } = useAuth();
+  const { register, user } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -45,18 +44,13 @@ const Register = () => {
     
     try {
       setIsSubmitting(true);
-      const { error } = await signup(email, password);
-      
-      if (error) {
-        toast.error(error.message || "Registration failed");
-        return;
-      }
+      await register(email, password, fullName);
       
       toast.success("Registration successful! Please check your email to verify your account.");
       navigate('/auth/verify');
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
-      toast.error("An unexpected error occurred");
+      toast.error(error.message || "Registration failed");
     } finally {
       setIsSubmitting(false);
     }

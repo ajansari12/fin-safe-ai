@@ -16,7 +16,7 @@ import {
   Shield,
   Clock
 } from 'lucide-react';
-import { useAuth } from '@/contexts/SimpleAuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { useRiskAppetite } from '@/hooks/useRiskAppetite';
 import { CreateStatementModal } from './CreateStatementModal';
 import RiskAppetiteDashboard from './RiskAppetiteDashboard';
@@ -29,7 +29,7 @@ import BoardReportGenerator from './BoardReportGenerator';
 import RiskAppetiteDetailModal from './RiskAppetiteDetailModal';
 
 const UnifiedRiskAppetite = () => {
-  const { profile } = useAuth();
+  const { userContext } = useAuth();
   const { statements, isLoading, createStatement } = useRiskAppetite();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

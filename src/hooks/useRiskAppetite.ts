@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/SimpleAuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { toast } from 'sonner';
 
 export interface RiskAppetiteStatement {
@@ -59,7 +60,7 @@ export interface QualitativeStatement {
 }
 
 export const useRiskAppetite = () => {
-  const { profile } = useAuth();
+  const { userContext } = useAuth();
   const [statements, setStatements] = useState<RiskAppetiteStatement[]>([]);
   const [categories, setCategories] = useState<RiskCategory[]>([]);
   const [quantitativeLimits, setQuantitativeLimits] = useState<QuantitativeLimit[]>([]);
@@ -67,14 +68,14 @@ export const useRiskAppetite = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const loadStatements = async () => {
-    if (!profile?.organization_id) return;
+    if (!userContext?.organizationId) return;
 
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('risk_appetite_statements')
         .select('*')
-        .eq('org_id', profile.organization_id)
+        .eq('org_id', userContext.organizationId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -133,7 +134,7 @@ export const useRiskAppetite = () => {
       rationale?: string;
     }[];
   }) => {
-    if (!profile?.organization_id || !profile.id) {
+    if (!userContext?.organizationId || !userContext.userId) {
       toast.error('User not authenticated');
       return null;
     }
@@ -147,14 +148,14 @@ export const useRiskAppetite = () => {
       const { data: statement, error: statementError } = await supabase
         .from('risk_appetite_statements')
         .insert({
-          org_id: profile.organization_id,
+          org_id: userContext.organizationId,
           statement_name: statementData.statement_name,
           description: statementData.description,
           effective_date: statementData.effective_date,
           review_date: statementData.review_date,
           next_review_date: nextReviewDate.toISOString().split('T')[0],
           approval_status: 'draft',
-          created_by: profile.id
+          created_by: userContext.userId
         })
         .select()
         .single();
@@ -176,7 +177,7 @@ export const useRiskAppetite = () => {
       const updateData: any = { approval_status: status };
       
       if (status === 'approved') {
-        updateData.approved_by = profile?.id;
+        updateData.approved_by = userContext?.userId;
         updateData.approved_at = new Date().toISOString();
       }
 
@@ -213,10 +214,10 @@ export const useRiskAppetite = () => {
   };
 
   useEffect(() => {
-    if (profile?.organization_id) {
+    if (userContext?.organizationId) {
       loadStatements();
     }
-  }, [profile?.organization_id]);
+  }, [userContext?.organizationId]);
 
   return {
     statements,

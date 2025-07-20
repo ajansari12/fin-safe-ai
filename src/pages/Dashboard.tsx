@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/SimpleAuthContext";
+import { useAuth } from "@/contexts/EnhancedAuthContext";
 import AuthenticatedLayout from "@/components/layout/AuthenticatedLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,15 +18,15 @@ import { useDetailModal } from "@/hooks/useDetailModal";
 import DetailViewRouter from "@/components/common/DetailViewRouter";
 
 const Dashboard = () => {
-  const { user, profile } = useAuth();
+  const { user, userContext } = useAuth();
   const navigate = useNavigate();
   const [showAIInsights, setShowAIInsights] = useState(false);
   const { modalState, openModal, closeModal } = useDetailModal();
 
   const { data: metrics, isLoading } = useQuery({
-    queryKey: ['dashboardMetrics', profile?.organization_id],
-    queryFn: () => getDashboardMetrics(profile?.organization_id || ''),
-    enabled: !!profile?.organization_id
+    queryKey: ['dashboardMetrics', userContext?.organizationId],
+    queryFn: () => getDashboardMetrics(userContext?.organizationId || ''),
+    enabled: !!userContext?.organizationId
   });
 
   return (

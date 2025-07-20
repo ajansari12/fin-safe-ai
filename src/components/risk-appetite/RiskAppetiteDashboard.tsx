@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getRiskAppetiteStatements, getRiskCategories } from '@/services/risk-management-service';
 import { getKRIDefinitions } from '@/services/kri-definitions';
-import { useAuth } from '@/contexts/SimpleAuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { RiskAppetiteStatement, RiskCategory } from '@/pages/risk-management/types';
 import { KRIDefinition } from '@/services/kri-definitions';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -21,7 +21,7 @@ interface RiskMetric {
 }
 
 const RiskAppetiteDashboard = () => {
-  const { profile } = useAuth();
+  const { userContext } = useAuth();
   const [statements, setStatements] = useState<RiskAppetiteStatement[]>([]);
   const [categories, setCategories] = useState<RiskCategory[]>([]);
   const [kris, setKris] = useState<KRIDefinition[]>([]);
@@ -30,12 +30,12 @@ const RiskAppetiteDashboard = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!profile?.organization_id) return;
+      if (!userContext?.organizationId) return;
       
       setIsLoading(true);
       try {
         const [statementsData, categoriesData, krisData] = await Promise.all([
-          getRiskAppetiteStatements(profile.organization_id),
+          getRiskAppetiteStatements(userContext.organizationId),
           getRiskCategories(),
           getKRIDefinitions()
         ]);
@@ -76,7 +76,7 @@ const RiskAppetiteDashboard = () => {
     };
     
     loadData();
-  }, [profile?.organization_id]);
+  }, [userContext?.organizationId]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

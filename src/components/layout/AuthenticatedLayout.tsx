@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/SimpleAuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { SidebarProvider, useSidebar } from '@/contexts/SidebarContext';
