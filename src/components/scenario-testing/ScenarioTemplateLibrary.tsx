@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, FileText, Shield, Zap, Building2, Users, Globe } from "lucide-react";
+import { ScenarioTemplate } from "@/services/scenario-templates-service";
 
-interface ScenarioTemplate {
+interface LibraryTemplate {
   id: string;
   title: string;
   description: string;
@@ -26,7 +27,7 @@ const ScenarioTemplateLibrary: React.FC<ScenarioTemplateLibraryProps> = ({ onUse
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
 
-  const templates: ScenarioTemplate[] = [
+  const templates: LibraryTemplate[] = [
     {
       id: "cyber-ransomware",
       title: "Ransomware Attack",
@@ -138,6 +139,25 @@ const ScenarioTemplateLibrary: React.FC<ScenarioTemplateLibraryProps> = ({ onUse
     }
   };
 
+  const convertToScenarioTemplate = (libTemplate: LibraryTemplate): ScenarioTemplate => ({
+    id: libTemplate.id,
+    org_id: '',
+    template_name: libTemplate.title,
+    template_description: libTemplate.description,
+    crisis_type: libTemplate.disruption_type,
+    severity_level: libTemplate.severity_level,
+    template_steps: [],
+    affected_functions: [],
+    estimated_duration_hours: parseInt(libTemplate.estimated_duration.split('-')[0]) || 2,
+    recovery_objectives: {},
+    success_criteria: `Complete recovery within ${libTemplate.estimated_duration}`,
+    is_predefined: true,
+    created_by: undefined,
+    created_by_name: 'System',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  });
+
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          template.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -237,7 +257,7 @@ const ScenarioTemplateLibrary: React.FC<ScenarioTemplateLibraryProps> = ({ onUse
               
               <Button 
                 className="w-full mt-4" 
-                onClick={() => onUseTemplate(template)}
+                onClick={() => onUseTemplate(convertToScenarioTemplate(template))}
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Use This Template
