@@ -16,6 +16,9 @@ import RiskManagementRiskAppetite from "./pages/risk-management/RiskAppetite";
 import OSFICompliance from "./pages/OSFICompliance";
 import ThirdPartyRisk from "./pages/ThirdPartyRisk";
 import BusinessContinuity from "./pages/BusinessContinuity";
+import OperationalResilience from "./pages/OperationalResilience";
+import FrameworkManagement from "./pages/FrameworkManagement";
+import GovernanceFramework from "./pages/GovernanceFramework";
 import Home from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
@@ -85,6 +88,21 @@ function App() {
             <Route path="/app/business-continuity" element={
               <ProtectedRoute>
                 <BusinessContinuity />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/operational-resilience" element={
+              <ProtectedRoute>
+                <OperationalResilience />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/framework-management" element={
+              <ProtectedRoute>
+                <FrameworkManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/governance" element={
+              <ProtectedRoute>
+                <GovernanceFramework />
               </ProtectedRoute>
             } />
             <Route path="/app/risk-appetite" element={

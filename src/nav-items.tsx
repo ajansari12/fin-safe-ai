@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   KanbanSquare,
   Shield,
+  Target,
+  Cog,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -49,6 +51,16 @@ export const navItems: NavigationItem[] = [
         url: "/app/impact-tolerances",
       },
     ],
+  },
+  {
+    title: "Operational Resilience",
+    url: "/app/operational-resilience",
+    icon: Target,
+  },
+  {
+    title: "Framework Management", 
+    url: "/app/framework-management",
+    icon: Cog,
   },
   {
     title: "Governance",
