@@ -1,226 +1,291 @@
-import React, { memo, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Bell, AlertTriangle, CheckCircle, X, Filter } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from '@/components/ui/popover';
-import { 
-  Bell, 
-  AlertTriangle, 
-  Shield, 
-  Activity, 
-  X,
-  CheckCheck,
-  Trash2,
-  ExternalLink
-} from 'lucide-react';
-import { useNotificationCenter, type Notification } from '@/hooks/useNotificationCenter';
-import { formatDistanceToNow } from 'date-fns';
-import AllNotificationsDialog from '@/components/dialogs/AllNotificationsDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { notificationService, type Alert as AlertType } from '@/services/notifications/notification-service';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
+import { toast } from 'sonner';
 
-const NotificationCenter = memo(() => {
-  const {
-    notifications,
-    unreadCount,
-    isLoading,
-    markAsRead,
-    markAllAsRead,
-    clearAll,
-    removeNotification
-  } = useNotificationCenter();
-  
-  const [showAllNotifications, setShowAllNotifications] = useState(false);
+interface NotificationCenterProps {
+  showAsDropdown?: boolean;
+}
 
-  const getNotificationIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'breach':
-        return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      case 'incident':
-        return <Shield className="h-4 w-4 text-orange-500" />;
-      case 'control':
-        return <Shield className="h-4 w-4 text-blue-500" />;
-      case 'kri':
-        return <Activity className="h-4 w-4 text-purple-500" />;
-      default:
-        return <Bell className="h-4 w-4 text-gray-500" />;
+export const NotificationCenter: React.FC<NotificationCenterProps> = ({ showAsDropdown = false }) => {
+  const [alerts, setAlerts] = useState<AlertType[]>([]);
+  const [filteredAlerts, setFilteredAlerts] = useState<AlertType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [severityFilter, setSeverityFilter] = useState<string>('all');
+  const { profile } = useAuth();
+
+  useEffect(() => {
+    loadAlerts();
+  }, []);
+
+  useEffect(() => {
+    filterAlerts();
+  }, [alerts, statusFilter, severityFilter]);
+
+  const loadAlerts = async () => {
+    try {
+      const data = await notificationService.getAlerts({ limit: 50 });
+      setAlerts(data);
+    } catch (error) {
+      console.error('Error loading alerts:', error);
+      toast.error('Failed to load notifications');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getSeverityColor = (severity: Notification['severity']) => {
+  const filterAlerts = () => {
+    let filtered = [...alerts];
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(alert => alert.status === statusFilter);
+    }
+
+    if (severityFilter !== 'all') {
+      filtered = filtered.filter(alert => alert.severity === severityFilter);
+    }
+
+    setFilteredAlerts(filtered);
+  };
+
+  const handleAcknowledge = async (alertId: string) => {
+    if (!profile?.id) return;
+
+    try {
+      await notificationService.acknowledgeAlert(alertId, profile.id);
+      await loadAlerts();
+      toast.success('Alert acknowledged');
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
+      toast.error('Failed to acknowledge alert');
+    }
+  };
+
+  const handleResolve = async (alertId: string) => {
+    if (!profile?.id) return;
+
+    try {
+      await notificationService.resolveAlert(alertId, 'Manually resolved', profile.id);
+      await loadAlerts();
+      toast.success('Alert resolved');
+    } catch (error) {
+      console.error('Error resolving alert:', error);
+      toast.error('Failed to resolve alert');
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'destructive';
+      case 'high': return 'destructive';
+      case 'medium': return 'default';
+      case 'low': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-100 text-red-800 border-red-200';
       case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return <AlertTriangle className="h-4 w-4" />;
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return <Bell className="h-4 w-4" />;
       case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return <CheckCircle className="h-4 w-4" />;
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return <Bell className="h-4 w-4" />;
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    if (!notification.read) {
-      markAsRead(notification.id);
-    }
-    
-    if (notification.actionUrl) {
-      window.open(notification.actionUrl, '_blank');
-    }
-  };
+  const unreadCount = alerts.filter(alert => alert.status === 'new').length;
 
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="relative">
-          <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-96 p-0" align="end">
+  if (showAsDropdown) {
+    return (
+      <div className="w-80 max-h-96 overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="text-sm font-semibold">Notifications</h3>
           <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            <span className="font-semibold">Notifications</span>
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={markAllAsRead}
-                className="h-8 px-2 text-xs"
-              >
-                <CheckCheck className="h-3 w-3 mr-1" />
-                Mark all read
-              </Button>
-            )}
-            {notifications.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAll}
-                className="h-8 px-2 text-xs text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Clear all
-              </Button>
+              <Badge variant="destructive" className="text-xs">
+                {unreadCount}
+              </Badge>
             )}
           </div>
         </div>
-
-        <ScrollArea className="max-h-96">
-          {isLoading ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
-              Loading notifications...
-            </div>
-          ) : notifications.length === 0 ? (
-            <div className="p-8 text-center">
-              <Bell className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-              <p className="text-sm text-muted-foreground">No notifications</p>
-            </div>
+        
+        <div className="space-y-2 p-2">
+          {loading ? (
+            <div className="text-center py-4 text-muted-foreground">Loading...</div>
+          ) : filteredAlerts.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">No notifications</div>
           ) : (
-            <div className="divide-y">
-              {notifications.map((notification, index) => (
-                <div
-                  key={notification.id}
-                  className={`p-4 transition-colors hover:bg-muted/50 cursor-pointer relative ${
-                    !notification.read ? 'bg-blue-50/50' : ''
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    
+            filteredAlerts.slice(0, 10).map((alert) => (
+              <Card key={alert.id} className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2 flex-1">
+                    {getSeverityIcon(alert.severity)}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="text-sm font-medium truncate">
-                          {notification.title}
-                        </h4>
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${getSeverityColor(notification.severity)}`}
-                        >
-                          {notification.severity}
+                      <p className="text-sm font-medium truncate">{alert.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{alert.description}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={getSeverityColor(alert.severity)} className="text-xs">
+                          {alert.severity}
                         </Badge>
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      
-                      <div className="flex items-center justify-between">
                         <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(notification.timestamp, { addSuffix: true })}
+                          {new Date(alert.triggered_at).toLocaleTimeString()}
                         </span>
-                        
-                        <div className="flex items-center gap-1">
-                          {notification.actionUrl && (
-                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                          )}
-                          {!notification.read && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                          )}
-                        </div>
                       </div>
                     </div>
-                    
+                  </div>
+                  {alert.status === 'new' && (
                     <Button
-                      variant="ghost"
                       size="sm"
-                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeNotification(notification.id);
-                      }}
+                      variant="ghost"
+                      onClick={() => handleAcknowledge(alert.id)}
                     >
-                      <X className="h-3 w-3" />
+                      <CheckCircle className="h-3 w-3" />
                     </Button>
+                  )}
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Bell className="h-6 w-6" />
+          <h1 className="text-2xl font-bold">Notification Center</h1>
+          {unreadCount > 0 && (
+            <Badge variant="destructive">
+              {unreadCount} unread
+            </Badge>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="acknowledged">Acknowledged</SelectItem>
+              <SelectItem value="in_progress">In Progress</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={severityFilter} onValueChange={setSeverityFilter}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Severity</SelectItem>
+              <SelectItem value="critical">Critical</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {loading ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-muted-foreground">Loading notifications...</div>
+          </CardContent>
+        </Card>
+      ) : filteredAlerts.length === 0 ? (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-muted-foreground">No notifications found</div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredAlerts.map((alert) => (
+            <Card key={alert.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-3">
+                    {getSeverityIcon(alert.severity)}
+                    <div>
+                      <CardTitle className="text-lg">{alert.title}</CardTitle>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={getSeverityColor(alert.severity)}>
+                          {alert.severity}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {alert.source}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(alert.triggered_at).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {alert.status === 'new' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleAcknowledge(alert.id)}
+                      >
+                        Acknowledge
+                      </Button>
+                    )}
+                    {(alert.status === 'new' || alert.status === 'acknowledged') && (
+                      <Button
+                        size="sm"
+                        onClick={() => handleResolve(alert.id)}
+                      >
+                        Resolve
+                      </Button>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-        
-        {notifications.length > 0 && (
-          <>
-            <Separator />
-            <div className="p-2">
-              <Button 
-                variant="ghost" 
-                className="w-full text-xs" 
-                size="sm"
-                onClick={() => setShowAllNotifications(true)}
-              >
-                View all notifications
-              </Button>
-            </div>
-          </>
-        )}
-      </PopoverContent>
-
-      {/* All Notifications Dialog */}
-      <AllNotificationsDialog 
-        open={showAllNotifications} 
-        onOpenChange={setShowAllNotifications} 
-      />
-    </Popover>
+              </CardHeader>
+              
+              <CardContent>
+                <p className="text-muted-foreground mb-4">{alert.description}</p>
+                
+                {alert.status === 'resolved' && alert.resolution && (
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Resolution:</strong> {alert.resolution}
+                      {alert.resolved_by && (
+                        <span className="ml-2 text-sm text-muted-foreground">
+                          by {alert.resolved_by}
+                        </span>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
-});
-
-NotificationCenter.displayName = 'NotificationCenter';
-
-export default NotificationCenter;
+};

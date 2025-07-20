@@ -22,6 +22,7 @@ import {
   Workflow,
   Globe,
   FileText,
+  Bell,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -101,6 +102,11 @@ export const navItems: NavigationItem[] = [
     url: "/app/regulatory-reporting",
     icon: FileText,
     badge: "New"
+  },
+  {
+    title: "Notifications",
+    url: "/app/notifications",
+    icon: Bell,
   },
   {
     title: "OSFI E-21 Compliance",
