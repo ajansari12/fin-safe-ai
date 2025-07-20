@@ -33,6 +33,7 @@ import AIIntelligence from "./pages/AIIntelligence";
 import WorkflowAutomation from "./pages/WorkflowAutomation";
 import OrganizationalIntelligence from "./pages/OrganizationalIntelligence";
 import IntegrationsHub from "./pages/IntegrationsHub";
+import RegulatoryReporting from "./pages/RegulatoryReporting";
 
 // Create a stable QueryClient instance
 const queryClient = new QueryClient({
@@ -153,6 +154,11 @@ function App() {
             <Route path="/app/integrations" element={
               <ProtectedRoute>
                 <IntegrationsHub />
+              </ProtectedRoute>
+            } />
+            <Route path="/app/regulatory-reporting" element={
+              <ProtectedRoute>
+                <RegulatoryReporting />
               </ProtectedRoute>
             } />
           </Routes>

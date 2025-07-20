@@ -21,6 +21,7 @@ import {
   Brain,
   Workflow,
   Globe,
+  FileText,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -28,6 +29,7 @@ interface NavigationItem {
   url: string;
   icon?: LucideIcon;
   items?: NavigationItem[];
+  badge?: string;
 }
 
 export const navItems: NavigationItem[] = [
@@ -93,6 +95,12 @@ export const navItems: NavigationItem[] = [
     title: "Third Party Risk",
     url: "/app/third-party-risk",
     icon: Network,
+  },
+  {
+    title: "Regulatory Reporting",
+    url: "/app/regulatory-reporting",
+    icon: FileText,
+    badge: "New"
   },
   {
     title: "OSFI E-21 Compliance",
