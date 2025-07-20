@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Shield, Menu, X } from "lucide-react";
-import { useAuth } from "@/contexts/EnhancedAuthContext";
+import { useAuth } from "@/contexts/SimpleAuthContext";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
+import { SimpleAuthProvider } from "@/contexts/SimpleAuthContext";
 import { EnhancedAIAssistantButton } from "@/components/ai-assistant/EnhancedAIAssistantButton";
 import { EnhancedAIAssistantWithVoice } from "@/components/ai-assistant/EnhancedAIAssistantWithVoice";
 import { navItems } from "@/nav-items";
@@ -104,7 +104,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
   };
 
   return (
-    <EnhancedAIAssistantProvider>
+    <SimpleAuthProvider>
       <TooltipProvider>
         <div className="grid grid-cols-[auto_1fr] min-h-screen w-full bg-gray-100 dark:bg-slate-900">
           {/* Mobile overlay */}
@@ -256,7 +256,7 @@ const AuthenticatedLayout: React.FC<AuthenticatedLayoutProps> = ({ children }) =
         <EnhancedAIAssistantButton />
         <EnhancedAIAssistantWithVoice />
       </TooltipProvider>
-    </EnhancedAIAssistantProvider>
+    </SimpleAuthProvider>
   );
 };
 

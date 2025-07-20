@@ -17,7 +17,7 @@ import Home from "./pages/Index";
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetailView";
-import { EnhancedAuthProvider } from "@/contexts/EnhancedAuthContext";
+import { SimpleAuthProvider } from "@/contexts/SimpleAuthContext";
 import { OrgProvider } from "@/contexts/OrgContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
@@ -26,7 +26,7 @@ const queryClient = new QueryClient();
 
 function App() {
   return (
-    <EnhancedAuthProvider>
+    <SimpleAuthProvider>
       <OrgProvider>
         <PermissionProvider>
           <EnhancedAIAssistantProvider>
@@ -47,10 +47,10 @@ function App() {
             </Router>
             <Toaster />
           </QueryClientProvider>
-        </EnhancedAIAssistantProvider>
+          </EnhancedAIAssistantProvider>
         </PermissionProvider>
       </OrgProvider>
-    </EnhancedAuthProvider>
+    </SimpleAuthProvider>
   );
 }
 
