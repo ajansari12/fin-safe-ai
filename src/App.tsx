@@ -18,6 +18,7 @@ import BusinessContinuity from "./pages/BusinessContinuity";
 import Home from "./pages/Index";
 import RiskAppetiteDetailView from "@/components/risk-appetite/RiskAppetiteDetailView";
 import { SimpleAuthProvider } from "@/contexts/SimpleAuthContext";
+import { EnhancedAIAssistantProvider } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 // Create a stable QueryClient instance
 const queryClient = new QueryClient({
@@ -33,7 +34,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SimpleAuthProvider>
-        <Router>
+        <EnhancedAIAssistantProvider>
+          <Router>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/app/dashboard" element={<Dashboard />} />
@@ -46,8 +48,9 @@ function App() {
             <Route path="/app/risk-appetite/detail/:id" element={<RiskAppetiteDetailView />} />
             <Route path="/app/risk-management/risk-appetite" element={<RiskManagementRiskAppetite />} />
           </Routes>
+          </Router>
           <Toaster />
-        </Router>
+        </EnhancedAIAssistantProvider>
       </SimpleAuthProvider>
     </QueryClientProvider>
   );
