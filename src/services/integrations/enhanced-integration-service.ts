@@ -321,6 +321,7 @@ class EnhancedIntegrationService {
       },
       webhook_url: config.endpoint,
       is_active: true,
+      last_sync_at: null,
       created_by: profile.id,
       created_by_name: profile.full_name
     });
