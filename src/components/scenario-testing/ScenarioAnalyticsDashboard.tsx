@@ -1,76 +1,60 @@
-
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Clock, 
-  Target, 
-  CheckCircle, 
-  AlertTriangle,
-  Award,
-  FileText
-} from "lucide-react";
-import { getScenarioAnalytics } from "@/services/scenario-analytics-service";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { AlertCircle, TrendingUp, Clock, CheckCircle, Target } from "lucide-react";
+import { getScenarioTests } from "@/services/scenario-testing-service";
 
 const ScenarioAnalyticsDashboard: React.FC = () => {
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['scenarioAnalytics'],
-    queryFn: getScenarioAnalytics
+  const { data: scenarios = [], isLoading } = useQuery({
+    queryKey: ['scenarioTests'],
+    queryFn: getScenarioTests,
   });
 
-  // Mock data for charts
-  const testResultsData = [
-    { month: 'Jan', successful: 8, failed: 2, total: 10 },
-    { month: 'Feb', successful: 12, failed: 1, total: 13 },
-    { month: 'Mar', successful: 15, failed: 3, total: 18 },
-    { month: 'Apr', successful: 11, failed: 2, total: 13 },
-    { month: 'May', successful: 14, failed: 1, total: 15 },
-    { month: 'Jun', successful: 16, failed: 2, total: 18 }
+  // Analytics calculations
+  const totalTests = scenarios.length;
+  const completedTests = scenarios.filter(s => s.status === 'completed').length;
+  const inProgressTests = scenarios.filter(s => s.status === 'in_progress').length;
+  const completionRate = totalTests > 0 ? Math.round((completedTests / totalTests) * 100) : 0;
+
+  // Status distribution
+  const statusData = [
+    { name: 'Draft', value: scenarios.filter(s => s.status === 'draft').length, color: '#94a3b8' },
+    { name: 'Approved', value: scenarios.filter(s => s.status === 'approved').length, color: '#3b82f6' },
+    { name: 'In Progress', value: inProgressTests, color: '#f59e0b' },
+    { name: 'Completed', value: completedTests, color: '#10b981' },
+    { name: 'Cancelled', value: scenarios.filter(s => s.status === 'cancelled').length, color: '#ef4444' },
   ];
 
-  const responseTimeData = [
-    { test: 'Cyber Attack', target: 60, actual: 45 },
-    { test: 'System Failure', target: 30, actual: 25 },
-    { test: 'Natural Disaster', target: 120, actual: 180 },
-    { test: 'Third-Party Failure', target: 90, actual: 75 },
-    { test: 'Pandemic', target: 240, actual: 200 }
+  // Severity distribution
+  const severityData = [
+    { name: 'Low', value: scenarios.filter(s => s.severity_level === 'low').length },
+    { name: 'Medium', value: scenarios.filter(s => s.severity_level === 'medium').length },
+    { name: 'High', value: scenarios.filter(s => s.severity_level === 'high').length },
+    { name: 'Critical', value: scenarios.filter(s => s.severity_level === 'critical').length },
   ];
 
-  const testCoverageData = [
-    { name: 'Cyber Security', value: 85, color: '#0088FE' },
-    { name: 'Business Continuity', value: 92, color: '#00C49F' },
-    { name: 'IT Operations', value: 78, color: '#FFBB28' },
-    { name: 'Communications', value: 65, color: '#FF8042' },
-    { name: 'Third-Party', value: 58, color: '#8884d8' }
-  ];
+  // Disruption type distribution
+  const disruptionData = scenarios.reduce((acc: any[], scenario) => {
+    const existing = acc.find(item => item.type === scenario.disruption_type);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      acc.push({ type: scenario.disruption_type.replace('_', ' '), count: 1 });
+    }
+    return acc;
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="animate-pulse">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i}>
             <CardContent className="p-6">
-              <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
-              <div className="h-32 bg-muted rounded"></div>
+              <div className="animate-pulse">
+                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                <div className="h-8 bg-muted rounded w-1/2"></div>
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -80,21 +64,28 @@ const ScenarioAnalyticsDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Tests</p>
-                <p className="text-2xl font-bold">{analytics?.totalTests || 0}</p>
+                <p className="text-3xl font-bold">{totalTests}</p>
               </div>
               <Target className="h-8 w-8 text-primary" />
             </div>
-            <div className="flex items-center mt-2 text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+12%</span>
-              <span className="text-muted-foreground ml-1">vs last quarter</span>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                <p className="text-3xl font-bold text-green-600">{completedTests}</p>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -103,15 +94,10 @@ const ScenarioAnalyticsDashboard: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
-                <p className="text-2xl font-bold">{analytics?.successRate.toFixed(1) || 0}%</p>
+                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+                <p className="text-3xl font-bold text-yellow-600">{inProgressTests}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            </div>
-            <div className="flex items-center mt-2 text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+3.2%</span>
-              <span className="text-muted-foreground ml-1">vs last quarter</span>
+              <Clock className="h-8 w-8 text-yellow-600" />
             </div>
           </CardContent>
         </Card>
@@ -120,389 +106,146 @@ const ScenarioAnalyticsDashboard: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Avg Response Time</p>
-                <p className="text-2xl font-bold">{Math.round(analytics?.averageResponseTime || 0)}m</p>
+                <p className="text-sm font-medium text-muted-foreground">Completion Rate</p>
+                <p className="text-3xl font-bold">{completionRate}%</p>
               </div>
-              <Clock className="h-8 w-8 text-blue-500" />
-            </div>
-            <div className="flex items-center mt-2 text-sm">
-              <TrendingDown className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">-5m</span>
-              <span className="text-muted-foreground ml-1">vs last quarter</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Test Coverage</p>
-                <p className="text-2xl font-bold">{Math.round(analytics?.testCoverageScore || 0)}%</p>
-              </div>
-              <Award className="h-8 w-8 text-purple-500" />
-            </div>
-            <div className="flex items-center mt-2 text-sm">
-              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-              <span className="text-green-500">+8%</span>
-              <span className="text-muted-foreground ml-1">vs last quarter</span>
+              <TrendingUp className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Main Analytics Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="coverage">Coverage</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance</TabsTrigger>
-        </TabsList>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Test Status Distribution</CardTitle>
+            <CardDescription>Overview of scenario test statuses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {statusData.some(d => d.value > 0) ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={statusData.filter(d => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {statusData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                No data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Results by Month</CardTitle>
-                <CardDescription>Success vs failure rates over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={testResultsData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="successful" fill="#10b981" name="Successful" />
-                    <Bar dataKey="failed" fill="#ef4444" name="Failed" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Response Time Performance</CardTitle>
-                <CardDescription>Target vs actual response times by scenario type</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={responseTimeData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="test" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="target" fill="#94a3b8" name="Target (minutes)" />
-                    <Bar dataKey="actual" fill="#3b82f6" name="Actual (minutes)" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="performance">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance Metrics</CardTitle>
-                <CardDescription>Key performance indicators for scenario testing</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">Recovery Time Objective</span>
-                      <span className="text-sm text-muted-foreground">85%</span>
-                    </div>
-                    <Progress value={85} className="h-2" />
-                    <p className="text-xs text-muted-foreground">Target: 90%</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">Communication Effectiveness</span>
-                      <span className="text-sm text-muted-foreground">92%</span>
-                    </div>
-                    <Progress value={92} className="h-2" />
-                    <p className="text-xs text-muted-foreground">Target: 95%</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">Decision Making Speed</span>
-                      <span className="text-sm text-muted-foreground">78%</span>
-                    </div>
-                    <Progress value={78} className="h-2" />
-                    <p className="text-xs text-muted-foreground">Target: 85%</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">Resource Utilization</span>
-                      <span className="text-sm text-muted-foreground">88%</span>
-                    </div>
-                    <Progress value={88} className="h-2" />
-                    <p className="text-xs text-muted-foreground">Target: 80%</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">Stakeholder Engagement</span>
-                      <span className="text-sm text-muted-foreground">95%</span>
-                    </div>
-                    <Progress value={95} className="h-2" />
-                    <p className="text-xs text-muted-foreground">Target: 90%</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium">Documentation Quality</span>
-                      <span className="text-sm text-muted-foreground">82%</span>
-                    </div>
-                    <Progress value={82} className="h-2" />
-                    <p className="text-xs text-muted-foreground">Target: 85%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Test Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { name: 'Cyber Attack Simulation', date: '2024-01-15', score: 92, status: 'excellent' },
-                    { name: 'System Failure Recovery', date: '2024-01-10', score: 78, status: 'good' },
-                    { name: 'Natural Disaster Response', date: '2024-01-05', score: 65, status: 'needs_improvement' },
-                    { name: 'Third-Party Outage', date: '2024-01-01', score: 88, status: 'good' }
-                  ].map((test, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded">
-                      <div>
-                        <h4 className="font-medium">{test.name}</h4>
-                        <p className="text-sm text-muted-foreground">{test.date}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="font-semibold">{test.score}%</div>
-                        </div>
-                        <Badge variant={
-                          test.status === 'excellent' ? 'default' :
-                          test.status === 'good' ? 'secondary' : 'destructive'
-                        }>
-                          {test.status.replace('_', ' ')}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="coverage">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Coverage by Area</CardTitle>
-                <CardDescription>Coverage across different business areas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={testCoverageData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value }) => `${name}: ${value}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {testCoverageData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Coverage Gaps</CardTitle>
-                <CardDescription>Areas requiring additional testing</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { area: 'Third-Party Dependencies', coverage: 58, priority: 'high' },
-                    { area: 'Supply Chain Disruption', coverage: 45, priority: 'critical' },
-                    { area: 'Regulatory Response', coverage: 62, priority: 'medium' },
-                    { area: 'Customer Communication', coverage: 71, priority: 'medium' },
-                    { area: 'Data Recovery', coverage: 83, priority: 'low' }
-                  ].map((gap, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{gap.area}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">{gap.coverage}%</span>
-                          <Badge variant={
-                            gap.priority === 'critical' ? 'destructive' :
-                            gap.priority === 'high' ? 'destructive' :
-                            gap.priority === 'medium' ? 'default' : 'secondary'
-                          }>
-                            {gap.priority}
-                          </Badge>
-                        </div>
-                      </div>
-                      <Progress value={gap.coverage} className="h-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="trends">
-          <Card>
-            <CardHeader>
-              <CardTitle>Testing Trends</CardTitle>
-              <CardDescription>Performance trends over the last 12 months</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={testResultsData}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Severity Levels</CardTitle>
+            <CardDescription>Distribution of test severity levels</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {severityData.some(d => d.value > 0) ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={severityData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
+                  <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="successful" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    name="Successful Tests"
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="total" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    name="Total Tests"
-                  />
-                </LineChart>
+                  <Bar dataKey="value" fill="hsl(var(--primary))" />
+                </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                No data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="compliance">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  OSFI E-21 Compliance Status
-                </CardTitle>
-                <CardDescription>
-                  Compliance with OSFI E-21 operational resilience requirements
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Testing Requirements</h4>
-                    {[
-                      { requirement: 'Quarterly Scenario Testing', status: 'compliant', progress: 100 },
-                      { requirement: 'Critical Operations Coverage', status: 'compliant', progress: 95 },
-                      { requirement: 'Board Reporting', status: 'compliant', progress: 100 },
-                      { requirement: 'Third-Party Testing', status: 'partial', progress: 75 },
-                      { requirement: 'Recovery Time Validation', status: 'compliant', progress: 88 }
-                    ].map((req, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">{req.requirement}</span>
-                          <Badge variant={
-                            req.status === 'compliant' ? 'default' :
-                            req.status === 'partial' ? 'secondary' : 'destructive'
-                          }>
-                            {req.status}
-                          </Badge>
-                        </div>
-                        <Progress value={req.progress} className="h-1" />
-                      </div>
-                    ))}
-                  </div>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Disruption Types</CardTitle>
+            <CardDescription>Types of disruptions being tested</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {disruptionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={disruptionData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                No data available
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Documentation & Reporting</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 border rounded">
-                        <span className="text-sm">Test Plans Documented</span>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div className="flex items-center justify-between p-3 border rounded">
-                        <span className="text-sm">Results Analysis Complete</span>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div className="flex items-center justify-between p-3 border rounded">
-                        <span className="text-sm">Gap Analysis Performed</span>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div className="flex items-center justify-between p-3 border rounded">
-                        <span className="text-sm">Board Report Generated</span>
-                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      </div>
-                    </div>
-                  </div>
+      {/* Insights */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Key Insights</CardTitle>
+          <CardDescription>AI-powered analysis of your scenario testing program</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {completionRate < 50 && (
+              <div className="flex items-start gap-3 p-4 border rounded-lg">
+                <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5" />
+                <div>
+                  <h4 className="font-medium">Low Completion Rate</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Consider reviewing test complexity and resource allocation to improve completion rates.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Regulatory Reporting</CardTitle>
-                <CardDescription>
-                  Automated reports for regulatory submissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { report: 'Quarterly Testing Summary', date: '2024-01-31', status: 'generated' },
-                    { report: 'Annual Resilience Assessment', date: '2023-12-31', status: 'submitted' },
-                    { report: 'Critical Operations Testing', date: '2024-01-15', status: 'draft' },
-                    { report: 'Third-Party Risk Assessment', date: '2024-01-10', status: 'review' }
-                  ].map((report, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded">
-                      <div>
-                        <div className="font-medium text-sm">{report.report}</div>
-                        <div className="text-xs text-muted-foreground">{report.date}</div>
-                      </div>
-                      <Badge variant={
-                        report.status === 'submitted' ? 'default' :
-                        report.status === 'generated' ? 'secondary' :
-                        report.status === 'review' ? 'outline' : 'secondary'
-                      }>
-                        {report.status}
-                      </Badge>
-                    </div>
-                  ))}
+              </div>
+            )}
+            
+            {scenarios.filter(s => s.severity_level === 'critical').length === 0 && (
+              <div className="flex items-start gap-3 p-4 border rounded-lg">
+                <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
+                <div>
+                  <h4 className="font-medium">Missing Critical Scenarios</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Consider adding critical severity scenarios to test your most important business functions.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            )}
+
+            {totalTests > 0 && completionRate > 80 && (
+              <div className="flex items-start gap-3 p-4 border rounded-lg bg-green-50">
+                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                <div>
+                  <h4 className="font-medium">Excellent Testing Program</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Your scenario testing program shows strong execution with high completion rates.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

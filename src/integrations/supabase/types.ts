@@ -5074,6 +5074,57 @@ export type Database = {
           },
         ]
       }
+      generated_insights: {
+        Row: {
+          category: string
+          confidence: number
+          created_at: string
+          created_by: string
+          data_sources: string[]
+          description: string
+          expires_at: string
+          generated_at: string
+          id: string
+          org_id: string
+          severity: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          confidence: number
+          created_at?: string
+          created_by: string
+          data_sources?: string[]
+          description: string
+          expires_at: string
+          generated_at?: string
+          id?: string
+          org_id: string
+          severity: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          confidence?: number
+          created_at?: string
+          created_by?: string
+          data_sources?: string[]
+          description?: string
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          org_id?: string
+          severity?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       governance_change_logs: {
         Row: {
           change_type: string
@@ -5950,6 +6001,53 @@ export type Database = {
           usage_count?: number | null
         }
         Relationships: []
+      }
+      insight_recommendations: {
+        Row: {
+          action: string
+          assigned_to: string | null
+          created_at: string
+          estimated_impact: string
+          id: string
+          insight_id: string
+          priority: string
+          status: string
+          timeframe: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          assigned_to?: string | null
+          created_at?: string
+          estimated_impact: string
+          id?: string
+          insight_id: string
+          priority: string
+          status?: string
+          timeframe: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          assigned_to?: string | null
+          created_at?: string
+          estimated_impact?: string
+          id?: string
+          insight_id?: string
+          priority?: string
+          status?: string
+          timeframe?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insight_recommendations_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "generated_insights"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       integration_logs: {
         Row: {

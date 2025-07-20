@@ -1,25 +1,11 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Play, 
-  Pause, 
-  Square, 
-  Clock, 
-  Users, 
-  AlertCircle, 
-  CheckCircle, 
-  MessageSquare,
-  Timer,
-  Activity
-} from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Play, Pause, Square, Clock, Users, AlertTriangle, CheckCircle } from "lucide-react";
 import { ScenarioTest } from "@/services/scenario-testing-service";
 
 interface TestExecutionCenterProps {
@@ -34,414 +20,315 @@ interface ExecutionStep {
   description: string;
   status: 'pending' | 'in_progress' | 'completed' | 'failed';
   startTime?: Date;
-  endTime?: Date;
-  assignedTo?: string;
+  duration?: number;
   notes?: string;
 }
 
-const TestExecutionCenter: React.FC<TestExecutionCenterProps> = ({
-  scenario,
-  onComplete,
-  onCancel
+const TestExecutionCenter: React.FC<TestExecutionCenterProps> = ({ 
+  scenario, 
+  onComplete, 
+  onCancel 
 }) => {
-  const [executionStatus, setExecutionStatus] = useState<'not_started' | 'running' | 'paused' | 'completed'>('not_started');
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [participants, setParticipants] = useState([
-    { name: 'John Smith', role: 'Test Coordinator', status: 'online' },
-    { name: 'Sarah Johnson', role: 'BC Manager', status: 'online' },
-    { name: 'Mike Chen', role: 'IT Operations', status: 'away' },
-    { name: 'Lisa Rodriguez', role: 'Risk Manager', status: 'offline' }
-  ]);
-  
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [notes, setNotes] = useState("");
+
+  // Sample execution steps - in a real implementation, these would come from the scenario
   const [executionSteps, setExecutionSteps] = useState<ExecutionStep[]>([
     {
       id: '1',
-      name: 'Initial Assessment',
-      description: 'Assess the scope and impact of the scenario',
+      name: 'Initialize Test Environment',
+      description: 'Set up monitoring tools and notify test participants',
       status: 'pending'
     },
     {
-      id: '2',
-      name: 'Incident Declaration',
-      description: 'Formally declare the incident and activate response procedures',
+      id: '2', 
+      name: 'Trigger Disruption Event',
+      description: 'Simulate the defined disruption scenario',
       status: 'pending'
     },
     {
       id: '3',
-      name: 'Team Notification',
-      description: 'Notify all relevant teams and stakeholders',
+      name: 'Monitor Initial Response',
+      description: 'Observe and document initial response actions',
       status: 'pending'
     },
     {
       id: '4',
-      name: 'Response Execution',
-      description: 'Execute response and recovery procedures',
+      name: 'Evaluate Recovery Actions',
+      description: 'Assess the effectiveness of recovery procedures',
       status: 'pending'
     },
     {
       id: '5',
-      name: 'Communication',
-      description: 'Manage internal and external communications',
-      status: 'pending'
-    },
-    {
-      id: '6',
-      name: 'Recovery Validation',
-      description: 'Validate recovery and return to normal operations',
+      name: 'Complete Test & Debrief',
+      description: 'Conclude the test and conduct immediate debrief',
       status: 'pending'
     }
   ]);
-
-  const [communications, setCommunications] = useState([
-    {
-      id: '1',
-      timestamp: new Date(Date.now() - 300000),
-      sender: 'Test Coordinator',
-      message: 'Scenario execution initiated. All teams please confirm readiness.',
-      type: 'announcement'
-    }
-  ]);
-
-  const [newMessage, setNewMessage] = useState('');
 
   // Timer effect
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+    let interval: NodeJS.Timeout;
+    if (isExecuting && startTime) {
+      interval = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime.getTime()) / 1000));
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isExecuting, startTime]);
 
-  const getElapsedTime = () => {
-    if (!startTime) return '00:00:00';
-    const elapsed = Math.floor((currentTime.getTime() - startTime.getTime()) / 1000);
-    const hours = Math.floor(elapsed / 3600);
-    const minutes = Math.floor((elapsed % 3600) / 60);
-    const seconds = elapsed % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStartExecution = () => {
-    setExecutionStatus('running');
+  const startExecution = () => {
+    setIsExecuting(true);
     setStartTime(new Date());
-    // Start first step
+    // Update first step to in_progress
     setExecutionSteps(prev => prev.map((step, index) => 
       index === 0 ? { ...step, status: 'in_progress', startTime: new Date() } : step
     ));
   };
 
-  const handlePauseExecution = () => {
-    setExecutionStatus('paused');
+  const pauseExecution = () => {
+    setIsExecuting(false);
   };
 
-  const handleResumeExecution = () => {
-    setExecutionStatus('running');
-  };
-
-  const handleStopExecution = () => {
-    setExecutionStatus('completed');
-    if (onComplete) onComplete();
-  };
-
-  const handleStepComplete = (stepId: string) => {
-    setExecutionSteps(prev => prev.map(step => {
-      if (step.id === stepId) {
-        return { ...step, status: 'completed', endTime: new Date() };
+  const completeCurrentStep = () => {
+    setExecutionSteps(prev => prev.map((step, index) => {
+      if (index === currentStep) {
+        return { ...step, status: 'completed', duration: elapsedTime };
+      } else if (index === currentStep + 1) {
+        return { ...step, status: 'in_progress', startTime: new Date() };
       }
       return step;
     }));
-
-    // Start next step
-    const currentIndex = executionSteps.findIndex(s => s.id === stepId);
-    if (currentIndex < executionSteps.length - 1) {
-      setExecutionSteps(prev => prev.map((step, index) => 
-        index === currentIndex + 1 ? { ...step, status: 'in_progress', startTime: new Date() } : step
-      ));
+    
+    if (currentStep < executionSteps.length - 1) {
+      setCurrentStep(prev => prev + 1);
+    } else {
+      // Test completed
+      setIsExecuting(false);
+      onComplete?.();
     }
   };
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      setCommunications(prev => [...prev, {
-        id: Date.now().toString(),
-        timestamp: new Date(),
-        sender: 'Test Coordinator',
-        message: newMessage,
-        type: 'message'
-      }]);
-      setNewMessage('');
-    }
+  const failCurrentStep = () => {
+    setExecutionSteps(prev => prev.map((step, index) => 
+      index === currentStep ? { ...step, status: 'failed' } : step
+    ));
+    setIsExecuting(false);
   };
 
-  const completedSteps = executionSteps.filter(s => s.status === 'completed').length;
-  const progressPercentage = (completedSteps / executionSteps.length) * 100;
+  const stopExecution = () => {
+    setIsExecuting(false);
+    onCancel?.();
+  };
+
+  const progressPercentage = ((currentStep + 1) / executionSteps.length) * 100;
+
+  if (!scenario) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold mb-2">Test Execution Center</h3>
+            <p className="text-muted-foreground">
+              Real-time execution monitoring and coordination dashboard
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Execution Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">{scenario?.title}</h2>
-          <p className="text-muted-foreground">{scenario?.disruption_type} - {scenario?.severity_level} severity</p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-sm text-muted-foreground">Elapsed Time</div>
-            <div className="text-lg font-mono font-semibold">{getElapsedTime()}</div>
-          </div>
-          
-          <Badge variant={
-            executionStatus === 'running' ? 'default' :
-            executionStatus === 'paused' ? 'secondary' :
-            executionStatus === 'completed' ? 'default' : 'outline'
-          }>
-            {executionStatus.replace('_', ' ')}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Control Buttons */}
-      <div className="flex items-center gap-2">
-        {executionStatus === 'not_started' && (
-          <Button onClick={handleStartExecution}>
-            <Play className="h-4 w-4 mr-2" />
-            Start Test
-          </Button>
-        )}
-        
-        {executionStatus === 'running' && (
-          <Button variant="outline" onClick={handlePauseExecution}>
-            <Pause className="h-4 w-4 mr-2" />
-            Pause
-          </Button>
-        )}
-        
-        {executionStatus === 'paused' && (
-          <Button onClick={handleResumeExecution}>
-            <Play className="h-4 w-4 mr-2" />
-            Resume
-          </Button>
-        )}
-        
-        {['running', 'paused'].includes(executionStatus) && (
-          <Button variant="destructive" onClick={handleStopExecution}>
-            <Square className="h-4 w-4 mr-2" />
-            Complete Test
-          </Button>
-        )}
-        
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-
-      {/* Progress Overview */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Test Progress
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{scenario.title}</CardTitle>
+              <CardDescription>
+                {scenario.disruption_type.replace('_', ' ')} • {scenario.severity_level} severity
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={isExecuting ? "default" : "secondary"}>
+                {isExecuting ? "EXECUTING" : "READY"}
+              </Badge>
+              <div className="text-sm text-muted-foreground">
+                <Clock className="h-4 w-4 inline mr-1" />
+                {formatTime(elapsedTime)}
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Steps Completed</span>
-              <span>{completedSteps} of {executionSteps.length}</span>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Progress</span>
+                <span>{Math.round(progressPercentage)}%</span>
+              </div>
+              <Progress value={progressPercentage} className="h-2" />
             </div>
-            <Progress value={progressPercentage} className="h-2" />
+            
+            <div className="flex gap-2">
+              {!isExecuting && currentStep === 0 && (
+                <Button onClick={startExecution}>
+                  <Play className="h-4 w-4 mr-2" />
+                  Start Test Execution
+                </Button>
+              )}
+              {isExecuting && (
+                <>
+                  <Button onClick={pauseExecution} variant="outline">
+                    <Pause className="h-4 w-4 mr-2" />
+                    Pause
+                  </Button>
+                  <Button onClick={completeCurrentStep} variant="default">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Complete Step
+                  </Button>
+                  <Button onClick={failCurrentStep} variant="destructive">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Mark Failed
+                  </Button>
+                </>
+              )}
+              <Button onClick={stopExecution} variant="outline">
+                <Square className="h-4 w-4 mr-2" />
+                Stop Test
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Main Content Tabs */}
       <Tabs defaultValue="steps" className="space-y-4">
         <TabsList>
           <TabsTrigger value="steps">Execution Steps</TabsTrigger>
           <TabsTrigger value="participants">Participants</TabsTrigger>
-          <TabsTrigger value="communications">Communications</TabsTrigger>
-          <TabsTrigger value="metrics">Real-time Metrics</TabsTrigger>
+          <TabsTrigger value="notes">Notes & Observations</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="steps" className="space-y-4">
-          {executionSteps.map((step) => (
-            <Card key={step.id} className={
-              step.status === 'in_progress' ? 'border-primary' :
-              step.status === 'completed' ? 'border-green-500' :
-              step.status === 'failed' ? 'border-red-500' : ''
-            }>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
+        <TabsContent value="steps">
+          <Card>
+            <CardHeader>
+              <CardTitle>Execution Steps</CardTitle>
+              <CardDescription>
+                Track progress through each phase of the scenario test
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {executionSteps.map((step, index) => (
+                  <div 
+                    key={step.id}
+                    className={`flex items-start gap-4 p-4 rounded-lg border ${
+                      index === currentStep ? 'border-primary bg-primary/5' : ''
+                    }`}
+                  >
+                    <div className="flex-shrink-0 mt-1">
+                      {step.status === 'completed' && (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      )}
+                      {step.status === 'in_progress' && (
+                        <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                      )}
+                      {step.status === 'failed' && (
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                      )}
+                      {step.status === 'pending' && (
+                        <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
+                      )}
+                    </div>
+                    <div className="flex-grow">
                       <h4 className="font-medium">{step.name}</h4>
-                      <Badge variant={
-                        step.status === 'pending' ? 'secondary' :
-                        step.status === 'in_progress' ? 'default' :
-                        step.status === 'completed' ? 'default' : 'destructive'
-                      }>
-                        {step.status === 'in_progress' && <Timer className="h-3 w-3 mr-1" />}
-                        {step.status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {step.status === 'failed' && <AlertCircle className="h-3 w-3 mr-1" />}
-                        {step.status.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">{step.description}</p>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`assignee-${step.id}`}>Assigned To</Label>
-                        <Input
-                          id={`assignee-${step.id}`}
-                          value={step.assignedTo || ''}
-                          onChange={(e) => setExecutionSteps(prev => 
-                            prev.map(s => s.id === step.id ? { ...s, assignedTo: e.target.value } : s)
-                          )}
-                          placeholder="Assign team member"
-                          disabled={step.status === 'completed'}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`notes-${step.id}`}>Notes</Label>
-                        <Input
-                          id={`notes-${step.id}`}
-                          value={step.notes || ''}
-                          onChange={(e) => setExecutionSteps(prev => 
-                            prev.map(s => s.id === step.id ? { ...s, notes: e.target.value } : s)
-                          )}
-                          placeholder="Add notes"
-                        />
-                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {step.description}
+                      </p>
+                      {step.startTime && (
+                        <div className="text-xs text-muted-foreground mt-2">
+                          Started: {step.startTime.toLocaleTimeString()}
+                          {step.duration && ` • Duration: ${formatTime(step.duration)}`}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="ml-4">
-                    {step.status === 'in_progress' && (
-                      <Button size="sm" onClick={() => handleStepComplete(step.id)}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Complete
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="participants">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Test Participants
-              </CardTitle>
+              <CardTitle>Test Participants</CardTitle>
+              <CardDescription>
+                Key personnel involved in the scenario test
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {participants.map((participant, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded">
-                    <div>
-                      <div className="font-medium">{participant.name}</div>
-                      <div className="text-sm text-muted-foreground">{participant.role}</div>
-                    </div>
-                    <Badge variant={
-                      participant.status === 'online' ? 'default' :
-                      participant.status === 'away' ? 'secondary' : 'destructive'
-                    }>
-                      {participant.status}
-                    </Badge>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Test Coordinator</p>
+                    <p className="text-sm text-muted-foreground">Managing overall test execution</p>
                   </div>
-                ))}
+                  <Badge variant="outline" className="ml-auto">Active</Badge>
+                </div>
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Business Function Owners</p>
+                    <p className="text-sm text-muted-foreground">Responsible for specific business areas</p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto">Standby</Badge>
+                </div>
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Users className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">IT Response Team</p>
+                    <p className="text-sm text-muted-foreground">Technical recovery and support</p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto">Ready</Badge>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="communications">
+        <TabsContent value="notes">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Communications Log
-              </CardTitle>
+              <CardTitle>Execution Notes</CardTitle>
+              <CardDescription>
+                Document observations, issues, and key findings during execution
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="max-h-64 overflow-y-auto space-y-3">
-                {communications.map((comm) => (
-                  <div key={comm.id} className="p-3 border rounded">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium text-sm">{comm.sender}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {comm.timestamp.toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="text-sm">{comm.message}</p>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Type a message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <Button onClick={handleSendMessage}>Send</Button>
-              </div>
+            <CardContent>
+              <Textarea
+                placeholder="Record observations, timing, effectiveness of responses, issues encountered, and any deviations from expected procedures..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={10}
+              />
+              <Button className="mt-4">
+                Save Notes
+              </Button>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="metrics">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Response Metrics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span>Initial Response Time</span>
-                    <span className="font-medium">2m 34s</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Team Assembly Time</span>
-                    <span className="font-medium">5m 12s</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Decision Time</span>
-                    <span className="font-medium">3m 45s</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>System Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span>Primary Systems</span>
-                    <Badge variant="destructive">Affected</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Backup Systems</span>
-                    <Badge variant="default">Operational</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span>Recovery Site</span>
-                    <Badge variant="default">Ready</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
       </Tabs>
     </div>
