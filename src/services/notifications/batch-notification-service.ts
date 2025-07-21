@@ -286,7 +286,7 @@ class BatchNotificationService {
     const processing = queueStats?.filter(n => n.status === 'processing').length || 0;
     const sent = queueStats?.filter(n => n.status === 'sent').length || 0;
     const failed = queueStats?.filter(n => n.status === 'failed').length || 0;
-    const retryQueue = queueStats?.filter(n => n.status === 'queued' && n.retry_count > 0).length || 0;
+    const retryQueue = queueStats?.filter(n => n.status === 'queued').length || 0;
 
     const total = sent + failed;
     const successRate = total > 0 ? (sent / total) * 100 : 0;

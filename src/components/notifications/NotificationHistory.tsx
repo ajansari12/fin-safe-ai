@@ -258,7 +258,7 @@ export const NotificationHistory: React.FC = () => {
                     {getSeverityBadge(notification.urgency)}
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">{notification.recipient_email || notification.recipient_id}</span>
+                    <span className="text-sm">{notification.recipient_id}</span>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -317,7 +317,7 @@ export const NotificationHistory: React.FC = () => {
                               </div>
                               <div>
                                 <label className="text-sm font-medium">Recipient</label>
-                                <p className="mt-1">{selectedNotification.recipient_email || selectedNotification.recipient_id}</p>
+                                <p className="mt-1">{selectedNotification.recipient_id}</p>
                               </div>
                             </div>
                             

@@ -23,20 +23,22 @@ export interface NotificationAction {
   label: string;
   action_type: 'acknowledge' | 'resolve' | 'dismiss' | 'escalate' | 'redirect' | 'custom';
   action_data?: Record<string, any>;
+  style?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 }
 
 export interface UserNotificationPreferences {
   id: string;
   user_id: string;
-  email_notifications_enabled: boolean;
-  push_notifications_enabled: boolean;
-  sms_notifications_enabled: boolean;
-  preferred_channel: 'email' | 'push' | 'sms';
-  notification_volume: 'low' | 'medium' | 'high';
-  notification_schedule: string;
-  category_preferences: Record<string, boolean>;
-  keyword_filters: string[];
-  snooze_until?: string;
+  org_id: string;
+  channel_preferences: Record<string, any>;
+  alert_type_preferences: Record<string, any>;
+  escalation_preferences: Record<string, any>;
+  frequency_settings: Record<string, any>;
+  quiet_hours_enabled: boolean;
+  quiet_hours_start?: string;
+  quiet_hours_end?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface NotificationTemplate {

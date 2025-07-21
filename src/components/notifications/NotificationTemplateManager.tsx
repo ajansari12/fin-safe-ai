@@ -81,7 +81,8 @@ export const NotificationTemplateManager: React.FC = () => {
       } else {
         await enhancedNotificationService.createNotificationTemplate({
           ...formData,
-          org_id: profile.organization_id
+          org_id: profile.organization_id,
+          is_active: true
         });
         toast.success('Template created successfully');
       }
@@ -291,7 +292,7 @@ export const NotificationTemplateManager: React.FC = () => {
                     className="min-h-[200px] font-mono text-sm"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Use variables like {{user_name}} in your template. Click on variables above to insert them.
+                    Use variables like {'{'}{'{'} user_name {'}'}{'}'}  in your template. Click on variables above to insert them.
                   </p>
                 </div>
               </TabsContent>
