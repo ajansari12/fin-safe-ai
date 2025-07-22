@@ -1115,6 +1115,69 @@ export type Database = {
           },
         ]
       }
+      automated_reporting_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_sources: Json
+          error_details: string | null
+          execution_status: string | null
+          frequency: string
+          id: string
+          is_active: boolean
+          last_execution_at: string | null
+          next_execution_at: string | null
+          org_id: string
+          output_format: string
+          recipients: Json
+          report_type: string
+          rule_name: string
+          schedule_config: Json
+          template_config: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_sources?: Json
+          error_details?: string | null
+          execution_status?: string | null
+          frequency: string
+          id?: string
+          is_active?: boolean
+          last_execution_at?: string | null
+          next_execution_at?: string | null
+          org_id: string
+          output_format?: string
+          recipients?: Json
+          report_type: string
+          rule_name: string
+          schedule_config?: Json
+          template_config?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_sources?: Json
+          error_details?: string | null
+          execution_status?: string | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          last_execution_at?: string | null
+          next_execution_at?: string | null
+          org_id?: string
+          output_format?: string
+          recipients?: Json
+          report_type?: string
+          rule_name?: string
+          schedule_config?: Json
+          template_config?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       automation_rules: {
         Row: {
           actions: Json
@@ -6160,6 +6223,119 @@ export type Database = {
           },
         ]
       }
+      integration_connectors: {
+        Row: {
+          authentication_config: Json
+          connector_name: string
+          connector_type: string
+          created_at: string
+          created_by: string | null
+          data_mapping: Json
+          endpoint_url: string
+          error_details: string | null
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          next_sync_at: string | null
+          org_id: string
+          retry_config: Json
+          sync_frequency: string
+          sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          authentication_config?: Json
+          connector_name: string
+          connector_type: string
+          created_at?: string
+          created_by?: string | null
+          data_mapping?: Json
+          endpoint_url: string
+          error_details?: string | null
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          org_id: string
+          retry_config?: Json
+          sync_frequency?: string
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          authentication_config?: Json
+          connector_name?: string
+          connector_type?: string
+          created_at?: string
+          created_by?: string | null
+          data_mapping?: Json
+          endpoint_url?: string
+          error_details?: string | null
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          next_sync_at?: string | null
+          org_id?: string
+          retry_config?: Json
+          sync_frequency?: string
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      integration_health_metrics: {
+        Row: {
+          availability_percentage: number | null
+          connector_id: string
+          created_at: string
+          custom_metrics: Json | null
+          data_quality_score: number | null
+          error_count: number | null
+          id: string
+          metric_timestamp: string
+          org_id: string
+          response_time_ms: number | null
+          success_rate: number | null
+          throughput_per_minute: number | null
+        }
+        Insert: {
+          availability_percentage?: number | null
+          connector_id: string
+          created_at?: string
+          custom_metrics?: Json | null
+          data_quality_score?: number | null
+          error_count?: number | null
+          id?: string
+          metric_timestamp?: string
+          org_id: string
+          response_time_ms?: number | null
+          success_rate?: number | null
+          throughput_per_minute?: number | null
+        }
+        Update: {
+          availability_percentage?: number | null
+          connector_id?: string
+          created_at?: string
+          custom_metrics?: Json | null
+          data_quality_score?: number | null
+          error_count?: number | null
+          id?: string
+          metric_timestamp?: string
+          org_id?: string
+          response_time_ms?: number | null
+          success_rate?: number | null
+          throughput_per_minute?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_health_metrics_connector_id_fkey"
+            columns: ["connector_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connectors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_logs: {
         Row: {
           created_at: string
@@ -7678,6 +7854,63 @@ export type Database = {
           system_metrics?: Json
           throughput_rps?: number
           user_experience_metrics?: Json
+        }
+        Relationships: []
+      }
+      performance_optimizations: {
+        Row: {
+          actual_impact: Json | null
+          completion_date: string | null
+          created_at: string
+          created_by: string | null
+          current_value: number | null
+          estimated_impact: Json | null
+          id: string
+          implementation_date: string | null
+          implementation_status: string | null
+          notes: string | null
+          optimization_strategy: Json
+          optimization_type: string
+          org_id: string
+          target_metric: string
+          target_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_impact?: Json | null
+          completion_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          estimated_impact?: Json | null
+          id?: string
+          implementation_date?: string | null
+          implementation_status?: string | null
+          notes?: string | null
+          optimization_strategy?: Json
+          optimization_type: string
+          org_id: string
+          target_metric: string
+          target_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_impact?: Json | null
+          completion_date?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_value?: number | null
+          estimated_impact?: Json | null
+          id?: string
+          implementation_date?: string | null
+          implementation_status?: string | null
+          notes?: string | null
+          optimization_strategy?: Json
+          optimization_type?: string
+          org_id?: string
+          target_metric?: string
+          target_value?: number | null
+          updated_at?: string
         }
         Relationships: []
       }
