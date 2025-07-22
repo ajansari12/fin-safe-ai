@@ -23,6 +23,9 @@ import {
   OptimizationRecommendation,
   CapacityPlanningAnalysis
 } from '@/services/performance/performance-monitoring-service';
+import PerformanceOptimizationEngine from './PerformanceOptimizationEngine';
+import PerformanceAlertsManager from './PerformanceAlertsManager';
+import CapacityPlanningDashboard from './CapacityPlanningDashboard';
 
 interface PerformanceMonitoringDashboardProps {
   org_id: string;
@@ -159,8 +162,9 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
       <Tabs defaultValue="metrics" className="space-y-4">
         <TabsList>
           <TabsTrigger value="metrics">Performance Metrics</TabsTrigger>
-          <TabsTrigger value="optimization">Optimization</TabsTrigger>
+          <TabsTrigger value="optimization">Optimization Engine</TabsTrigger>
           <TabsTrigger value="capacity">Capacity Planning</TabsTrigger>
+          <TabsTrigger value="alerts">Alerts & Monitoring</TabsTrigger>
           <TabsTrigger value="insights">Insights</TabsTrigger>
         </TabsList>
 
@@ -195,83 +199,16 @@ const PerformanceMonitoringDashboard: React.FC<PerformanceMonitoringDashboardPro
           </div>
         </TabsContent>
 
-        <TabsContent value="optimization" className="space-y-4">
-          <div className="space-y-4">
-            {recommendations.map((rec) => (
-              <Card key={rec.recommendationId}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle>{rec.title}</CardTitle>
-                      <CardDescription>{rec.description}</CardDescription>
-                    </div>
-                    <Badge className={getSeverityColor(rec.priority)}>
-                      {rec.priority}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <h4 className="font-medium">Expected Benefits</h4>
-                      <ul className="text-sm text-muted-foreground">
-                        <li>Response time: -{rec.estimatedBenefit.responseTimeImprovement}%</li>
-                        <li>Throughput: +{rec.estimatedBenefit.throughputIncrease}%</li>
-                        <li>Cost savings: ${rec.estimatedBenefit.costSavings}</li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Implementation</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Effort: {rec.implementationEffort}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="optimization">
+          <PerformanceOptimizationEngine org_id={org_id} />
         </TabsContent>
 
-        <TabsContent value="capacity" className="space-y-4">
-          <div className="space-y-4">
-            {capacityAnalysis.map((analysis) => (
-              <Card key={analysis.analysisId}>
-                <CardHeader>
-                  <CardTitle className="capitalize">{analysis.resourceType} Capacity</CardTitle>
-                  <CardDescription>
-                    Current: {analysis.currentUtilization.toFixed(1)}% | 
-                    Projected: {analysis.projectedUtilization.toFixed(1)}%
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <Progress value={analysis.currentUtilization} />
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <h4 className="font-medium">Recommendations</h4>
-                        {analysis.recommendations.map((rec, idx) => (
-                          <div key={idx} className="text-sm">
-                            <Badge variant="outline">{rec.recommendationType}</Badge>
-                            <p className="mt-1">{rec.description}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Cost Projections</h4>
-                        {analysis.costProjections.map((proj, idx) => (
-                          <div key={idx} className="text-sm">
-                            <span className="font-medium">{proj.scenario}:</span> 
-                            ${proj.monthlyCost}/month
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="capacity">
+          <CapacityPlanningDashboard org_id={org_id} />
+        </TabsContent>
+
+        <TabsContent value="alerts">
+          <PerformanceAlertsManager org_id={org_id} />
         </TabsContent>
 
         <TabsContent value="insights">
