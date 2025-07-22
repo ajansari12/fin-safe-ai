@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Menu, Settings, User, LogOut, Shield } from 'lucide-react';
+import { Bell, Menu, Settings, User, LogOut, Shield, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -21,19 +21,27 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarCollapsed }) => {
-  const { user, userContext, profile, logout } = useAuth();
+  const { user, userContext, profile, logout, isLoggingOut } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
+    if (isLoggingOut) {
+      return; // Prevent double logout
+    }
+
     try {
-      console.log('Initiating logout...');
+      console.log('Initiating logout from header...');
       await logout();
       console.log('Logout successful, redirecting to login...');
-      navigate('/login');
+      
+      // Navigate to login page after successful logout
+      navigate('/login', { replace: true });
       toast.success('Successfully signed out');
     } catch (error) {
       console.error('Error during logout:', error);
-      toast.error('Error signing out. Please try again.');
+      // Even if there's an error, still redirect for security
+      navigate('/login', { replace: true });
+      // Error toast is already shown in the logout function
     }
   };
 
@@ -155,9 +163,17 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarCollapsed }) =>
             
             <DropdownMenuSeparator />
             
-            <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
+            <DropdownMenuItem 
+              onClick={handleSignOut} 
+              className="text-red-600"
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut className="mr-2 h-4 w-4" />
+              )}
+              {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

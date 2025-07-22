@@ -27,6 +27,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isLoggingOut: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -100,6 +101,7 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
   const [userContext, setUserContext] = React.useState<UserContext | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const [initError, setInitError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -261,22 +263,93 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
     }
   };
 
-  const logout = async () => {
+  const clearAllStorageData = () => {
     try {
+      // Clear localStorage
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.startsWith('sb-') || 
+          key.includes('supabase') || 
+          key.includes('auth') ||
+          key.includes('user') ||
+          key.includes('session')
+        )) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+
+      // Clear sessionStorage
+      const sessionKeysToRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && (
+          key.startsWith('sb-') || 
+          key.includes('supabase') || 
+          key.includes('auth') ||
+          key.includes('user') ||
+          key.includes('session')
+        )) {
+          sessionKeysToRemove.push(key);
+        }
+      }
+      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+
+      console.log('Cleared storage data:', { localStorage: keysToRemove, sessionStorage: sessionKeysToRemove });
+    } catch (error) {
+      console.error('Error clearing storage:', error);
+    }
+  };
+
+  const logout = async () => {
+    if (isLoggingOut) {
+      console.log('Logout already in progress, skipping...');
+      return;
+    }
+
+    try {
+      setIsLoggingOut(true);
+      console.log('Starting comprehensive logout process...');
+      
+      // Step 1: Call Supabase logout
       const { error } = await supabase.auth.signOut();
       if (error) {
-        toast.error(error.message);
+        console.error('Supabase logout error:', error);
+        toast.error(`Logout error: ${error.message}`);
         throw error;
       }
       
+      // Step 2: Clear all local state immediately
       setUser(null);
       setProfile(null);
       setUserContext(null);
       setSession(null);
-      toast.success('Successfully logged out!');
+      
+      // Step 3: Clear all storage data
+      clearAllStorageData();
+      
+      // Step 4: Force a brief delay to ensure cleanup completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('Logout completed successfully');
+      
     } catch (error) {
       console.error('Logout error:', error);
+      
+      // Force logout even if there's an error
+      setUser(null);
+      setProfile(null);
+      setUserContext(null);
+      setSession(null);
+      clearAllStorageData();
+      
+      // Show error but don't prevent logout
+      toast.error('Logout completed with errors. You have been signed out for security.');
       throw error;
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -381,6 +454,7 @@ export const EnhancedAuthProvider = ({ children }: { children: React.ReactNode }
     session,
     isAuthenticated: !!user,
     isLoading,
+    isLoggingOut,
     login,
     register,
     logout,

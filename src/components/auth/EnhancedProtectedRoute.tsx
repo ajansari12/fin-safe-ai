@@ -1,6 +1,6 @@
+
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
-// FIXME: Migrated from useEnhancedAuth to useAuth for consistency
 import { useAuth } from "@/contexts/EnhancedAuthContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 
@@ -24,14 +24,16 @@ const EnhancedProtectedRoute: React.FC<EnhancedProtectedRouteProps> = ({
   const { 
     isAuthenticated, 
     isLoading, 
+    isLoggingOut,
     userContext, 
     hasRole, 
     hasPermission, 
     hasAnyRole 
-  } = useAuth(); // FIXME: Updated from useEnhancedAuth
+  } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  // Show loading state during auth checks or logout process
+  if (isLoading || isLoggingOut) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -39,13 +41,12 @@ const EnhancedProtectedRoute: React.FC<EnhancedProtectedRouteProps> = ({
     );
   }
 
-  // Not authenticated - redirect to login
-  if (!isAuthenticated) {
-    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  // Not authenticated or logging out - redirect to login
+  if (!isAuthenticated || isLoggingOut) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // User is authenticated but has no organization - redirect to setup
-  // This avoids sending users to login unnecessarily
   if (isAuthenticated && userContext && !userContext.organizationId) {
     console.log('🏢 User authenticated but no organization - redirecting to setup');
     return <Navigate to="/setup/enhanced" replace />;

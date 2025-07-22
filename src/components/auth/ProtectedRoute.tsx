@@ -12,10 +12,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRole 
 }) => {
-  const { isAuthenticated, isLoading, userContext } = useAuth();
+  const { isAuthenticated, isLoading, isLoggingOut, userContext } = useAuth();
   const location = useLocation();
 
-  if (isLoading) {
+  // Show loading state during auth checks or logout process
+  if (isLoading || isLoggingOut) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -23,9 +24,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  if (!isAuthenticated) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/auth/login" state={{ from: location }} replace />;
+  // If user is logging out or not authenticated, redirect to login
+  if (!isAuthenticated || isLoggingOut) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Check role requirement if specified
@@ -33,7 +34,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/app/dashboard" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;
