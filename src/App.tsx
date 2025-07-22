@@ -46,8 +46,8 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
+                <Route path="/auth/login" element={<Login />} />
+                <Route path="/auth/register" element={<Signup />} />
                 <Route path="/app/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/app/analytics" element={<ProtectedRoute><AnalyticsHub /></ProtectedRoute>} />
                 <Route path="/app/analytics/dashboards" element={<ProtectedRoute><AdvancedDashboards /></ProtectedRoute>} />
