@@ -457,7 +457,7 @@ class AutomatedReportingService {
       instance_name: `${template.template_name} - ${new Date().toLocaleDateString()}`,
       reporting_period_start: reportingPeriod.start,
       reporting_period_end: reportingPeriod.end,
-      status: hasErrors ? 'review' : 'generated',
+      status: hasErrors ? 'review' : 'draft',
       report_data: {
         aggregation_results: aggregationResults,
         validation_summary: {
