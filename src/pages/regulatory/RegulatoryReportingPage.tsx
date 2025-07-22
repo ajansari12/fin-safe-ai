@@ -1,3 +1,4 @@
+
 import React from 'react';
 import RegulatoryReportingHub from '@/components/regulatory/RegulatoryReportingHub';
 
