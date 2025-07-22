@@ -13,7 +13,9 @@ import {
   Bell,
   Workflow,
   Activity,
-  PieChart
+  PieChart,
+  Monitor,
+  Zap
 } from "lucide-react";
 
 export interface NavItem {
@@ -51,6 +53,11 @@ export const navItems: NavItem[] = [
         icon: LayoutDashboard,
       },
     ],
+  },
+  {
+    title: "Performance",
+    url: "/app/performance",
+    icon: Monitor,
   },
   {
     title: "Risk Management",
@@ -103,6 +110,16 @@ export const navItems: NavItem[] = [
     title: "Documents",
     url: "/app/documents",
     icon: BookOpen,
+  },
+  {
+    title: "Integrations",
+    url: "/app/integrations",
+    icon: Zap,
+  },
+  {
+    title: "Reporting",
+    url: "/app/reporting",
+    icon: FileText,
   },
   {
     title: "Workflow Automation",

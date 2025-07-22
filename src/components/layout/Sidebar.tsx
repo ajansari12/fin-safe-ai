@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { navItems } from '@/nav-items';
 import RoleAwareNavigation from '@/components/navigation/RoleAwareNavigation';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { SystemStatusIndicator } from '@/components/system/SystemStatusIndicator';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -51,6 +52,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggleCollapse }) => {
             isCollapsed={collapsed}
           />
         </div>
+
+        {/* Footer with System Status */}
+        {!collapsed && (
+          <div className="p-4 border-t border-border">
+            <SystemStatusIndicator />
+          </div>
+        )}
       </div>
     </TooltipProvider>
   );

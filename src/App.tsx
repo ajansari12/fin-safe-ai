@@ -26,6 +26,10 @@ import CustomDashboard from "./pages/analytics/CustomDashboard";
 import AdvancedDashboards from "./pages/analytics/AdvancedDashboards";
 import WorkflowAutomation from "./pages/WorkflowAutomation";
 import NotificationsPage from "./pages/NotificationsPage";
+import PerformancePage from "./pages/performance/PerformancePage";
+import Integrations from "./pages/Integrations";
+import Reporting from "./pages/Reporting";
+import IntegrationFramework from "./pages/IntegrationFramework";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +50,7 @@ function App() {
                 <Route path="/app/analytics" element={<AnalyticsHub />} />
                 <Route path="/app/analytics/dashboards" element={<AdvancedDashboards />} />
                 <Route path="/app/analytics/custom-dashboard" element={<CustomDashboard />} />
+                <Route path="/app/performance" element={<PerformancePage />} />
                 <Route path="/app/risk-management" element={<RiskManagement />} />
                 <Route path="/app/risk-management/categories" element={<RiskCategories />} />
                 <Route path="/app/risk-management/appetite" element={<RiskAppetite />} />
@@ -56,9 +61,12 @@ function App() {
                 <Route path="/app/third-party-risk" element={<ThirdPartyRisk />} />
                 <Route path="/app/governance" element={<Governance />} />
                 <Route path="/app/documents" element={<Documents />} />
+                <Route path="/app/integrations" element={<Integrations />} />
+                <Route path="/app/reporting" element={<Reporting />} />
                 <Route path="/app/workflow-automation" element={<WorkflowAutomation />} />
                 <Route path="/app/notifications" element={<NotificationsPage />} />
                 <Route path="/app/settings" element={<Settings />} />
+                <Route path="/integration-framework" element={<IntegrationFramework />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </BrowserRouter>
