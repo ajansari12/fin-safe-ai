@@ -1,404 +1,367 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, Save, AlertCircle } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { PlusCircle, Trash2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/EnhancedAuthContext';
-
-const riskAppetiteSchema = z.object({
-  statementName: z.string().min(1, 'Statement name is required'),
-  effectiveDate: z.string().min(1, 'Effective date is required'),
-  reviewFrequency: z.enum(['quarterly', 'semi-annually', 'annually']),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
-  riskCategories: z.array(z.object({
-    category: z.string(),
-    appetiteLevel: z.enum(['averse', 'minimal', 'cautious', 'open', 'seeking']),
-    description: z.string(),
-    threshold: z.number().min(0).max(100)
-  })).min(1, 'At least one risk category is required')
-});
-
-type RiskAppetiteFormData = z.infer<typeof riskAppetiteSchema>;
 
 interface CreateStatementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (data: RiskAppetiteFormData) => void;
+  onSave: (data: any) => Promise<void>;
 }
 
-const defaultRiskCategories = [
-  { name: 'Operational Risk', description: 'Risk of loss from inadequate or failed processes, people, and systems' },
-  { name: 'Credit Risk', description: 'Risk of loss from counterparty default or credit deterioration' },
-  { name: 'Market Risk', description: 'Risk of loss from adverse market movements' },
-  { name: 'Liquidity Risk', description: 'Risk of inability to meet obligations when due' },
-  { name: 'Compliance Risk', description: 'Risk of regulatory penalties or sanctions' },
-  { name: 'Reputation Risk', description: 'Risk of damage to reputation affecting stakeholder confidence' }
-];
+interface RiskCategory {
+  category_name: string;
+  category_type: 'operational' | 'financial' | 'compliance' | 'strategic';
+  appetite_level: 'averse' | 'minimal' | 'cautious' | 'open' | 'seeking';
+  description: string;
+  rationale?: string;
+}
 
-const appetiteLevels = [
-  { value: 'averse', label: 'Risk Averse', color: 'bg-red-100 text-red-800' },
-  { value: 'minimal', label: 'Minimal Risk', color: 'bg-orange-100 text-orange-800' },
-  { value: 'cautious', label: 'Cautious', color: 'bg-yellow-100 text-yellow-800' },
-  { value: 'open', label: 'Open to Risk', color: 'bg-blue-100 text-blue-800' },
-  { value: 'seeking', label: 'Risk Seeking', color: 'bg-green-100 text-green-800' }
-];
+interface QuantitativeLimit {
+  category_name: string;
+  metric_name: string;
+  limit_value: number;
+  limit_unit: string;
+  warning_threshold: number;
+  critical_threshold: number;
+  measurement_frequency: 'daily' | 'weekly' | 'monthly' | 'quarterly';
+  data_source: string;
+  calculation_method?: string;
+}
+
+interface QualitativeStatement {
+  category: 'culture' | 'conduct' | 'compliance' | 'reputation';
+  statement_text: string;
+  acceptance_criteria: string[];
+  rationale?: string;
+}
 
 export const CreateStatementModal: React.FC<CreateStatementModalProps> = ({
   isOpen,
   onClose,
   onSave
 }) => {
-  const { profile } = useAuth();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selectedCategories, setSelectedCategories] = useState<any[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<RiskAppetiteFormData>({
-    resolver: zodResolver(riskAppetiteSchema),
-    defaultValues: {
-      riskCategories: []
-    }
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    statement_name: '',
+    description: '',
+    effective_date: '',
+    review_date: '',
   });
 
-  const handleClose = () => {
-    reset();
-    setCurrentStep(0);
-    setSelectedCategories([]);
-    onClose();
+  const [riskCategories, setRiskCategories] = useState<RiskCategory[]>([
+    {
+      category_name: '',
+      category_type: 'operational' as const,
+      appetite_level: 'cautious' as const,
+      description: '',
+      rationale: ''
+    }
+  ]);
+
+  const [quantitativeLimits, setQuantitativeLimits] = useState<QuantitativeLimit[]>([]);
+  const [qualitativeStatements, setQualitativeStatements] = useState<QualitativeStatement[]>([]);
+
+  const handleAddRiskCategory = () => {
+    setRiskCategories([...riskCategories, {
+      category_name: '',
+      category_type: 'operational',
+      appetite_level: 'cautious',
+      description: '',
+      rationale: ''
+    }]);
   };
 
-  const addRiskCategory = (categoryName: string) => {
-    const newCategory = {
-      category: categoryName,
-      appetiteLevel: 'cautious' as const,
-      description: defaultRiskCategories.find(c => c.name === categoryName)?.description || '',
-      threshold: 50
-    };
+  const handleRemoveRiskCategory = (index: number) => {
+    setRiskCategories(riskCategories.filter((_, i) => i !== index));
+  };
+
+  const handleAddQuantitativeLimit = () => {
+    setQuantitativeLimits([...quantitativeLimits, {
+      category_name: '',
+      metric_name: '',
+      limit_value: 0,
+      limit_unit: '',
+      warning_threshold: 0,
+      critical_threshold: 0,
+      measurement_frequency: 'monthly',
+      data_source: '',
+      calculation_method: ''
+    }]);
+  };
+
+  const handleAddQualitativeStatement = () => {
+    setQualitativeStatements([...qualitativeStatements, {
+      category: 'culture',
+      statement_text: '',
+      acceptance_criteria: [''],
+      rationale: ''
+    }]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const updatedCategories = [...selectedCategories, newCategory];
-    setSelectedCategories(updatedCategories);
-    setValue('riskCategories', updatedCategories);
-  };
+    if (!formData.statement_name || !formData.effective_date || !formData.review_date) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
 
-  const removeRiskCategory = (index: number) => {
-    const updatedCategories = selectedCategories.filter((_, i) => i !== index);
-    setSelectedCategories(updatedCategories);
-    setValue('riskCategories', updatedCategories);
-  };
+    if (riskCategories.some(cat => !cat.category_name || !cat.description)) {
+      toast.error('Please complete all risk categories');
+      return;
+    }
 
-  const updateRiskCategory = (index: number, field: string, value: any) => {
-    const updatedCategories = [...selectedCategories];
-    updatedCategories[index] = { ...updatedCategories[index], [field]: value };
-    setSelectedCategories(updatedCategories);
-    setValue('riskCategories', updatedCategories);
-  };
-
-  const onSubmit = async (data: RiskAppetiteFormData) => {
-    setIsSubmitting(true);
+    setIsLoading(true);
+    
     try {
-      const formattedData = {
-        statement_name: data.statementName,
-        description: data.description,
-        effective_date: data.effectiveDate,
-        review_date: data.effectiveDate, // Same as effective for now
-        riskCategories: selectedCategories.map(cat => ({
-          category_name: cat.category,
-          category_type: 'operational' as const, // Default type
-          appetite_level: cat.appetiteLevel,
-          description: cat.description,
-          rationale: `Threshold set at ${cat.threshold}%`
-        })),
-        quantitativeLimits: [],
-        qualitativeStatements: []
-      };
+      await onSave({
+        statement: formData,
+        riskCategories: riskCategories.filter(cat => cat.category_name && cat.description),
+        quantitativeLimits,
+        qualitativeStatements
+      });
       
-      onSave?.(formattedData);
-      handleClose();
+      toast.success('Risk appetite statement created successfully');
+      onClose();
+      
+      // Reset form
+      setFormData({
+        statement_name: '',
+        description: '',
+        effective_date: '',
+        review_date: '',
+      });
+      setRiskCategories([{
+        category_name: '',
+        category_type: 'operational',
+        appetite_level: 'cautious',
+        description: '',
+        rationale: ''
+      }]);
+      setQuantitativeLimits([]);
+      setQualitativeStatements([]);
     } catch (error) {
+      console.error('Error creating statement:', error);
       toast.error('Failed to create risk appetite statement');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const steps = [
-    { title: 'Basic Information', description: 'Statement details and timeline' },
-    { title: 'Risk Categories', description: 'Define appetite for each risk type' },
-    { title: 'Review & Submit', description: 'Confirm and create statement' }
-  ];
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Risk Appetite Statement</DialogTitle>
-          <DialogDescription>
-            Define your organization's risk appetite across different risk categories in compliance with OSFI E-21 guidelines.
-          </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Progress Steps */}
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={index} className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                  index <= currentStep ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                }`}>
-                  {index + 1}
-                </div>
-                <div className="ml-2">
-                  <p className={`text-sm font-medium ${index <= currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {step.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{step.description}</p>
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`mx-4 h-px w-8 ${index < currentStep ? 'bg-primary' : 'bg-muted'}`} />
-                )}
-              </div>
-            ))}
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Step 1: Basic Information */}
-            {currentStep === 0 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="statementName">Statement Name</Label>
-                    <Input
-                      id="statementName"
-                      {...register('statementName')}
-                      placeholder="e.g., Annual Risk Appetite Statement 2024"
-                    />
-                    {errors.statementName && (
-                      <p className="text-sm text-destructive">{errors.statementName.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="effectiveDate">Effective Date</Label>
-                    <Input
-                      id="effectiveDate"
-                      type="date"
-                      {...register('effectiveDate')}
-                    />
-                    {errors.effectiveDate && (
-                      <p className="text-sm text-destructive">{errors.effectiveDate.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="reviewFrequency">Review Frequency</Label>
-                  <Select onValueChange={(value) => setValue('reviewFrequency', value as any)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select review frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="semi-annually">Semi-Annually</SelectItem>
-                      <SelectItem value="annually">Annually</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Statement Description</Label>
-                  <Textarea
-                    id="description"
-                    {...register('description')}
-                    placeholder="Describe the purpose and scope of this risk appetite statement..."
-                    rows={4}
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Information</CardTitle>
+              <CardDescription>
+                Define the core details of your risk appetite statement
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="statement_name">Statement Name *</Label>
+                  <Input
+                    id="statement_name"
+                    value={formData.statement_name}
+                    onChange={(e) => setFormData({...formData, statement_name: e.target.value})}
+                    placeholder="e.g., 2024 Risk Appetite Statement"
+                    required
                   />
-                  {errors.description && (
-                    <p className="text-sm text-destructive">{errors.description.message}</p>
-                  )}
+                </div>
+                <div>
+                  <Label htmlFor="effective_date">Effective Date *</Label>
+                  <Input
+                    id="effective_date"
+                    type="date"
+                    value={formData.effective_date}
+                    onChange={(e) => setFormData({...formData, effective_date: e.target.value})}
+                    required
+                  />
                 </div>
               </div>
-            )}
-
-            {/* Step 2: Risk Categories */}
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Risk Categories</h3>
-                  <Select onValueChange={addRiskCategory}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Add Risk Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {defaultRiskCategories
-                        .filter(cat => !selectedCategories.some(sel => sel.category === cat.name))
-                        .map(category => (
-                          <SelectItem key={category.name} value={category.name}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="review_date">Review Date *</Label>
+                  <Input
+                    id="review_date"
+                    type="date"
+                    value={formData.review_date}
+                    onChange={(e) => setFormData({...formData, review_date: e.target.value})}
+                    required
+                  />
                 </div>
-
-                <div className="space-y-4">
-                  {selectedCategories.map((category, index) => (
-                    <Card key={index}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-base">{category.category}</CardTitle>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeRiskCategory(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <Label>Risk Appetite Level</Label>
-                          <Select
-                            value={category.appetiteLevel}
-                            onValueChange={(value) => updateRiskCategory(index, 'appetiteLevel', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {appetiteLevels.map(level => (
-                                <SelectItem key={level.value} value={level.value}>
-                                  <div className="flex items-center gap-2">
-                                    <Badge className={level.color}>{level.label}</Badge>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Risk Threshold (%)</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={category.threshold}
-                            onChange={(e) => updateRiskCategory(index, 'threshold', parseInt(e.target.value))}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Description</Label>
-                          <Textarea
-                            value={category.description}
-                            onChange={(e) => updateRiskCategory(index, 'description', e.target.value)}
-                            rows={2}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                {selectedCategories.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No risk categories selected. Please add at least one category to continue.</p>
-                  </div>
-                )}
               </div>
-            )}
+              
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  placeholder="Describe the purpose and scope of this risk appetite statement"
+                  rows={3}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Step 3: Review & Submit */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Review Statement</h3>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Risk Categories */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Risk Categories</CardTitle>
+                  <CardDescription>
+                    Define risk categories and appetite levels
+                  </CardDescription>
+                </div>
+                <Button type="button" onClick={handleAddRiskCategory} variant="outline" size="sm">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Add Category
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {riskCategories.map((category, index) => (
+                <Card key={index} className="border-l-4 border-l-primary">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start justify-between mb-4">
+                      <Badge variant="secondary">Category {index + 1}</Badge>
+                      {riskCategories.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveRiskCategory(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm font-medium">Statement Name</Label>
-                        <p className="text-sm text-muted-foreground">{watch('statementName')}</p>
+                        <Label>Category Name *</Label>
+                        <Input
+                          value={category.category_name}
+                          onChange={(e) => {
+                            const updated = [...riskCategories];
+                            updated[index].category_name = e.target.value;
+                            setRiskCategories(updated);
+                          }}
+                          placeholder="e.g., Operational Risk"
+                          required
+                        />
                       </div>
+                      
                       <div>
-                        <Label className="text-sm font-medium">Effective Date</Label>
-                        <p className="text-sm text-muted-foreground">{watch('effectiveDate')}</p>
+                        <Label>Category Type</Label>
+                        <Select
+                          value={category.category_type}
+                          onValueChange={(value) => {
+                            const updated = [...riskCategories];
+                            updated[index].category_type = value as any;
+                            setRiskCategories(updated);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="operational">Operational</SelectItem>
+                            <SelectItem value="financial">Financial</SelectItem>
+                            <SelectItem value="compliance">Compliance</SelectItem>
+                            <SelectItem value="strategic">Strategic</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label>Appetite Level</Label>
+                        <Select
+                          value={category.appetite_level}
+                          onValueChange={(value) => {
+                            const updated = [...riskCategories];
+                            updated[index].appetite_level = value as any;
+                            setRiskCategories(updated);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="averse">Risk Averse</SelectItem>
+                            <SelectItem value="minimal">Minimal</SelectItem>
+                            <SelectItem value="cautious">Cautious</SelectItem>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="seeking">Risk Seeking</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     
-                    <div className="mb-4">
-                      <Label className="text-sm font-medium">Description</Label>
-                      <p className="text-sm text-muted-foreground">{watch('description')}</p>
+                    <div className="mt-4">
+                      <Label>Description *</Label>
+                      <Textarea
+                        value={category.description}
+                        onChange={(e) => {
+                          const updated = [...riskCategories];
+                          updated[index].description = e.target.value;
+                          setRiskCategories(updated);
+                        }}
+                        placeholder="Describe this risk category and its boundaries"
+                        rows={2}
+                        required
+                      />
                     </div>
-
-                    <div>
-                      <Label className="text-sm font-medium">Risk Categories ({selectedCategories.length})</Label>
-                      <div className="mt-2 space-y-2">
-                        {selectedCategories.map((category, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 border rounded">
-                            <span className="font-medium">{category.category}</span>
-                            <div className="flex items-center gap-2">
-                              <Badge className={appetiteLevels.find(l => l.value === category.appetiteLevel)?.color}>
-                                {appetiteLevels.find(l => l.value === category.appetiteLevel)?.label}
-                              </Badge>
-                              <span className="text-sm text-muted-foreground">{category.threshold}%</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    
+                    <div className="mt-4">
+                      <Label>Rationale</Label>
+                      <Textarea
+                        value={category.rationale}
+                        onChange={(e) => {
+                          const updated = [...riskCategories];
+                          updated[index].rationale = e.target.value;
+                          setRiskCategories(updated);
+                        }}
+                        placeholder="Explain the reasoning behind this appetite level"
+                        rows={2}
+                      />
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            )}
+              ))}
+            </CardContent>
+          </Card>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-                disabled={currentStep === 0}
-              >
-                Previous
-              </Button>
-
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-                
-                {currentStep < 2 ? (
-                  <Button
-                    type="button"
-                    onClick={() => setCurrentStep(currentStep + 1)}
-                    disabled={currentStep === 1 && selectedCategories.length === 0}
-                  >
-                    Next
-                  </Button>
-                ) : (
-                  <Button type="submit" disabled={isSubmitting}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSubmitting ? 'Creating...' : 'Create Statement'}
-                  </Button>
-                )}
-              </div>
-            </div>
-          </form>
-        </div>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end space-x-4 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create Statement'}
+            </Button>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );

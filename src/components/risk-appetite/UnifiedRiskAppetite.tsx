@@ -37,8 +37,13 @@ const UnifiedRiskAppetite = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const handleCreateStatement = async (data: any) => {
-    await createStatement(data);
-    setIsCreateModalOpen(false);
+    console.log('Creating statement with data:', data);
+    try {
+      await createStatement(data);
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error('Error in handleCreateStatement:', error);
+    }
   };
 
   const handleViewDetails = (statement: any) => {
@@ -66,7 +71,11 @@ const UnifiedRiskAppetite = () => {
             Comprehensive risk appetite framework with automated monitoring and OSFI E-21 compliance
           </p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)} className="shrink-0">
+        <Button 
+          onClick={() => setIsCreateModalOpen(true)} 
+          className="shrink-0"
+          data-testid="create-statement-button"
+        >
           <PlusCircle className="mr-2 h-4 w-4" />
           Create Statement
         </Button>

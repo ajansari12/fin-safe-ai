@@ -20,23 +20,17 @@ const AuthenticatedLayoutContent: React.FC<AuthenticatedLayoutProps> = ({ childr
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Main Grid Layout - Responsive to sidebar state */}
-      <div className={`
-        grid min-h-screen transition-all duration-300 ease-in-out
-        ${isCollapsed 
-          ? 'grid-cols-1 lg:grid-cols-[64px_1fr]' 
-          : 'grid-cols-1 lg:grid-cols-[280px_1fr]'
-        }
-      `}>
-        {/* Sidebar */}
+      {/* Main Grid Layout - Fixed responsive grid implementation */}
+      <div className="grid min-h-screen transition-all duration-300 ease-in-out lg:grid-cols-[280px_1fr]">
+        {/* Sidebar - Fixed positioning and responsiveness */}
         <div className={`
           fixed lg:static inset-y-0 left-0 z-50 bg-card border-r
           transform transition-transform duration-300 ease-in-out
+          w-280 lg:w-280
           ${isCollapsed 
-            ? '-translate-x-full lg:translate-x-0 lg:w-16 w-280' 
-            : 'translate-x-0 w-280'
+            ? '-translate-x-full lg:translate-x-0 lg:w-16' 
+            : 'translate-x-0'
           }
-          lg:transform-none
         `}>
           <Sidebar 
             collapsed={isCollapsed}
@@ -52,17 +46,17 @@ const AuthenticatedLayoutContent: React.FC<AuthenticatedLayoutProps> = ({ childr
           />
         )}
 
-        {/* Main Content Area */}
-        <div className="flex flex-col min-h-screen">
+        {/* Main Content Area - Proper spacing and overflow handling */}
+        <div className="flex flex-col min-h-screen lg:ml-0">
           {/* Header */}
           <Header 
             onToggleSidebar={toggleSidebar}
             sidebarCollapsed={isCollapsed}
           />
           
-          {/* Main Content */}
-          <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-full overflow-x-hidden">
-            <div className="max-w-7xl mx-auto">
+          {/* Main Content - Proper padding and overflow handling */}
+          <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden">
+            <div className="max-w-full mx-auto">
               {children}
             </div>
           </main>
