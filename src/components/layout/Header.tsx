@@ -21,13 +21,13 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarCollapsed }) => {
-  const { user, userContext, signOut } = useAuth();
+  const { user, userContext, profile, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     try {
       console.log('Initiating logout...');
-      await signOut();
+      await logout();
       console.log('Logout successful, redirecting to login...');
       navigate('/login');
       toast.success('Successfully signed out');
@@ -79,10 +79,10 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarCollapsed }) =>
         </Button>
         
         {/* Show organization name */}
-        {userContext?.organizationName && (
+        {userContext?.organizationId && (
           <div className="hidden sm:block">
             <h1 className="text-lg font-semibold text-foreground">
-              {userContext.organizationName}
+              Organization
             </h1>
           </div>
         )}
@@ -105,27 +105,27 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarCollapsed }) =>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <div className="flex items-center gap-3 cursor-pointer hover:bg-accent rounded-lg p-2 transition-colors">
-              <Avatar className="h-8 w-8">
+               <Avatar className="h-8 w-8">
                 <AvatarImage 
-                  src={userContext?.avatarUrl} 
-                  alt={userContext?.fullName || 'User'} 
+                  src="" 
+                  alt={profile?.full_name || 'User'} 
                 />
                 <AvatarFallback className="bg-primary text-primary-foreground">
-                  {getInitials(userContext?.fullName || user?.email || 'U')}
+                  {getInitials(profile?.full_name || user?.email || 'U')}
                 </AvatarFallback>
               </Avatar>
               
               <div className="hidden sm:flex flex-col items-start">
                 <span className="text-sm font-medium">
-                  {userContext?.fullName || user?.email}
+                  {profile?.full_name || user?.email}
                 </span>
-                {userContext?.role && (
+                {userContext?.roles && userContext.roles.length > 0 && (
                   <Badge 
                     variant="secondary" 
-                    className={`text-xs ${getRoleBadgeColor(userContext.role)}`}
+                    className={`text-xs ${getRoleBadgeColor(userContext.roles[0])}`}
                   >
                     <Shield className="h-3 w-3 mr-1" />
-                    {userContext.role.charAt(0).toUpperCase() + userContext.role.slice(1)}
+                    {userContext.roles[0].charAt(0).toUpperCase() + userContext.roles[0].slice(1)}
                   </Badge>
                 )}
               </div>
@@ -134,10 +134,10 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, sidebarCollapsed }) =>
           
           <DropdownMenuContent align="end" className="w-56">
             <div className="px-2 py-1.5">
-              <p className="text-sm font-medium">{userContext?.fullName || user?.email}</p>
+              <p className="text-sm font-medium">{profile?.full_name || user?.email}</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
-              {userContext?.organizationName && (
-                <p className="text-xs text-muted-foreground">{userContext.organizationName}</p>
+              {userContext?.organizationId && (
+                <p className="text-xs text-muted-foreground">Organization</p>
               )}
             </div>
             
