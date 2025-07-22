@@ -18,7 +18,8 @@ export type ModuleType =
   | 'tolerance-monitoring'
   | 'osfi-compliance'
   | 'organizational-intelligence'
-  | 'workflow-orchestration';
+  | 'workflow-orchestration'
+  | 'executive-intelligence';
 
 interface EnhancedAIAssistantContextType {
   isOpen: boolean;

@@ -25,6 +25,15 @@ export interface PredictiveInsight {
   created_at: string;
 }
 
+interface PerformanceMetric {
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  timestamp: string;
+  category: 'application' | 'infrastructure' | 'database' | 'network';
+}
+
 export interface ExecutiveBrief {
   id: string;
   brief_type: 'daily' | 'weekly' | 'monthly' | 'ad_hoc';
