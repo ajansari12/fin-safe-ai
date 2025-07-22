@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Upload, X, FileText, AlertCircle } from 'lucide-react';
 import { documentManagementService } from '@/services/document-management-service';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 interface DocumentUploaderProps {
   existingDocumentId?: string;
@@ -23,6 +24,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
   onUploadComplete,
   onCancel
 }) => {
+  const { user, profile } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -81,6 +83,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
         const checksum = await generateFileChecksum(file);
 
         const documentData = {
+          org_id: profile?.organization_id || user?.id || '',
           title: files.length === 1 ? title : `${title} - ${file.name}`,
           description: description || undefined,
           file_path: filePath,
@@ -89,7 +92,9 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({
           checksum: checksum,
           status: 'draft' as const,
           extraction_status: 'pending' as const,
-          ai_analysis_status: 'pending' as const
+          ai_analysis_status: 'pending' as const,
+          uploaded_by: user?.id,
+          uploaded_by_name: profile?.full_name || user?.email || 'Unknown'
         };
 
         if (isNewVersion && existingDocumentId) {

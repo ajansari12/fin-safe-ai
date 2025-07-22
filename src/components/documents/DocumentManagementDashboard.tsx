@@ -27,34 +27,34 @@ const DocumentManagementDashboard: React.FC = () => {
   const { data: documents = [], isLoading: documentsLoading, error: documentsError, refetch: refetchDocuments } = useQuery({
     queryKey: ['documents'],
     queryFn: () => documentManagementService.getDocuments(),
-    retry: 2,
-    onError: (error: Error) => {
-      console.error('Error fetching documents:', error);
-      toast.error('Failed to load documents. Please try again.');
-    }
+    retry: 2
   });
 
   // Fetch repositories with error handling
   const { data: repositories = [], isLoading: repositoriesLoading, error: repositoriesError } = useQuery({
     queryKey: ['document-repositories'],
     queryFn: () => documentManagementService.getRepositories(),
-    retry: 2,
-    onError: (error: Error) => {
-      console.error('Error fetching repositories:', error);
-      toast.error('Failed to load repositories. Please try again.');
-    }
+    retry: 2
   });
 
   // Fetch analytics with error handling
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ['document-analytics', 'month'],
     queryFn: () => documentManagementService.getDocumentAnalytics('month'),
-    retry: 2,
-    onError: (error: Error) => {
-      console.error('Error fetching analytics:', error);
-      toast.error('Failed to load analytics data.');
-    }
+    retry: 2
   });
+
+  // Handle errors with useEffect
+  React.useEffect(() => {
+    if (documentsError) {
+      console.error('Error fetching documents:', documentsError);
+      toast.error('Failed to load documents. Please try again.');
+    }
+    if (repositoriesError) {
+      console.error('Error fetching repositories:', repositoriesError);
+      toast.error('Failed to load repositories. Please try again.');
+    }
+  }, [documentsError, repositoriesError]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {

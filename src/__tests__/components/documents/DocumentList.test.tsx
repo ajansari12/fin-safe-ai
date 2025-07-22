@@ -43,15 +43,15 @@ const mockDocuments: Document[] = [
 
 // Mock functions for required props
 const mockOnDocumentSelect = vi.fn();
-const mockOnDocumentUpdate = vi.fn();
 
 describe('DocumentList', () => {
   it('renders document list correctly', () => {
     render(
       <DocumentList 
         documents={mockDocuments} 
+        isLoading={false}
         onDocumentSelect={mockOnDocumentSelect}
-        onDocumentUpdate={mockOnDocumentUpdate}
+        selectedDocument={null}
       />
     );
     
@@ -64,20 +64,22 @@ describe('DocumentList', () => {
     render(
       <DocumentList 
         documents={[]} 
+        isLoading={false}
         onDocumentSelect={mockOnDocumentSelect}
-        onDocumentUpdate={mockOnDocumentUpdate}
+        selectedDocument={null}
       />
     );
     
-    expect(screen.getByText('No documents found')).toBeInTheDocument();
+    expect(screen.getByText('No Documents Found')).toBeInTheDocument();
   });
 
   it('displays document metadata correctly', () => {
     render(
       <DocumentList 
         documents={mockDocuments} 
+        isLoading={false}
         onDocumentSelect={mockOnDocumentSelect}
-        onDocumentUpdate={mockOnDocumentUpdate}
+        selectedDocument={null}
       />
     );
     
