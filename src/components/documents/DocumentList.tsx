@@ -1,316 +1,196 @@
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  FileText, 
-  Eye, 
-  Download, 
-  Edit, 
-  Trash2, 
-  Search,
-  Filter,
-  Brain,
-  AlertTriangle,
-  Shield,
-  Clock,
-  User,
-  History,
-  Upload
-} from 'lucide-react';
-import { documentManagementService } from '@/services/document-management-service';
-import DocumentVersionHistory from './DocumentVersionHistory';
-import DocumentVersionUploader from './DocumentVersionUploader';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { FileText, Download, Eye, MoreHorizontal, Calendar, User } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import type { Document } from '@/services/document-management-service';
 
 interface DocumentListProps {
-  documents: any[];
-  onDocumentSelect: (document: any) => void;
-  onDocumentUpdate: () => void;
+  documents: Document[];
+  isLoading: boolean;
+  onDocumentSelect: (documentId: string) => void;
+  selectedDocument: string | null;
 }
 
 const DocumentList: React.FC<DocumentListProps> = ({
   documents,
+  isLoading,
   onDocumentSelect,
-  onDocumentUpdate
+  selectedDocument
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [selectedDocumentForVersion, setSelectedDocumentForVersion] = useState<any>(null);
-  const [showVersionHistory, setShowVersionHistory] = useState<string | null>(null);
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <div className="h-4 bg-muted rounded animate-pulse" />
+                <div className="h-3 bg-muted rounded animate-pulse w-3/4" />
+                <div className="h-3 bg-muted rounded animate-pulse w-1/2" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
-  const filteredDocuments = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         doc.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
-    const matchesType = typeFilter === 'all' || doc.document_type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  if (documents.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Documents Found</h3>
+          <p className="text-muted-foreground text-center">
+            Upload your first document to get started with document management and AI analysis.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'review': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'approved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'archived': return 'bg-blue-100 text-blue-800 border-blue-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'under_review':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getAnalysisStatusIcon = (status: string) => {
+  const getAnalysisStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Brain className="h-4 w-4 text-green-600" />;
-      case 'processing':
-        return <Brain className="h-4 w-4 text-blue-600 animate-pulse" />;
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-orange-100 text-orange-800';
       case 'failed':
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+        return 'bg-red-100 text-red-800';
       default:
-        return <Clock className="h-4 w-4 text-gray-600" />;
+        return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
-    <div className="space-y-6">
-      {/* Filters and Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters & Search
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="review">Under Review</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="policy">Policy</SelectItem>
-                <SelectItem value="procedure">Procedure</SelectItem>
-                <SelectItem value="risk_assessment">Risk Assessment</SelectItem>
-                <SelectItem value="audit_report">Audit Report</SelectItem>
-                <SelectItem value="compliance_doc">Compliance Doc</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="text-sm text-muted-foreground flex items-center">
-              Showing {filteredDocuments.length} of {documents.length} documents
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Document List */}
-      <div className="space-y-4">
-        {filteredDocuments.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No documents found</h3>
-              <p className="text-muted-foreground">
-                {searchQuery || statusFilter !== 'all' || typeFilter !== 'all'
-                  ? 'Try adjusting your filters or search terms'
-                  : 'Upload your first document to get started'
-                }
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredDocuments.map((document) => (
-            <Card key={document.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-3">
-                      <FileText className="h-6 w-6 text-blue-600 mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-medium text-lg">{document.title}</h3>
-                          <Badge className={getStatusColor(document.status)}>
-                            {document.status}
-                          </Badge>
-                          <div className="flex items-center gap-1">
-                            {getAnalysisStatusIcon(document.ai_analysis_status)}
-                            <span className="text-xs text-muted-foreground">
-                              AI {document.ai_analysis_status}
-                            </span>
-                          </div>
-                        </div>
-
-                        {document.description && (
-                          <p className="text-muted-foreground mb-2">
-                            {document.description}
-                          </p>
-                        )}
-
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                          <div className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            {document.uploaded_by_name || 'Unknown'}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {new Date(document.created_at).toLocaleDateString()}
-                          </div>
-                          {document.file_size && (
-                            <div>{formatFileSize(document.file_size)}</div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-4 w-4" />
-                            {document.access_count || 0} views
-                          </div>
-                        </div>
-
-                        {/* AI Analysis Results */}
-                        {document.ai_analysis_status === 'completed' && (
-                          <div className="flex gap-2 mb-3">
-                            {document.key_risk_indicators?.length > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                <AlertTriangle className="h-3 w-3 mr-1 text-orange-600" />
-                                {document.key_risk_indicators.length} Risk Indicators
-                              </Badge>
-                            )}
-                            {document.compliance_gaps?.length > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                <Shield className="h-3 w-3 mr-1 text-red-600" />
-                                {document.compliance_gaps.length} Compliance Gaps
-                              </Badge>
-                            )}
-                            {document.ai_confidence_score && (
-                              <Badge variant="outline" className="text-xs">
-                                <Brain className="h-3 w-3 mr-1 text-blue-600" />
-                                {Math.round(document.ai_confidence_score * 100)}% AI Confidence
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Tags */}
-                        {document.tags && document.tags.length > 0 && (
-                          <div className="flex gap-1 flex-wrap">
-                            {document.tags.map((tag: string, index: number) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
+    <div className="space-y-4">
+      {documents.map((document) => (
+        <Card 
+          key={document.id}
+          className={`cursor-pointer transition-all hover:shadow-md ${
+            selectedDocument === document.id ? 'ring-2 ring-primary' : ''
+          }`}
+          onClick={() => onDocumentSelect(document.id)}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-3 flex-1">
+                <div className="mt-1">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold truncate">{document.title}</h3>
+                    {document.version_number && document.version_number > 1 && (
+                      <Badge variant="outline" className="text-xs">
+                        v{document.version_number}
+                      </Badge>
+                    )}
                   </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onDocumentSelect(document)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Download functionality would be implemented here
-                        toast.info('Download feature coming soon');
-                      }}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    
-                    {/* Version History Dialog */}
-                    <Dialog open={showVersionHistory === document.id} onOpenChange={(open) => setShowVersionHistory(open ? document.id : null)}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <History className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-                        <DialogHeader>
-                          <DialogTitle>Version History - {document.title}</DialogTitle>
-                        </DialogHeader>
-                        <DocumentVersionHistory documentId={document.id} />
-                      </DialogContent>
-                    </Dialog>
-
-                    {/* Upload New Version Dialog */}
-                    <Dialog open={selectedDocumentForVersion?.id === document.id} onOpenChange={(open) => setSelectedDocumentForVersion(open ? document : null)}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Upload className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Upload New Version - {document.title}</DialogTitle>
-                        </DialogHeader>
-                        <DocumentVersionUploader 
-                          documentId={document.id}
-                          onUploadComplete={() => {
-                            setSelectedDocumentForVersion(null);
-                            onDocumentUpdate();
-                          }}
-                        />
-                      </DialogContent>
-                    </Dialog>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Edit functionality would be implemented here
-                        toast.info('Edit feature coming soon');
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                  
+                  {document.description && (
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                      {document.description}
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      <span>{document.uploaded_by_name || 'Unknown'}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{formatDistanceToNow(new Date(document.created_at))} ago</span>
+                    </div>
+                    {document.file_size && (
+                      <span>{(document.file_size / 1024 / 1024).toFixed(2)} MB</span>
+                    )}
+                    {document.access_count !== undefined && (
+                      <span>{document.access_count} views</span>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+              </div>
+              
+              <div className="flex items-center gap-2 ml-4">
+                <div className="flex flex-col gap-1">
+                  <Badge className={getStatusColor(document.status || 'draft')}>
+                    {document.status || 'draft'}
+                  </Badge>
+                  {document.ai_analysis_status && (
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${getAnalysisStatusColor(document.ai_analysis_status)}`}
+                    >
+                      AI: {document.ai_analysis_status}
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Tags */}
+            {document.tags && document.tags.length > 0 && (
+              <div className="flex items-center gap-1 mt-3 pt-3 border-t">
+                <div className="flex flex-wrap gap-1">
+                  {document.tags.slice(0, 3).map((tag) => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {document.tags.length > 3 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{document.tags.length - 3} more
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* AI Summary Preview */}
+            {document.ai_summary && (
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-xs text-muted-foreground">
+                  <strong>AI Summary:</strong> {document.ai_summary.slice(0, 120)}
+                  {document.ai_summary.length > 120 && '...'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };

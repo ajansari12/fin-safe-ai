@@ -1,356 +1,327 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { 
-  FileText, 
-  Upload, 
-  Search, 
-  Brain, 
-  Network, 
-  Users, 
-  BarChart3,
-  Bot,
-  Globe,
-  Eye,
-  MessageSquare,
-  Zap
-} from 'lucide-react';
-// TODO: Migrated from AuthContext to EnhancedAuthContext
-import { useAuth } from '@/contexts/EnhancedAuthContext';
-import { documentManagementService } from '@/services/document-management-service';
-import DocumentList from './DocumentList';
-import DocumentUploader from './DocumentUploader';
-import DocumentViewer from './DocumentViewer';
-import AIDocumentAnalysis from './AIDocumentAnalysis';
-import DocumentAnalytics from './DocumentAnalytics';
-import { toast } from 'sonner';
+import React, { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { documentManagementService } from "@/services/document-management-service";
+import { Search, Plus, FileText, Upload, BarChart3, MessageSquare, History } from "lucide-react";
+import { toast } from "sonner";
+import DocumentUploader from "./DocumentUploader";
+import DocumentList from "./DocumentList";
+import DocumentViewer from "./DocumentViewer";
+import AIDocumentAnalysis from "./AIDocumentAnalysis";
+import DocumentAnalytics from "./DocumentAnalytics";
+import DocumentComments from "./DocumentComments";
+import DocumentVersionHistory from "./DocumentVersionHistory";
 
 const DocumentManagementDashboard: React.FC = () => {
-  const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState('documents');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [repositories, setRepositories] = useState<any[]>([]);
-  const [selectedDocument, setSelectedDocument] = useState<any>(null);
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDocument, setSelectedDocument] = useState<string | null>(null);
+  const [showUploader, setShowUploader] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
 
-  useEffect(() => {
-    if (profile?.organization_id) {
-      loadDashboardData();
+  // Fetch documents with error handling
+  const { data: documents = [], isLoading: documentsLoading, error: documentsError, refetch: refetchDocuments } = useQuery({
+    queryKey: ['documents'],
+    queryFn: () => documentManagementService.getDocuments(),
+    retry: 2,
+    onError: (error: Error) => {
+      console.error('Error fetching documents:', error);
+      toast.error('Failed to load documents. Please try again.');
     }
-  }, [profile?.organization_id]);
+  });
 
-  const loadDashboardData = async () => {
-    try {
-      const [docsData, reposData, analyticsData] = await Promise.all([
-        documentManagementService.getDocuments(),
-        documentManagementService.getRepositories(),
-        documentManagementService.getDocumentAnalytics('month')
-      ]);
-
-      setDocuments(docsData);
-      setRepositories(reposData);
-      setAnalytics(analyticsData);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      toast.error('Failed to load document data');
-    } finally {
-      setIsLoading(false);
+  // Fetch repositories with error handling
+  const { data: repositories = [], isLoading: repositoriesLoading, error: repositoriesError } = useQuery({
+    queryKey: ['document-repositories'],
+    queryFn: () => documentManagementService.getRepositories(),
+    retry: 2,
+    onError: (error: Error) => {
+      console.error('Error fetching repositories:', error);
+      toast.error('Failed to load repositories. Please try again.');
     }
-  };
+  });
+
+  // Fetch analytics with error handling
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['document-analytics', 'month'],
+    queryFn: () => documentManagementService.getDocumentAnalytics('month'),
+    retry: 2,
+    onError: (error: Error) => {
+      console.error('Error fetching analytics:', error);
+      toast.error('Failed to load analytics data.');
+    }
+  });
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
+    if (!searchQuery.trim()) {
+      refetchDocuments();
+      return;
+    }
+
     try {
       const results = await documentManagementService.searchDocuments(searchQuery);
-      setDocuments(results);
+      // Update the documents list with search results
+      toast.success(`Found ${results.length} documents`);
     } catch (error) {
-      console.error('Error searching documents:', error);
-      toast.error('Search failed');
+      console.error('Search error:', error);
+      toast.error('Search failed. Please try again.');
     }
   };
 
-  const documentFeatures = [
-    {
-      id: 'documents',
-      title: 'Document Library',
-      description: 'Browse and manage all documents',
-      icon: FileText,
-      badge: 'Active',
-      count: documents.length
-    },
-    {
-      id: 'ai-analysis',
-      title: 'AI Analysis',
-      description: 'Intelligent document insights and extraction',
-      icon: Brain,
-      badge: 'AI-Powered',
-      count: documents.filter((d: any) => d.ai_analysis_status === 'completed').length
-    },
-    {
-      id: 'knowledge-graph',
-      title: 'Knowledge Graph',
-      description: 'Document relationships and connections',
-      icon: Network,
-      badge: 'Smart',
-      count: 0
-    },
-    {
-      id: 'collaboration',
-      title: 'Collaboration',
-      description: 'Real-time editing and comments',
-      icon: Users,
-      badge: 'Live',
-      count: 0
-    },
-    {
-      id: 'analytics',
-      title: 'Analytics',
-      description: 'Usage insights and trends',
-      icon: BarChart3,
-      badge: 'Insights',
-      count: analytics?.totalAccesses || 0
-    }
-  ];
+  const handleUploadComplete = () => {
+    setShowUploader(false);
+    refetchDocuments();
+    toast.success('Document uploaded successfully!');
+  };
 
-  if (isLoading) {
+  // Show error state if there are critical errors
+  if (documentsError && !documents.length) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="p-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Unable to Load Documents</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              There was an error loading your documents. This might be due to permissions or connectivity issues.
+            </p>
+            <Button onClick={() => refetchDocuments()}>
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Document Management</h1>
+          <h1 className="text-3xl font-bold">Document Management</h1>
           <p className="text-muted-foreground">
-            AI-powered document analysis and knowledge extraction platform
+            Upload, organize, and analyze your documents with AI-powered insights
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Bot className="h-3 w-3" />
-            AI-Enhanced
-          </Badge>
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Zap className="h-3 w-3" />
-            Smart Features
-          </Badge>
+        <div className="flex gap-2">
+          <Button onClick={() => setShowUploader(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload Document
+          </Button>
         </div>
       </div>
 
-      {/* AI-Powered Search */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Intelligent Document Search
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Search documents with natural language (e.g., 'find risk policies from last quarter')"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="flex-1"
-            />
-            <Button onClick={handleSearch}>
-              <Search className="h-4 w-4 mr-2" />
-              Search
-            </Button>
-          </div>
-          <div className="flex gap-2 mt-2">
-            <Badge variant="outline" className="text-xs">Semantic Search</Badge>
-            <Badge variant="outline" className="text-xs">Content Analysis</Badge>
-            <Badge variant="outline" className="text-xs">Relationship Mapping</Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Feature Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        {documentFeatures.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <Card 
-              key={feature.id} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setActiveTab(feature.id)}
-            >
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <Icon className="h-5 w-5 text-blue-600" />
-                  <Badge variant="secondary" className="text-xs">
-                    {feature.badge}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <h3 className="font-medium mb-1">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {feature.description}
-                </p>
-                <div className="text-lg font-bold text-blue-600">
-                  {feature.count}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Search Bar */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+        </div>
+        <Button onClick={handleSearch}>Search</Button>
       </div>
 
-      {/* AI Insights Panel */}
-      <Card className="border-l-4 border-l-green-500 bg-green-50">
-        <CardContent className="pt-4">
-          <div className="flex items-start gap-3">
-            <Brain className="h-5 w-5 text-green-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-green-900">AI Document Insights</h4>
-              <p className="text-sm text-green-700 mb-2">
-                {analytics?.totalDocuments || 0} documents analyzed, {' '}
-                {documents.filter((d: any) => d.ai_analysis_status === 'completed').length} with AI insights
-              </p>
-              <div className="flex gap-2">
-                <Badge variant="outline" className="text-xs bg-white">
-                  Risk Indicators: {documents.reduce((acc: number, doc: any) => 
-                    acc + (doc.key_risk_indicators?.length || 0), 0)}
-                </Badge>
-                <Badge variant="outline" className="text-xs bg-white">
-                  Compliance Gaps: {documents.reduce((acc: number, doc: any) => 
-                    acc + (doc.compliance_gaps?.length || 0), 0)}
-                </Badge>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Documents</p>
+                <p className="text-2xl font-bold">{documentsLoading ? '...' : documents.length}</p>
               </div>
+              <FileText className="h-8 w-8 text-muted-foreground" />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="documents" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Documents
-          </TabsTrigger>
-          <TabsTrigger value="ai-analysis" className="flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            AI Analysis
-          </TabsTrigger>
-          <TabsTrigger value="knowledge-graph" className="flex items-center gap-2">
-            <Network className="h-4 w-4" />
-            Knowledge Graph
-          </TabsTrigger>
-          <TabsTrigger value="collaboration" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Collaboration
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Repositories</p>
+                <p className="text-2xl font-bold">{repositoriesLoading ? '...' : repositories.length}</p>
+              </div>
+              <Plus className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="documents" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Document Library</h2>
-            <DocumentUploader onUploadComplete={loadDashboardData} />
-          </div>
-          <DocumentList 
-            documents={documents} 
-            onDocumentSelect={setSelectedDocument}
-            onDocumentUpdate={loadDashboardData}
-          />
-        </TabsContent>
-
-        <TabsContent value="ai-analysis" className="space-y-6">
-          <AIDocumentAnalysis 
-            documents={documents}
-            onAnalysisComplete={loadDashboardData}
-          />
-        </TabsContent>
-
-        <TabsContent value="knowledge-graph" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Network className="h-5 w-5" />
-                Knowledge Graph & Document Relationships
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Network className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">Knowledge Graph Coming Soon</h3>
-                <p className="text-muted-foreground">
-                  Visualize document relationships and knowledge connections
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">AI Analyzed</p>
+                <p className="text-2xl font-bold">
+                  {documentsLoading ? '...' : documents.filter(doc => doc.ai_analysis_status === 'completed').length}
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <BarChart3 className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="collaboration" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Collaborative Document Editing
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-3">
-                      <MessageSquare className="h-8 w-8 text-blue-600" />
-                      <div>
-                        <h4 className="font-medium">Real-time Comments</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Collaborative review and feedback
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-3">
-                      <Eye className="h-8 w-8 text-green-600" />
-                      <div>
-                        <h4 className="font-medium">Live Editing</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Real-time document collaboration
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Recent Activity</p>
+                <p className="text-2xl font-bold">
+                  {analyticsLoading ? '...' : (analytics?.totalAccesses || 0)}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <MessageSquare className="h-8 w-8 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          {selectedDocument && (
+            <>
+              <TabsTrigger value="viewer">Viewer</TabsTrigger>
+              <TabsTrigger value="ai-analysis">AI Analysis</TabsTrigger>
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="versions">Versions</TabsTrigger>
+            </>
+          )}
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Documents</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {documentsLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                  </div>
+                ) : documents.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No documents yet</p>
+                    <Button onClick={() => setShowUploader(true)} className="mt-2">
+                      Upload your first document
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {documents.slice(0, 5).map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-2 hover:bg-muted rounded">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="font-medium">{doc.title}</span>
+                        </div>
+                        <Badge variant="outline">{doc.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Document Repositories</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {repositoriesLoading ? (
+                  <div className="space-y-2">
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                    <div className="h-4 bg-muted rounded animate-pulse" />
+                  </div>
+                ) : repositories.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Plus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No repositories created</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {repositories.map((repo) => (
+                      <div key={repo.id} className="flex items-center justify-between p-2 hover:bg-muted rounded">
+                        <div>
+                          <p className="font-medium">{repo.name}</p>
+                          <p className="text-sm text-muted-foreground">{repo.document_type}</p>
+                        </div>
+                        <Badge variant="outline">{repo.access_level}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        <TabsContent value="analytics" className="space-y-6">
-          <DocumentAnalytics analytics={analytics} />
+        <TabsContent value="documents">
+          <DocumentList
+            documents={documents}
+            isLoading={documentsLoading}
+            onDocumentSelect={setSelectedDocument}
+            selectedDocument={selectedDocument}
+          />
         </TabsContent>
+
+        <TabsContent value="analytics">
+          <DocumentAnalytics />
+        </TabsContent>
+
+        {selectedDocument && (
+          <>
+            <TabsContent value="viewer">
+              <DocumentViewer documentId={selectedDocument} />
+            </TabsContent>
+
+            <TabsContent value="ai-analysis">
+              <AIDocumentAnalysis documentId={selectedDocument} />
+            </TabsContent>
+
+            <TabsContent value="comments">
+              <DocumentComments documentId={selectedDocument} />
+            </TabsContent>
+
+            <TabsContent value="versions">
+              <DocumentVersionHistory documentId={selectedDocument} />
+            </TabsContent>
+          </>
+        )}
       </Tabs>
 
-      {/* Document Viewer Modal */}
-      {selectedDocument && (
-        <DocumentViewer 
-          document={selectedDocument}
-          onClose={() => setSelectedDocument(null)}
-        />
+      {/* Document Uploader Modal */}
+      {showUploader && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Upload Document</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowUploader(false)}>
+                ×
+              </Button>
+            </div>
+            <DocumentUploader
+              onUploadComplete={handleUploadComplete}
+              onCancel={() => setShowUploader(false)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

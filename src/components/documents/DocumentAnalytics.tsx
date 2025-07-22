@@ -1,230 +1,169 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { 
-  TrendingUp, 
-  Eye, 
-  Download, 
-  Users, 
-  Clock,
-  FileText,
-  Shield,
-  AlertTriangle
-} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { documentManagementService } from '@/services/document-management-service';
+import { BarChart3, TrendingUp, FileText, Eye } from 'lucide-react';
 
-interface DocumentAnalyticsProps {
-  analytics: any;
-}
+const DocumentAnalytics: React.FC = () => {
+  const { data: analytics, isLoading } = useQuery({
+    queryKey: ['document-analytics', 'month'],
+    queryFn: () => documentManagementService.getDocumentAnalytics('month')
+  });
 
-const DocumentAnalytics: React.FC<DocumentAnalyticsProps> = ({ analytics }) => {
-  if (!analytics) {
+  const { data: documents = [] } = useQuery({
+    queryKey: ['documents'],
+    queryFn: () => documentManagementService.getDocuments()
+  });
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <div className="h-4 bg-muted rounded animate-pulse" />
+                <div className="h-8 bg-muted rounded animate-pulse" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
 
-  const statusData = Object.entries(analytics.documentsByStatus || {}).map(([status, count]) => ({
-    status: status.charAt(0).toUpperCase() + status.slice(1),
-    count
-  }));
-
-  const uploadData = Object.entries(analytics.uploadsOverTime || {}).map(([period, count]) => ({
-    period,
-    uploads: count
-  }));
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  const stats = {
+    totalDocuments: documents.length,
+    totalAccesses: documents.reduce((sum, doc) => sum + (doc.access_count || 0), 0),
+    avgFileSize: documents.length > 0 
+      ? (documents.reduce((sum, doc) => sum + (doc.file_size || 0), 0) / documents.length / 1024 / 1024)
+      : 0,
+    documentsWithAI: documents.filter(doc => doc.ai_analysis_status === 'completed').length,
+    documentsByStatus: documents.reduce((acc, doc) => {
+      const status = doc.status || 'draft';
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Document Analytics</h2>
-          <p className="text-muted-foreground">
-            Usage insights and document management metrics
-          </p>
-        </div>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <FileText className="h-8 w-8 text-blue-600" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">{analytics.totalDocuments}</div>
-                <div className="text-sm text-muted-foreground">Total Documents</div>
+                <p className="text-sm font-medium text-muted-foreground">Total Documents</p>
+                <p className="text-2xl font-bold">{stats.totalDocuments}</p>
               </div>
+              <FileText className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Eye className="h-8 w-8 text-green-600" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">{analytics.totalAccesses}</div>
-                <div className="text-sm text-muted-foreground">Total Views</div>
+                <p className="text-sm font-medium text-muted-foreground">Total Views</p>
+                <p className="text-2xl font-bold">{stats.totalAccesses}</p>
               </div>
+              <Eye className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-8 w-8 text-purple-600" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">
-                  {analytics.mostAccessedDocuments?.length || 0}
-                </div>
-                <div className="text-sm text-muted-foreground">Popular Docs</div>
+                <p className="text-sm font-medium text-muted-foreground">AI Analyzed</p>
+                <p className="text-2xl font-bold">{stats.documentsWithAI}</p>
               </div>
+              <BarChart3 className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-orange-600" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl font-bold">
-                  {Math.round(analytics.totalAccesses / Math.max(analytics.totalDocuments, 1))}
-                </div>
-                <div className="text-sm text-muted-foreground">Avg Views/Doc</div>
+                <p className="text-sm font-medium text-muted-foreground">Avg File Size</p>
+                <p className="text-2xl font-bold">{stats.avgFileSize.toFixed(1)}MB</p>
               </div>
+              <TrendingUp className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Document Status Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Document Status Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ status, count }) => `${status}: ${count}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="count"
-                >
-                  {statusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Upload Trends */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Document Upload Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={uploadData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="period" />
-                <YAxis />
-                <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="uploads" 
-                  stroke="#8884d8" 
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Most Accessed Documents */}
+      {/* Document Status Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Most Accessed Documents
-          </CardTitle>
+          <CardTitle>Document Status Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          {analytics.mostAccessedDocuments?.length > 0 ? (
-            <div className="space-y-3">
-              {analytics.mostAccessedDocuments.slice(0, 10).map((doc: any, index: number) => (
-                <div key={doc.documentId} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-600">
-                        #{index + 1}
-                      </span>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Document {doc.documentId}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {doc.accessCount} views
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-blue-600">
-                      {doc.accessCount}
-                    </div>
-                    <div className="text-xs text-muted-foreground">views</div>
-                  </div>
+          <div className="space-y-3">
+            {Object.entries(stats.documentsByStatus).map(([status, count]) => (
+              <div key={status} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    status === 'approved' ? 'bg-green-500' :
+                    status === 'draft' ? 'bg-yellow-500' :
+                    status === 'rejected' ? 'bg-red-500' :
+                    'bg-blue-500'
+                  }`} />
+                  <span className="capitalize">{status.replace('_', ' ')}</span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-muted-foreground">No access data available yet</p>
-            </div>
-          )}
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{count}</span>
+                  <span className="text-sm text-muted-foreground">
+                    ({((count / stats.totalDocuments) * 100).toFixed(1)}%)
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
-      {/* AI Analysis Summary */}
-      <Card className="border-l-4 border-l-purple-500 bg-purple-50">
-        <CardContent className="pt-4">
-          <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-purple-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-purple-900">AI Analysis Summary</h4>
-              <div className="grid gap-2 md:grid-cols-3 mt-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                  <span className="text-sm">Risk Indicators Found</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-red-600" />
-                  <span className="text-sm">Compliance Gaps Identified</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm">Documents Classified</span>
-                </div>
-              </div>
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {documents.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No recent activity</p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3">
+              {documents
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 5)
+                .map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-2 hover:bg-muted rounded">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <div>
+                        <p className="font-medium">{doc.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(doc.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {doc.access_count || 0} views
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
