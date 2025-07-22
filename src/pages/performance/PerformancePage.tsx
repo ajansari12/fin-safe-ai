@@ -1,6 +1,6 @@
 import React from 'react';
 import PerformanceMonitoringDashboard from '@/components/performance/PerformanceMonitoringDashboard';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 const PerformancePage: React.FC = () => {
   const { profile } = useAuth();
