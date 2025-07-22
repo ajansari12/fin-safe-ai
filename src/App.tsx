@@ -30,6 +30,7 @@ import PerformancePage from "./pages/performance/PerformancePage";
 import Integrations from "./pages/Integrations";
 import Reporting from "./pages/Reporting";
 import IntegrationFramework from "./pages/IntegrationFramework";
+import AIAnalyticsDashboard from "./components/ai/AIAnalyticsDashboard";
 
 const queryClient = new QueryClient();
 
