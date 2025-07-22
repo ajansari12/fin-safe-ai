@@ -63,12 +63,11 @@ export const GoLiveProcessDialog: React.FC<GoLiveProcessDialogProps> = ({
   // Real-time updates
   const realTimeUpdates = useRealTimeUpdates({
     channel: 'go-live-process',
-    eventTypes: ['step_update', 'progress_update', 'status_change'],
-    onUpdate: (event) => {
-      if (event.eventType === 'progress_update') {
-        setProgress(event.payload.progress);
-        operationMonitor.updateProgress(event.payload.progress, event.payload.currentStep);
-      }
+    eventTypes: ['step_update', 'progress_update', 'status_change']
+  }, (event) => {
+    if (event.eventType === 'progress_update') {
+      setProgress(event.payload.progress);
+      operationMonitor.updateProgress(event.payload.progress, event.payload.currentStep);
     }
   });
   const [steps, setSteps] = useState<GoLiveStep[]>([

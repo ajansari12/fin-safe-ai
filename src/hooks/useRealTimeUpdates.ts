@@ -4,8 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/EnhancedAuthContext';
 
 interface RealTimeConfig {
-  table: string;
+  table?: string;
+  channel?: string;
   event?: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+  eventTypes?: string[];
   filter?: string;
 }
 
@@ -20,10 +22,13 @@ export const useRealTimeUpdates = <T>(
   useEffect(() => {
     if (!profile?.organization_id) return;
 
-    const channel = supabase
-      .channel(`realtime-${config.table}`)
-      .on(
-        'postgres_changes',
+    const channelName = config.channel || `realtime-${config.table}`;
+    const channel = supabase.channel(channelName);
+
+    if (config.table) {
+      // Database table changes
+      channel.on(
+        'postgres_changes' as any,
         {
           event: config.event || '*',
           schema: 'public',
@@ -38,18 +43,35 @@ export const useRealTimeUpdates = <T>(
             onUpdate(payload);
           }
         }
-      )
-      .subscribe((status) => {
-        console.log(`Real-time subscription status for ${config.table}:`, status);
-        setIsConnected(status === 'SUBSCRIBED');
+      );
+    }
+
+    if (config.eventTypes) {
+      // Custom broadcast events
+      config.eventTypes.forEach(eventType => {
+        channel.on('broadcast', { event: eventType }, (payload) => {
+          console.log(`Real-time broadcast ${eventType}:`, payload);
+          setLastUpdate(new Date());
+          
+          if (onUpdate) {
+            onUpdate({ eventType, payload });
+          }
+        });
       });
+    }
+
+    channel.subscribe((status) => {
+      console.log(`Real-time subscription status for ${channelName}:`, status);
+      setIsConnected(status === 'SUBSCRIBED');
+    });
 
     return () => {
-      console.log(`Unsubscribing from ${config.table} real-time updates`);
+      const channelName = config.channel || `realtime-${config.table}`;
+      console.log(`Unsubscribing from ${channelName} real-time updates`);
       supabase.removeChannel(channel);
       setIsConnected(false);
     };
-  }, [config.table, config.event, config.filter, profile?.organization_id, onUpdate]);
+  }, [config.table, config.channel, config.event, config.eventTypes, config.filter, profile?.organization_id, onUpdate]);
 
   return { isConnected, lastUpdate };
 };
