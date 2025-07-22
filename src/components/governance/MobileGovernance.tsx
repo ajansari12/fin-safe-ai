@@ -5,15 +5,15 @@ import { useAuth } from "@/contexts/EnhancedAuthContext";
 import FrameworksList from "@/components/governance/FrameworksList";
 import ComplianceDashboard from "@/components/governance/ComplianceDashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAIAssistant } from "@/components/ai-assistant";
+import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 
 const MobileGovernance = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = React.useState("frameworks");
-  const { setCurrentModule } = useAIAssistant();
+  const { setCurrentModule } = useEnhancedAIAssistant();
 
   useEffect(() => {
-    setCurrentModule("governance-framework");
+    setCurrentModule("governance_framework");
   }, [setCurrentModule]);
 
   return (

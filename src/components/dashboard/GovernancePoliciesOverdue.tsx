@@ -71,7 +71,7 @@ export default function GovernancePoliciesOverdue() {
               ))}
               
               <Button variant="outline" size="sm" className="w-full" asChild>
-                <Link to="/governance-framework">
+                <Link to="/app/governance">
                   Manage Reviews <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>

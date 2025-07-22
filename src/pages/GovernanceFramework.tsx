@@ -11,17 +11,17 @@ import BoardOversight from "@/components/governance/BoardOversight";
 import AccountabilityMatrix from "@/components/governance/AccountabilityMatrix";
 import PolicyManagement from "@/components/governance/PolicyManagement";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAIAssistant } from "@/components/ai-assistant";
+import { useEnhancedAIAssistant } from "@/components/ai-assistant/EnhancedAIAssistantContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const GovernanceFrameworkContent = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = React.useState("frameworks");
-  const { setCurrentModule } = useAIAssistant();
+  const { setCurrentModule } = useEnhancedAIAssistant();
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    setCurrentModule("governance-framework");
+    setCurrentModule("governance_framework");
   }, [setCurrentModule]);
 
   // Show mobile version on mobile devices
